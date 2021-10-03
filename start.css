@@ -1,0 +1,28 @@
+@font-face {
+    font-family: "DIN condenced";
+    src: url("../signale/font/D-DINCondensed.otf");
+}
+
+html, body {
+    height: 100%;
+}
+
+#container {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+#toolbar {
+    height: 3.5rem;
+    background-color: beige;
+    display: flex;
+    align-items: center;
+    padding: 0.5rem;
+    gap: 0.5rem;
+}
+
+#CanvasContainer {
+    flex-grow: 4;
+    overflow: hidden;
+}

@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="de">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta http-equiv="Cache-control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <link rel="shortcut icon" type="image/ico" href="favicon.ico" />
+    <title>Gleisplan</title>
+    <link rel="stylesheet" href="start.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.1/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-F3w7mX95PdgyTmZZMECAngseQB83DfGTowi0iMjiWaeVhAn4FJkqJByhZMI3AhiU" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.5.0/font/bootstrap-icons.css">
+
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.1/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-/bQdsTh/da6pkI1MST/rWKFNjaCP5gBSY4sEBT38Q/9RBh9AH40zEOg7Hlq2THRZ"
+        crossorigin="anonymous"></script>
+    <script src="../signale/SignalBase.js"></script>
+    <script src="../signale/hv.js?02"></script>
+    <script src="../signale/ks.js?04"></script>
+    <script src="../signale/hv77.js?02"></script>
+    <script src="../signale/hl.js?02"></script>
+
+    <script src="../signale/ui.js?01"></script>
+
+    <script src="../signale/preLoader.js?02"></script>
+    <script src="tools.js"></script>
+    <script src="track.js"></script>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://code.createjs.com/1.0.0/createjs.min.js"></script>
+    <style type="text/css">
+
+    </style>
+    <script>
+        const VERSION = '0.43'
+        const EXCLUDE_JSON = ["_shape","_signaldavor", "_signaldanach", "_canvas", "_stage", "_position", "_imgCatalog", "_signalbilder"];
+        'use strict';
+        var grid_size = 30;
+        var canvas, stage;
+        var drawingCanvas;
+        var color = "#000000";
+        var stroke = 4;
+        var startpoint;
+        var connection;
+        var drawing_Connection = false;
+        var showGrid = true;
+        var mode = 1; //1 = tracks, 2 = signals
+        var pl;
+        var mouseMoved;
+
+
+        var tracks = [];
+        var signals = [];
+
+        $(() => { init(); });
+
+        function init() {
+            canvas = document.getElementById("myCanvas");
+
+            //check to see if we are running in a browser with touch support
+            stage = new createjs.Stage(canvas);
+            stage.autoClear = true;
+            stage.enableDOMEvents(true);
+
+            createjs.Touch.enable(stage);
+            createjs.Ticker.framerate = 24;
+
+            pl = new preLoader();
+            Promise.all([pl.preLoad("../signale/Hv kompakt Neu/catalog.json"), pl.preLoad("../signale/Hl/catalog.json"),
+            pl.preLoad("../signale/Hv 77 Neu/catalog.json"), pl.preLoad("../signale/Ks/catalog.json"), pl.preLoad("../signale/Ks/catalog_vr.json")]);
+
+
+            stage.on("stagemousedown", handleMouseDown);
+            stage.on("stagemouseup", handleMouseUp);
+
+            document.oncontextmenu = function () {
+                return false;
+            };
+            canvas.addEventListener('wheel', (event) => {
+                event.preventDefault();
+
+                stage.scale -= 0.1 * (event.deltaY / Math.abs(event.deltaY));
+                if (stage.scale < 0.3) stage.scale = 0.3;
+                drawGrid(stage);
+                stage.update();
+                //console.log("scale: " + stage.scale);
+                save();
+            });
+
+            $("#btnDrawTracks").click((e) => { mode = 1; })
+            $("#btnSignal").click(() => { mode = 2; })
+
+            $("#btnGrid").click(() => { showGrid = !showGrid; drawGrid(stage); stage.update(); })
+
+            $("#btnClear").click(() => { tracks = []; stage.removeAllChildren(); drawGrid(stage); save(); stage.update(); })
+
+            $("#btnCenter").click(() => { stage.scale = 1; stage.x = 0; stage.y = 0; save(); drawGrid(stage); stage.update(); })
+
+
+
+            $("#btnImage").click((e) => {
+                let sg = showGrid;
+                showGrid = false;
+                drawGrid(stage);
+                stage.update();
+                let img = stage.toDataURL("#00000000", "image/png");
+                console.log(img.slice(0, 50));
+
+                showGrid = sg;
+                drawGrid(stage);
+                stage.update();
+                //e.target.href = img;
+
+                let a = $("<a>", { download: "gleisplan.png", href: img });
+                a[0].click();
+            })
+
+            loadRecent();
+            onResizeWindow();
+
+            $(window).resize(() => onResizeWindow());
+        }
+
+        function onResizeWindow() {
+            $("#myCanvas").attr("height", $("#CanvasContainer").height() - 5);
+            $("#myCanvas").attr("width", $("#CanvasContainer").width());
+            drawGrid(stage);
+            stage.update();
+        }
+
+        function drawGrid(stage) {
+            let oldGrid = stage.getChildByName("grid");
+            if (oldGrid != null)
+                stage.removeChild(oldGrid);
+            if (showGrid) {
+                let grid = new createjs.Shape();
+                grid.name = "grid";
+                grid.graphics.c().setStrokeStyle(1, "round").setStrokeDash([5, 5], 2 - Math.floor(stage.y / (2 * stage.scale)) * 2).beginStroke("#eee");
+                let bounds = stage.canvas.getBoundingClientRect();
+
+                let i = Math.floor(stage.x / (grid_size * stage.scale)) * -(grid_size);
+                while (i < (bounds.width / stage.scale) - (stage.x / stage.scale)) { //spalten                
+                    grid.graphics.moveTo(i, 0 - stage.y / stage.scale).lineTo(i, (bounds.height / stage.scale) - stage.y / stage.scale);
+                    i += grid_size;
+                }
+                grid.graphics.setStrokeDash([5, 5], 2 - Math.floor(stage.x / (2 * stage.scale)) * 2).beginStroke("#eee");
+                i = Math.floor(stage.y / (grid_size * stage.scale)) * -grid_size;
+                while (i < (bounds.height / stage.scale) - stage.y / stage.scale) { //zeilen
+                    grid.graphics.moveTo(0 - stage.x / stage.scale, i).lineTo((bounds.width / stage.scale) - stage.x / stage.scale, i);
+                    i += grid_size;
+                }
+                stage.addChildAt(grid, 0);
+            }
+
+
+
+        }
+
+
+        function handleMouseDown(event) {
+            if (!event.primary) { return; }
+            mouseMoved = false;
+
+            if (event.nativeEvent.which == 1 && mode === 1) {
+                startpoint = stage.globalToLocal(stage.mouseX, stage.mouseY);
+
+                connection = tracks.find(l => l.hitTest(startpoint.x, startpoint.y));
+                drawing_Connection = (connection != null);
+                /* if (drawing_Connection) {
+                    color = "#ff0000";
+                }
+                else
+                    color = "#000000"; */
+
+                drawingCanvas = new createjs.Shape();
+                stage.addChild(drawingCanvas);
+                drawingCanvas.graphics.c().setStrokeStyle(stroke).beginStroke(color).moveTo(startpoint.x, startpoint.y);
+            }
+
+            stage.addEventListener("stagemousemove", handleMouseMove);
+
+        }
+
+        function handleMouseMove(event) {
+            if (!event.primary) { return; }
+            mouseMoved = true;
+
+            if (event.nativeEvent.which == 1 && mode === 1) {
+                let p = stage.globalToLocal(stage.mouseX, stage.mouseY);
+                drawingCanvas.graphics.lineTo(p.x, p.y);
+            }
+            else if (event.nativeEvent.which == 3) {
+                stage.x += event.nativeEvent.movementX;
+                stage.y += event.nativeEvent.movementY;
+                drawGrid(stage);
+                //console.log("scroll: " + stage.x + "/" + stage.y);
+                save();
+            }
+
+            stage.update();
+        }
+
+        function handleClick(event) {
+
+        }
+
+        function handleMouseUp(event) {
+            if (!event.primary) { return; }
+            stage.removeEventListener("stagemousemove", handleMouseMove);
+            if (event.nativeEvent.which == 1) {
+                if (mode === 1) {
+                    stage.removeChild(drawingCanvas);
+                    stage.clear();
+
+                    let p1 = startpoint;
+                    let p2 = stage.globalToLocal(stage.mouseX, stage.mouseY);
+
+                    if (Math.abs(p1.x - p2.x) >= grid_size || Math.abs(p1.y - p2.y) >= grid_size) {
+
+                        let diagonal = (Math.abs(p1.x - p2.x) / Math.abs(p1.y - p2.y)) < 4;
+                        if (diagonal) {
+                            p2.x = startpoint.x + Math.abs(p2.y - startpoint.y) * ((startpoint.x > p2.x) ? -1 : 1);
+                        }
+                        else
+                            p2.y = startpoint.y;
+
+                        p1.y = Math.round(p1.y / grid_size) * grid_size;
+                        p1.x = Math.round(p1.x / grid_size) * grid_size;
+
+                        p2.y = Math.round(p2.y / grid_size) * grid_size;
+                        p2.x = Math.round(p2.x / grid_size) * grid_size;
+
+
+
+                        if (drawing_Connection) {
+                            /* p1.y = connection._startPnt.y;
+                            if (p1.x < connection._startPnt.x)
+                                p1.x = connection._startPnt.x;
+                            else if (p1.x > connection._endPnt.x)
+                                p1.x = connection._endPnt.x; */
+                        }
+
+
+
+                        if (p1.x - p2.x != 0) {
+                            createTrack(p1, p2);
+                            save();
+                        }
+                    }
+                    stage.update();
+                    connection = null;
+                } else if (mode === 2 && !mouseMoved) {
+                    let hittest = stage.getObjectUnderPoint();
+                    if (hittest == null || hittest.name == "grid") {
+                        let p1 = stage.globalToLocal(stage.mouseX, stage.mouseY);
+                        createSignal(p1);
+                        stage.update();
+                    }
+                }
+            }
+        }
+
+        function createTrack(p1, p2) {
+            let l = new createjs.Shape();
+            stage.addChild(l);
+            l.graphics.setStrokeStyle(stroke, "round").beginStroke("#000000").moveTo(p1.x, p1.y).lineTo(p2.x, p2.y);
+            tracks.push(new track(l, p1, p2));
+        }
+
+        function newSignal(type, config, param) {
+            let classesMapping = {
+                Ks,
+                Hv,
+                Hv77,
+                Hl
+            };
+            let s = new classesMapping[type](config, param);
+            s.init();
+            return s;
+        }
+
+        function createSignal(p1) {
+            let type = "Hv";
+            let param = { verwendung: "E", hp: true, vr: true }
+            let s = newSignal(type, null, param);
+            s.uuid = uuidv4();
+            let container = new createjs.Container();
+            container.name = s.uuid;
+            container.mouseChildren = false;
+            stage.addChild(container);
+            container.addEventListener("click", (e) => {
+                if (mode == 2 && !mouseMoved) {
+                    e.currentTarget.rotation += 180;
+                    stage.update();
+                }
+            })
+            container.on("pressmove", function (evt) {
+                if (mode == 2) {
+                    let p = stage.globalToLocal(stage.mouseX, stage.mouseY);
+                    evt.target.x = p.x;
+                    evt.target.y = p.y;
+                    stage.update();
+                }
+            });
+
+            s.buildAndRepaint(container);//, position: p1, scale: 1, rotation: 0 });
+            container.scale = 0.1;
+            container.rotation = 270;
+            container.x = p1.x;
+            container.y = p1.y;
+            signals.push(s);
+        }
+
+        function replacer(key, value) {
+            if (EXCLUDE_JSON.includes(key))
+                return undefined
+            else
+                return value;
+        }
+
+        function getSaveString() {
+            return JSON.stringify({
+                tracks: tracks,
+                signals: signals,
+                version: 0.12,
+                zoom: stage.scale,
+                scrollX: stage.x,
+                scrollY: stage.y
+            }, replacer);
+        }
+
+        function save() {
+            localStorage.setItem("last1", getSaveString());
+        }
+
+        function loadRecent() {
+            let x = localStorage.getItem('last1');
+            if (x != null) {
+                loadFromJson(x);
+                stage.update();
+            }
+        }
+
+        function loadFromJson(json) {
+            let loaded = JSON.parse(json);
+            if (loaded.version >= 0.12) {
+                stage.x = loaded.scrollX;
+                stage.y = loaded.scrollY;
+                stage.scale = loaded.zoom;
+                loaded.tracks.forEach(s => {
+                    createTrack(s._startPnt, s._endPnt);
+                });
+            }
+        }
+
+
+    </script>
+</head>
+
+<body id="mybody">
+    <div class="visually-hidden" style="font-family: DIN condenced;">dummy to load font face</div>
+    <div id="container">
+        <div id="toolbar">
+            <button id="btnDrawTracks" data-bs-toggle="button" type="button" class="btn btn-secondary btn-sm .active">
+                <i class="bi bi-pencil"></i>
+            </button>
+            <button id="btnGrid" type="button" class="btn btn-secondary btn-sm">
+                <i class="bi bi-grid-3x3"></i>
+            </button>
+            <button id="btnClear" type="button" class="btn btn-secondary btn-sm">
+                <i class="bi bi-trash"></i>
+            </button>
+            <button id="btnRemove" type="button" class="btn btn-secondary btn-sm">
+                <i class="bi bi-eraser"></i>
+            </button>
+            <button id="btnCenter" type="button" class="btn btn-secondary btn-sm">
+                <i class="bi bi-bullseye"></i>
+            </button>
+            <button id="btnImage" type="button" class="btn btn-secondary btn-sm">
+                <i class="bi bi-camera"></i>
+            </button>
+            <button id="btnSignal" type="button" class="btn btn-secondary btn-sm">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
+                    class="bi bi-stoplights" viewBox="0 0 16 16">
+                    <path
+                        d="M8 5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3zm0 4a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3zm1.5 2.5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0z" />
+                    <path
+                        d="M4 2a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2h2c-.167.5-.8 1.6-2 2v2h2c-.167.5-.8 1.6-2 2v2h2c-.167.5-.8 1.6-2 2v1a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-1c-1.2-.4-1.833-1.5-2-2h2V8c-1.2-.4-1.833-1.5-2-2h2V4c-1.2-.4-1.833-1.5-2-2h2zm2-1a1 1 0 0 0-1 1v11a1 1 0 0 0 1 1h4a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1H6z" />
+                </svg>
+            </button>
+        </div>
+        <div id="CanvasContainer">
+            <canvas id="myCanvas" width="10" height="10"></canvas>
+        </div>
+    </div>
+</body>
+
+</html>
