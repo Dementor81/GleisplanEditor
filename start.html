@@ -36,7 +36,7 @@
     </style>
     <script>
         const VERSION = '0.43'
-        const EXCLUDE_JSON = ["_shape","_signaldavor", "_signaldanach", "_canvas", "_stage", "_position", "_imgCatalog", "_signalbilder"];
+        const EXCLUDE_JSON = ["_shape", "_signaldavor", "_signaldanach", "_canvas", "_stage", "_position", "_imgCatalog", "_signalbilder"];
         'use strict';
         var grid_size = 30;
         var canvas, stage;
@@ -58,6 +58,11 @@
         $(() => { init(); });
 
         function init() {
+
+            new bootstrap.Popover(document.getElementById('btnSignal'), { content: document.getElementById('test'), sanitize: false, html: true });
+            new bootstrap.Popover(document.getElementById('btnModusHvKompakt'), { content: document.getElementById('test2'), sanitize: false, html: true });
+            new bootstrap.Popover(document.getElementById('btnModusHv77'), { content: document.getElementById('test2'), sanitize: false, html: true });
+
             canvas = document.getElementById("myCanvas");
 
             //check to see if we are running in a browser with touch support
@@ -91,7 +96,11 @@
             });
 
             $("#btnDrawTracks").click((e) => { mode = 1; })
-            $("#btnSignal").click(() => { mode = 2; })
+            $("#btnSignal").click(() => { 
+                mode = 2;
+
+
+            }) 
 
             $("#btnGrid").click(() => { showGrid = !showGrid; drawGrid(stage); stage.update(); })
 
@@ -197,7 +206,7 @@
                 stage.y += event.nativeEvent.movementY;
                 drawGrid(stage);
                 //console.log("scroll: " + stage.x + "/" + stage.y);
-                save();
+                
             }
 
             stage.update();
@@ -209,7 +218,7 @@
 
         function handleMouseUp(event) {
             if (!event.primary) { return; }
-            stage.removeEventListener("stagemousemove", handleMouseMove);
+            stage.removeEventListener("stagemousemove", handleMouseMove);            
             if (event.nativeEvent.which == 1) {
                 if (mode === 1) {
                     stage.removeChild(drawingCanvas);
@@ -360,29 +369,34 @@
     </script>
 </head>
 
-<body id="mybody">
+<body id="mybody" >
     <div class="visually-hidden" style="font-family: DIN condenced;">dummy to load font face</div>
     <div id="container">
         <div id="toolbar">
-            <button id="btnDrawTracks" data-bs-toggle="button" type="button" class="btn btn-secondary btn-sm .active">
+            <button id="btnPlay" type="button" class="btn btn-secondary btn-sm" title="Signale bedienen">
+                <i class="bi bi-cursor-fill"></i>
+            </button>
+            <button id="btnDrawTracks" type="button" class="btn btn-secondary btn-sm active" title="Gleise zeichnen">
                 <i class="bi bi-pencil"></i>
             </button>
-            <button id="btnGrid" type="button" class="btn btn-secondary btn-sm">
+            <button id="btnGrid" type="button" class="btn btn-secondary btn-sm active" title="zeige Gitter">
                 <i class="bi bi-grid-3x3"></i>
             </button>
-            <button id="btnClear" type="button" class="btn btn-secondary btn-sm">
+            <button id="btnClear" type="button" class="btn btn-secondary btn-sm" title="alles entfernen">
                 <i class="bi bi-trash"></i>
             </button>
-            <button id="btnRemove" type="button" class="btn btn-secondary btn-sm">
+            <button id="btnRemove" type="button" disabled="true" class="btn btn-secondary btn-sm"
+                title="Element entfernen">
                 <i class="bi bi-eraser"></i>
             </button>
-            <button id="btnCenter" type="button" class="btn btn-secondary btn-sm">
+            <button id="btnCenter" type="button" class="btn btn-secondary btn-sm" title="Ansicht zentrieren">
                 <i class="bi bi-bullseye"></i>
             </button>
-            <button id="btnImage" type="button" class="btn btn-secondary btn-sm">
+            <button id="btnImage" type="button" class="btn btn-secondary btn-sm" title="Ansicht als Bild herunterladen">
                 <i class="bi bi-camera"></i>
             </button>
-            <button id="btnSignal" type="button" class="btn btn-secondary btn-sm">
+            <button id="btnSignal" type="button" class="btn btn-secondary btn-sm" data-bs-container="body"
+               data-bs-placement="bottom">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
                     class="bi bi-stoplights" viewBox="0 0 16 16">
                     <path
@@ -396,6 +410,41 @@
             <canvas id="myCanvas" width="10" height="10"></canvas>
         </div>
     </div>
+
+    <div class="visually-hidden">
+        <div id="test">
+            <div class="btn-group" role="group" style="width: 20rem;">
+                <button id="btnModusHvKompakt" type="button" class="btn btn-secondary btn-sm active" data-bs-container="body"
+                data-bs-toggle="popover" data-bs-placement="bottom">HV Kompakt</button>
+                <button id="btnModusHv77" type="button" class="btn btn-secondary btn-sm">HV Bauj.77</button>
+                <button type="button" class="btn btn-secondary btn-sm">KS</button>
+                <button type="button" class="btn btn-secondary btn-sm">HL</button>
+            </div>
+        </div>
+        <div id="test2">
+            <div class="btn-group" role="group" style="width: 20rem;">
+                <div class="btn-group" role="group" style="width: 20rem;">
+                    <button type="button" class="btn btn-secondary btn-sm">Vsig</button>
+                    <button type="button" class="btn btn-secondary btn-sm active">Esig</button>
+                    <button type="button" class="btn btn-secondary btn-sm">Zsig</button>
+                    <button type="button" class="btn btn-secondary btn-sm">Asig</button>
+                    <button type="button" class="btn btn-secondary btn-sm">BKsig</button>
+                    <button type="button" class="btn btn-secondary btn-sm">Sbk</button>
+                </div>               
+            </div>
+            <div class="form-check form-switch" style="padding-left: 3rem; padding-top: 0.2rem;">
+                <input class="form-check-input" type="checkbox" value="" id="flexCheckDefault">
+                <label class="form-check-label" for="flexCheckDefault">
+                  mit Vorsignalisierung
+                </label>
+              </div>
+        </div>
+    </div>
+
+
+
+
+
 </body>
 
 </html>

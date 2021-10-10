@@ -26,3 +26,33 @@ html, body {
     flex-grow: 4;
     overflow: hidden;
 }
+
+.focus, .btn:focus {
+    outline: none !important;
+    box-shadow: 0 0 0 0rem rgba(0, 123, 255, .25) !important;
+}
+
+.btn-check:active+.btn-secondary, .btn-check:checked+.btn-secondary, .btn-secondary.active, .btn-secondary:active, .show>.btn-secondary.dropdown-toggle {
+    color: #2f2f2f !important;
+    background-color: #ffc107 !important;
+    border-color: #ffc107 !important;
+}
+
+.popover-body{
+    padding: 0px !important;
+}
+
+.popover{
+    max-width: none !important;
+}
+
+.form-check-input:checked {
+    background-color: #6c757d !important;
+    border-color: #6c757d !important;
+}
+
+.form-check-input:focus {
+    border-color: #6c757d !important;
+    outline: 0;
+    box-shadow: none !important;
+}
