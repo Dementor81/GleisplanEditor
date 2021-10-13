@@ -37,6 +37,13 @@
     <script>
         const VERSION = '0.43'
         const EXCLUDE_JSON = ["_shape", "_signaldavor", "_signaldanach", "_canvas", "_stage", "_position", "_imgCatalog", "_signalbilder"];
+
+        const MODE_PLAY = 1;
+        const MODE_DRAW = 2;
+        const MODE_EDIT_SIGNALS = 3;
+        const MODE_DELETE = 4;
+
+
         'use strict';
         var grid_size = 30;
         var canvas, stage;
@@ -44,12 +51,12 @@
         var color = "#000000";
         var stroke = 4;
         var startpoint;
-        var connection;
-        var drawing_Connection = false;
+        var previousTouch;
         var showGrid = true;
-        var mode = 1; //1 = tracks, 2 = signals
+        var mode = MODE_DRAW; //1 = tracks, 2 = signals
         var pl;
         var mouseMoved;
+        var popup2;
 
 
         var tracks = [];
@@ -57,11 +64,55 @@
 
         $(() => { init(); });
 
+        function create_buttonGroup(items) {
+            return $("<div>", { class: "btn-group", role: "group" }).append(items);
+        }
+
+        function create_toggleButtonX(text, id, onclick) {
+            return $("<button>", {
+                type: "button",
+                id: id,
+                class: "btn btn-secondary btn-sm"
+            }).html(text).click(() => { onclick(); });
+        }
+
+        function checkModeButtons() {
+            $("button[data-mode]").removeClass("active");
+            $("button[data-mode=" + mode + "]").addClass("active");
+
+            /*  $("button[data-mode]").each((x, y) => {
+                 if (y.attr("data-mode") == mode)
+                     y.addClass("active");
+                 else
+                     y.removeClass("active");
+             }); */
+        }
+
         function init() {
 
             new bootstrap.Popover(document.getElementById('btnSignal'), { content: document.getElementById('test'), sanitize: false, html: true });
-            new bootstrap.Popover(document.getElementById('btnModusHvKompakt'), { content: document.getElementById('test2'), sanitize: false, html: true });
-            new bootstrap.Popover(document.getElementById('btnModusHv77'), { content: document.getElementById('test2'), sanitize: false, html: true });
+
+            $("#test div button").click((e) => {
+                if (popup2 != null) { popup2.dispose(); popup2 = null; }
+                popup2 = new bootstrap.Popover(e.target, {
+                    content: () => {
+                        let x = create_buttonGroup([
+                            create_toggleButtonX("Vsig", "", null),
+                            create_toggleButtonX("Esig", "", null),
+                            create_toggleButtonX("Zsig", "", null),
+                            create_toggleButtonX("Asig", "", null),
+                            create_toggleButtonX("BkSig", "", null),
+                            create_toggleButtonX("SBK", "", null),
+                        ]);
+
+                        return x[0].outerHTML;
+                    }, sanitize: false, html: true, placement: "bottom"
+                });
+                e.target.addEventListener('hidden.bs.popover', function () {
+                    // do something...
+                })
+                popup2.show();
+            });
 
             canvas = document.getElementById("myCanvas");
 
@@ -69,7 +120,7 @@
             stage = new createjs.Stage(canvas);
             stage.autoClear = true;
             stage.enableDOMEvents(true);
-
+            console.log(createjs.Touch.isSupported());
             createjs.Touch.enable(stage);
             createjs.Ticker.framerate = 24;
 
@@ -95,12 +146,51 @@
                 save();
             });
 
-            $("#btnDrawTracks").click((e) => { mode = 1; })
-            $("#btnSignal").click(() => { 
-                mode = 2;
+            canvas.addEventListener('touchstart', (event) => {
+                if (event.touches.length === 1) {
+                    let touch = event.touches[0];
+                    startTrackDrawing(stage.globalToLocal(touch.clientX, touch.clientY));
+                }
 
 
-            }) 
+                /* console.log("touch:" + event.touches.length);
+                for (let index = 0; index < event.touches.length; index++) {
+                    const item = event.touches[index];
+                    console.log("x:" + item.clientX + ":" + item.clientY);
+                } */
+            });
+
+            canvas.addEventListener('touchmove', (event) => {
+                if (event.touches.length === 2) {
+                    let touch = event.touches[0];
+
+                    if (previousTouch) {
+                        // be aware that these only store the movement of the first touch in the touches array
+                        stage.x += touch.clientX - previousTouch.clientX;
+                        stage.y += touch.clientY - previousTouch.clientY;
+
+                        drawGrid(stage);
+                    };
+
+                    previousTouch = touch;
+                }
+
+            });
+
+            $("#btnPlay").click((e) => {
+                mode = MODE_PLAY;
+                checkModeButtons();
+            })
+            $("#btnDrawTracks").click((e) => {
+                mode = MODE_DRAW;
+                checkModeButtons();
+            })
+            $("#btnSignal").click(() => {
+                mode = MODE_EDIT_SIGNALS;
+                checkModeButtons();
+                if (popup2 != null) { popup2.dispose(); popup2 = null; }
+
+            })
 
             $("#btnGrid").click(() => { showGrid = !showGrid; drawGrid(stage); stage.update(); })
 
@@ -129,6 +219,7 @@
 
             loadRecent();
             onResizeWindow();
+            checkModeButtons();
 
             $(window).resize(() => onResizeWindow());
         }
@@ -173,31 +264,25 @@
             if (!event.primary) { return; }
             mouseMoved = false;
 
-            if (event.nativeEvent.which == 1 && mode === 1) {
+            if (event.nativeEvent.which == 1 && mode === MODE_DRAW) {
                 startpoint = stage.globalToLocal(stage.mouseX, stage.mouseY);
-
-                connection = tracks.find(l => l.hitTest(startpoint.x, startpoint.y));
-                drawing_Connection = (connection != null);
-                /* if (drawing_Connection) {
-                    color = "#ff0000";
-                }
-                else
-                    color = "#000000"; */
-
-                drawingCanvas = new createjs.Shape();
-                stage.addChild(drawingCanvas);
-                drawingCanvas.graphics.c().setStrokeStyle(stroke).beginStroke(color).moveTo(startpoint.x, startpoint.y);
+                startTrackDrawing(startpoint);
             }
 
             stage.addEventListener("stagemousemove", handleMouseMove);
+        }
 
+        function startTrackDrawing(startpoint) {
+            drawingCanvas = new createjs.Shape();
+            stage.addChild(drawingCanvas);
+            drawingCanvas.graphics.c().setStrokeStyle(stroke).beginStroke(color).moveTo(startpoint.x, startpoint.y);
         }
 
         function handleMouseMove(event) {
             if (!event.primary) { return; }
             mouseMoved = true;
 
-            if (event.nativeEvent.which == 1 && mode === 1) {
+            if (event.nativeEvent.which == 1 && mode === MODE_DRAW) {
                 let p = stage.globalToLocal(stage.mouseX, stage.mouseY);
                 drawingCanvas.graphics.lineTo(p.x, p.y);
             }
@@ -206,21 +291,17 @@
                 stage.y += event.nativeEvent.movementY;
                 drawGrid(stage);
                 //console.log("scroll: " + stage.x + "/" + stage.y);
-                
+
             }
 
             stage.update();
         }
 
-        function handleClick(event) {
-
-        }
-
         function handleMouseUp(event) {
             if (!event.primary) { return; }
-            stage.removeEventListener("stagemousemove", handleMouseMove);            
+            stage.removeEventListener("stagemousemove", handleMouseMove);
             if (event.nativeEvent.which == 1) {
-                if (mode === 1) {
+                if (mode === MODE_DRAW) {
                     stage.removeChild(drawingCanvas);
                     stage.clear();
 
@@ -242,18 +323,6 @@
                         p2.y = Math.round(p2.y / grid_size) * grid_size;
                         p2.x = Math.round(p2.x / grid_size) * grid_size;
 
-
-
-                        if (drawing_Connection) {
-                            /* p1.y = connection._startPnt.y;
-                            if (p1.x < connection._startPnt.x)
-                                p1.x = connection._startPnt.x;
-                            else if (p1.x > connection._endPnt.x)
-                                p1.x = connection._endPnt.x; */
-                        }
-
-
-
                         if (p1.x - p2.x != 0) {
                             createTrack(p1, p2);
                             save();
@@ -261,10 +330,10 @@
                     }
                     stage.update();
                     connection = null;
-                } else if (mode === 2 && !mouseMoved) {
-                    let hittest = stage.getObjectUnderPoint();
+                } else if (mode === MODE_EDIT_SIGNALS && !mouseMoved) {
+                    let p1 = stage.globalToLocal(stage.mouseX, stage.mouseY);
+                    let hittest = stage.getObjectUnderPoint(stage.mouseX, stage.mouseY);
                     if (hittest == null || hittest.name == "grid") {
-                        let p1 = stage.globalToLocal(stage.mouseX, stage.mouseY);
                         createSignal(p1);
                         stage.update();
                     }
@@ -301,13 +370,13 @@
             container.mouseChildren = false;
             stage.addChild(container);
             container.addEventListener("click", (e) => {
-                if (mode == 2 && !mouseMoved) {
+                if (mode == MODE_EDIT_SIGNALS && !mouseMoved) {
                     e.currentTarget.rotation += 180;
                     stage.update();
                 }
             })
             container.on("pressmove", function (evt) {
-                if (mode == 2) {
+                if (mode == MODE_EDIT_SIGNALS) {
                     let p = stage.globalToLocal(stage.mouseX, stage.mouseY);
                     evt.target.x = p.x;
                     evt.target.y = p.y;
@@ -369,14 +438,15 @@
     </script>
 </head>
 
-<body id="mybody" >
+<body id="mybody">
     <div class="visually-hidden" style="font-family: DIN condenced;">dummy to load font face</div>
     <div id="container">
         <div id="toolbar">
-            <button id="btnPlay" type="button" class="btn btn-secondary btn-sm" title="Signale bedienen">
+            <button id="btnPlay" type="button" data-mode="1" class="btn btn-secondary btn-sm" title="Signale bedienen">
                 <i class="bi bi-cursor-fill"></i>
             </button>
-            <button id="btnDrawTracks" type="button" class="btn btn-secondary btn-sm active" title="Gleise zeichnen">
+            <button id="btnDrawTracks" type="button" data-mode="2" class="btn btn-secondary btn-sm active"
+                title="Gleise zeichnen">
                 <i class="bi bi-pencil"></i>
             </button>
             <button id="btnGrid" type="button" class="btn btn-secondary btn-sm active" title="zeige Gitter">
@@ -395,8 +465,8 @@
             <button id="btnImage" type="button" class="btn btn-secondary btn-sm" title="Ansicht als Bild herunterladen">
                 <i class="bi bi-camera"></i>
             </button>
-            <button id="btnSignal" type="button" class="btn btn-secondary btn-sm" data-bs-container="body"
-               data-bs-placement="bottom">
+            <button id="btnSignal" type="button" data-mode="3" class="btn btn-secondary btn-sm" data-bs-container="body"
+                data-bs-placement="bottom">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
                     class="bi bi-stoplights" viewBox="0 0 16 16">
                     <path
@@ -414,30 +484,29 @@
     <div class="visually-hidden">
         <div id="test">
             <div class="btn-group" role="group" style="width: 20rem;">
-                <button id="btnModusHvKompakt" type="button" class="btn btn-secondary btn-sm active" data-bs-container="body"
-                data-bs-toggle="popover" data-bs-placement="bottom">HV Kompakt</button>
+                <button id="btnModusHvKompakt" type="button" class="btn btn-secondary btn-sm active">HV Kompakt</button>
                 <button id="btnModusHv77" type="button" class="btn btn-secondary btn-sm">HV Bauj.77</button>
-                <button type="button" class="btn btn-secondary btn-sm">KS</button>
-                <button type="button" class="btn btn-secondary btn-sm">HL</button>
+                <button id="btnModusKs" type="button" class="btn btn-secondary btn-sm">KS</button>
+                <button id="btnModusHl" type="button" class="btn btn-secondary btn-sm">HL</button>
             </div>
         </div>
         <div id="test2">
+
             <div class="btn-group" role="group" style="width: 20rem;">
-                <div class="btn-group" role="group" style="width: 20rem;">
-                    <button type="button" class="btn btn-secondary btn-sm">Vsig</button>
-                    <button type="button" class="btn btn-secondary btn-sm active">Esig</button>
-                    <button type="button" class="btn btn-secondary btn-sm">Zsig</button>
-                    <button type="button" class="btn btn-secondary btn-sm">Asig</button>
-                    <button type="button" class="btn btn-secondary btn-sm">BKsig</button>
-                    <button type="button" class="btn btn-secondary btn-sm">Sbk</button>
-                </div>               
+                <button type="button" class="btn btn-secondary btn-sm">Vsig</button>
+                <button type="button" class="btn btn-secondary btn-sm active">Esig</button>
+                <button type="button" class="btn btn-secondary btn-sm">Zsig</button>
+                <button type="button" class="btn btn-secondary btn-sm">Asig</button>
+                <button type="button" class="btn btn-secondary btn-sm">BKsig</button>
+                <button type="button" class="btn btn-secondary btn-sm">Sbk</button>
             </div>
+
             <div class="form-check form-switch" style="padding-left: 3rem; padding-top: 0.2rem;">
                 <input class="form-check-input" type="checkbox" value="" id="flexCheckDefault">
                 <label class="form-check-label" for="flexCheckDefault">
-                  mit Vorsignalisierung
+                    mit Vorsignalisierung
                 </label>
-              </div>
+            </div>
         </div>
     </div>
 
