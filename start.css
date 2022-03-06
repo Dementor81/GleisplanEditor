@@ -38,14 +38,6 @@ html, body {
     border-color: #ffc107 !important;
 }
 
-.popover-body{
-    padding: 0px !important;
-}
-
-.popover{
-    max-width: none !important;
-}
-
 .form-check-input:checked {
     background-color: #6c757d !important;
     border-color: #6c757d !important;
@@ -55,4 +47,67 @@ html, body {
     border-color: #6c757d !important;
     outline: 0;
     box-shadow: none !important;
+}
+
+#sidebar {
+    background-color: rgb(187, 187, 187);
+    top:3.5rem;
+    border-radius: 4px;
+    margin: 2rem;
+    width: 26rem;
+    left: auto;
+    height: 40rem;
+    z-index: 0;
+}
+
+#sidebar .offcanvas-header{
+    color: #707070;
+    padding: 0px;
+    padding-bottom: 1rem;
+}
+
+#sidebar .offcanvas-header .btn-close{
+    position: absolute;
+    right: 0px;
+}
+
+#sidebar .offcanvas-body{
+    padding-top: 0px;   
+}
+
+#sidebar canvas {
+    height: 560px;
+    margin-top: -50px;
+    z-index: -99;
+}
+
+#sidebarTabbar{
+    width:100%;
+}
+
+#sidebar .card {
+    width: 10rem;
+    min-height: auto;
+    border: none;
+    cursor: pointer;
+}
+
+
+.list-group-item {
+    padding: 10px;
+}
+
+.list-group-item-sm{
+    font-size: 0.875rem;
+    line-height: 1.3;
+    padding: 3px !important;
+}
+
+.list-group{
+    margin-bottom: 5px;
+}
+
+
+.btn-close {
+    margin: 0 !important;
 }

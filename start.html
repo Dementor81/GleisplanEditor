@@ -18,6 +18,7 @@
         integrity="sha384-/bQdsTh/da6pkI1MST/rWKFNjaCP5gBSY4sEBT38Q/9RBh9AH40zEOg7Hlq2THRZ"
         crossorigin="anonymous"></script>
     <script src="../signale/SignalBase.js"></script>
+    <script src="../signale/MainSignal.js?01"></script>
     <script src="../signale/hv.js?02"></script>
     <script src="../signale/ks.js?04"></script>
     <script src="../signale/hv77.js?02"></script>
@@ -59,10 +60,6 @@
 
         function init() {
 
-            new bootstrap.Popover(document.getElementById('btnSignal'), { content: document.getElementById('test'), sanitize: false, html: true });
-            new bootstrap.Popover(document.getElementById('btnModusHvKompakt'), { content: document.getElementById('test2'), sanitize: false, html: true });
-            new bootstrap.Popover(document.getElementById('btnModusHv77'), { content: document.getElementById('test2'), sanitize: false, html: true });
-
             canvas = document.getElementById("myCanvas");
 
             //check to see if we are running in a browser with touch support
@@ -96,11 +93,11 @@
             });
 
             $("#btnDrawTracks").click((e) => { mode = 1; })
-            $("#btnSignal").click(() => { 
+            /* $("#btnSignal").click(() => {
                 mode = 2;
 
 
-            }) 
+            }) */
 
             $("#btnGrid").click(() => { showGrid = !showGrid; drawGrid(stage); stage.update(); })
 
@@ -127,11 +124,54 @@
                 a[0].click();
             })
 
+            initNewSignalMenu();
+
             loadRecent();
             onResizeWindow();
 
             $(window).resize(() => onResizeWindow());
         }
+
+        function initNewSignalMenu() {
+            $("#NewSignalPlaceholder").load("../signale/newSignalMenu.html", function () {
+
+                $("#card_ls").click(function () {
+                    let s = new Ls(null, null);
+                    addSignal2Canvas(s);
+                })
+
+                $("#card_us").click(function () {
+                    let s = new Us(null, null);
+                    addSignal2Canvas(s);
+                })
+
+                $("#btnSignal").click(function () {
+                    configChanged();
+                })
+
+                $("#btnNewSignal").click(function () {
+                    addSignal2Canvas(copySignal(previewSignal));
+                })
+
+
+                $("#sidebar button").click(function () {
+                    $(this).parent().attr('value', $(this).attr('value'));
+                    configChanged();
+                });
+
+
+                $("#txtLabel").on("input", () => {
+                    previewSignal._config.label = $("#txtLabel").val();
+                    previewSignal.buildAndRepaint(previewStage.getChildAt(0));
+                });
+
+                $('#btnSignal').attr("data-bs-toggle","offcanvas");
+                $('#btnSignal').attr("data-bs-target","#sidebar");
+
+
+            });
+        }
+
 
         function onResizeWindow() {
             $("#myCanvas").attr("height", $("#CanvasContainer").height() - 5);
@@ -206,7 +246,7 @@
                 stage.y += event.nativeEvent.movementY;
                 drawGrid(stage);
                 //console.log("scroll: " + stage.x + "/" + stage.y);
-                
+
             }
 
             stage.update();
@@ -218,7 +258,7 @@
 
         function handleMouseUp(event) {
             if (!event.primary) { return; }
-            stage.removeEventListener("stagemousemove", handleMouseMove);            
+            stage.removeEventListener("stagemousemove", handleMouseMove);
             if (event.nativeEvent.which == 1) {
                 if (mode === 1) {
                     stage.removeChild(drawingCanvas);
@@ -369,7 +409,7 @@
     </script>
 </head>
 
-<body id="mybody" >
+<body id="mybody">
     <div class="visually-hidden" style="font-family: DIN condenced;">dummy to load font face</div>
     <div id="container">
         <div id="toolbar">
@@ -396,7 +436,7 @@
                 <i class="bi bi-camera"></i>
             </button>
             <button id="btnSignal" type="button" class="btn btn-secondary btn-sm" data-bs-container="body"
-               data-bs-placement="bottom">
+                data-bs-placement="bottom">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
                     class="bi bi-stoplights" viewBox="0 0 16 16">
                     <path
@@ -411,35 +451,7 @@
         </div>
     </div>
 
-    <div class="visually-hidden">
-        <div id="test">
-            <div class="btn-group" role="group" style="width: 20rem;">
-                <button id="btnModusHvKompakt" type="button" class="btn btn-secondary btn-sm active" data-bs-container="body"
-                data-bs-toggle="popover" data-bs-placement="bottom">HV Kompakt</button>
-                <button id="btnModusHv77" type="button" class="btn btn-secondary btn-sm">HV Bauj.77</button>
-                <button type="button" class="btn btn-secondary btn-sm">KS</button>
-                <button type="button" class="btn btn-secondary btn-sm">HL</button>
-            </div>
-        </div>
-        <div id="test2">
-            <div class="btn-group" role="group" style="width: 20rem;">
-                <div class="btn-group" role="group" style="width: 20rem;">
-                    <button type="button" class="btn btn-secondary btn-sm">Vsig</button>
-                    <button type="button" class="btn btn-secondary btn-sm active">Esig</button>
-                    <button type="button" class="btn btn-secondary btn-sm">Zsig</button>
-                    <button type="button" class="btn btn-secondary btn-sm">Asig</button>
-                    <button type="button" class="btn btn-secondary btn-sm">BKsig</button>
-                    <button type="button" class="btn btn-secondary btn-sm">Sbk</button>
-                </div>               
-            </div>
-            <div class="form-check form-switch" style="padding-left: 3rem; padding-top: 0.2rem;">
-                <input class="form-check-input" type="checkbox" value="" id="flexCheckDefault">
-                <label class="form-check-label" for="flexCheckDefault">
-                  mit Vorsignalisierung
-                </label>
-              </div>
-        </div>
-    </div>
+    <div id="NewSignalPlaceholder"></div>
 
 
 
