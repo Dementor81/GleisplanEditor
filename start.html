@@ -40,6 +40,7 @@
         const MOUSE_SCROLL = 1;
         const MOUSE_DRAW = 2;
         const MOUSE_MOVE_ITEM = 3;
+        const MOUSE_DND_SIGNAL = 4;
 
 
         'use strict';
@@ -55,6 +56,8 @@
         var pl;
         var mouseMoved;
         var mouseAction = MOUSE_NONE;
+
+        var dnd_Signal;
 
 
         var tracks = [];
@@ -98,15 +101,21 @@
             createjs.Ticker.framerate = 24;
 
             main_container = new createjs.Container();
+            main_container.name = "main";
+            main_container.mouseChildren = false;
             stage.addChild(main_container);
 
             ui_container = new createjs.Container();
+            ui_container.name = "ui";
             stage.addChild(ui_container);
 
-            var md = main_container.on("mousedown", handleMouseDown);
-            var mu = main_container.on("mouseup", handleMouseUp);
+            overlay_container = new createjs.Container();
+            overlay_container.name = "overlay";
+            stage.addChild(overlay_container);
 
-            main_container.on("click", () => { alert("test") });
+
+            var md = stage.on("stagemousedown", handleMouseDown);
+            var mu = stage.on("stagemouseup", handleMouseUp);
 
             document.oncontextmenu = function () {
                 return false;
@@ -203,6 +212,7 @@
 
         function draw_SignalMenu() {
             menu = new createjs.Container();
+            menu.name = "signal_menu";
             ui_container.addChild(menu);
 
             var bg = new createjs.Shape();
@@ -210,12 +220,13 @@
             menu.addChild(bg);
 
             var btn = new createjs.Shape();
+            btn.name = "Hauptsignal";
             menu.addChild(btn);
             btn.graphics.beginFill("#333").drawRoundRect(10, 20, 64, 64, 5);
-            btn.on("click", () => { alert("test") });
+            //btn.on("click", () => { alert("test") });
 
 
-            
+
 
             stage.update();
         }
@@ -262,34 +273,58 @@
 
             let hittest = getHitTest();
 
-            /*  if (hittest != null) {
-                 console.log(hittest.name);
-             } */
+            if (hittest != null) {
+                console.log(hittest.name);
+            }
+
+            if (event.nativeEvent.which == 1 && mode === MODE_EDIT && (hittest != null && hittest.name == "Hauptsignal")) {
+                stage.addEventListener("stagemousemove", handleMouseMove);
+                startDragAndDropSignal();
+                mouseAction = MOUSE_DND_SIGNAL;
+            }
 
             if (event.nativeEvent.which == 1 && mode === MODE_EDIT && (hittest == null || hittest.name == "track")) {
-                main_container.addEventListener("main_containermousemove", handleMouseMove);
+                stage.addEventListener("stagemousemove", handleMouseMove);
                 startTrackDrawing();
                 mouseAction = MOUSE_DRAW;
             }
 
             if (event.nativeEvent.which == 3) {
-                main_container.addEventListener("main_containermousemove", handleMouseMove);
+                stage.addEventListener("stagemousemove", handleMouseMove);
                 mouseAction = MOUSE_SCROLL;
             }
         }
 
         function getHitTest() {
-            for (let i = 0; i < main_container.numChildren; i++) {
+            /* for (let i = 0; i < main_container.numChildren; i++) {
                 let child = main_container.getChildAt(i);
-                var pt = child.globalToLocal(main_container.mouseX, main_container.mouseY);
-                if (main_container.mouseInBounds && child.hitTest(pt.x, pt.y) && child.name != "grid")
+                var pt = child.globalToLocal(stage.mouseX, stage.mouseY);
+                if (stage.mouseInBounds && child.hitTest(pt.x, pt.y) && child.name != "grid")
                     return child;
             }
-            return null;
+            return null; */
+            return stage.getObjectUnderPoint(stage.mouseX, stage.mouseY);
+        }
+
+        function startDragAndDropSignal() {
+            dnd_Signal = new createjs.Bitmap("signal.png");
+            dnd_Signal.x = stage.mouseX;
+            dnd_Signal.y = stage.mouseY;
+            dnd_Signal.scale = 0.5;
+            dnd_Signal.rotation = 90;
+
+            overlay_container.addChild(dnd_Signal);
+
+            /* var test = new createjs.Shape();
+            test.graphics.beginFill("#e00").drawCircle(100,100,30);
+
+            overlay_container.addChild(test); */
+
+            stage.update();
         }
 
         function startTrackDrawing() {
-            startpoint = main_container.globalToLocal(main_container.mouseX, main_container.mouseY);
+            startpoint = main_container.globalToLocal(stage.mouseX, stage.mouseY);
             drawingCanvas = new createjs.Shape();
             main_container.addChild(drawingCanvas);
             drawingCanvas.graphics.c().setStrokeStyle(stroke).beginStroke(color).moveTo(startpoint.x, startpoint.y);
@@ -298,9 +333,11 @@
         function handleMouseMove(event) {
             if (!event.primary) { return; }
             mouseMoved = true;
-
-            if (mouseAction === MOUSE_DRAW) {
-                let p = main_container.globalToLocal(main_container.mouseX, main_container.mouseY);
+            if (mouseAction === MOUSE_DND_SIGNAL) {
+                dnd_Signal.x = stage.mouseX;
+                dnd_Signal.y = stage.mouseY;
+            } else if (mouseAction === MOUSE_DRAW) {
+                let p = main_container.globalToLocal(stage.mouseX, stage.mouseY);
                 drawingCanvas.graphics.lineTo(p.x, p.y);
             }
             else if (mouseAction === MOUSE_SCROLL) {
@@ -314,14 +351,17 @@
 
         function handleMouseUp(event) {
             if (!event.primary) { return; }
-            main_container.removeEventListener("main_containermousemove", handleMouseMove);
+            stage.removeEventListener("stagemousemove", handleMouseMove);
 
-            if (mouseAction === MOUSE_DRAW) {
+            if (mouseAction === MOUSE_DND_SIGNAL) {
+                overlay_container.removeAllChildren();
+                stage.update();
+            } else if (mouseAction === MOUSE_DRAW) {
                 main_container.removeChild(drawingCanvas);
-                main_container.clear();
+                //main_container.clear();
 
                 let p1 = startpoint;
-                let p2 = main_container.globalToLocal(main_container.mouseX, main_container.mouseY);
+                let p2 = main_container.globalToLocal(stage.mouseX, stage.mouseY);
 
                 if (Math.abs(p1.x - p2.x) >= grid_size || Math.abs(p1.y - p2.y) >= grid_size) {
 
