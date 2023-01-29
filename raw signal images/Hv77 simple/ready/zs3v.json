@@ -1,0 +1,41 @@
+[ 
+{"signal":"10","src":"","sourceRect":{"x":0,"y":0,"width":131,"height":115},"pos":
+        [{"left":30,"top":642}]
+    },
+
+{"signal":"11","src":"","sourceRect":{"x":131,"y":0,"width":131,"height":115},"pos":
+        [{"left":30,"top":642}]
+    },
+
+{"signal":"12","src":"","sourceRect":{"x":262,"y":0,"width":131,"height":115},"pos":
+        [{"left":30,"top":642}]
+    },
+
+{"signal":"3","src":"","sourceRect":{"x":393,"y":0,"width":131,"height":115},"pos":
+        [{"left":30,"top":642}]
+    },
+
+{"signal":"4","src":"","sourceRect":{"x":524,"y":0,"width":131,"height":115},"pos":
+        [{"left":30,"top":642}]
+    },
+
+{"signal":"5","src":"","sourceRect":{"x":655,"y":0,"width":131,"height":115},"pos":
+        [{"left":30,"top":642}]
+    },
+
+{"signal":"6","src":"","sourceRect":{"x":786,"y":0,"width":131,"height":115},"pos":
+        [{"left":30,"top":642}]
+    },
+
+{"signal":"7","src":"","sourceRect":{"x":917,"y":0,"width":131,"height":115},"pos":
+        [{"left":30,"top":642}]
+    },
+
+{"signal":"8","src":"","sourceRect":{"x":1048,"y":0,"width":131,"height":115},"pos":
+        [{"left":30,"top":642}]
+    },
+
+{"signal":"9","src":"","sourceRect":{"x":1179,"y":0,"width":131,"height":115},"pos":
+        [{"left":30,"top":642}]
+    }
+]

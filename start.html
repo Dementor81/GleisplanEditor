@@ -9,55 +9,52 @@
     <link rel="shortcut icon" type="image/ico" href="favicon.ico" />
     <title>Gleisplan</title>
     <link rel="stylesheet" href="start.css">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.1/dist/css/bootstrap.min.css" rel="stylesheet"
-        integrity="sha384-F3w7mX95PdgyTmZZMECAngseQB83DfGTowi0iMjiWaeVhAn4FJkqJByhZMI3AhiU" crossorigin="anonymous">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-GLhlTQ8iRABdZLl6O3oVMWSktQOp6b7In1Zl3/Jr59b6EGGoI1aFkw7cmDA6j6gD" crossorigin="anonymous">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.5.0/font/bootstrap-icons.css">
 
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.1/dist/js/bootstrap.bundle.min.js"
-        integrity="sha384-/bQdsTh/da6pkI1MST/rWKFNjaCP5gBSY4sEBT38Q/9RBh9AH40zEOg7Hlq2THRZ"
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-w76AqPfDkMBDXo30jS1Sgez6pr3x5MlQ1ZAGC+nuZB+EYdgRZgiwxhTBTkF7CXvN"
         crossorigin="anonymous"></script>
-    <script src="../signale/SignalBase.js"></script>
-    <script src="../signale/MainSignal.js?01"></script>
-    <script src="../signale/hv.js?02"></script>
-    <script src="../signale/ks.js?04"></script>
-    <script src="../signale/hv77.js?02"></script>
-    <script src="../signale/hl.js?02"></script>
-
-    <script src="../signale/ui.js?01"></script>
-
-    <script src="../signale/preLoader.js?02"></script>
-    <script src="tools.js"></script>
-    <script src="track.js"></script>
-
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.3.min.js"></script>
     <script src="https://code.createjs.com/1.0.0/createjs.min.js"></script>
+
+
+    <script src="tools.js"></script>
+    <script src="track.js?02"></script>
+
+
     <style type="text/css">
 
     </style>
     <script>
         const VERSION = '0.43'
-        const EXCLUDE_JSON = ["_shape", "_signaldavor", "_signaldanach", "_canvas", "_stage", "_position", "_imgCatalog", "_signalbilder"];
+        const EXCLUDE_JSON = ["_shape", "_signaldavor", "_signaldanach", "_canvas", "_main_container", "_position", "_imgCatalog", "_signalbilder"];
 
         const MODE_PLAY = 1;
-        const MODE_DRAW = 2;
-        const MODE_EDIT_SIGNALS = 3;
+        const MODE_EDIT = 2;
         const MODE_DELETE = 4;
+
+        const MOUSE_NONE = 0;
+        const MOUSE_SCROLL = 1;
+        const MOUSE_DRAW = 2;
+        const MOUSE_MOVE_ITEM = 3;
 
 
         'use strict';
         var grid_size = 30;
-        var canvas, stage;
+        var canvas, main_container, main_container, ui_container;
         var drawingCanvas;
         var color = "#000000";
         var stroke = 4;
         var startpoint;
         var previousTouch;
         var showGrid = true;
-        var mode = MODE_DRAW; //1 = tracks, 2 = signals
+        var mode = MODE_EDIT;
         var pl;
         var mouseMoved;
-        var popup2;
+        var mouseAction = MOUSE_NONE;
 
 
         var tracks = [];
@@ -92,22 +89,24 @@
         function init() {
 
             canvas = document.getElementById("myCanvas");
-
-            //check to see if we are running in a browser with touch support
             stage = new createjs.Stage(canvas);
             stage.autoClear = true;
             stage.enableDOMEvents(true);
             console.log(createjs.Touch.isSupported());
-            createjs.Touch.enable(stage);
+            if (createjs.Touch.isSupported())
+                createjs.Touch.enable(stage);
             createjs.Ticker.framerate = 24;
 
-            pl = new preLoader();
-            Promise.all([pl.preLoad("../signale/Hv kompakt Neu/catalog.json"), pl.preLoad("../signale/Hl/catalog.json"),
-            pl.preLoad("../signale/Hv 77 Neu/catalog.json"), pl.preLoad("../signale/Ks/catalog.json"), pl.preLoad("../signale/Ks/catalog_vr.json")]);
+            main_container = new createjs.Container();
+            stage.addChild(main_container);
 
+            ui_container = new createjs.Container();
+            stage.addChild(ui_container);
 
-            stage.on("stagemousedown", handleMouseDown);
-            stage.on("stagemouseup", handleMouseUp);
+            var md = main_container.on("mousedown", handleMouseDown);
+            var mu = main_container.on("mouseup", handleMouseUp);
+
+            main_container.on("click", () => { alert("test") });
 
             document.oncontextmenu = function () {
                 return false;
@@ -115,78 +114,76 @@
             canvas.addEventListener('wheel', (event) => {
                 event.preventDefault();
 
-                stage.scale -= 0.1 * (event.deltaY / Math.abs(event.deltaY));
-                if (stage.scale < 0.3) stage.scale = 0.3;
-                drawGrid(stage);
+                main_container.scale -= 0.1 * (event.deltaY / Math.abs(event.deltaY));
+                if (main_container.scale < 0.3) main_container.scale = 0.3;
+                drawGrid(main_container);
                 stage.update();
-                //console.log("scale: " + stage.scale);
+                //console.log("scale: " + main_container.scale);
                 save();
             });
+            if (createjs.Touch.isSupported()) {
+                canvas.addEventListener('touchstart', (event) => {
+                    if (event.touches.length === 1) {
+                        let touch = event.touches[0];
+                        startTrackDrawing(main_container.globalToLocal(touch.clientX, touch.clientY));
+                    }
 
-            canvas.addEventListener('touchstart', (event) => {
-                if (event.touches.length === 1) {
-                    let touch = event.touches[0];
-                    startTrackDrawing(stage.globalToLocal(touch.clientX, touch.clientY));
-                }
 
+                    /* console.log("touch:" + event.touches.length);
+                    for (let index = 0; index < event.touches.length; index++) {
+                        const item = event.touches[index];
+                        console.log("x:" + item.clientX + ":" + item.clientY);
+                    } */
+                });
 
-                /* console.log("touch:" + event.touches.length);
-                for (let index = 0; index < event.touches.length; index++) {
-                    const item = event.touches[index];
-                    console.log("x:" + item.clientX + ":" + item.clientY);
-                } */
-            });
+                canvas.addEventListener('touchmove', (event) => {
+                    if (event.touches.length === 2) {
+                        let touch = event.touches[0];
 
-            canvas.addEventListener('touchmove', (event) => {
-                if (event.touches.length === 2) {
-                    let touch = event.touches[0];
+                        if (previousTouch) {
+                            // be aware that these only store the movement of the first touch in the touches array
+                            main_container.x += touch.clientX - previousTouch.clientX;
+                            main_container.y += touch.clientY - previousTouch.clientY;
 
-                    if (previousTouch) {
-                        // be aware that these only store the movement of the first touch in the touches array
-                        stage.x += touch.clientX - previousTouch.clientX;
-                        stage.y += touch.clientY - previousTouch.clientY;
+                            drawGrid(main_container);
+                        };
 
-                        drawGrid(stage);
-                    };
+                        previousTouch = touch;
+                    }
 
-                    previousTouch = touch;
-                }
-
-            });
+                });
+            }
 
             $("#btnPlay").click((e) => {
                 mode = MODE_PLAY;
                 checkModeButtons();
             })
             $("#btnDrawTracks").click((e) => {
-                mode = MODE_DRAW;
+                mode = MODE_EDIT;
                 checkModeButtons();
             })
             $("#btnSignal").click(() => {
-                mode = MODE_EDIT_SIGNALS;
-                checkModeButtons();
-                if (popup2 != null) { popup2.dispose(); popup2 = null; }
 
             })
 
-            $("#btnGrid").click(() => { showGrid = !showGrid; drawGrid(stage); stage.update(); })
+            $("#btnGrid").click(() => { showGrid = !showGrid; drawGrid(main_container); stage.update(); })
 
-            $("#btnClear").click(() => { tracks = []; stage.removeAllChildren(); drawGrid(stage); save(); stage.update(); })
+            $("#btnClear").click(() => { tracks = []; main_container.removeAllChildren(); drawGrid(main_container); save(); stage.update(); })
 
-            $("#btnCenter").click(() => { stage.scale = 1; stage.x = 0; stage.y = 0; save(); drawGrid(stage); stage.update(); })
+            $("#btnCenter").click(() => { main_container.scale = 1; main_container.x = 0; main_container.y = 0; save(); drawGrid(main_container); stage.update(); })
 
 
 
             $("#btnImage").click((e) => {
                 let sg = showGrid;
                 showGrid = false;
-                drawGrid(stage);
+                drawGrid(main_container);
                 stage.update();
-                let img = stage.toDataURL("#00000000", "image/png");
+                let img = main_container.toDataURL("#00000000", "image/png");
                 console.log(img.slice(0, 50));
 
                 showGrid = sg;
-                drawGrid(stage);
+                drawGrid(main_container);
                 stage.update();
                 //e.target.href = img;
 
@@ -194,7 +191,7 @@
                 a[0].click();
             })
 
-            initNewSignalMenu();
+            draw_SignalMenu()
 
             loadRecent();
             onResizeWindow();
@@ -203,80 +200,57 @@
             $(window).resize(() => onResizeWindow());
         }
 
-        function initNewSignalMenu() {
-            $("#NewSignalPlaceholder").load("../signale/newSignalMenu.html", function () {
 
-                $("#card_ls").click(function () {
-                    let s = new Ls(null, null);
-                    addSignal2Canvas(s);
-                })
+        function draw_SignalMenu() {
+            menu = new createjs.Container();
+            ui_container.addChild(menu);
 
-                $("#card_us").click(function () {
-                    let s = new Us(null, null);
-                    addSignal2Canvas(s);
-                })
+            var bg = new createjs.Shape();
+            bg.graphics.beginFill("#eee").drawRoundRect(0, 0, 80, 300, 5);
+            menu.addChild(bg);
 
-                $("#btnSignal").click(function () {
-                    configChanged();
-                })
-
-                $("#btnNewSignal").click(function () {
-                    addSignal2Canvas(copySignal(previewSignal));
-                })
+            var btn = new createjs.Shape();
+            menu.addChild(btn);
+            btn.graphics.beginFill("#333").drawRoundRect(10, 20, 64, 64, 5);
+            btn.on("click", () => { alert("test") });
 
 
-                $("#sidebar button").click(function () {
-                    $(this).parent().attr('value', $(this).attr('value'));
-                    configChanged();
-                });
+            
 
-
-                $("#txtLabel").on("input", () => {
-                    previewSignal._config.label = $("#txtLabel").val();
-                    previewSignal.buildAndRepaint(previewStage.getChildAt(0));
-                });
-
-                $('#btnSignal').attr("data-bs-toggle","offcanvas");
-                $('#btnSignal').attr("data-bs-target","#sidebar");
-
-
-            });
+            stage.update();
         }
-
 
         function onResizeWindow() {
             $("#myCanvas").attr("height", $("#CanvasContainer").height() - 5);
             $("#myCanvas").attr("width", $("#CanvasContainer").width());
-            drawGrid(stage);
+            drawGrid(main_container);
             stage.update();
         }
 
-        function drawGrid(stage) {
-            let oldGrid = stage.getChildByName("grid");
+        function drawGrid() {
+            let oldGrid = main_container.getChildByName("grid");
             if (oldGrid != null)
-                stage.removeChild(oldGrid);
+                main_container.removeChild(oldGrid);
             if (showGrid) {
                 let grid = new createjs.Shape();
                 grid.name = "grid";
-                grid.graphics.c().setStrokeStyle(1, "round").setStrokeDash([5, 5], 2 - Math.floor(stage.y / (2 * stage.scale)) * 2).beginStroke("#eee");
+                grid.mouseEnabled = false;
+                grid.graphics.c().setStrokeStyle(1, "round").setStrokeDash([5, 5], 2 - Math.floor(main_container.y / (2 * main_container.scale)) * 2).beginStroke("#eee");
                 let bounds = stage.canvas.getBoundingClientRect();
 
-                let i = Math.floor(stage.x / (grid_size * stage.scale)) * -(grid_size);
-                while (i < (bounds.width / stage.scale) - (stage.x / stage.scale)) { //spalten                
-                    grid.graphics.moveTo(i, 0 - stage.y / stage.scale).lineTo(i, (bounds.height / stage.scale) - stage.y / stage.scale);
+                let i = Math.floor(main_container.x / (grid_size * main_container.scale)) * -(grid_size);
+                while (i < (bounds.width / main_container.scale) - (main_container.x / main_container.scale)) { //spalten                
+                    grid.graphics.moveTo(i, 0 - main_container.y / main_container.scale).lineTo(i, (bounds.height / main_container.scale) - main_container.y / main_container.scale);
                     i += grid_size;
                 }
-                grid.graphics.setStrokeDash([5, 5], 2 - Math.floor(stage.x / (2 * stage.scale)) * 2).beginStroke("#eee");
-                i = Math.floor(stage.y / (grid_size * stage.scale)) * -grid_size;
-                while (i < (bounds.height / stage.scale) - stage.y / stage.scale) { //zeilen
-                    grid.graphics.moveTo(0 - stage.x / stage.scale, i).lineTo((bounds.width / stage.scale) - stage.x / stage.scale, i);
+                grid.graphics.setStrokeDash([5, 5], 2 - Math.floor(main_container.x / (2 * main_container.scale)) * 2).beginStroke("#eee");
+                i = Math.floor(main_container.y / (grid_size * main_container.scale)) * -grid_size;
+                while (i < (bounds.height / main_container.scale) - main_container.y / main_container.scale) { //zeilen
+                    grid.graphics.moveTo(0 - main_container.x / main_container.scale, i).lineTo((bounds.width / main_container.scale) - main_container.x / main_container.scale, i);
                     i += grid_size;
                 }
-                stage.addChildAt(grid, 0);
+                main_container.addChildAt(grid, 0);
             }
-
-
-
         }
 
 
@@ -284,17 +258,40 @@
             if (!event.primary) { return; }
             mouseMoved = false;
 
-            if (event.nativeEvent.which == 1 && mode === MODE_DRAW) {
-                startpoint = stage.globalToLocal(stage.mouseX, stage.mouseY);
-                startTrackDrawing(startpoint);
+            //console.log(main_container.mouseX + "/" + main_container.mouseY);
+
+            let hittest = getHitTest();
+
+            /*  if (hittest != null) {
+                 console.log(hittest.name);
+             } */
+
+            if (event.nativeEvent.which == 1 && mode === MODE_EDIT && (hittest == null || hittest.name == "track")) {
+                main_container.addEventListener("main_containermousemove", handleMouseMove);
+                startTrackDrawing();
+                mouseAction = MOUSE_DRAW;
             }
 
-            stage.addEventListener("stagemousemove", handleMouseMove);
+            if (event.nativeEvent.which == 3) {
+                main_container.addEventListener("main_containermousemove", handleMouseMove);
+                mouseAction = MOUSE_SCROLL;
+            }
         }
 
-        function startTrackDrawing(startpoint) {
+        function getHitTest() {
+            for (let i = 0; i < main_container.numChildren; i++) {
+                let child = main_container.getChildAt(i);
+                var pt = child.globalToLocal(main_container.mouseX, main_container.mouseY);
+                if (main_container.mouseInBounds && child.hitTest(pt.x, pt.y) && child.name != "grid")
+                    return child;
+            }
+            return null;
+        }
+
+        function startTrackDrawing() {
+            startpoint = main_container.globalToLocal(main_container.mouseX, main_container.mouseY);
             drawingCanvas = new createjs.Shape();
-            stage.addChild(drawingCanvas);
+            main_container.addChild(drawingCanvas);
             drawingCanvas.graphics.c().setStrokeStyle(stroke).beginStroke(color).moveTo(startpoint.x, startpoint.y);
         }
 
@@ -302,16 +299,14 @@
             if (!event.primary) { return; }
             mouseMoved = true;
 
-            if (event.nativeEvent.which == 1 && mode === MODE_DRAW) {
-                let p = stage.globalToLocal(stage.mouseX, stage.mouseY);
+            if (mouseAction === MOUSE_DRAW) {
+                let p = main_container.globalToLocal(main_container.mouseX, main_container.mouseY);
                 drawingCanvas.graphics.lineTo(p.x, p.y);
             }
-            else if (event.nativeEvent.which == 3) {
-                stage.x += event.nativeEvent.movementX;
-                stage.y += event.nativeEvent.movementY;
-                drawGrid(stage);
-                //console.log("scroll: " + stage.x + "/" + stage.y);
-
+            else if (mouseAction === MOUSE_SCROLL) {
+                main_container.x += event.nativeEvent.movementX;
+                main_container.y += event.nativeEvent.movementY;
+                drawGrid(main_container);
             }
 
             stage.update();
@@ -319,97 +314,60 @@
 
         function handleMouseUp(event) {
             if (!event.primary) { return; }
-            stage.removeEventListener("stagemousemove", handleMouseMove);
-            if (event.nativeEvent.which == 1) {
-                if (mode === MODE_DRAW) {
-                    stage.removeChild(drawingCanvas);
-                    stage.clear();
+            main_container.removeEventListener("main_containermousemove", handleMouseMove);
 
-                    let p1 = startpoint;
-                    let p2 = stage.globalToLocal(stage.mouseX, stage.mouseY);
+            if (mouseAction === MOUSE_DRAW) {
+                main_container.removeChild(drawingCanvas);
+                main_container.clear();
 
-                    if (Math.abs(p1.x - p2.x) >= grid_size || Math.abs(p1.y - p2.y) >= grid_size) {
+                let p1 = startpoint;
+                let p2 = main_container.globalToLocal(main_container.mouseX, main_container.mouseY);
 
-                        let diagonal = (Math.abs(p1.x - p2.x) / Math.abs(p1.y - p2.y)) < 4;
-                        if (diagonal) {
-                            p2.x = startpoint.x + Math.abs(p2.y - startpoint.y) * ((startpoint.x > p2.x) ? -1 : 1);
-                        }
-                        else
-                            p2.y = startpoint.y;
+                if (Math.abs(p1.x - p2.x) >= grid_size || Math.abs(p1.y - p2.y) >= grid_size) {
 
-                        p1.y = Math.round(p1.y / grid_size) * grid_size;
-                        p1.x = Math.round(p1.x / grid_size) * grid_size;
-
-                        p2.y = Math.round(p2.y / grid_size) * grid_size;
-                        p2.x = Math.round(p2.x / grid_size) * grid_size;
-
-                        if (p1.x - p2.x != 0) {
-                            createTrack(p1, p2);
-                            save();
-                        }
+                    let diagonal = (Math.abs(p1.x - p2.x) / Math.abs(p1.y - p2.y)) < 4;
+                    if (diagonal) {
+                        p2.x = startpoint.x + Math.abs(p2.y - startpoint.y) * ((startpoint.x > p2.x) ? -1 : 1);
                     }
-                    stage.update();
-                    connection = null;
-                } else if (mode === MODE_EDIT_SIGNALS && !mouseMoved) {
-                    let p1 = stage.globalToLocal(stage.mouseX, stage.mouseY);
-                    let hittest = stage.getObjectUnderPoint(stage.mouseX, stage.mouseY);
-                    if (hittest == null || hittest.name == "grid") {
-                        createSignal(p1);
-                        stage.update();
+                    else
+                        p2.y = startpoint.y;
+
+                    p1.y = Math.round(p1.y / grid_size) * grid_size;
+                    p1.x = Math.round(p1.x / grid_size) * grid_size;
+
+                    p2.y = Math.round(p2.y / grid_size) * grid_size;
+                    p2.x = Math.round(p2.x / grid_size) * grid_size;
+
+                    if (p1.x - p2.x != 0) {
+                        createTrack(p1, p2);
+                        save();
                     }
                 }
+                stage.update();
+                connection = null;
+            } else if (mode === MODE_EDIT && !mouseMoved) {
+                let p1 = main_container.globalToLocal(main_container.mouseX, main_container.mouseY);
+                let hittest = main_container.getObjectUnderPoint(main_container.mouseX, main_container.mouseY);
+
             }
+
+
+            mouseAction = MOUSE_NONE;
         }
 
         function createTrack(p1, p2) {
-            let l = new createjs.Shape();
-            stage.addChild(l);
-            l.graphics.setStrokeStyle(stroke, "round").beginStroke("#000000").moveTo(p1.x, p1.y).lineTo(p2.x, p2.y);
-            tracks.push(new track(l, p1, p2));
+            let track = new trackShape(p1, p2, main_container);
+            track.drawTrack();
+            tracks.push(track);
         }
 
-        function newSignal(type, config, param) {
-            let classesMapping = {
-                Ks,
-                Hv,
-                Hv77,
-                Hl
-            };
-            let s = new classesMapping[type](config, param);
-            s.init();
-            return s;
-        }
 
-        function createSignal(p1) {
-            let type = "Hv";
-            let param = { verwendung: "E", hp: true, vr: true }
-            let s = newSignal(type, null, param);
-            s.uuid = uuidv4();
-            let container = new createjs.Container();
-            container.name = s.uuid;
-            container.mouseChildren = false;
-            stage.addChild(container);
-            container.addEventListener("click", (e) => {
-                if (mode == MODE_EDIT_SIGNALS && !mouseMoved) {
-                    e.currentTarget.rotation += 180;
-                    stage.update();
-                }
-            })
-            container.on("pressmove", function (evt) {
-                if (mode == MODE_EDIT_SIGNALS) {
-                    let p = stage.globalToLocal(stage.mouseX, stage.mouseY);
-                    evt.target.x = p.x;
-                    evt.target.y = p.y;
-                    stage.update();
-                }
-            });
 
-            s.buildAndRepaint(container);//, position: p1, scale: 1, rotation: 0 });
-            container.scale = 0.1;
-            container.rotation = 270;
-            container.x = p1.x;
-            container.y = p1.y;
-            signals.push(s);
+        function addSignal2Canvas(s) {
+            /* let signal = new signalShape(main_container.globalToLocal(main_container.canvas.width / 2, main_container.canvas.height / 2), s, main_container);
+            signal.drawSignal();
+            signals.push(signal);
+            stage.update(); */
         }
 
         function replacer(key, value) {
@@ -423,15 +381,15 @@
             return JSON.stringify({
                 tracks: tracks,
                 signals: signals,
-                version: 0.12,
-                zoom: stage.scale,
-                scrollX: stage.x,
-                scrollY: stage.y
+                version: 0.13,
+                zoom: main_container.scale,
+                scrollX: main_container.x,
+                scrollY: main_container.y
             }, replacer);
         }
 
         function save() {
-            localStorage.setItem("last1", getSaveString());
+            //localStorage.setItem("last1", getSaveString());
         }
 
         function loadRecent() {
@@ -444,10 +402,10 @@
 
         function loadFromJson(json) {
             let loaded = JSON.parse(json);
-            if (loaded.version >= 0.12) {
-                stage.x = loaded.scrollX;
-                stage.y = loaded.scrollY;
-                stage.scale = loaded.zoom;
+            if (loaded.version >= 0.13) {
+                main_container.x = loaded.scrollX;
+                main_container.y = loaded.scrollY;
+                main_container.scale = loaded.zoom;
                 loaded.tracks.forEach(s => {
                     createTrack(s._startPnt, s._endPnt);
                 });
@@ -485,11 +443,7 @@
             <button id="btnImage" type="button" class="btn btn-secondary btn-sm" title="Ansicht als Bild herunterladen">
                 <i class="bi bi-camera"></i>
             </button>
-<<<<<<< HEAD
             <button id="btnSignal" type="button" class="btn btn-secondary btn-sm" data-bs-container="body"
-=======
-            <button id="btnSignal" type="button" data-mode="3" class="btn btn-secondary btn-sm" data-bs-container="body"
->>>>>>> 83c7b6d02e983e5b3e5556c3f35c8a1b255b2305
                 data-bs-placement="bottom">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
                     class="bi bi-stoplights" viewBox="0 0 16 16">
@@ -505,38 +459,7 @@
         </div>
     </div>
 
-<<<<<<< HEAD
-    <div id="NewSignalPlaceholder"></div>
-=======
-    <div class="visually-hidden">
-        <div id="test">
-            <div class="btn-group" role="group" style="width: 20rem;">
-                <button id="btnModusHvKompakt" type="button" class="btn btn-secondary btn-sm active">HV Kompakt</button>
-                <button id="btnModusHv77" type="button" class="btn btn-secondary btn-sm">HV Bauj.77</button>
-                <button id="btnModusKs" type="button" class="btn btn-secondary btn-sm">KS</button>
-                <button id="btnModusHl" type="button" class="btn btn-secondary btn-sm">HL</button>
-            </div>
-        </div>
-        <div id="test2">
 
-            <div class="btn-group" role="group" style="width: 20rem;">
-                <button type="button" class="btn btn-secondary btn-sm">Vsig</button>
-                <button type="button" class="btn btn-secondary btn-sm active">Esig</button>
-                <button type="button" class="btn btn-secondary btn-sm">Zsig</button>
-                <button type="button" class="btn btn-secondary btn-sm">Asig</button>
-                <button type="button" class="btn btn-secondary btn-sm">BKsig</button>
-                <button type="button" class="btn btn-secondary btn-sm">Sbk</button>
-            </div>
-
-            <div class="form-check form-switch" style="padding-left: 3rem; padding-top: 0.2rem;">
-                <input class="form-check-input" type="checkbox" value="" id="flexCheckDefault">
-                <label class="form-check-label" for="flexCheckDefault">
-                    mit Vorsignalisierung
-                </label>
-            </div>
-        </div>
-    </div>
->>>>>>> 83c7b6d02e983e5b3e5556c3f35c8a1b255b2305
 
 
 

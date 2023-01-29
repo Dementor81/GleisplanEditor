@@ -1,0 +1,37 @@
+{
+  "meta": {
+    "version": "0.6.7"
+  },
+  "savePath": "/home/marcus/code/bahnhof/Hv77 simple/ready",
+  "images": [],
+  "folders": [
+    "/home/marcus/code/bahnhof/Hv77 simple/Zs3v"
+  ],
+  "packOptions": {
+    "textureName": "zs3v",
+    "textureFormat": "png",
+    "removeFileExtension": true,
+    "prependFolderName": false,
+    "base64Export": false,
+    "tinify": false,
+    "tinifyKey": "",
+    "scale": 1,
+    "filter": "none",
+    "exporter": "custom",
+    "fileName": "pack-result",
+    "savePath": "/home/marcus/code/bahnhof/Hv77 simple/ready",
+    "width": 2048,
+    "height": 2048,
+    "fixedSize": false,
+    "powerOfTwo": false,
+    "padding": 0,
+    "extrude": 0,
+    "allowRotation": false,
+    "allowTrim": true,
+    "trimMode": "trim",
+    "alphaThreshold": "0",
+    "detectIdentical": true,
+    "packer": "MaxRectsBin",
+    "packerMethod": "BestShortSideFit"
+  }
+}
