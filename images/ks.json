@@ -1,0 +1,13 @@
+[ 
+{"signal":"basis","src":"ks","sourceRect":{"x":0,"y":0,"width":73,"height":310},"pos":
+        [{"left":3,"top":4}]
+    },
+
+{"signal":"ks1","src":"ks","sourceRect":{"x":0,"y":310,"width":12,"height":15},"pos":
+        [{"left":14,"top":56}]
+    },
+
+{"signal":"hp0","src":"ks","sourceRect":{"x":0,"y":325,"width":12,"height":14},"pos":
+        [{"left":14,"top":40}]
+    }
+]

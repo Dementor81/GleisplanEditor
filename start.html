@@ -19,8 +19,9 @@
         crossorigin="anonymous"></script>
     <script src="https://code.jquery.com/jquery-3.6.3.min.js"></script>
     <script src="https://code.createjs.com/1.0.0/createjs.min.js"></script>
-
-
+    <script src="code/preLoader.js"></script> 
+    <script src="code/signaling.js"></script>
+       
     <script src="tools.js"></script>
     <script src="track.js?02"></script>
 
@@ -63,6 +64,8 @@
         var tracks = [];
         var signals = [];
 
+        var signalTemplates = {}
+
         $(() => { init(); });
 
         function create_buttonGroup(items) {
@@ -90,6 +93,10 @@
         }
 
         function init() {
+            pl = new preLoader("images");
+            initSignals();
+
+
 
             canvas = document.getElementById("myCanvas");
             stage = new createjs.Stage(canvas);
@@ -355,6 +362,7 @@
 
             if (mouseAction === MOUSE_DND_SIGNAL) {
                 overlay_container.removeAllChildren();
+                addSignal2Canvas(signalTemplates.ks);
                 stage.update();
             } else if (mouseAction === MOUSE_DRAW) {
                 main_container.removeChild(drawingCanvas);
@@ -404,10 +412,10 @@
 
 
         function addSignal2Canvas(s) {
-            /* let signal = new signalShape(main_container.globalToLocal(main_container.canvas.width / 2, main_container.canvas.height / 2), s, main_container);
+            let signal = new signalShape(main_container.globalToLocal(stage.mouseX, stage.mouseY), s, main_container);
             signal.drawSignal();
             signals.push(signal);
-            stage.update(); */
+            stage.update();
         }
 
         function replacer(key, value) {
