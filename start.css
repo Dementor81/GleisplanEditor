@@ -8,8 +8,8 @@ html, body {
 }
 
 #container {
-    display: flex;
-    flex-direction: column;
+    /* display: flex;
+    flex-direction: column; */
     height: 100%;
 }
 
@@ -22,10 +22,31 @@ html, body {
     gap: 0.5rem;
 }
 
-#CanvasContainer {
-    flex-grow: 4;
+#CanvasContainer {    
     overflow: hidden;
+    height: calc(100vh - 3.5rem);    
 }
+
+#sidebar{    
+    height: 100%;
+    position: fixed;
+    width: 0px;
+    overflow-x: hidden;
+    transition: width 0.5s ease;
+}
+
+#myCanvas{
+    transition: margin 0.5s ease;
+  
+}
+
+#sidebar.toggled  {
+    width: 130px;
+}
+
+#myCanvas.toggled  {
+    margin-left: 130px;
+  }
 
 .focus, .btn:focus {
     outline: none !important;
@@ -48,50 +69,6 @@ html, body {
     outline: 0;
     box-shadow: none !important;
 }
-
-#sidebar {
-    background-color: rgb(187, 187, 187);
-    top:3.5rem;
-    border-radius: 4px;
-    margin: 2rem;
-    width: 26rem;
-    left: auto;
-    height: 40rem;
-    z-index: 0;
-}
-
-#sidebar .offcanvas-header{
-    color: #707070;
-    padding: 0px;
-    padding-bottom: 1rem;
-}
-
-#sidebar .offcanvas-header .btn-close{
-    position: absolute;
-    right: 0px;
-}
-
-#sidebar .offcanvas-body{
-    padding-top: 0px;   
-}
-
-#sidebar canvas {
-    height: 560px;
-    margin-top: -50px;
-    z-index: -99;
-}
-
-#sidebarTabbar{
-    width:100%;
-}
-
-#sidebar .card {
-    width: 10rem;
-    min-height: auto;
-    border: none;
-    cursor: pointer;
-}
-
 
 .list-group-item {
     padding: 10px;

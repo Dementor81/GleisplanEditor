@@ -1,8 +1,9 @@
 'use strict';
 
 class preLoader {
-    constructor(basefolder) {
+    constructor(basefolder) {        
         this._basefolder = basefolder;
+        if(basefolder.length > 0) this._basefolder += "/";
         this._loaderDic = new Map();
         this._loadedItems = 0;
         this.onProgress = (progress) => { };
@@ -14,11 +15,8 @@ class preLoader {
 
 
     add(signal) {
-        return new Promise((resolve, reject) => {
-            let file = this._basefolder;
-            if(file.length > 0) file += "/";
-            file += signal + ".json";
-            preLoader.getJson(file + "?" + VERSION).then((imgCatalog) => {
+        return new Promise((resolve, reject) => {            
+            preLoader.getJson(this._basefolder + signal + ".json" + "?" + VERSION).then((imgCatalog) => {
                 let i = 0;
                 let img;
                 while (i < imgCatalog.length) {
@@ -30,7 +28,7 @@ class preLoader {
                     this._loaderDic.set(img.id, img);
                     //this._loadQueue.loadFile(img.src, false, signal + "/");
                 }
-                this._loadQueue.loadManifest(imgCatalog, false, signal + "/");
+                this._loadQueue.loadManifest(imgCatalog, false, this._basefolder);
                 resolve();
             });
         });
@@ -38,7 +36,9 @@ class preLoader {
 
     start() {
         return new Promise((resolve, reject) => {
-            this._loadQueue.addEventListener("complete", () => { console.log("preload done "); resolve() });
+            this._loadQueue.addEventListener("error", (e) => { console.log(e.title + ":" + e.data.id); });
+            this._loadQueue.addEventListener("fileload", () => { console.log("file loaded"); });
+            this._loadQueue.addEventListener("complete", () => { console.log("preload done "); resolve(); });
             this._loadQueue.setPaused(false);
         });
     }

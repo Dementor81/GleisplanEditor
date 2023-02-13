@@ -3,11 +3,19 @@
         [{"left":3,"top":4}]
     },
 
-{"signal":"ks1","src":"ks","sourceRect":{"x":0,"y":310,"width":12,"height":15},"pos":
+{"signal":"wrw","src":"ks","sourceRect":{"x":0,"y":310,"width":6,"height":85},"pos":
+        [{"left":59,"top":177}]
+    },
+
+{"signal":"aus_ks1ks2","src":"ks","sourceRect":{"x":0,"y":395,"width":30,"height":14},"pos":
+        [{"left":5,"top":56}]
+    },
+
+{"signal":"ks1","src":"ks","sourceRect":{"x":6,"y":310,"width":12,"height":15},"pos":
         [{"left":14,"top":56}]
     },
 
-{"signal":"hp0","src":"ks","sourceRect":{"x":0,"y":325,"width":12,"height":14},"pos":
+{"signal":"hp0","src":"ks","sourceRect":{"x":6,"y":325,"width":12,"height":14},"pos":
         [{"left":14,"top":40}]
     }
 ]

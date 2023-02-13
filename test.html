@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="de">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta http-equiv="Cache-control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <link rel="shortcut icon" type="image/ico" href="favicon.ico" />
+    <title>Gleisplan</title>
+    <link rel="stylesheet" href="start.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-GLhlTQ8iRABdZLl6O3oVMWSktQOp6b7In1Zl3/Jr59b6EGGoI1aFkw7cmDA6j6gD" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.5.0/font/bootstrap-icons.css">
+
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-w76AqPfDkMBDXo30jS1Sgez6pr3x5MlQ1ZAGC+nuZB+EYdgRZgiwxhTBTkF7CXvN"
+        crossorigin="anonymous"></script>
+    <script src="https://code.jquery.com/jquery-3.6.3.min.js"></script>
+    <script src="https://code.createjs.com/1.0.0/createjs.min.js"></script>
+    <script src="code/preLoader.js"></script>
+    <script src="code/signaling.js"></script>
+
+    <script src="tools.js"></script>
+    <script src="code/track.js?02"></script>
+
+
+    <style type="text/css">
+
+    </style>
+    <script>
+
+        'use strict';
+
+        $(() => { init(); });
+
+
+        function init() {
+            thing.addEventListener("dragstart", (ev) => {
+                ev.dataTransfer.setData("text/plain", ev.target.id);
+                const img = new Image();
+                document.body.append(img);
+                img.src = "signal.png";
+                ev.dataTransfer.setDragImage(img, 10, 10);
+            })
+        }
+
+
+
+
+    </script>
+</head>
+
+<body>
+    <div id="thing" style="width: 50px; height: 50px;" class="bg-secondary rounded" draggable="true"></div>
+
+
+</body>
+
+</html>

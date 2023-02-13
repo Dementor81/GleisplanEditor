@@ -5,18 +5,28 @@
   "savePath": "/home/marcus/code/bahnhof/images",
   "images": [
     {
+      "name": "aus_ks1ks2.png",
+      "path": "/home/marcus/code/bahnhof/raw signal images/ks/aus_ks1ks2.png",
+      "folder": ""
+    },
+    {
       "name": "basis.png",
-      "path": "/home/marcus/code/bahnhof/images/ks/basis.png",
+      "path": "/home/marcus/code/bahnhof/raw signal images/ks/basis.png",
       "folder": ""
     },
     {
       "name": "hp0.png",
-      "path": "/home/marcus/code/bahnhof/images/ks/hp0.png",
+      "path": "/home/marcus/code/bahnhof/raw signal images/ks/hp0.png",
       "folder": ""
     },
     {
       "name": "ks1.png",
-      "path": "/home/marcus/code/bahnhof/images/ks/ks1.png",
+      "path": "/home/marcus/code/bahnhof/raw signal images/ks/ks1.png",
+      "folder": ""
+    },
+    {
+      "name": "wrw.png",
+      "path": "/home/marcus/code/bahnhof/raw signal images/ks/wrw.png",
       "folder": ""
     }
   ],
@@ -45,7 +55,7 @@
     "trimMode": "trim",
     "alphaThreshold": "0",
     "detectIdentical": true,
-    "packer": "MaxRectsBin",
-    "packerMethod": "BestShortSideFit"
+    "packer": "OptimalPacker",
+    "packerMethod": "Automatic"
   }
 }

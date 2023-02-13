@@ -1,32 +1,35 @@
 'use strict';
 
-class trackShape extends createjs.Shape {
-    _startPnt = null;
-    _endPnt = null;
-    _stage = null;
+class trackShape {
+    start = null;
+    end = null;
+    deg = null;
 
-    constructor(start, end, stage) {
-        super();
-        this._stage = stage;
-        stage.addChild(this);
-        this.name = "track";
+    constructor(start, end) {
+        
         if (start.x < end.x) {
-            this._startPnt = start;
-            this._endPnt = end;
+            this.start = start;
+            this.end = end;
         }
         else {
-            this._startPnt = end;
-            this._endPnt = start;
+            this.start = end;
+            this.end = start;
         }
+
+        let dx = (this.end.x - this.start.x); 
+        let dy = (this.start.y - this.end.y); // start ende vertauscht, da das Koordinatensystem gespiegelt arbeitet
+        this.deg = Math.atan(dy/dx) * (180/Math.PI);;
     }
 
-    drawTrack() {
-        this.graphics.setStrokeStyle(stroke, "round").beginStroke("#000000").moveTo(this._startPnt.x, this._startPnt.y).lineTo(this._endPnt.x, this._endPnt.y);
+    draw(container) {
+        let shape = new createjs.Shape();
+        container.addChild(shape);
+        shape.graphics.setStrokeStyle(stroke, "round").beginStroke("#000000").moveTo(this.start.x, this.start.y).lineTo(this.end.x, this.end.y);
     }
 
     hitTest(mx, my) {
-        let p1 = this._startPnt;
-        let p2 = this._endPnt;
+        let p1 = this.start;
+        let p2 = this.end;
 
         var p3 = {
             x: mx,
@@ -65,46 +68,20 @@ class trackShape extends createjs.Shape {
     }
 }
 
-class signalShape extends createjs.Container {
-    _signal = null;
-    _container = null;
-    _position = null;
+class signalShape {
+    _template = null;
 
-    constructor(p, signal, container) {
-        super();
+    constructor(template) {
+        this._template = template;
         this._signalStellung = {};
-
-        this._position = p;
-        this._signal = signal;
-        this.name = "signal";
-        this._container = container;
-        this._container.addChild(this);
-        this.mouseChildren = false;
-
-        /* this.on("pressmove", function (evt) {
-            if (mode == MODE_EDIT) {
-                let p = this._stage.globalToLocal(this._stage.mouseX, this._stage.mouseY);
-                
-                this.x = p.x + this.offset.x;
-                this.y = p.y + this.offset.y;
-                this._stage.update();
-            }
-        });
-
-        this.on("mousedown", function (evt) {
-			this.offset = {x: this.x - evt.stageX, y: this.y - evt.stageY};
-		}); */
-
-        /* this.scale = 0.1;
-        this.rotation = 270; */
-        this.x = this._position.x;
-        this.y = this._position.y;
-
+        this._rendering = {};
     }
 
-    drawSignal() {
-        for (let v in this._signal.elements) {
-            let x = this._signal.elements[v]
+    draw(container) {
+        this._rendering.container = container;
+
+        for (let v in this._template.elements) {
+            let x = this._template.elements[v]
             if (x instanceof VisualElement) {
                 if (x.isEnabled(this) && x.isAllowed(this))
                     this.addImage(x.image, { blinkt: x.blinkt, posIndex: x.pos });
@@ -112,11 +89,13 @@ class signalShape extends createjs.Container {
                 //keine Ahnung was hier passieren soll
             }
         }
+
+        this._rendering.container = null;
     }
 
     addImage(texture_name, { index = -1, posIndex = 0, name = null, blinkt = false, offset = 0, nextGen = false } = {}) {
         if (texture_name == null || texture_name == "") throw "kein Signal übergeben";
-        let texture = pl.getImage(this._class.toLowerCase(), texture_name);
+        let texture = pl.getImage(this._template.id, texture_name);
         if (texture != null) {
 
             let param = { name: name != null ? name : texture_name, x: 0, y: 0 };
@@ -127,21 +106,12 @@ class signalShape extends createjs.Container {
             }
 
             if (texture.meta.hasOwnProperty("pos")) {
-                if (posIndex == null || posIndex > texture.meta.pos.length - 1) {
+                //für zs3/zs3v, werde ich hier nicht brauchen
+                /* if (posIndex == null || posIndex > texture.meta.pos.length - 1) {
                     posIndex = texture.meta.pos.length - 1;
                     console.log(texture_name + " posindex " + posIndex + " zu groß");
-                }
+                } */
                 let pos = texture.meta.pos[posIndex == null ? 0 : posIndex];
-                if (!nextGen) {
-                    let ref;
-                    if (pos.hasOwnProperty("ref"))
-                        ref = this._temp.container.getChildByName(pos.ref);
-                    else ref = this._temp.container.getChildByName("basis");
-                    if (ref != null) {
-                        param.x = ref.x;
-                        param.y = ref.y;
-                    }
-                }
 
                 if (pos.hasOwnProperty("top"))
                     param.y += pos.top;
@@ -150,16 +120,17 @@ class signalShape extends createjs.Container {
                     param.x += pos.left;
             }
 
-            if (index != -1) {
+            //für zs3/zs3v, werde ich hier nicht brauchen
+            /* if (index != -1) {
                 if (!texture.meta.hasOwnProperty("width")) throw "sprite sheet needs a width";
                 let width = texture.meta.width;
                 param.sourceRect = new createjs.Rectangle(width * index, 0, width, texture.img.height);
-            }
+            } */
 
             param.x += offset;
 
             let bmp = new createjs.Bitmap(texture.img).set(param);
-            this._temp.container.addChild(bmp);
+            this._rendering.container.addChild(bmp);
 
             if (blinkt) {
                 createjs.Tween.get(bmp, { loop: true })
