@@ -1,12 +1,19 @@
 'use strict';
 
 class trackShape {
+    static FromObject(o){
+        let t = new trackShape(o.start,o.end);
+        t.signals = o.signals;
+        return t;
+    }
+
     start = null;
     end = null;
     deg = null;
+    signals = [];
 
     constructor(start, end) {
-        
+
         if (start.x < end.x) {
             this.start = start;
             this.end = end;
@@ -16,15 +23,20 @@ class trackShape {
             this.end = start;
         }
 
-        let dx = (this.end.x - this.start.x); 
+        let dx = (this.end.x - this.start.x);
         let dy = (this.start.y - this.end.y); // start ende vertauscht, da das Koordinatensystem gespiegelt arbeitet
-        this.deg = Math.atan(dy/dx) * (180/Math.PI);;
+        this.deg = Math.atan(dy / dx) * (180 / Math.PI);
     }
 
     draw(container) {
         let shape = new createjs.Shape();
         container.addChild(shape);
         shape.graphics.setStrokeStyle(stroke, "round").beginStroke("#000000").moveTo(this.start.x, this.start.y).lineTo(this.end.x, this.end.y);
+    }
+
+    AddSignal(km, signal) {
+        let i = this.signals.findIndex((item) => km > item.km);
+        this.signals.splice(i+1, 0, { km: km, signal: signal });        
     }
 
     hitTest(mx, my) {
@@ -69,16 +81,23 @@ class trackShape {
 }
 
 class signalShape {
+    static FromObject(o){
+        let s = new signalShape(signalTemplates[o._template]);
+        s._signalStellung = o._signalStellung;
+        return s;
+    }
+
+
     _template = null;
 
     constructor(template) {
         this._template = template;
         this._signalStellung = {};
-        this._rendering = {};
+
     }
 
-    draw(container) {
-        this._rendering.container = container;
+    draw(c) {
+        this._rendering = { container: c };
 
         for (let v in this._template.elements) {
             let x = this._template.elements[v]
@@ -90,7 +109,7 @@ class signalShape {
             }
         }
 
-        this._rendering.container = null;
+        this._rendering = null;
     }
 
     addImage(texture_name, { index = -1, posIndex = 0, name = null, blinkt = false, offset = 0, nextGen = false } = {}) {

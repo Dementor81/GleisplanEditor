@@ -76,6 +76,8 @@ class VisualElement {
         this.#_pos = v;
     }
 
+    
+
     /*    static disableAllOther(signalBilder, gruppe) {
            for (let v in signalBilder) {
                let x = signalBilder[v]
@@ -115,6 +117,10 @@ class SignalTemplate {
         elements.forEach(element => {
             this.elements[element.id ] = element;
         });
+    }
+
+    stringify(){
+        return this.id;
     }
 
 }

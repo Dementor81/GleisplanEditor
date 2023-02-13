@@ -31,7 +31,7 @@
     </style>
     <script>
         const VERSION = '0.43'
-        const EXCLUDE_JSON = ["_shape", "_signaldavor", "_signaldanach", "_canvas", "_main_container", "_position", "_imgCatalog", "_signalbilder"];
+        const EXCLUDE_JSON = [];
 
         const MODE_PLAY = 1;
         const MODE_EDIT = 2;
@@ -322,6 +322,7 @@
 
             let c = new createjs.Container();
             c.name = "signal";
+            c.signal = signal;
 
             c.scale = signale_scale;
             mouseAction.container.addChild(c);
@@ -331,10 +332,10 @@
             c.regX = sig_bounds.width;
             c.regY = sig_bounds.height;
 
-            let circle = new createjs.Shape();
+            /* let circle = new createjs.Shape();
             circle.name = "circle";
             circle.graphics.setStrokeStyle(1).beginStroke("#e00").drawCircle(0, 0, grid_size / 2);
-            mouseAction.container.addChild(circle);
+            mouseAction.container.addChild(circle); */
             stage.update();
         }
 
@@ -397,7 +398,17 @@
             if (mouseAction.type === MOUSE_ACTION.DND_SIGNAL) {
                 overlay_container.removeChild(mouseAction.container);
                 if (mouseAction.hit_track?.hit) {
-                    addSignal2Canvas(signalTemplates.ks, mouseAction.hit_track.point, mouseAction.hit_track.track, mouseAction.hit_track.above);
+
+                    let c = mouseAction.container.getChildByName("signal");
+                    mouseAction.container.removeChild(c);
+
+                    c.x = mouseAction.container.x;
+                    c.y = mouseAction.container.y;
+                    main_container.addChild(c);
+
+                    mouseAction.hit_track.track.AddSignal(mouseAction.hit_track.km, c.signal);
+                    save();
+                    //addSignal2Canvas(signalTemplates.ks, mouseAction.hit_track.point, mouseAction.hit_track.track, mouseAction.hit_track.above);
                 }
                 stage.update();
             } else if (mouseAction.type === MOUSE_ACTION.DRAW) {
@@ -475,16 +486,20 @@
         }
 
         function replacer(key, value) {
-            if (EXCLUDE_JSON.includes(key))
-                return undefined
-            else
-                return value;
+            if (value != null && typeof value.stringify === "function") {
+                return value.stringify();
+            } else {
+                if (EXCLUDE_JSON.includes(key))
+                    return undefined
+                else
+                    return value;
+            }
         }
 
         function getSaveString() {
             return JSON.stringify({
                 tracks: tracks,
-                signals: signals,
+                //signals: signals,
                 version: 0.13,
                 zoom: main_container.scale,
                 scrollX: main_container.x,
@@ -493,26 +508,38 @@
         }
 
         function save() {
-            //localStorage.setItem("last1", getSaveString());
+            localStorage.setItem("bahnhof_last1", getSaveString());
         }
 
         function loadRecent() {
-            let x = localStorage.getItem('last1');
+            let x = localStorage.getItem('bahnhof_last1');
             if (x != null) {
                 loadFromJson(x);
                 stage.update();
             }
         }
 
+        function receiver(key, value) {
+            if (key == "signal")
+                return signalShape.FromObject(value);
+            if (key == "tracks")
+                value.map((item) => {
+                    return trackShape.FromObject(item);
+                })
+
+            return value;
+        }
+
         function loadFromJson(json) {
-            let loaded = JSON.parse(json);
+            let loaded = JSON.parse(json, receiver);
             if (loaded.version >= 0.13) {
                 main_container.x = loaded.scrollX;
                 main_container.y = loaded.scrollY;
                 main_container.scale = loaded.zoom;
-                loaded.tracks.forEach(s => {
-                    createTrack(s._startPnt, s._endPnt);
-                });
+                tracks = loaded.tracks;
+                /* loaded.tracks.forEach(s => {
+                    createTrack(s.start, s.end);
+                }); */
             }
         }
 

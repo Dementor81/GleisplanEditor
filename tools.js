@@ -84,7 +84,8 @@ function LineIsInCircle(line, circle) {
     hit: distanceToCircle <= circle.radius,
     point: closestPointOnLine,
     track: line,
-    above: closestPointOnLine.y > circle.y
+    above: closestPointOnLine.y > circle.y,
+    km: u*lineLength
   };
 
 }
