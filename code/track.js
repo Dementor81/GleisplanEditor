@@ -34,10 +34,10 @@ class trackShape {
         shape.graphics.setStrokeStyle(stroke, "round").beginStroke("#000000").moveTo(this.start.x, this.start.y).lineTo(this.end.x, this.end.y);
     }
 
-    AddSignal(km, signal) {
-        let i = this.signals.findIndex((item) => km > item.km);
-        this.signals.splice(i+1, 0, { km: km, signal: signal });        
-    }
+    AddSignal(position) {
+        let i = this.signals.findIndex((item) => position.km > item.km);
+        this.signals.splice(i+1, 0,position);        
+    } 
 
     hitTest(mx, my) {
         let p1 = this.start;

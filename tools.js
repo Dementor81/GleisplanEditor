@@ -76,17 +76,20 @@ function LineIsInCircle(line, circle) {
       x: line.start.x + u * lineUnitVector.x * lineLength,
       y: line.start.y + u * lineUnitVector.y * lineLength
     };
-  }  
+  }
 
   // Check if the closest point on the line is within the circle
   const distanceToCircle = Math.sqrt(Math.pow(closestPointOnLine.x - circle.x, 2) + Math.pow(closestPointOnLine.y - circle.y, 2));
-  return {
-    hit: distanceToCircle <= circle.radius,
-    point: closestPointOnLine,
-    track: line,
-    above: closestPointOnLine.y > circle.y,
-    km: u*lineLength
-  };
-
+  if (distanceToCircle <= circle.radius)
+    return {
+      point: closestPointOnLine,
+      track: line,
+      above: closestPointOnLine.y > circle.y,
+      km: u * lineLength
+    };
+  return null;
 }
 
+function deg2rad(deg) {
+  return deg * (Math.PI / 180);
+}

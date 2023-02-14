@@ -228,7 +228,7 @@
                 document.addEventListener("mouseup", handleStageMouseUp, { once: true });
 
                 stage.addEventListener("stagemousemove", handleMouseMove);
-                startDragAndDropSignal();
+                startDragAndDropSignal(e.offsetX,e.offsetY);
             });
 
 
@@ -299,38 +299,60 @@
         }
 
         function getHitTest() {
-            /* for (let i = 0; i < main_container.numChildren; i++) {
-                let child = main_container.getChildAt(i);
-                var pt = child.globalToLocal(stage.mouseX, stage.mouseY);
-                if (stage.mouseInBounds && child.hitTest(pt.x, pt.y) && child.name != "grid")
-                    return child;
-            }
-            return null; */
             return stage.getObjectUnderPoint(stage.mouseX, stage.mouseY, 1);
         }
 
-        function startDragAndDropSignal() {
-            mouseAction.container = new createjs.Container();
-            mouseAction.container.name = "dnd";
-            mouseAction.container.x = stage.mouseX;
-            mouseAction.container.y = stage.mouseY;
-            overlay_container.addChild(mouseAction.container);
+        function findTrack() {
+            let local_point = main_container.globalToLocal(stage.mouseX, stage.mouseY);
+            let circle = { x: local_point.x, y: local_point.y, radius: grid_size / 2 };
+            let r;
+            for (let index = 0; index < tracks.length; index++) {
+                const track = tracks[index];
+                if (r = LineIsInCircle(track, circle))
+                    return r;
+            }
+        }
 
-
-            let signal = new signalShape(mouseAction.template);
-            signal._template.elements.hp0.setEnabled(signal, true);
-
+        function createSignalContainer(parent_container, signal) {
             let c = new createjs.Container();
             c.name = "signal";
             c.signal = signal;
 
             c.scale = signale_scale;
-            mouseAction.container.addChild(c);
+            parent_container.addChild(c);
 
             signal.draw(c);
             let sig_bounds = c.getBounds();
             c.regX = sig_bounds.width;
             c.regY = sig_bounds.height;
+
+            return c;
+        }
+
+        function bindSignal2Track(c_sig, track, pos) {
+
+            c_sig.x = Math.cos(deg2rad(track.deg)) * pos.km + track.start.x;
+            c_sig.y = Math.sin(deg2rad(track.deg)) * -pos.km + track.start.y;
+
+
+            if (pos.above) {
+                c_sig.rotation = 270 - track.deg;
+                c_sig.y -= Math.cos(deg2rad(track.deg)) * (grid_size / 2);
+                c_sig.x -= Math.sin(deg2rad(track.deg)) * (grid_size / 2);
+            }
+            else {
+                c_sig.rotation = 90 - track.deg;
+                c_sig.y += Math.cos(deg2rad(track.deg)) * (grid_size / 2);
+                c_sig.x += Math.sin(deg2rad(track.deg)) * (grid_size / 2);
+            }
+        }
+
+        function startDragAndDropSignal(mouseX,mouseY) {
+            let signal = new signalShape(mouseAction.template);
+            signal._template.elements.hp0.setEnabled(signal, true);
+            mouseAction.container = createSignalContainer(overlay_container, signal);
+            mouseAction.container.x = mouseX;
+            mouseAction.container.y = mouseY;
 
             /* let circle = new createjs.Shape();
             circle.name = "circle";
@@ -351,32 +373,23 @@
             mouseMoved = true;
             if (mouseAction == null) return;
             if (mouseAction.type === MOUSE_ACTION.DND_SIGNAL) {
-                let local_point = main_container.globalToLocal(stage.mouseX, stage.mouseY);
-
-                let c_sig = mouseAction.container.getChildByName("signal");
 
                 mouseAction.container.x = stage.mouseX;
                 mouseAction.container.y = stage.mouseY;
-                let circle = { x: local_point.x, y: local_point.y, radius: grid_size / 2 };
-                let found_track = false;
-                c_sig.rotation = 0;
-                mouseAction.hit_track = null;
-                tracks.forEach(track => {
-                    let r = LineIsInCircle(track, circle);
-                    if (r.hit) {
-                        found_track = true;
-                        mouseAction.hit_track = r;
-                        if (r.above) {
-                            c_sig.rotation = 270 - track.deg;
-                            mouseAction.container.y = r.point.y - grid_size / 2;
-                        }
-                        else {
-                            c_sig.rotation = 90 - track.deg;
-                            mouseAction.container.y = r.point.y + grid_size / 2;
-                        }
+
+                
+                mouseAction.hit_track = findTrack();
+                if (mouseAction.hit_track) {
+                    mouseAction.pos = {
+                        km: mouseAction.hit_track.km,
+                        signal: mouseAction.container.signal,
+                        above: mouseAction.hit_track.above,
+                        flipped: false
                     }
-                });
-                //if (!found_track) c.getChildByName("signal").rotation = 0;
+                    bindSignal2Track(mouseAction.container,mouseAction.hit_track.track,mouseAction.pos);
+                } else {
+                    mouseAction.container.rotation = 0;
+                }
             } else if (mouseAction.type === MOUSE_ACTION.DRAW) {
                 let p = main_container.globalToLocal(stage.mouseX, stage.mouseY);
                 drawingCanvas.graphics.lineTo(p.x, p.y);
@@ -397,16 +410,10 @@
             if (mouseAction == null) return;
             if (mouseAction.type === MOUSE_ACTION.DND_SIGNAL) {
                 overlay_container.removeChild(mouseAction.container);
-                if (mouseAction.hit_track?.hit) {
+                if (mouseAction.hit_track) {                                       
+                    main_container.addChild(mouseAction.container);
 
-                    let c = mouseAction.container.getChildByName("signal");
-                    mouseAction.container.removeChild(c);
-
-                    c.x = mouseAction.container.x;
-                    c.y = mouseAction.container.y;
-                    main_container.addChild(c);
-
-                    mouseAction.hit_track.track.AddSignal(mouseAction.hit_track.km, c.signal);
+                    mouseAction.hit_track.track.AddSignal(mouseAction.pos);
                     save();
                     //addSignal2Canvas(signalTemplates.ks, mouseAction.hit_track.point, mouseAction.hit_track.track, mouseAction.hit_track.above);
                 }
@@ -514,7 +521,7 @@
         function loadRecent() {
             let x = localStorage.getItem('bahnhof_last1');
             if (x != null) {
-                loadFromJson(x);
+                //loadFromJson(x);
                 stage.update();
             }
         }
