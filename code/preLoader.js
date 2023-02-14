@@ -13,6 +13,10 @@ class preLoader {
 
     }
 
+    get loaded() {
+        return this._loadQueue.loaded;
+    }
+
 
     add(signal) {
         return new Promise((resolve, reject) => {            

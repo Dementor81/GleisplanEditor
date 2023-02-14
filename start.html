@@ -131,14 +131,14 @@
             stage.on("stagemousedown", handleStageMouseDown);
             stage.on("stagemouseup", handleStageMouseUp);
 
-            /* document.oncontextmenu = function () {
+            document.oncontextmenu = function () {
                 return false;
-            }; */
+            };
             myCanvas.addEventListener('wheel', (event) => {
                 event.preventDefault();
 
-                main_container.scale -= 0.1 * (event.deltaY / Math.abs(event.deltaY));
-                if (main_container.scale < 0.3) main_container.scale = 0.3;
+                stage.scale -= 0.1 * (event.deltaY / Math.abs(event.deltaY));
+                if (stage.scale < 0.3) stage.scale = 0.3;
                 drawGrid(main_container);
                 stage.update();
                 //console.log("scale: " + main_container.scale);
@@ -148,7 +148,7 @@
                 myCanvas.addEventListener('touchstart', (event) => {
                     if (event.touches.length === 1) {
                         let touch = event.touches[0];
-                        startTrackDrawing(main_container.globalToLocal(touch.clientX, touch.clientY));
+                        startTrackDrawing(stage.globalToLocal(touch.clientX, touch.clientY));
                     }
 
 
@@ -165,8 +165,8 @@
 
                         if (previousTouch) {
                             // be aware that these only store the movement of the first touch in the touches array
-                            main_container.x += touch.clientX - previousTouch.clientX;
-                            main_container.y += touch.clientY - previousTouch.clientY;
+                            stage.x += touch.clientX - previousTouch.clientX;
+                            stage.y += touch.clientY - previousTouch.clientY;
 
                             drawGrid(main_container);
                         };
@@ -193,7 +193,7 @@
 
             $("#btnClear").click(() => { tracks = []; main_container.removeAllChildren(); drawGrid(main_container); save(); stage.update(); })
 
-            $("#btnCenter").click(() => { main_container.scale = 1; main_container.x = 0; main_container.y = 0; save(); drawGrid(main_container); stage.update(); })
+            $("#btnCenter").click(() => { stage.scale = 1; stage.x = 0; stage.y = 0; save(); drawGrid(main_container); stage.update(); })
 
             $(btn_test).click((e) => {
                 e.preventDefault();
@@ -228,7 +228,7 @@
                 document.addEventListener("mouseup", handleStageMouseUp, { once: true });
 
                 stage.addEventListener("stagemousemove", handleMouseMove);
-                startDragAndDropSignal(e.offsetX,e.offsetY);
+                startDragAndDropSignal(e.offsetX, e.offsetY);
             });
 
 
@@ -255,18 +255,18 @@
                 let grid = new createjs.Shape();
                 grid.name = "grid";
                 grid.mouseEnabled = false;
-                grid.graphics.c().setStrokeStyle(1, "round").setStrokeDash([5, 5], 2 - Math.floor(main_container.y / (2 * main_container.scale)) * 2).beginStroke("#eee");
+                grid.graphics.c().setStrokeStyle(1, "round").setStrokeDash([5, 5], 2 - Math.floor(stage.y / (2 * stage.scale)) * 2).beginStroke("#eee");
                 let bounds = stage.canvas.getBoundingClientRect();
 
-                let i = Math.floor(main_container.x / (grid_size * main_container.scale)) * -(grid_size);
-                while (i < (bounds.width / main_container.scale) - (main_container.x / main_container.scale)) { //spalten                
-                    grid.graphics.moveTo(i, 0 - main_container.y / main_container.scale).lineTo(i, (bounds.height / main_container.scale) - main_container.y / main_container.scale);
+                let i = Math.floor(stage.x / (grid_size * stage.scale)) * -(grid_size);
+                while (i < (bounds.width / stage.scale) - (stage.x / stage.scale)) { //spalten                
+                    grid.graphics.moveTo(i, 0 - stage.y / stage.scale).lineTo(i, (bounds.height / stage.scale) - stage.y / stage.scale);
                     i += grid_size;
                 }
-                grid.graphics.setStrokeDash([5, 5], 2 - Math.floor(main_container.x / (2 * main_container.scale)) * 2).beginStroke("#eee");
-                i = Math.floor(main_container.y / (grid_size * main_container.scale)) * -grid_size;
-                while (i < (bounds.height / main_container.scale) - main_container.y / main_container.scale) { //zeilen
-                    grid.graphics.moveTo(0 - main_container.x / main_container.scale, i).lineTo((bounds.width / main_container.scale) - main_container.x / main_container.scale, i);
+                grid.graphics.setStrokeDash([5, 5], 2 - Math.floor(stage.x / (2 * stage.scale)) * 2).beginStroke("#eee");
+                i = Math.floor(stage.y / (grid_size * stage.scale)) * -grid_size;
+                while (i < (bounds.height / stage.scale) - stage.y / stage.scale) { //zeilen
+                    grid.graphics.moveTo(0 - stage.x / stage.scale, i).lineTo((bounds.width / stage.scale) - stage.x / stage.scale, i);
                     i += grid_size;
                 }
                 main_container.addChildAt(grid, 0);
@@ -303,7 +303,7 @@
         }
 
         function findTrack() {
-            let local_point = main_container.globalToLocal(stage.mouseX, stage.mouseY);
+            let local_point = stage.globalToLocal(stage.mouseX, stage.mouseY);
             let circle = { x: local_point.x, y: local_point.y, radius: grid_size / 2 };
             let r;
             for (let index = 0; index < tracks.length; index++) {
@@ -347,7 +347,7 @@
             }
         }
 
-        function startDragAndDropSignal(mouseX,mouseY) {
+        function startDragAndDropSignal(mouseX, mouseY) {
             let signal = new signalShape(mouseAction.template);
             signal._template.elements.hp0.setEnabled(signal, true);
             mouseAction.container = createSignalContainer(overlay_container, signal);
@@ -362,7 +362,7 @@
         }
 
         function startTrackDrawing() {
-            startpoint = main_container.globalToLocal(stage.mouseX, stage.mouseY);
+            startpoint = stage.globalToLocal(stage.mouseX, stage.mouseY);
             drawingCanvas = new createjs.Shape();
             main_container.addChild(drawingCanvas);
             drawingCanvas.graphics.c().setStrokeStyle(stroke).beginStroke(color).moveTo(startpoint.x, startpoint.y);
@@ -374,10 +374,12 @@
             if (mouseAction == null) return;
             if (mouseAction.type === MOUSE_ACTION.DND_SIGNAL) {
 
-                mouseAction.container.x = stage.mouseX;
-                mouseAction.container.y = stage.mouseY;
+                let local_point = stage.globalToLocal(stage.mouseX, stage.mouseY);
 
-                
+                mouseAction.container.x = local_point.x;
+                mouseAction.container.y = local_point.y;
+
+
                 mouseAction.hit_track = findTrack();
                 if (mouseAction.hit_track) {
                     mouseAction.pos = {
@@ -386,18 +388,18 @@
                         above: mouseAction.hit_track.above,
                         flipped: false
                     }
-                    bindSignal2Track(mouseAction.container,mouseAction.hit_track.track,mouseAction.pos);
+                    bindSignal2Track(mouseAction.container, mouseAction.hit_track.track, mouseAction.pos);
                 } else {
                     mouseAction.container.rotation = 0;
                 }
             } else if (mouseAction.type === MOUSE_ACTION.DRAW) {
-                let p = main_container.globalToLocal(stage.mouseX, stage.mouseY);
+                let p = stage.globalToLocal(stage.mouseX, stage.mouseY);
                 drawingCanvas.graphics.lineTo(p.x, p.y);
             }
             else if (mouseAction.type === MOUSE_ACTION.SCROLL) {
-                main_container.x += event.nativeEvent.movementX;
-                main_container.y += event.nativeEvent.movementY;
-                drawGrid(main_container);
+                stage.x += event.nativeEvent.movementX;
+                stage.y += event.nativeEvent.movementY;
+                drawGrid();
             }
 
             stage.update();
@@ -406,11 +408,11 @@
         function handleStageMouseUp(event) {
 
             stage.removeEventListener("stagemousemove", handleMouseMove);
-            let p2 = main_container.globalToLocal(stage.mouseX, stage.mouseY);
+            let p2 = stage.globalToLocal(stage.mouseX, stage.mouseY);
             if (mouseAction == null) return;
             if (mouseAction.type === MOUSE_ACTION.DND_SIGNAL) {
                 overlay_container.removeChild(mouseAction.container);
-                if (mouseAction.hit_track) {                                       
+                if (mouseAction.hit_track) {
                     main_container.addChild(mouseAction.container);
 
                     mouseAction.hit_track.track.AddSignal(mouseAction.pos);
@@ -465,7 +467,7 @@
 
 
 
-        function addSignal2Canvas(template, p, track, above) {
+        /* function addSignal2Canvas(template, p, track, above) {
             let signal = new signalShape(template);
             template.elements.hp0.setEnabled(signal, true);
 
@@ -489,7 +491,23 @@
             c.signal = signal;
             main_container.addChild(c);
             signals.push(signal);
+        } */
 
+        function reDrawEverything() {
+            if (!pl.loaded)
+                setTimeout(() => {
+                    reDrawEverything();
+                }, 500);
+            else {
+                tracks.forEach((t) => {
+                    t.draw(main_container);
+                    t.signals.forEach((p) => {
+                        let c = createSignalContainer(main_container, p.signal);
+                        bindSignal2Track(c, t, p);
+                    })
+                })
+                stage.update();
+            }
         }
 
         function replacer(key, value) {
@@ -507,10 +525,10 @@
             return JSON.stringify({
                 tracks: tracks,
                 //signals: signals,
-                version: 0.13,
-                zoom: main_container.scale,
-                scrollX: main_container.x,
-                scrollY: main_container.y
+                version: 0.14,
+                zoom: stage.scale,
+                scrollX: stage.x,
+                scrollY: stage.y
             }, replacer);
         }
 
@@ -519,18 +537,23 @@
         }
 
         function loadRecent() {
-            let x = localStorage.getItem('bahnhof_last1');
-            if (x != null) {
-                //loadFromJson(x);
-                stage.update();
+            try {
+                let x = localStorage.getItem('bahnhof_last1');
+                if (x != null) {
+                    loadFromJson(x);
+
+                }
+            } catch (error) {
+                console.error(error);
             }
+
         }
 
         function receiver(key, value) {
             if (key == "signal")
                 return signalShape.FromObject(value);
             if (key == "tracks")
-                value.map((item) => {
+                return value.map((item) => {
                     return trackShape.FromObject(item);
                 })
 
@@ -539,15 +562,17 @@
 
         function loadFromJson(json) {
             let loaded = JSON.parse(json, receiver);
-            if (loaded.version >= 0.13) {
-                main_container.x = loaded.scrollX;
-                main_container.y = loaded.scrollY;
-                main_container.scale = loaded.zoom;
+            if (loaded.version >= 0.14) {
+                stage.x = loaded.scrollX;
+                stage.y = loaded.scrollY;
+                stage.scale = loaded.zoom;
                 tracks = loaded.tracks;
+                reDrawEverything();
                 /* loaded.tracks.forEach(s => {
                     createTrack(s.start, s.end);
                 }); */
-            }
+            } else
+                console.error(`stored version ${loaded.version} to old`)
         }
 
 
