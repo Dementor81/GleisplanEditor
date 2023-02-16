@@ -1,7 +1,7 @@
-@font-face {
+/* @font-face {
     font-family: "DIN condenced";
     src: url("../signale/font/D-DINCondensed.otf");
-}
+} */
 
 html, body {
     height: 100%;
@@ -22,31 +22,35 @@ html, body {
     gap: 0.5rem;
 }
 
-#CanvasContainer {    
+#CanvasContainer {
     overflow: hidden;
-    height: calc(100vh - 3.5rem);    
+    height: calc(100vh - 3.5rem);
 }
 
-#sidebar{    
+#sidebar {
     height: 100%;
     position: fixed;
     width: 0px;
     overflow-x: hidden;
     transition: width 0.5s ease;
+    
+    flex-direction: column;
+    padding: 0px;
+    gap: 10px;
 }
 
-#myCanvas{
+#myCanvas {
     transition: margin 0.5s ease;
-  
+
 }
 
-#sidebar.toggled  {
+#sidebar.toggled {
     width: 130px;
 }
 
-#myCanvas.toggled  {
+#myCanvas.toggled {
     margin-left: 130px;
-  }
+}
 
 .focus, .btn:focus {
     outline: none !important;
@@ -70,21 +74,45 @@ html, body {
     box-shadow: none !important;
 }
 
-.list-group-item {
-    padding: 10px;
+.accordion-button {
+    font-size: 11pt !important;
+    padding: 0.5rem !important;
 }
 
-.list-group-item-sm{
-    font-size: 0.875rem;
-    line-height: 1.3;
-    padding: 3px !important;
+.accordion-button:focus {
+    border-style: none !important;
+    border-color: transparent !important;
+    box-shadow: none !important;
 }
 
-.list-group{
-    margin-bottom: 5px;
+#newItemMenu {
+    width: 130px;
 }
 
+.newItem {
+    width: 75px;
+    height: 75px;
+    background-repeat: no-repeat;
+    background-position: left top;
+    background-size: 20px;
+    background-origin: content-box;
+    padding-left: 13px;
+    background-color: #6c757d;
+    border-radius: 4px;
+    border-width: 0px;
+}
 
-.btn-close {
-    margin: 0 !important;
+/* .newItem:hover {
+    background-color: #5d646b;
+} */
+
+.accordion-body {
+    display: flex;
+    flex-direction: column;
+    padding: 0px;
+    gap: 10px;
+}
+
+.lala{
+    background-color: #6c757d;
 }

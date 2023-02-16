@@ -37,12 +37,13 @@
 
 
         function init() {
-            thing.addEventListener("dragstart", (ev) => {
-                ev.dataTransfer.setData("text/plain", ev.target.id);
-                const img = new Image();
-                document.body.append(img);
-                img.src = "signal.png";
-                ev.dataTransfer.setDragImage(img, 10, 10);
+            $(document).click((e) => {
+                let $dd = $(mydropdown);
+                $dd.css({ top: e.clientY ,left:e.clientX})
+                .append($("<div>",{class:"dropdown-menu"}).append($("<h6>",{class:"dropdown-header"}).text("Dropdown header")));
+
+                bootstrap.Dropdown.getOrCreateInstance($dd).toggle()
+                    
             })
         }
 
@@ -53,8 +54,13 @@
 </head>
 
 <body>
-    <div id="thing" style="width: 50px; height: 50px;" class="bg-secondary rounded" draggable="true"></div>
+    <div id="mydropdown" class="" style="position: absolute;">        
+        
+    </div>
 
+
+    <div id="thing" style="width: 50px; height: 50px;" class="bg-secondary rounded" draggable="true"></div>
+    
 
 </body>
 

@@ -61,10 +61,7 @@
         var showGrid = true;
         var mode = MODE_EDIT;
         var pl;
-        var mouseMoved;
         var mouseAction = null;
-
-
 
         var tracks = [];
         var signals = [];
@@ -73,9 +70,7 @@
 
         $(() => { init(); });
 
-        function create_buttonGroup(items) {
-            return $("<div>", { class: "btn-group", role: "group" }).append(items);
-        }
+
 
         function create_toggleButtonX(text, id, onclick) {
             return $("<button>", {
@@ -101,17 +96,18 @@
 
             pl = new preLoader("images");
             initSignals();
-            Promise.all([pl.add("ks")]).then(() => {
-                pl.start();
-            });
+
+
+            pl.start();
+
 
 
             stage = new createjs.Stage(myCanvas);
             stage.autoClear = true;
             stage.enableDOMEvents(true);
-            console.log(createjs.Touch.isSupported());
+            /* console.log(createjs.Touch.isSupported());
             if (createjs.Touch.isSupported())
-                createjs.Touch.enable(stage);
+                createjs.Touch.enable(stage); */
             createjs.Ticker.framerate = 24;
 
             main_container = new createjs.Container();
@@ -131,14 +127,24 @@
             stage.on("stagemousedown", handleStageMouseDown);
             stage.on("stagemouseup", handleStageMouseUp);
 
-            document.oncontextmenu = function () {
+            myCanvas.oncontextmenu = function () {
                 return false;
             };
             myCanvas.addEventListener('wheel', (event) => {
                 event.preventDefault();
 
-                stage.scale -= 0.1 * (event.deltaY / Math.abs(event.deltaY));
+                let point = new createjs.Point(stage.mouseX, stage.mouseY);
+                let localPoint = stage.globalToLocal(point.x, point.y);
+
+                stage.scale -= 0.5 * (event.deltaY / Math.abs(event.deltaY));
                 if (stage.scale < 0.3) stage.scale = 0.3;
+
+                // Find where the original point is now
+                let globalPoint = stage.localToGlobal(localPoint.x, localPoint.y);
+                // Move the map by the difference
+                stage.x -= (globalPoint.x - point.x);
+                stage.y -= (globalPoint.y - point.y);
+
                 drawGrid(main_container);
                 stage.update();
                 //console.log("scale: " + main_container.scale);
@@ -217,10 +223,10 @@
                 a[0].click();
             })
 
-            new_ks.addEventListener("mousedown", (e) => {
-
+            $("#sidebar .newItem").on("mousedown", (e) => {
+                console.log("new_ks.mousedown")
                 mouseAction = {
-                    type: MOUSE_ACTION.DND_SIGNAL,
+                    action: MOUSE_ACTION.DND_SIGNAL,
                     template: signalTemplates[e.target.attributes['data-signal'].value]
                 };
 
@@ -228,6 +234,7 @@
                 document.addEventListener("mouseup", handleStageMouseUp, { once: true });
 
                 stage.addEventListener("stagemousemove", handleMouseMove);
+
                 startDragAndDropSignal(e.offsetX, e.offsetY);
             });
 
@@ -239,6 +246,8 @@
 
             $(window).resize(() => onResizeWindow());
         }
+
+
 
         function onResizeWindow() {
             $(myCanvas).attr("height", $(CanvasContainer).height() - 5);
@@ -276,7 +285,7 @@
 
         function handleStageMouseDown(event) {
 
-            mouseMoved = false;
+            //console.log("handleStageMouseDown");
 
             //console.log(main_container.mouseX + "/" + main_container.mouseY);
 
@@ -286,20 +295,22 @@
                 console.log(hittest.name);
             }
 
-            if (event.nativeEvent.which == 1 && mode === MODE_EDIT && hittest?.name != "signal") {//(hittest == null || hittest.name == "track" || hittest.name == "grid")) {
-                stage.addEventListener("stagemousemove", handleMouseMove);
-                startTrackDrawing();
-                mouseAction = { type: MOUSE_ACTION.DRAW };
+            mouseAction = {
+                action: MOUSE_ACTION.NONE,
+                container: hittest,
+                startPoint: { x: event.stageX, y: event.stageY },
+                distance: function(x, y) { return Math.abs(this.startPoint.x - x) + Math.abs(this.startPoint.y - y)}
             }
 
-            if (event.nativeEvent.which == 3) {
-                stage.addEventListener("stagemousemove", handleMouseMove);
-                mouseAction = { type: MOUSE_ACTION.SCROLL };
-            }
+            stage.addEventListener("stagemousemove", handleMouseMove);
+
+
         }
 
         function getHitTest() {
-            return stage.getObjectUnderPoint(stage.mouseX, stage.mouseY, 1);
+            let local_point = stage.globalToLocal(stage.mouseX, stage.mouseY);
+
+            return main_container.getObjectUnderPoint(local_point.x, local_point.y, 1);
         }
 
         function findTrack() {
@@ -313,18 +324,18 @@
             }
         }
 
-        function createSignalContainer(parent_container, signal) {
+        function createSignalContainer(signal) {
             let c = new createjs.Container();
             c.name = "signal";
             c.signal = signal;
+            c.mouseChildren = false;
 
             c.scale = signale_scale;
-            parent_container.addChild(c);
 
             signal.draw(c);
             let sig_bounds = c.getBounds();
             c.regX = sig_bounds.width;
-            c.regY = sig_bounds.height;
+            c.regY = sig_bounds.height;           
 
             return c;
         }
@@ -345,15 +356,23 @@
                 c_sig.y += Math.cos(deg2rad(track.deg)) * (grid_size / 2);
                 c_sig.x += Math.sin(deg2rad(track.deg)) * (grid_size / 2);
             }
+
+            if (pos.flipped)
+                c_sig.rotation += 180;
         }
 
         function startDragAndDropSignal(mouseX, mouseY) {
-            let signal = new signalShape(mouseAction.template);
-            signal._template.elements.hp0.setEnabled(signal, true);
-            mouseAction.container = createSignalContainer(overlay_container, signal);
-            mouseAction.container.x = mouseX;
-            mouseAction.container.y = mouseY;
 
+            if (mouseAction.container) {
+                mouseAction.container.parent.removeChild(mouseAction.container)
+            } else {
+                let signal = new signalShape(mouseAction.template);
+                mouseAction.container = createSignalContainer(signal);
+                mouseAction.container.x = mouseX;
+                mouseAction.container.y = mouseY;
+            }
+
+            overlay_container.addChild(mouseAction.container);
             /* let circle = new createjs.Shape();
             circle.name = "circle";
             circle.graphics.setStrokeStyle(1).beginStroke("#e00").drawCircle(0, 0, grid_size / 2);
@@ -369,16 +388,46 @@
         }
 
         function handleMouseMove(event) {
-            if (!event.primary) { return; }
-            mouseMoved = true;
-            if (mouseAction == null) return;
-            if (mouseAction.type === MOUSE_ACTION.DND_SIGNAL) {
 
-                let local_point = stage.globalToLocal(stage.mouseX, stage.mouseY);
+
+            if (!event.primary) { return; }
+            if (mouseAction == null) return;
+            //falls mouseMove noch läuft, obwohl der User keinen button mehr drückt
+            if (event.nativeEvent.buttons == 0) return handleStageMouseUp(event);
+            if (mouseAction.action === MOUSE_ACTION.NONE) {
+                if (mouseAction.distance(stage.mouseX, stage.mouseY) > 4) {
+                    if (event.nativeEvent.which == 1 && mode === MODE_EDIT && mouseAction.container?.name == "signal") {
+
+                        //strecke suchen, an der das Signal klemmt
+                        let track = trackShape.findTrackbySignal(mouseAction.container.signal);
+                        //das Signal dort entfernen
+                        track.removeSignal(mouseAction.container.signal);
+                        mouseAction.action = MOUSE_ACTION.DND_SIGNAL;
+                        //versatz zwischen Maus- und Container-Koordninate, damit der Container am Mauszeiger "klebt"
+                        //wird noch nicht ausgewertet
+                        mouseAction.offset = { x: mouseAction.container.x - event.stageX, y: mouseAction.container.y - event.stageY }
+
+                        startDragAndDropSignal();
+
+
+                    }
+                    else if (event.nativeEvent.which == 1 && mode === MODE_EDIT && mouseAction.container?.name != "signal") {
+                        stage.addEventListener("stagemousemove", handleMouseMove);
+                        startTrackDrawing();
+                        mouseAction.action = MOUSE_ACTION.DRAW;
+                    } else if (event.nativeEvent.which == 3) {
+                        stage.addEventListener("stagemousemove", handleMouseMove);
+                        mouseAction.action = MOUSE_ACTION.SCROLL;
+                    }
+                }
+            }
+
+            let local_point = stage.globalToLocal(stage.mouseX, stage.mouseY);
+            if (mouseAction.action === MOUSE_ACTION.DND_SIGNAL) {
+
 
                 mouseAction.container.x = local_point.x;
                 mouseAction.container.y = local_point.y;
-
 
                 mouseAction.hit_track = findTrack();
                 if (mouseAction.hit_track) {
@@ -386,41 +435,54 @@
                         km: mouseAction.hit_track.km,
                         signal: mouseAction.container.signal,
                         above: mouseAction.hit_track.above,
-                        flipped: false
+                        flipped: event.nativeEvent.altKey
                     }
                     bindSignal2Track(mouseAction.container, mouseAction.hit_track.track, mouseAction.pos);
                 } else {
                     mouseAction.container.rotation = 0;
                 }
-            } else if (mouseAction.type === MOUSE_ACTION.DRAW) {
-                let p = stage.globalToLocal(stage.mouseX, stage.mouseY);
-                drawingCanvas.graphics.lineTo(p.x, p.y);
+            } else if (mouseAction.action === MOUSE_ACTION.DRAW) {
+
+                drawingCanvas.graphics.lineTo(local_point.x, local_point.y);
             }
-            else if (mouseAction.type === MOUSE_ACTION.SCROLL) {
+            else if (mouseAction.action === MOUSE_ACTION.SCROLL) {
                 stage.x += event.nativeEvent.movementX;
                 stage.y += event.nativeEvent.movementY;
                 drawGrid();
             }
 
+
             stage.update();
         }
 
         function handleStageMouseUp(event) {
+            //console.log("handleStageMouseUp", mouseAction);
 
             stage.removeEventListener("stagemousemove", handleMouseMove);
+
             let p2 = stage.globalToLocal(stage.mouseX, stage.mouseY);
             if (mouseAction == null) return;
-            if (mouseAction.type === MOUSE_ACTION.DND_SIGNAL) {
+            if (mouseAction.action === MOUSE_ACTION.NONE) {
+                if (event.nativeEvent.which == 1 && mode === MODE_EDIT && mouseAction.container?.name == "signal") {
+                    let $dd = $(mydropdown);
+                    $dd.css({ top: event.stageY, left: event.stageX })
+                        .empty()
+                        .append($("<div>", { class: "dropdown-menu" }).append($("<h6>", { class: "dropdown-header" }).text("Dropdown header")));
+
+                    bootstrap.Dropdown.getOrCreateInstance($dd).toggle()
+                }
+            } else if (mouseAction.action === MOUSE_ACTION.DND_SIGNAL) {
                 overlay_container.removeChild(mouseAction.container);
                 if (mouseAction.hit_track) {
                     main_container.addChild(mouseAction.container);
 
                     mouseAction.hit_track.track.AddSignal(mouseAction.pos);
-                    save();
+
                     //addSignal2Canvas(signalTemplates.ks, mouseAction.hit_track.point, mouseAction.hit_track.track, mouseAction.hit_track.above);
                 }
+                save();
                 stage.update();
-            } else if (mouseAction.type === MOUSE_ACTION.DRAW) {
+            } else if (mouseAction.action === MOUSE_ACTION.DRAW) {
                 main_container.removeChild(drawingCanvas);
                 //main_container.clear();
 
@@ -449,11 +511,9 @@
                 }
                 stage.update();
                 connection = null;
-            } /* else if (mode === MODE_EDIT && !mouseMoved) {
-                let p1 = main_container.globalToLocal(main_container.mouseX, main_container.mouseY);
-                let hittest = main_container.getObjectUnderPoint(main_container.mouseX, main_container.mouseY);
-
-            } */
+            } else if (mouseAction.action === MOUSE_ACTION.SCROLL) {
+                save();
+            }
 
 
             mouseAction = null;
@@ -467,32 +527,6 @@
 
 
 
-        /* function addSignal2Canvas(template, p, track, above) {
-            let signal = new signalShape(template);
-            template.elements.hp0.setEnabled(signal, true);
-
-            let c = new createjs.Container();
-            c.name = "signal";
-            signal.draw(c);
-            let sig_bounds = c.getBounds();
-            c.regX = sig_bounds.width;
-            c.regY = sig_bounds.height;
-            c.x = p.x;
-            if (above) {
-                c.rotation = 270 - track.deg;
-                c.y = p.y - grid_size / 2;
-            }
-            else {
-                c.rotation = 90 - track.deg;
-                c.y = p.y + grid_size / 2;
-            }
-            c.scale = signale_scale;
-            c.mouseChildren = false;
-            c.signal = signal;
-            main_container.addChild(c);
-            signals.push(signal);
-        } */
-
         function reDrawEverything() {
             if (!pl.loaded)
                 setTimeout(() => {
@@ -502,7 +536,7 @@
                 tracks.forEach((t) => {
                     t.draw(main_container);
                     t.signals.forEach((p) => {
-                        let c = createSignalContainer(main_container, p.signal);
+                        let c = main_container.addChild(createSignalContainer(p.signal));
                         bindSignal2Track(c, t, p);
                     })
                 })
@@ -525,7 +559,7 @@
             return JSON.stringify({
                 tracks: tracks,
                 //signals: signals,
-                version: 0.14,
+                version: 0.15,
                 zoom: stage.scale,
                 scrollX: stage.x,
                 scrollY: stage.y
@@ -562,7 +596,7 @@
 
         function loadFromJson(json) {
             let loaded = JSON.parse(json, receiver);
-            if (loaded.version >= 0.14) {
+            if (loaded.version >= 0.15) {
                 stage.x = loaded.scrollX;
                 stage.y = loaded.scrollY;
                 stage.scale = loaded.zoom;
@@ -619,11 +653,14 @@
             <button id="btn_test" class="btn btn-secondary btn-sm" type="button">
                 Toggle width collapse
             </button>
-
+            <!--  -->
         </div>
         <div id="CanvasContainer">
             <div id="sidebar" class="toggled">
-                <div class="accordion" id="accordionExample">
+
+
+
+                <div class="accordion  accordion-flush" id="newItemMenu">
                     <div class="accordion-item">
                         <h4 class="accordion-header" id="headingOne">
                             <button class="accordion-button user-select-none" type="button" data-bs-toggle="collapse"
@@ -632,10 +669,14 @@
                             </button>
                         </h4>
                         <div id="collapseOne" class="accordion-collapse collapse show" aria-labelledby="headingOne"
-                            data-bs-parent="#accordionExample">
+                            data-bs-parent="#newItemMenu">
                             <div class="accordion-body">
-                                <div id="new_ks" data-signal="ks" class="rounded bg-secondary"
-                                    style="width: 75px; height: 75px;"></div>
+                                <button id="new_ks" data-signal="ks_hp" style="background-image: url(signal.png);"
+                                    class="newItem"></button>
+
+                                <button id="new_hv" data-signal="hv" style="background-image: url();"
+                                    class="newItem"></button>
+
                             </div>
                         </div>
                     </div>
@@ -648,14 +689,15 @@
                             </button>
                         </h2>
                         <div id="collapseTwo" class="accordion-collapse collapse" aria-labelledby="headingTwo"
-                            data-bs-parent="#accordionExample">
+                            data-bs-parent="#newItemMenu">
                             <div class="accordion-body">
-                                <strong>This is the second item's accordion body.</strong> It is hidden by default,
-                                until the collapse plugin adds the appropriate classes that we use to style each
-                                element. These classes control the overall appearance, as well as the showing and hiding
-                                via CSS transitions. You can modify any of this with custom CSS or overriding our
-                                default variables. It's also worth noting that just about any HTML can go within the
-                                <code>.accordion-body</code>, though the transition does limit overflow.
+                                <button id="new_ks1" data-signal="ks_vr" style="background-image: url(signal.png);"
+                                    class="newItem">
+                                </button>
+                                <div id="new_hv" data-signal="ks" style="background-image: url(signal.png);" class="">
+                                </div>
+                                <div id="new_hl" data-signal="ks" style="background-image: url(signal.png);" class="">
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -668,21 +710,24 @@
                             </button>
                         </h2>
                         <div id="collapseThree" class="accordion-collapse collapse" aria-labelledby="headingThree"
-                            data-bs-parent="#accordionExample">
+                            data-bs-parent="#newItemMenu">
                             <div class="accordion-body">
-                                <strong>This is the third item's accordion body.</strong> It is hidden by default, until
-                                the collapse plugin adds the appropriate classes that we use to style each element.
-                                These classes control the overall appearance, as well as the showing and hiding via CSS
-                                transitions. You can modify any of this with custom CSS or overriding our default
-                                variables. It's also worth noting that just about any HTML can go within the
-                                <code>.accordion-body</code>, though the transition does limit overflow.
+                                <div id="new_ks2" data-signal="ks" style="background-image: url(signal.png);" class="">
+                                </div>
+                                <div id="new_hv" data-signal="ks" style="background-image: url(signal.png);" class="">
+                                </div>
+                                <div id="new_hl" data-signal="ks" style="background-image: url(signal.png);"
+                                    class="newItem"></div>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
             <canvas id="myCanvas" width="10" height="10" class="toggled"></canvas>
+            <div id="dummy" style="z-index: -99; position: absolute; height:10px;background-color: red;"></div>
+            <div id="mydropdown" style="position: absolute;">
 
+            </div>
 
 
         </div>

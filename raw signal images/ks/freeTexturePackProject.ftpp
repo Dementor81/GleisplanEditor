@@ -5,8 +5,18 @@
   "savePath": "/home/marcus/code/bahnhof/images",
   "images": [
     {
+      "name": "aus_hp.png",
+      "path": "/home/marcus/code/bahnhof/raw signal images/ks/aus_hp.png",
+      "folder": ""
+    },
+    {
       "name": "aus_ks1ks2.png",
       "path": "/home/marcus/code/bahnhof/raw signal images/ks/aus_ks1ks2.png",
+      "folder": ""
+    },
+    {
+      "name": "aus_zs3.png",
+      "path": "/home/marcus/code/bahnhof/raw signal images/ks/aus_zs3.png",
       "folder": ""
     },
     {
@@ -25,8 +35,23 @@
       "folder": ""
     },
     {
+      "name": "ks2.png",
+      "path": "/home/marcus/code/bahnhof/raw signal images/ks/ks2.png",
+      "folder": ""
+    },
+    {
+      "name": "ne2.png",
+      "path": "/home/marcus/code/bahnhof/raw signal images/ks/ne2.png",
+      "folder": ""
+    },
+    {
       "name": "wrw.png",
       "path": "/home/marcus/code/bahnhof/raw signal images/ks/wrw.png",
+      "folder": ""
+    },
+    {
+      "name": "wrw_gelb.png",
+      "path": "/home/marcus/code/bahnhof/raw signal images/ks/wrw_gelb.png",
       "folder": ""
     }
   ],
@@ -48,7 +73,7 @@
     "height": 2048,
     "fixedSize": false,
     "powerOfTwo": false,
-    "padding": 0,
+    "padding": 1,
     "extrude": 0,
     "allowRotation": false,
     "allowTrim": true,

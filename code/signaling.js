@@ -8,43 +8,20 @@ class VisualElement {
     #_image = null;
     #_pos = 0;
     #_gruppe = null;
-    btn_text = "";
+    #_btn_text = "";
 
-    constructor(id, { allowed = true, enabled = null, gruppe = 0, btn = id, blinkt = false, pos = 0, image = null } = {}) {
+    constructor(id, { allowed = true, enabled = null, gruppe = 0, btn_text = id, blinkt = false, pos = 0, image = null } = {}) {
         this.#_id = id;
         this.#_allowed = allowed;
         this.#_enabled = enabled;
         this.#_gruppe = gruppe;
         this.#_blinkt = blinkt;
-        this.btn = btn;
+        this.#_btn_text = btn_text;
         this.#_pos = pos;
         this.#_image = image;
     }
 
-    isEnabled(signal) {
-        if (this.#_enabled == null)
-            return signal._signalStellung[this.#_id] === true;
-        else if (typeof this.#_enabled == "boolean")
-            return this.#_enabled;
-        else if (typeof this.#_enabled == "function")
-            return this.#_enabled(signal);
-        else
-            return undefined;
-    }
 
-    setEnabled(signal, v) {
-        if (this.#_enabled == null)
-            signal._signalStellung[this.#_id] = v;
-        else
-            throw "not allowed";
-    }
-
-    isAllowed(signal) {
-        if (typeof this.#_allowed == "function")
-            return this.#_allowed(signal);
-        else
-            return true;
-    }
 
     get blinkt() {
         return this.#_blinkt;
@@ -52,6 +29,10 @@ class VisualElement {
 
     set blinkt(v) {
         this.#_blinkt = v;
+    }
+
+    get enabled() {
+        return this.#_enabled;
     }
 
     get image() {
@@ -64,6 +45,7 @@ class VisualElement {
 
     get gruppe() { return this.#_gruppe; }
     get id() { return this.#_id; }
+    get btn_text() { return this.#_btn_text; }
 
     get pos() {
         if (typeof this.#_pos == "function")
@@ -76,62 +58,120 @@ class VisualElement {
         this.#_pos = v;
     }
 
-    
+    disableAllOther = (s, gruppe) => s._template.elements.forEach((e) => { if (e.gruppe === gruppe) e.disable(s) });
 
-    /*    static disableAllOther(signalBilder, gruppe) {
-           for (let v in signalBilder) {
-               let x = signalBilder[v]
-               if (x instanceof SignalBild) {
-                   if (x.enabled && x.gruppe === gruppe)
-                       x.disable();
-               } else if (typeof x == "object") {
-                   SignalBild.disableAllOther(x, gruppe)
-               }
-           }
-       }
-   
-       enable = () => {
-           if (this.#_gruppe != 0) SignalBild.disableAllOther(this.#_signal._signalbilder, this.#_gruppe)
-           this.#_signal._signalStellung[this.#_id] = true;
-       };
-       disable = () => {
-           this.#_signal._signalStellung[this.#_id] = false;
-       };
-       toggle = () => {
-           this.enabled ? this.disable() : this.enable();
-       }; */
+    isEnabled(signal) {
+        if (this.#_enabled == null)
+            return signal._signalStellung[this.#_id] === true;
+        else if (typeof this.#_enabled == "boolean")
+            return this.#_enabled;
+        else if (typeof this.#_enabled == "function")
+            return this.#_enabled(signal);
+        else
+            return undefined;
+    }
+
+    isAllowed(signal) {
+        if (typeof this.#_allowed == "function")
+            return this.#_allowed(signal);
+        else
+            return true;
+    }
+
+    enable = (s) => {
+        if (this.#_enabled == null) {
+            if (this.#_gruppe != 0) this.disableAllOther(s, this.#_gruppe)
+            s._signalStellung[this.#_id] = true;
+        }
+        else
+            throw "not allowed to set this signalstellung";
+    };
+
+    disable = (s) => {
+        if (this.#_enabled == null)
+            s._signalStellung[this.#_id] = false;
+        else
+            throw "not allowed to set this signalstellung";
+    };
+
+    toggle = (s) => {
+        this.enabled ? this.disable() : this.enable();
+    };
 }
 
 class SignalTemplate {
     #_id = null;
+    #_start = null;
+    #_json_file = null;
+
     get id() {
         return this.#_id;
     }
 
-    constructor(id, elements) {
+    get start() {
+        return this.#_start;
+    }
+
+    get json_file() {
+        return this.#_json_file;
+    }
+
+    constructor(id, json_file, elements, start) {
         this.#_id = id;
+        this.#_start = start;
+        this.#_json_file = json_file;
         this.elements = {};
-        //pl.add(id)
+        this.elements.forEach = f => {
+            for (let v in this.elements) {
+                let x = this.elements[v]
+                if (typeof x != "function")
+                    f(x);
+            }
+        }
+
+        this.elements.filter = f => {
+            let r = [];
+            for (let v in this.elements) {
+                let x = this.elements[v]
+                if (typeof x != "function" && f(x))
+                    r.push(x);
+            }
+            return r;
+        }
 
 
         elements.forEach(element => {
-            this.elements[element.id ] = element;
+            this.elements[element.id] = element;
         });
+
+        pl.add(this.#_id, json_file);
     }
 
-    stringify(){
+    getHTML(s) {
+        return this.elements.filter((e) => e.enabled == null).map((e) => ui.create_toggleButton(e.btn_text, e.id, () => { e.toggle(s) }));
+    }
+
+    stringify() {
         return this.id;
     }
 
 }
 
 function initSignals() {
-    signalTemplates.ks = new SignalTemplate("ks", [
+    signalTemplates.ks_hp = new SignalTemplate("ks_hp", "ks", [
         new VisualElement("basis", { enabled: true }),
+        new VisualElement("aus_hp", { enabled: true }),
         new VisualElement("wrw", { enabled: true }),
-        new VisualElement("hp0"),
-        new VisualElement("ks1")
-    ]);
+        new VisualElement("hp0", { btn_text: "Hp 0" }),
+        new VisualElement("ks1", { btn_text: "Ks 1" })
+    ], "hp0");
+
+    signalTemplates.ks_vr = new SignalTemplate("ks_vr", "ks", [
+        new VisualElement("basis", { enabled: true }),
+        new VisualElement("ne2", { enabled: true }),
+        new VisualElement("ks2", { btn_text: "Ks 2" }),
+        new VisualElement("ks1", { btn_text: "Ks 1" })
+    ], "ks2");
 }
 
 

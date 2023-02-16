@@ -1,8 +1,13 @@
 'use strict';
 
 class trackShape {
-    static FromObject(o){
-        let t = new trackShape(o.start,o.end);
+    static findTrackbySignal(s) {
+        return tracks.find((t) => t.signals.find((o) => o.signal == s) != undefined)
+    }
+
+
+    static FromObject(o) {
+        let t = new trackShape(o.start, o.end);
         t.signals = o.signals;
         return t;
     }
@@ -30,14 +35,22 @@ class trackShape {
 
     draw(container) {
         let shape = new createjs.Shape();
+        shape.name = "track";
         container.addChild(shape);
         shape.graphics.setStrokeStyle(stroke, "round").beginStroke("#000000").moveTo(this.start.x, this.start.y).lineTo(this.end.x, this.end.y);
     }
 
     AddSignal(position) {
         let i = this.signals.findIndex((item) => position.km > item.km);
-        this.signals.splice(i+1, 0,position);        
-    } 
+        this.signals.splice(i + 1, 0, position);
+    }
+
+    removeSignal(s) {
+        let i = this.signals.findIndex((item) => s === item.signal);
+        if (i != -1) {
+            this.signals.splice(i,1);
+        }
+    }
 
     hitTest(mx, my) {
         let p1 = this.start;
@@ -81,7 +94,7 @@ class trackShape {
 }
 
 class signalShape {
-    static FromObject(o){
+    static FromObject(o) {
         let s = new signalShape(signalTemplates[o._template]);
         s._signalStellung = o._signalStellung;
         return s;
@@ -89,10 +102,13 @@ class signalShape {
 
 
     _template = null;
+    _signalStellung = null;
 
     constructor(template) {
         this._template = template;
         this._signalStellung = {};
+        if (template.start)
+            template.elements[template.start].enable(this);
 
     }
 
@@ -112,43 +128,11 @@ class signalShape {
         this._rendering = null;
     }
 
-    addImage(texture_name, { index = -1, posIndex = 0, name = null, blinkt = false, offset = 0, nextGen = false } = {}) {
+    addImage(texture_name, { index = -1, posIndex = 0, name = null, blinkt = false } = {}) {
         if (texture_name == null || texture_name == "") throw "kein Signal übergeben";
-        let texture = pl.getImage(this._template.id, texture_name);
-        if (texture != null) {
 
-            let param = { name: name != null ? name : texture_name, x: 0, y: 0 };
-
-            if (texture.meta.hasOwnProperty("sourceRect")) {
-                //param.sourceRect = new createjs.Rectangle(imageData.sourceRect.x,imageData.sourceRect.y, imageData.sourceRect.width, imageData.sourceRect.height);
-                param.sourceRect = new createjs.Rectangle(texture.meta.sourceRect.x, texture.meta.sourceRect.y, texture.meta.sourceRect.width, texture.meta.sourceRect.height);
-            }
-
-            if (texture.meta.hasOwnProperty("pos")) {
-                //für zs3/zs3v, werde ich hier nicht brauchen
-                /* if (posIndex == null || posIndex > texture.meta.pos.length - 1) {
-                    posIndex = texture.meta.pos.length - 1;
-                    console.log(texture_name + " posindex " + posIndex + " zu groß");
-                } */
-                let pos = texture.meta.pos[posIndex == null ? 0 : posIndex];
-
-                if (pos.hasOwnProperty("top"))
-                    param.y += pos.top;
-
-                if (pos.hasOwnProperty("left"))
-                    param.x += pos.left;
-            }
-
-            //für zs3/zs3v, werde ich hier nicht brauchen
-            /* if (index != -1) {
-                if (!texture.meta.hasOwnProperty("width")) throw "sprite sheet needs a width";
-                let width = texture.meta.width;
-                param.sourceRect = new createjs.Rectangle(width * index, 0, width, texture.img.height);
-            } */
-
-            param.x += offset;
-
-            let bmp = new createjs.Bitmap(texture.img).set(param);
+        let bmp = pl.getImage(this._template.json_file, texture_name);;
+        if (bmp != null) {
             this._rendering.container.addChild(bmp);
 
             if (blinkt) {
@@ -160,7 +144,6 @@ class signalShape {
             }
 
             return bmp;
-
         }
         else
             console.log(texture_name + " nicht gezeichnet")

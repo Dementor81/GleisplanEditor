@@ -93,3 +93,16 @@ function LineIsInCircle(line, circle) {
 function deg2rad(deg) {
   return deg * (Math.PI / 180);
 }
+
+const ui = {
+  create_toggleButton : function(text, id, onclick) {
+    return $("<button>", {
+      type: "button",
+      id: id,
+      class: "btn btn-primary btn-sm"
+    }).html(text).click(onclick);
+  },
+  create_buttonGroup  : function(items) {
+    return $("<div>", { class: "btn-group", role: "group" }).append(items);
+}
+}

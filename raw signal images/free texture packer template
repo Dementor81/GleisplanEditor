@@ -1,0 +1,5 @@
+[ {{#rects}}
+{"signal":"{{name}}","src":"{{config.imageName}}","sourceRect":{"x":{{frame.x}},"y":{{frame.y}},"width":{{frame.w}},"height":{{frame.h}}},"pos":
+        {"left":{{spriteSourceSize.x}},"top":{{spriteSourceSize.y}}}
+    }{{^last}},{{/last}}
+{{/rects}}]
