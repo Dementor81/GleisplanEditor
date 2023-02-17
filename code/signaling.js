@@ -95,7 +95,7 @@ class VisualElement {
     };
 
     toggle = (s) => {
-        this.enabled ? this.disable() : this.enable();
+        this.isEnabled(s) ? this.disable(s) : this.enable(s);
     };
 }
 
@@ -147,9 +147,7 @@ class SignalTemplate {
         pl.add(this.#_id, json_file);
     }
 
-    getHTML(s) {
-        return this.elements.filter((e) => e.enabled == null).map((e) => ui.create_toggleButton(e.btn_text, e.id, () => { e.toggle(s) }));
-    }
+    
 
     stringify() {
         return this.id;
@@ -161,16 +159,17 @@ function initSignals() {
     signalTemplates.ks_hp = new SignalTemplate("ks_hp", "ks", [
         new VisualElement("basis", { enabled: true }),
         new VisualElement("aus_hp", { enabled: true }),
+        //new VisualElement("aus_zs3", { enabled: true }),
         new VisualElement("wrw", { enabled: true }),
-        new VisualElement("hp0", { btn_text: "Hp 0" }),
-        new VisualElement("ks1", { btn_text: "Ks 1" })
+        new VisualElement("hp0", {gruppe:1, btn_text: "Hp 0" }),
+        new VisualElement("ks1", { gruppe:1, btn_text: "Ks 1" })
     ], "hp0");
 
     signalTemplates.ks_vr = new SignalTemplate("ks_vr", "ks", [
         new VisualElement("basis", { enabled: true }),
         new VisualElement("ne2", { enabled: true }),
-        new VisualElement("ks2", { btn_text: "Ks 2" }),
-        new VisualElement("ks1", { btn_text: "Ks 1" })
+        new VisualElement("ks2", { gruppe:1, btn_text: "Ks 2" }),
+        new VisualElement("ks1", { gruppe:1, btn_text: "Ks 1" })
     ], "ks2");
 }
 

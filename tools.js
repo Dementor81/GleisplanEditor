@@ -106,3 +106,7 @@ const ui = {
     return $("<div>", { class: "btn-group", role: "group" }).append(items);
 }
 }
+
+function log(params) {
+  console.log(params);
+}

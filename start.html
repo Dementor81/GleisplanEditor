@@ -299,7 +299,7 @@
                 action: MOUSE_ACTION.NONE,
                 container: hittest,
                 startPoint: { x: event.stageX, y: event.stageY },
-                distance: function(x, y) { return Math.abs(this.startPoint.x - x) + Math.abs(this.startPoint.y - y)}
+                distance: function (x, y) { return Math.abs(this.startPoint.x - x) + Math.abs(this.startPoint.y - y) }
             }
 
             stage.addEventListener("stagemousemove", handleMouseMove);
@@ -313,8 +313,12 @@
             return main_container.getObjectUnderPoint(local_point.x, local_point.y, 1);
         }
 
-        function findTrack() {
+        function findTrack(offset) {
             let local_point = stage.globalToLocal(stage.mouseX, stage.mouseY);
+            if (offset) {
+                local_point.x += offset.x;
+                local_point.y += offset.y;
+            }
             let circle = { x: local_point.x, y: local_point.y, radius: grid_size / 2 };
             let r;
             for (let index = 0; index < tracks.length; index++) {
@@ -334,8 +338,9 @@
 
             signal.draw(c);
             let sig_bounds = c.getBounds();
-            c.regX = sig_bounds.width;
-            c.regY = sig_bounds.height;           
+            log(sig_bounds);
+            c.regX = sig_bounds.width + sig_bounds.x;
+            c.regY = sig_bounds.height + sig_bounds.y;
 
             return c;
         }
@@ -357,8 +362,14 @@
                 c_sig.x += Math.sin(deg2rad(track.deg)) * (grid_size / 2);
             }
 
-            if (pos.flipped)
+            if (pos.flipped) {
                 c_sig.rotation += 180;
+                c_sig.regX = 0;
+            }
+            else {
+                let sig_bounds = c_sig.getBounds();
+                c_sig.regX = sig_bounds.width + sig_bounds.x;
+            }
         }
 
         function startDragAndDropSignal(mouseX, mouseY) {
@@ -388,13 +399,17 @@
         }
 
         function handleMouseMove(event) {
-
-
             if (!event.primary) { return; }
             if (mouseAction == null) return;
             //falls mouseMove noch läuft, obwohl der User keinen button mehr drückt
+            //tritt vor allem beim debugging auf
             if (event.nativeEvent.buttons == 0) return handleStageMouseUp(event);
+
+            let local_point = stage.globalToLocal(stage.mouseX, stage.mouseY);
+            //console.log(local_point,stage.mouseX, stage.mouseY);
+
             if (mouseAction.action === MOUSE_ACTION.NONE) {
+                //wie weit wurde die maus seit mousedown bewegt
                 if (mouseAction.distance(stage.mouseX, stage.mouseY) > 4) {
                     if (event.nativeEvent.which == 1 && mode === MODE_EDIT && mouseAction.container?.name == "signal") {
 
@@ -405,11 +420,11 @@
                         mouseAction.action = MOUSE_ACTION.DND_SIGNAL;
                         //versatz zwischen Maus- und Container-Koordninate, damit der Container am Mauszeiger "klebt"
                         //wird noch nicht ausgewertet
-                        mouseAction.offset = { x: mouseAction.container.x - event.stageX, y: mouseAction.container.y - event.stageY }
+                        mouseAction.offset = { x: mouseAction.container.x - local_point.x, y: mouseAction.container.y - local_point.y }
 
                         startDragAndDropSignal();
 
-
+                        console.log(mouseAction);
                     }
                     else if (event.nativeEvent.which == 1 && mode === MODE_EDIT && mouseAction.container?.name != "signal") {
                         stage.addEventListener("stagemousemove", handleMouseMove);
@@ -422,14 +437,19 @@
                 }
             }
 
-            let local_point = stage.globalToLocal(stage.mouseX, stage.mouseY);
+
             if (mouseAction.action === MOUSE_ACTION.DND_SIGNAL) {
 
 
                 mouseAction.container.x = local_point.x;
                 mouseAction.container.y = local_point.y;
 
-                mouseAction.hit_track = findTrack();
+                if (mouseAction.offset) {
+                    mouseAction.container.x -= mouseAction.offset.y;
+                    mouseAction.container.y += mouseAction.offset.x;
+                }
+
+                mouseAction.hit_track = findTrack(mouseAction.offset);
                 if (mouseAction.hit_track) {
                     mouseAction.pos = {
                         km: mouseAction.hit_track.km,
@@ -455,21 +475,64 @@
             stage.update();
         }
 
-        function handleStageMouseUp(event) {
-            //console.log("handleStageMouseUp", mouseAction);
+        function showPopup(r, content, parent) {
+            let $dummy = $("#dummy");
+            let rect = parent[0].getBoundingClientRect();
+            if ($dummy.length == 0) {
 
-            stage.removeEventListener("stagemousemove", handleMouseMove);
+                $dummy = $("<div>", { id: "dummy", width: r.width, height: r.height });
+                $(document.body).append($dummy)
+            }
+            $dummy.css({ position: "absolute", left: r.x + rect.x, top: r.y + rect.y });
+            let popup = bootstrap.Popover.getOrCreateInstance($dummy);
+            if (popup) {
+                $(document).off("click");
+                popup.dispose();
+            }
+
+            let random = Math.random();
+
+            popup = new bootstrap.Popover($dummy, {
+                html: true,
+                trigger: "manual",
+                title: "test",
+                placement: "right",
+                sanitize: false,
+                content: $("<div>", { id: "popup" }).html(content)
+            });
+            $dummy[0].addEventListener('hidden.bs.popover', (e) => {
+                $(document).off("click");
+                let p = bootstrap.Popover.getOrCreateInstance(e.target)
+                if (p) p.dispose();
+                $(e.target).remove();
+
+            }, { once: true });
+            $dummy[0].addEventListener('shown.bs.popover', (e) => {
+                $(document).on("click", (event) => {
+                    let $target = $(event.target);
+                    if ($target.closest('div.popover').length == 0) {
+                        let p = bootstrap.Popover.getOrCreateInstance(e.target)
+                        if (p)
+                        p.hide();
+                    }
+                })
+            }, { once: true });
+            popup.show();
+        }
+        
+
+        function handleStageMouseUp(event) {
+            //console.log("handleStageMouseUp", event.nativeEvent.which);
 
             let p2 = stage.globalToLocal(stage.mouseX, stage.mouseY);
             if (mouseAction == null) return;
             if (mouseAction.action === MOUSE_ACTION.NONE) {
+                
                 if (event.nativeEvent.which == 1 && mode === MODE_EDIT && mouseAction.container?.name == "signal") {
-                    let $dd = $(mydropdown);
-                    $dd.css({ top: event.stageY, left: event.stageX })
-                        .empty()
-                        .append($("<div>", { class: "dropdown-menu" }).append($("<h6>", { class: "dropdown-header" }).text("Dropdown header")));
-
-                    bootstrap.Dropdown.getOrCreateInstance($dd).toggle()
+                    showPopup({ x: event.rawX, y: event.rawY,widht:10,height:10},mouseAction.container.signal.getHTML(),$(myCanvas));
+                    $("#popup button").click(()=>{
+                        reDrawEverything();
+                    })
                 }
             } else if (mouseAction.action === MOUSE_ACTION.DND_SIGNAL) {
                 overlay_container.removeChild(mouseAction.container);
@@ -533,7 +596,9 @@
                     reDrawEverything();
                 }, 500);
             else {
+                main_container.removeAllChildren();
                 tracks.forEach((t) => {
+
                     t.draw(main_container);
                     t.signals.forEach((p) => {
                         let c = main_container.addChild(createSignalContainer(p.signal));
@@ -724,10 +789,7 @@
                 </div>
             </div>
             <canvas id="myCanvas" width="10" height="10" class="toggled"></canvas>
-            <div id="dummy" style="z-index: -99; position: absolute; height:10px;background-color: red;"></div>
-            <div id="mydropdown" style="position: absolute;">
-
-            </div>
+           
 
 
         </div>

@@ -35,16 +35,60 @@
 
         $(() => { init(); });
 
+        function showPopup(r, content, parent) {
+            let $dummy = $("#dummy");
+            let rect = parent[0].getBoundingClientRect();
+            if ($dummy.length == 0) {
+
+                $dummy = $("<div>", { id: "dummy", width: r.width, height: r.height });
+                $(document.body).append($dummy)
+            }
+            $dummy.css({ position: "absolute", left: r.x + rect.x, top: r.y + rect.y });
+            let popup = bootstrap.Popover.getOrCreateInstance($dummy);
+            if (popup) {
+                $(document).off("click");
+                popup.dispose();
+            }
+
+            let random = Math.random();
+
+            popup = new bootstrap.Popover($dummy, {
+                html: true,
+                trigger: "manual",
+                title: "test",
+                placement: "right",
+                sanitize: false,
+                content: $("<div>", { id: "popup" }).html(content)
+            });
+            $dummy[0].addEventListener('hidden.bs.popover', (e) => {
+                $(document).off("click");
+                let p = bootstrap.Popover.getOrCreateInstance(e.target)
+                if (p) p.dispose();
+                $(e.target).remove();
+
+            }, { once: true });
+            $dummy[0].addEventListener('shown.bs.popover', (e) => {
+                $(document).on("click", (event) => {
+                    let $target = $(event.target);
+                    if ($target.closest('div.popover').length == 0) {
+                        let p = bootstrap.Popover.getOrCreateInstance(e.target)
+                        if (p)
+                        p.hide();
+                    }
+                })
+                console.log("shown.bs.popover");
+            }, { once: true });
+            popup.show();
+        }
+
 
         function init() {
-            $(document).click((e) => {
-                let $dd = $(mydropdown);
-                $dd.css({ top: e.clientY ,left:e.clientX})
-                .append($("<div>",{class:"dropdown-menu"}).append($("<h6>",{class:"dropdown-header"}).text("Dropdown header")));
+            $(thing).click((e) => {
+                showPopup({ x: e.offsetX, y: e.offsetY, width: 10, height: 10 }, $("<h6>", { class: "dropdown-header" }).text("Signal"), $("#thing"));
 
-                bootstrap.Dropdown.getOrCreateInstance($dd).toggle()
-                    
             })
+
+
         }
 
 
@@ -54,13 +98,12 @@
 </head>
 
 <body>
-    <div id="mydropdown" class="" style="position: absolute;">        
-        
-    </div>
 
 
-    <div id="thing" style="width: 50px; height: 50px;" class="bg-secondary rounded" draggable="true"></div>
-    
+
+    <div id="thing" style="position: absolute; top: 50px;left: 100px; width: 500px; height: 500px;margin-left: 83px;"
+        class="bg-secondary rounded" draggable="true"></div>
+
 
 </body>
 

@@ -149,6 +149,10 @@ class signalShape {
             console.log(texture_name + " nicht gezeichnet")
     }
 
+    getHTML() {
+        return this._template.elements.filter((e) => e.enabled == null).map((e) => ui.create_toggleButton(e.btn_text, e.id, () => { e.toggle(this) }));
+    }
+
     /* hitTest(mx, my) {
         let p1 = this._startPnt;
         let p2 = this._endPnt;
