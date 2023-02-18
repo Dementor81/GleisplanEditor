@@ -95,16 +95,59 @@ function deg2rad(deg) {
 }
 
 const ui = {
-  create_toggleButton : function(text, id, onclick) {
+  create_toggleButton: function (text, id, onclick) {
     return $("<button>", {
       type: "button",
       id: id,
       class: "btn btn-primary btn-sm"
     }).html(text).click(onclick);
   },
-  create_buttonGroup  : function(items) {
+  create_buttonGroup: function (items) {
     return $("<div>", { class: "btn-group", role: "group" }).append(items);
-}
+  },
+  showPopup: function (r, content, parent) {
+    let $dummy = $("#dummy");
+    let rect = parent[0].getBoundingClientRect();
+    if ($dummy.length == 0) {
+      $dummy = $("<div>", { id: "dummy", width: r.width, height: r.height });
+      $(document.body).append($dummy)
+    }
+    $dummy.css({ position: "absolute", left: r.x + rect.x, top: r.y + rect.y });
+    let popup = bootstrap.Popover.getOrCreateInstance($dummy);
+    if (popup) {
+      $(document).off("click");
+      popup.dispose();
+    }
+
+    let random = Math.random();
+
+    popup = new bootstrap.Popover($dummy, {
+      html: true,
+      trigger: "manual",
+      title: "test",
+      placement: "right",
+      sanitize: false,
+      content: $("<div>", { id: "popup" }).html(content)
+    });
+    $dummy[0].addEventListener('hidden.bs.popover', (e) => {
+      $(document).off("click");
+      let p = bootstrap.Popover.getOrCreateInstance(e.target)
+      if (p) p.dispose();
+      $(e.target).remove();
+
+    }, { once: true });
+    $dummy[0].addEventListener('shown.bs.popover', (e) => {
+      $(document).on("click", (event) => {
+        let $target = $(event.target);
+        if ($target.closest('div.popover').length == 0) {
+          let p = bootstrap.Popover.getOrCreateInstance(e.target)
+          if (p)
+            p.hide();
+        }
+      })
+    }, { once: true });
+    popup.show();
+  }
 }
 
 function log(params) {
