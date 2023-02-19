@@ -276,14 +276,7 @@ function handleStageMouseDown(event) {
         distance: function (x, y) { return Math.abs(this.startPoint.x - x) + Math.abs(this.startPoint.y - y) }
     }
 
-    if (mouseAction.offset) {
-        let p = mouseAction.container.localToLocal(mouseAction.offset.x, mouseAction.offset.y, stage);
-        console.log(p);
-    }
-
     stage.addEventListener("stagemousemove", handleMouseMove);
-
-
 }
 
 function getHitTest() {
@@ -292,9 +285,22 @@ function getHitTest() {
     return main_container.getObjectUnderPoint(local_point.x, local_point.y, 1);
 }
 
-function findTrack(offset) {
+function findTrack(use_offset) {
     let local_point = stage.globalToLocal(stage.mouseX, stage.mouseY);
-    //TODO: offset einbauen!
+    if (mouseAction.offset && use_offset) {
+        let p = mouseAction.container.localToLocal(mouseAction.offset.x, mouseAction.offset.y, stage);
+        local_point.x -= (p.x - mouseAction.container.x);
+        local_point.y -= (p.y - mouseAction.container.y);
+    }
+   /*  let circleShape = overlay_container.getChildByName("circle");
+    if (circleShape == null) {
+        circleShape = new createjs.Shape();
+        circleShape.name = "circle";
+        circleShape.graphics.setStrokeStyle(1).beginStroke("#e00").drawCircle(0, 0, grid_size / 2);
+        overlay_container.addChild(circleShape);
+    }
+    circleShape.x = local_point.x
+    circleShape.y = local_point.y */
     let circle = { x: local_point.x, y: local_point.y, radius: grid_size / 2 };
     let r;
     for (let index = 0; index < tracks.length; index++) {
@@ -313,15 +319,17 @@ function createSignalContainer(signal) {
 
     signal.draw(c);
     let sig_bounds = c.getBounds();
+    let hit = new createjs.Shape();
+    hit.graphics.beginFill("#000").drawRect(sig_bounds.x, sig_bounds.y, sig_bounds.width, sig_bounds.height);
+    c.hitArea = hit;
 
-    c.regX = sig_bounds.width + sig_bounds.x;
+    c.regX = sig_bounds.width/2 + sig_bounds.x;
     c.regY = sig_bounds.height + sig_bounds.y;
 
     return c;
 }
 
 function bindSignal2Track(c_sig, track, pos) {
-
     //koordinaten anhand des Strecken KM suchen
     c_sig.x = Math.cos(deg2rad(track.deg)) * pos.km + track.start.x;
     c_sig.y = Math.sin(deg2rad(track.deg)) * -pos.km + track.start.y;
@@ -330,14 +338,16 @@ function bindSignal2Track(c_sig, track, pos) {
     if (pos.above) {
         c_sig.rotation = 270 - track.deg;
         //im rechten winkel zur Strecke ausrichten
-        c_sig.y -= Math.cos(deg2rad(track.deg)) * (grid_size / 2);
-        c_sig.x -= Math.sin(deg2rad(track.deg)) * (grid_size / 2);
+        c_sig.y -= Math.cos(deg2rad(track.deg)) * (grid_size / 2 - 4);
+        c_sig.x -= Math.sin(deg2rad(track.deg)) * (grid_size / 2 - 4);
     }
     else {
         c_sig.rotation = 90 - track.deg;
-        c_sig.y += Math.cos(deg2rad(track.deg)) * (grid_size / 2);
-        c_sig.x += Math.sin(deg2rad(track.deg)) * (grid_size / 2);
+        c_sig.y += Math.cos(deg2rad(track.deg)) * (grid_size / 2 - 4);
+        c_sig.x += Math.sin(deg2rad(track.deg)) * (grid_size / 2 - 4);
     }
+
+
 
     if (pos.flipped) {
         c_sig.rotation += 180;
@@ -353,6 +363,7 @@ function startDragAndDropSignal(mouseX, mouseY) {
 
     if (mouseAction.container) {
         mouseAction.container.parent.removeChild(mouseAction.container)
+
     } else {
         let signal = new signalShape(mouseAction.template);
         mouseAction.container = createSignalContainer(signal);
@@ -393,14 +404,13 @@ function handleMouseMove(event) {
                 //strecke suchen, an der das Signal klemmt
                 let track = trackShape.findTrackbySignal(mouseAction.container.signal);
                 //das Signal dort entfernen
-                track.removeSignal(mouseAction.container.signal);
+                if (track)
+                    track.removeSignal(mouseAction.container.signal);
                 mouseAction.action = MOUSE_ACTION.DND_SIGNAL;
                 //versatz zwischen Maus- und Container-Koordninate, damit der Container am Mauszeiger "klebt"
                 //wird noch nicht ausgewertet
 
                 startDragAndDropSignal();
-
-                console.log(mouseAction);
             }
             else if (event.nativeEvent.which == 1 && mode === MODE_EDIT && mouseAction.container?.name != "signal") {
                 stage.addEventListener("stagemousemove", handleMouseMove);
@@ -415,16 +425,29 @@ function handleMouseMove(event) {
 
 
     if (mouseAction.action === MOUSE_ACTION.DND_SIGNAL) {
-        mouseAction.hit_track = findTrack(mouseAction.offset);
-        if (mouseAction.hit_track) {
-            mouseAction.pos = {
-                km: mouseAction.hit_track.km,
+        let temp_hit = findTrack(false);
+        if (temp_hit) {
+            bindSignal2Track(mouseAction.container, temp_hit.track, {
+                km: temp_hit.km,
                 signal: mouseAction.container.signal,
-                above: mouseAction.hit_track.above,
+                above: temp_hit.above,
                 flipped: event.nativeEvent.altKey
+            });
+            mouseAction.hit_track = findTrack(true);
+            if (mouseAction.hit_track) {
+                log("found track")
+                mouseAction.pos = {
+                    km: mouseAction.hit_track.km,
+                    signal: mouseAction.container.signal,
+                    above: mouseAction.hit_track.above,
+                    flipped: event.nativeEvent.altKey
+                }
+                bindSignal2Track(mouseAction.container, mouseAction.hit_track.track, mouseAction.pos);
             }
-            bindSignal2Track(mouseAction.container, mouseAction.hit_track.track, mouseAction.pos);
-        } else {
+        } 
+        
+        if(temp_hit == null || mouseAction.hit_track == null){
+            log("didnt found track")
             mouseAction.container.rotation = 0;
             if (mouseAction.offset) {
                 let p = mouseAction.container.localToLocal(mouseAction.offset.x, mouseAction.offset.y, stage);
@@ -464,14 +487,16 @@ function handleStageMouseUp(event) {
         }
     } else if (mouseAction.action === MOUSE_ACTION.DND_SIGNAL) {
         overlay_container.removeChild(mouseAction.container);
+        main_container.addChild(mouseAction.container);
         if (mouseAction.hit_track) {
-            main_container.addChild(mouseAction.container);
+
 
             mouseAction.hit_track.track.AddSignal(mouseAction.pos);
 
             //addSignal2Canvas(signalTemplates.ks, mouseAction.hit_track.point, mouseAction.hit_track.track, mouseAction.hit_track.above);
         }
         save();
+        overlay_container.removeAllChildren();
         stage.update();
     } else if (mouseAction.action === MOUSE_ACTION.DRAW) {
         main_container.removeChild(drawingCanvas);
@@ -500,6 +525,7 @@ function handleStageMouseUp(event) {
                 save();
             }
         }
+        overlay_container.removeAllChildren();
         stage.update();
     } else if (mouseAction.action === MOUSE_ACTION.SCROLL) {
         save();

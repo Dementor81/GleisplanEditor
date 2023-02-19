@@ -150,6 +150,6 @@ const ui = {
   }
 }
 
-function log(params) {
-  console.log(params);
+function log(param1,param2,param3,param4,param5) {
+  console.log(param1,param2,param3,param4,param5);
 }
