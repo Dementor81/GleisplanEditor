@@ -402,6 +402,7 @@ function handleMouseMove(event) {
         }
 
         if (temp_hit == null || mouseAction.hit_track == null) {
+            mouseAction.hit_track = null;
             mouseAction.container.rotation = 0;
             if (mouseAction.offset) {
                 let p = mouseAction.container.localToLocal(mouseAction.offset.x, mouseAction.offset.y, stage);
