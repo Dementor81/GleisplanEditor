@@ -10,7 +10,7 @@ class VisualElement {
     #_gruppe = null;
     #_btn_text = "";
 
-    constructor(id, { allowed = true, enabled = null, gruppe = 0, btn_text = id, blinkt = false, pos = 0, image = null } = {}) {
+    constructor(id, { allowed = true, enabled = null, gruppe = 0, btn_text = id, blinkt = false, pos = null, image = null } = {}) {
         this.#_id = id;
         this.#_allowed = allowed;
         this.#_enabled = enabled;
@@ -168,8 +168,8 @@ function initSignals() {
     signalTemplates.ks_vr = new SignalTemplate("ks_vr", "ks", [
         new VisualElement("basis", { enabled: true }),
         new VisualElement("ne2", { enabled: true }),
-        new VisualElement("ks2", { gruppe:1, btn_text: "Ks 2" }),
-        new VisualElement("ks1", { gruppe:1, btn_text: "Ks 1" })
+        new VisualElement("ks2", { gruppe:1, btn_text: "Ks 2", pos:[21,60] }),
+        new VisualElement("ks1", { gruppe:1, btn_text: "Ks 1", pos:[6,60] })
     ], "ks2");
 }
 

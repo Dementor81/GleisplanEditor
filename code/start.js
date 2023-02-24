@@ -68,7 +68,10 @@ function init() {
     initSignals();
 
 
-    pl.start();
+    pl.start().then(() => {
+        $("#collapseOne .accordion-body").append(newItemButton(signalTemplates.ks_hp));
+        $("#collapseTwo .accordion-body").append(newItemButton(signalTemplates.ks_vr));
+    });
 
 
 
@@ -198,29 +201,12 @@ function init() {
         a[0].click();
     })
 
-    $("#sidebar .newItem").on("mousedown", (e) => {
-        mouseAction = {
-            action: MOUSE_ACTION.DND_SIGNAL,
-            template: signalTemplates[e.target.attributes['data-signal'].value]
-        };
-
-        //mouseup beim document anmelden, weil mouseup im stage nicht ausgelöst wird, wenn mousedown nicht auch auf der stage war                
-        document.addEventListener("mouseup", handleStageMouseUp, { once: true });
-
-        stage.addEventListener("stagemousemove", handleMouseMove);
-
-        startDragAndDropSignal(e.offsetX, e.offsetY);
-    });
-
-
-
     loadRecent();
     onResizeWindow();
     checkModeButtons();
 
     $(window).resize(() => onResizeWindow());
 }
-
 
 
 function onResizeWindow() {
@@ -292,15 +278,15 @@ function findTrack(use_offset) {
         local_point.x -= (p.x - mouseAction.container.x);
         local_point.y -= (p.y - mouseAction.container.y);
     }
-   /*  let circleShape = overlay_container.getChildByName("circle");
-    if (circleShape == null) {
-        circleShape = new createjs.Shape();
-        circleShape.name = "circle";
-        circleShape.graphics.setStrokeStyle(1).beginStroke("#e00").drawCircle(0, 0, grid_size / 2);
-        overlay_container.addChild(circleShape);
-    }
-    circleShape.x = local_point.x
-    circleShape.y = local_point.y */
+    /*  let circleShape = overlay_container.getChildByName("circle");
+     if (circleShape == null) {
+         circleShape = new createjs.Shape();
+         circleShape.name = "circle";
+         circleShape.graphics.setStrokeStyle(1).beginStroke("#e00").drawCircle(0, 0, grid_size / 2);
+         overlay_container.addChild(circleShape);
+     }
+     circleShape.x = local_point.x
+     circleShape.y = local_point.y */
     let circle = { x: local_point.x, y: local_point.y, radius: grid_size / 2 };
     let r;
     for (let index = 0; index < tracks.length; index++) {
@@ -323,7 +309,7 @@ function createSignalContainer(signal) {
     hit.graphics.beginFill("#000").drawRect(sig_bounds.x, sig_bounds.y, sig_bounds.width, sig_bounds.height);
     c.hitArea = hit;
 
-    c.regX = sig_bounds.width/2 + sig_bounds.x;
+    c.regX = sig_bounds.width / 2 + sig_bounds.x;
     c.regY = sig_bounds.height + sig_bounds.y;
 
     return c;
@@ -435,7 +421,6 @@ function handleMouseMove(event) {
             });
             mouseAction.hit_track = findTrack(true);
             if (mouseAction.hit_track) {
-                log("found track")
                 mouseAction.pos = {
                     km: mouseAction.hit_track.km,
                     signal: mouseAction.container.signal,
@@ -444,10 +429,9 @@ function handleMouseMove(event) {
                 }
                 bindSignal2Track(mouseAction.container, mouseAction.hit_track.track, mouseAction.pos);
             }
-        } 
-        
-        if(temp_hit == null || mouseAction.hit_track == null){
-            log("didnt found track")
+        }
+
+        if (temp_hit == null || mouseAction.hit_track == null) {
             mouseAction.container.rotation = 0;
             if (mouseAction.offset) {
                 let p = mouseAction.container.localToLocal(mouseAction.offset.x, mouseAction.offset.y, stage);
@@ -487,13 +471,10 @@ function handleStageMouseUp(event) {
         }
     } else if (mouseAction.action === MOUSE_ACTION.DND_SIGNAL) {
         overlay_container.removeChild(mouseAction.container);
-        main_container.addChild(mouseAction.container);
+       
         if (mouseAction.hit_track) {
-
-
+            main_container.addChild(mouseAction.container);
             mouseAction.hit_track.track.AddSignal(mouseAction.pos);
-
-            //addSignal2Canvas(signalTemplates.ks, mouseAction.hit_track.point, mouseAction.hit_track.track, mouseAction.hit_track.above);
         }
         save();
         overlay_container.removeAllChildren();
@@ -625,5 +606,44 @@ function loadFromJson(json) {
         }); */
     } else
         console.error(`stored version ${loaded.version} to old`)
+}
+
+function newItemButton(template){
+    return ui.div("newItem").css("background-image", 'url(' + GetDataURL_FromTemplate(template) + ')')
+    .attr("data-signal",template.id)
+    .on("mousedown", (e) => {
+        mouseAction = {
+            action: MOUSE_ACTION.DND_SIGNAL,
+            template: signalTemplates[e.target.attributes['data-signal'].value]
+        };
+
+        //mouseup beim document anmelden, weil mouseup im stage nicht ausgelöst wird, wenn mousedown nicht auch auf der stage war                
+        document.addEventListener("mouseup", handleStageMouseUp, { once: true });
+
+        stage.addEventListener("stagemousemove", handleMouseMove);
+
+        startDragAndDropSignal(e.offsetX, e.offsetY);
+    })
+}
+
+
+
+function GetDataURL_FromTemplate(template) {
+
+    let signal = new signalShape(template);
+
+    let c = $("<canvas>").attr({ width: 100, height: 100 });
+    $(document.body).append(c);
+
+    let s = new createjs.Stage(c[0]);
+    signal.draw(s);
+    let sig_bounds = s.getBounds();
+
+    s.cache(sig_bounds.x, sig_bounds.y,sig_bounds.width,sig_bounds.height);
+    let data_url = s.bitmapCache.getCacheDataURL();
+    c.remove();
+    return data_url;
+
+
 }
 
