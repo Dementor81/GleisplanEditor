@@ -147,7 +147,10 @@ const ui = {
       })
     }, { once: true });
     popup.show();
-  }
+  },
+  div : function(c){
+    return $("<div>", { class: c });
+}
 }
 
 function log(param1,param2,param3,param4,param5) {

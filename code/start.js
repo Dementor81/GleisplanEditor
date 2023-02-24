@@ -45,7 +45,10 @@ function init() {
     initSignals();
 
 
-    pl.start();
+    pl.start().then(() => {
+        $("#collapseOne .accordion-body").append(newItemButton(signalTemplates.ks_hp));
+        $("#collapseTwo .accordion-body").append(newItemButton(signalTemplates.ks_vr));
+    });
 
 
 
@@ -169,7 +172,6 @@ function init() {
     loadRecent();
     onResizeWindow();
     changeMode(MODE_EDIT);
-
     $(window).resize(onResizeWindow);
 }
 
@@ -179,7 +181,6 @@ function changeMode(newMode) {
     $([myCanvas, sidebar]).toggleClass("toggled", newMode == MODE_EDIT);
     mode = newMode;
 }
-
 
 function onResizeWindow() {
     $(myCanvas).attr("height", $(CanvasContainer).height() - 5);
@@ -400,7 +401,6 @@ function handleMouseMove(event) {
         }
 
         if (temp_hit == null || mouseAction.hit_track == null) {
-            log("didnt found track")
             mouseAction.container.rotation = 0;
             if (mouseAction.offset) {
                 let p = mouseAction.container.localToLocal(mouseAction.offset.x, mouseAction.offset.y, stage);
@@ -440,13 +440,10 @@ function handleStageMouseUp(event) {
         }
     } else if (mouseAction.action === MOUSE_ACTION.DND_SIGNAL) {
         overlay_container.removeChild(mouseAction.container);
-        main_container.addChild(mouseAction.container);
+       
         if (mouseAction.hit_track) {
-
-
+            main_container.addChild(mouseAction.container);
             mouseAction.hit_track.track.AddSignal(mouseAction.pos);
-
-            //addSignal2Canvas(signalTemplates.ks, mouseAction.hit_track.point, mouseAction.hit_track.track, mouseAction.hit_track.above);
         }
         save();
         overlay_container.removeAllChildren();
@@ -578,5 +575,44 @@ function loadFromJson(json) {
         }); */
     } else
         console.error(`stored version ${loaded.version} to old`)
+}
+
+function newItemButton(template){
+    return ui.div("newItem").css("background-image", 'url(' + GetDataURL_FromTemplate(template) + ')')
+    .attr("data-signal",template.id)
+    .on("mousedown", (e) => {
+        mouseAction = {
+            action: MOUSE_ACTION.DND_SIGNAL,
+            template: signalTemplates[e.target.attributes['data-signal'].value]
+        };
+
+        //mouseup beim document anmelden, weil mouseup im stage nicht ausgelöst wird, wenn mousedown nicht auch auf der stage war                
+        document.addEventListener("mouseup", handleStageMouseUp, { once: true });
+
+        stage.addEventListener("stagemousemove", handleMouseMove);
+
+        startDragAndDropSignal(e.offsetX, e.offsetY);
+    })
+}
+
+
+
+function GetDataURL_FromTemplate(template) {
+
+    let signal = new signalShape(template);
+
+    let c = $("<canvas>").attr({ width: 100, height: 100 });
+    $(document.body).append(c);
+
+    let s = new createjs.Stage(c[0]);
+    signal.draw(s);
+    let sig_bounds = s.getBounds();
+
+    s.cache(sig_bounds.x, sig_bounds.y,sig_bounds.width,sig_bounds.height);
+    let data_url = s.bitmapCache.getCacheDataURL();
+    c.remove();
+    return data_url;
+
+
 }
 

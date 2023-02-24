@@ -94,7 +94,7 @@ html, body {
     height: 75px;
     background-repeat: no-repeat;
     background-position: left top;
-    background-size: 20px;
+    background-size: 30px;
     background-origin: content-box;
     padding-left: 13px;
     background-color: #6c757d;
@@ -102,17 +102,13 @@ html, body {
     border-width: 0px;
 }
 
-/* .newItem:hover {
+.newItem:hover {
     background-color: #5d646b;
-} */
+}
 
 .accordion-body {
     display: flex;
     flex-direction: column;
     padding: 0px;
     gap: 10px;
-}
-
-.lala{
-    background-color: #6c757d;
 }
