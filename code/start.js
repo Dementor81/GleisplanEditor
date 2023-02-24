@@ -172,6 +172,7 @@ function init() {
     loadRecent();
     onResizeWindow();
     changeMode(MODE_EDIT);
+
     $(window).resize(onResizeWindow);
 }
 
