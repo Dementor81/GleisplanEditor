@@ -5,7 +5,6 @@ const EXCLUDE_JSON = [];
 
 const MODE_PLAY = 1;
 const MODE_EDIT = 2;
-const MODE_DELETE = 4;
 
 
 const MOUSE_ACTION = {
@@ -39,28 +38,6 @@ var signals = [];
 var signalTemplates = {}
 
 $(() => { init(); });
-
-
-
-function create_toggleButtonX(text, id, onclick) {
-    return $("<button>", {
-        type: "button",
-        id: id,
-        class: "btn btn-secondary btn-sm"
-    }).html(text).click(() => { onclick(); });
-}
-
-function checkModeButtons() {
-    $("button[data-mode]").removeClass("active");
-    $("button[data-mode=" + mode + "]").addClass("active");
-
-    /*  $("button[data-mode]").each((x, y) => {
-         if (y.attr("data-mode") == mode)
-             y.addClass("active");
-         else
-             y.removeClass("active");
-     }); */
-}
 
 function init() {
 
@@ -158,17 +135,9 @@ function init() {
         });
     }
 
-    $("#btnPlay").click((e) => {
-        mode = MODE_PLAY;
-        checkModeButtons();
-    })
-    $("#btnDrawTracks").click((e) => {
-        mode = MODE_EDIT;
-        checkModeButtons();
-    })
-    $("#btnSignal").click(() => {
+    $(btnPlay).click(() => changeMode(MODE_PLAY));
 
-    })
+    $(btnDrawTracks).click(() => changeMode(MODE_EDIT));
 
     $("#btnGrid").click(() => { showGrid = !showGrid; drawGrid(main_container); stage.update(); })
 
@@ -176,24 +145,9 @@ function init() {
 
     $("#btnCenter").click(() => { stage.scale = 1; stage.x = 0; stage.y = 0; save(); drawGrid(main_container); stage.update(); })
 
-    $(btn_test).click((e) => {
-        e.preventDefault();
-        $([myCanvas, sidebar]).toggleClass("toggled");
-    });
-
-    $("#btnImage").click((e) => {
-        let sg = showGrid;
-        showGrid = false;
-        drawGrid(main_container);
-        stage.update();
+    $("#btnImage").click((e) => {        
         let img = main_container.toDataURL("#00000000", "image/png");
         console.log(img.slice(0, 50));
-
-        showGrid = sg;
-        drawGrid(main_container);
-        stage.update();
-        //e.target.href = img;
-
         let a = $("<a>", { download: "gleisplan.png", href: img });
         a[0].click();
     })
@@ -212,15 +166,19 @@ function init() {
         startDragAndDropSignal(e.offsetX, e.offsetY);
     });
 
-
-
     loadRecent();
     onResizeWindow();
-    checkModeButtons();
+    changeMode(MODE_EDIT);
 
-    $(window).resize(() => onResizeWindow());
+    $(window).resize(onResizeWindow);
 }
 
+function changeMode(newMode) {
+    $(btnPlay).toggleClass("active", newMode == MODE_PLAY)
+    $(btnDrawTracks).toggleClass("active", newMode == MODE_EDIT)
+    $([myCanvas, sidebar]).toggleClass("toggled", newMode == MODE_EDIT);
+    mode = newMode;
+}
 
 
 function onResizeWindow() {
@@ -292,15 +250,15 @@ function findTrack(use_offset) {
         local_point.x -= (p.x - mouseAction.container.x);
         local_point.y -= (p.y - mouseAction.container.y);
     }
-   /*  let circleShape = overlay_container.getChildByName("circle");
-    if (circleShape == null) {
-        circleShape = new createjs.Shape();
-        circleShape.name = "circle";
-        circleShape.graphics.setStrokeStyle(1).beginStroke("#e00").drawCircle(0, 0, grid_size / 2);
-        overlay_container.addChild(circleShape);
-    }
-    circleShape.x = local_point.x
-    circleShape.y = local_point.y */
+    /*  let circleShape = overlay_container.getChildByName("circle");
+     if (circleShape == null) {
+         circleShape = new createjs.Shape();
+         circleShape.name = "circle";
+         circleShape.graphics.setStrokeStyle(1).beginStroke("#e00").drawCircle(0, 0, grid_size / 2);
+         overlay_container.addChild(circleShape);
+     }
+     circleShape.x = local_point.x
+     circleShape.y = local_point.y */
     let circle = { x: local_point.x, y: local_point.y, radius: grid_size / 2 };
     let r;
     for (let index = 0; index < tracks.length; index++) {
@@ -323,13 +281,13 @@ function createSignalContainer(signal) {
     hit.graphics.beginFill("#000").drawRect(sig_bounds.x, sig_bounds.y, sig_bounds.width, sig_bounds.height);
     c.hitArea = hit;
 
-    c.regX = sig_bounds.width/2 + sig_bounds.x;
+    c.regX = sig_bounds.width / 2 + sig_bounds.x;
     c.regY = sig_bounds.height + sig_bounds.y;
 
     return c;
 }
 
-function bindSignal2Track(c_sig, track, pos) {
+function alignSignalWithTrack(c_sig, track, pos) {
     //koordinaten anhand des Strecken KM suchen
     c_sig.x = Math.cos(deg2rad(track.deg)) * pos.km + track.start.x;
     c_sig.y = Math.sin(deg2rad(track.deg)) * -pos.km + track.start.y;
@@ -338,24 +296,20 @@ function bindSignal2Track(c_sig, track, pos) {
     if (pos.above) {
         c_sig.rotation = 270 - track.deg;
         //im rechten winkel zur Strecke ausrichten
-        c_sig.y -= Math.cos(deg2rad(track.deg)) * (grid_size / 2 - 4);
-        c_sig.x -= Math.sin(deg2rad(track.deg)) * (grid_size / 2 - 4);
+        c_sig.y -= Math.cos(deg2rad(track.deg)) * (grid_size / 2 - 14);
+        c_sig.x -= Math.sin(deg2rad(track.deg)) * (grid_size / 2 - 14);
     }
     else {
         c_sig.rotation = 90 - track.deg;
-        c_sig.y += Math.cos(deg2rad(track.deg)) * (grid_size / 2 - 4);
-        c_sig.x += Math.sin(deg2rad(track.deg)) * (grid_size / 2 - 4);
+        c_sig.y += Math.cos(deg2rad(track.deg)) * (grid_size / 2 - 14);
+        c_sig.x += Math.sin(deg2rad(track.deg)) * (grid_size / 2 - 14);
     }
-
-
 
     if (pos.flipped) {
         c_sig.rotation += 180;
-        //c_sig.regX = 0;
     }
     else {
         let sig_bounds = c_sig.getBounds();
-        //c_sig.regX = sig_bounds.width + sig_bounds.x;
     }
 }
 
@@ -427,7 +381,7 @@ function handleMouseMove(event) {
     if (mouseAction.action === MOUSE_ACTION.DND_SIGNAL) {
         let temp_hit = findTrack(false);
         if (temp_hit) {
-            bindSignal2Track(mouseAction.container, temp_hit.track, {
+            alignSignalWithTrack(mouseAction.container, temp_hit.track, {
                 km: temp_hit.km,
                 signal: mouseAction.container.signal,
                 above: temp_hit.above,
@@ -435,18 +389,17 @@ function handleMouseMove(event) {
             });
             mouseAction.hit_track = findTrack(true);
             if (mouseAction.hit_track) {
-                log("found track")
                 mouseAction.pos = {
                     km: mouseAction.hit_track.km,
                     signal: mouseAction.container.signal,
                     above: mouseAction.hit_track.above,
                     flipped: event.nativeEvent.altKey
                 }
-                bindSignal2Track(mouseAction.container, mouseAction.hit_track.track, mouseAction.pos);
+                alignSignalWithTrack(mouseAction.container, mouseAction.hit_track.track, mouseAction.pos);
             }
-        } 
-        
-        if(temp_hit == null || mouseAction.hit_track == null){
+        }
+
+        if (temp_hit == null || mouseAction.hit_track == null) {
             log("didnt found track")
             mouseAction.container.rotation = 0;
             if (mouseAction.offset) {
@@ -555,7 +508,7 @@ function reDrawEverything() {
             t.draw(main_container);
             t.signals.forEach((p) => {
                 let c = main_container.addChild(createSignalContainer(p.signal));
-                bindSignal2Track(c, t, p);
+                alignSignalWithTrack(c, t, p);
             })
         })
         stage.update();
