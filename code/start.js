@@ -148,9 +148,15 @@ function init() {
 
     $("#btnCenter").click(() => { stage.scale = 1; stage.x = 0; stage.y = 0; save(); drawGrid(main_container); stage.update(); })
 
-    $("#btnImage").click((e) => {        
-        let img = main_container.toDataURL("#00000000", "image/png");
-        console.log(img.slice(0, 50));
+    $("#btnImage").click((e) => {
+        /* let bounds =   main_container.getBounds()
+        main_container.cache(bounds.x, bounds.y, bounds.width, bounds.height);
+        let img = main_container.bitmapCache.getCacheDataURL(); */
+        grid_container.visible = false;
+        stage.update();
+        let img = stage.toDataURL("#00000000", "image/png");
+        grid_container.visible = true;
+        stage.update();
         let a = $("<a>", { download: "gleisplan.png", href: img });
         a[0].click();
     })
@@ -433,14 +439,16 @@ function handleStageMouseUp(event) {
     let p2 = stage.globalToLocal(stage.mouseX, stage.mouseY);
     if (mouseAction == null) return;
     if (mouseAction.action === MOUSE_ACTION.NONE) {
-
         if (event.nativeEvent.which == 1 && mode === MODE_PLAY && mouseAction.container?.name == "signal") {
             let popup = ui.showPopup({ x: event.rawX, y: event.rawY, widht: 10, height: 10 }, mouseAction.container.signal.getHTML(), $(myCanvas));
             $(".popover-body button").click(mouseAction.container.signal,(e) => {
                 e.data.syncHTML(popup.tip);
                 reDrawEverything();
             })
+        }else if(event.nativeEvent.which == 1 && mode === MODE_EDIT && mouseAction.container?.name == "track"){
+            
         }
+
     } else if (mouseAction.action === MOUSE_ACTION.DND_SIGNAL) {
         overlay_container.removeChild(mouseAction.container);
        
