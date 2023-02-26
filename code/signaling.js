@@ -10,7 +10,7 @@ class VisualElement {
     #_gruppe = null;
     #_btn_text = "";
 
-    constructor(id, { allowed = true, enabled = null, gruppe = 0, btn_text = id, blinkt = false, pos = null, image = null } = {}) {
+    constructor(id, { allowed = true, enabled = null, gruppe = 0, btn_text = id, blinkt = false, pos = null, image = id } = {}) {
         this.#_id = id;
         this.#_allowed = allowed;
         this.#_enabled = enabled;
@@ -36,7 +36,7 @@ class VisualElement {
     }
 
     get image() {
-        return this.#_image != null ? this.#_image : this.#_id;
+        return this.#_image;
     }
 
     set image(v) {
@@ -121,6 +121,7 @@ class SignalTemplate {
         this.#_start = start;
         this.#_json_file = json_file;
         this.elements = {};
+        //add a forEach function to the elements Object
         this.elements.forEach = f => {
             for (let v in this.elements) {
                 let x = this.elements[v]
@@ -129,6 +130,7 @@ class SignalTemplate {
             }
         }
 
+        //add a filter function to the elements Object
         this.elements.filter = f => {
             let r = [];
             for (let v in this.elements) {
@@ -147,7 +149,7 @@ class SignalTemplate {
         pl.add(this.#_id, json_file);
     }
 
-    
+
 
     stringify() {
         return this.id;
@@ -161,15 +163,18 @@ function initSignals() {
         new VisualElement("aus_hp", { enabled: true }),
         //new VisualElement("aus_zs3", { enabled: true }),
         new VisualElement("wrw", { enabled: true }),
-        new VisualElement("hp0", {gruppe:1, btn_text: "Hp 0" }),
-        new VisualElement("ks1", { gruppe:1, btn_text: "Ks 1" })
+        new VisualElement("hp0", { gruppe: 1, btn_text: "Hp 0" }),
+        new VisualElement("ks1", { gruppe: 1, btn_text: "Ks 1" }),
+        new VisualElement("zs1", { gruppe: 2, btn_text: "Zs 1", allowed: (s) => s._signalStellung.hp0 || s._signalStellung.aus }),
+        new VisualElement("sh1", { gruppe: 2, btn_text: "Sh 1", allowed: (s) => s._signalStellung.hp0 || s._signalStellung.aus }),
+        new VisualElement("aus", { gruppe: 1, btn_text: "aus", image: null }),
     ], "hp0");
 
     signalTemplates.ks_vr = new SignalTemplate("ks_vr", "ks", [
         new VisualElement("basis", { enabled: true }),
         new VisualElement("ne2", { enabled: true }),
-        new VisualElement("ks2", { gruppe:1, btn_text: "Ks 2", pos:[21,60] }),
-        new VisualElement("ks1", { gruppe:1, btn_text: "Ks 1", pos:[6,60] })
+        new VisualElement("ks2", { gruppe: 1, btn_text: "Ks 2", pos: [21, 60] }),
+        new VisualElement("ks1", { gruppe: 1, btn_text: "Ks 1", pos: [6, 60] })
     ], "ks2");
 }
 

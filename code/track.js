@@ -48,9 +48,9 @@ class trackShape {
     removeSignal(s) {
         let i = this.signals.findIndex((item) => s === item.signal);
         if (i != -1) {
-            this.signals.splice(i,1);
+            this.signals.splice(i, 1);
         }
-    }    
+    }
 }
 
 class signalShape {
@@ -88,12 +88,12 @@ class signalShape {
         this._rendering = null;
     }
 
-    addImage(texture_name, {pos = null, blinkt = false } = {}) {
-        if (texture_name == null || texture_name == "") throw "kein Signal übergeben";
+    addImage(texture_name, { pos = null, blinkt = false } = {}) {
+        if (texture_name == null || texture_name == "") return;
 
         let bmp = pl.getImage(this._template.json_file, texture_name);;
         if (bmp != null) {
-            if(pos){
+            if (pos) {
                 bmp.x = pos[0];
                 bmp.y = pos[1];
             }
@@ -116,7 +116,42 @@ class signalShape {
     }
 
     getHTML() {
-        return this._template.elements.filter((e) => e.enabled == null).map((e) => ui.create_toggleButton(e.btn_text, e.id, () => { e.toggle(this) }));
+        let ul = $("<ul>", { class: "list-group list-group-flush" });
+
+        let switchable_visuell_elements = this._template.elements.filter((e) => e.enabled == null);
+        for (let g = 1; g <= 5; g++) {
+            let elements_in_group = switchable_visuell_elements.filter(e => e.gruppe == g);
+            if (elements_in_group.length) {
+                ul.append($("<li>", { class: "list-group-item" }).append(ui.create_buttonGroup(elements_in_group.map((e) => ui.create_toggleButton(e.btn_text, e.id, () => { e.toggle(this) })))));
+            }
+        }
+
+        this.syncHTML(ul);
+        return ul;
+    }
+
+    syncHTML(popup) {
+        let buttons = $("button", popup);
+        let switchable_visuell_elements = this._template.elements.filter((e) => e.enabled == null);
+        switchable_visuell_elements.forEach(element => {
+            let button = $("#btn_" + element.id, popup);
+            if (button.length) {
+                if (element.isEnabled(this)) {
+                    button.addClass("active");
+                    button.attr("aria-pressed", "true");
+                }
+                else {
+                    button.attr("aria-pressed", "false");
+                    button.removeClass("active");
+                }
+
+                if (element.isAllowed(this))
+                    button.removeAttr('disabled');
+                else
+                    button.attr('disabled', 'disabled');
+
+            }
+        });
     }
 
 }

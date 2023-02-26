@@ -435,8 +435,9 @@ function handleStageMouseUp(event) {
     if (mouseAction.action === MOUSE_ACTION.NONE) {
 
         if (event.nativeEvent.which == 1 && mode === MODE_PLAY && mouseAction.container?.name == "signal") {
-            ui.showPopup({ x: event.rawX, y: event.rawY, widht: 10, height: 10 }, mouseAction.container.signal.getHTML(), $(myCanvas));
-            $("#popup button").click(() => {
+            let popup = ui.showPopup({ x: event.rawX, y: event.rawY, widht: 10, height: 10 }, mouseAction.container.signal.getHTML(), $(myCanvas));
+            $(".popover-body button").click(mouseAction.container.signal,(e) => {
+                e.data.syncHTML(popup.tip);
                 reDrawEverything();
             })
         }

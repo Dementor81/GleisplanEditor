@@ -98,7 +98,7 @@ const ui = {
   create_toggleButton: function (text, id, onclick) {
     return $("<button>", {
       type: "button",
-      id: id,
+      id: "btn_" + id,
       class: "btn btn-primary btn-sm"
     }).html(text).click(onclick);
   },
@@ -127,7 +127,7 @@ const ui = {
       title: "test",
       placement: "right",
       sanitize: false,
-      content: $("<div>", { id: "popup" }).html(content)
+      content: content
     });
     $dummy[0].addEventListener('hidden.bs.popover', (e) => {
       $(document).off("click");
@@ -147,6 +147,7 @@ const ui = {
       })
     }, { once: true });
     popup.show();
+    return popup;
   },
   div : function(c){
     return $("<div>", { class: c });
