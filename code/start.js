@@ -5,7 +5,6 @@ const EXCLUDE_JSON = [];
 
 const MODE_PLAY = 1;
 const MODE_EDIT = 2;
-const MODE_DELETE = 4;
 
 
 const MOUSE_ACTION = {
@@ -39,28 +38,6 @@ var signals = [];
 var signalTemplates = {}
 
 $(() => { init(); });
-
-
-
-function create_toggleButtonX(text, id, onclick) {
-    return $("<button>", {
-        type: "button",
-        id: id,
-        class: "btn btn-secondary btn-sm"
-    }).html(text).click(() => { onclick(); });
-}
-
-function checkModeButtons() {
-    $("button[data-mode]").removeClass("active");
-    $("button[data-mode=" + mode + "]").addClass("active");
-
-    /*  $("button[data-mode]").each((x, y) => {
-         if (y.attr("data-mode") == mode)
-             y.addClass("active");
-         else
-             y.removeClass("active");
-     }); */
-}
 
 function init() {
 
@@ -161,17 +138,9 @@ function init() {
         });
     }
 
-    $("#btnPlay").click((e) => {
-        mode = MODE_PLAY;
-        checkModeButtons();
-    })
-    $("#btnDrawTracks").click((e) => {
-        mode = MODE_EDIT;
-        checkModeButtons();
-    })
-    $("#btnSignal").click(() => {
+    $(btnPlay).click(() => changeMode(MODE_PLAY));
 
-    })
+    $(btnDrawTracks).click(() => changeMode(MODE_EDIT));
 
     $("#btnGrid").click(() => { showGrid = !showGrid; drawGrid(main_container); stage.update(); })
 
@@ -179,35 +148,46 @@ function init() {
 
     $("#btnCenter").click(() => { stage.scale = 1; stage.x = 0; stage.y = 0; save(); drawGrid(main_container); stage.update(); })
 
-    $(btn_test).click((e) => {
-        e.preventDefault();
-        $([myCanvas, sidebar]).toggleClass("toggled");
-    });
-
     $("#btnImage").click((e) => {
-        let sg = showGrid;
-        showGrid = false;
-        drawGrid(main_container);
+        /* let bounds =   main_container.getBounds()
+        main_container.cache(bounds.x, bounds.y, bounds.width, bounds.height);
+        let img = main_container.bitmapCache.getCacheDataURL(); */
+        grid_container.visible = false;
         stage.update();
-        let img = main_container.toDataURL("#00000000", "image/png");
-        console.log(img.slice(0, 50));
-
-        showGrid = sg;
-        drawGrid(main_container);
+        let img = stage.toDataURL("#00000000", "image/png");
+        grid_container.visible = true;
         stage.update();
-        //e.target.href = img;
-
         let a = $("<a>", { download: "gleisplan.png", href: img });
         a[0].click();
     })
 
+    $("#sidebar .newItem").on("mousedown", (e) => {
+        mouseAction = {
+            action: MOUSE_ACTION.DND_SIGNAL,
+            template: signalTemplates[e.target.attributes['data-signal'].value]
+        };
+
+        //mouseup beim document anmelden, weil mouseup im stage nicht ausgelöst wird, wenn mousedown nicht auch auf der stage war                
+        document.addEventListener("mouseup", handleStageMouseUp, { once: true });
+
+        stage.addEventListener("stagemousemove", handleMouseMove);
+
+        startDragAndDropSignal(e.offsetX, e.offsetY);
+    });
+
     loadRecent();
     onResizeWindow();
-    checkModeButtons();
+    changeMode(MODE_EDIT);
 
-    $(window).resize(() => onResizeWindow());
+    $(window).resize(onResizeWindow);
 }
 
+function changeMode(newMode) {
+    $(btnPlay).toggleClass("active", newMode == MODE_PLAY)
+    $(btnDrawTracks).toggleClass("active", newMode == MODE_EDIT)
+    $([myCanvas, sidebar]).toggleClass("toggled", newMode == MODE_EDIT);
+    mode = newMode;
+}
 
 function onResizeWindow() {
     $(myCanvas).attr("height", $(CanvasContainer).height() - 5);
@@ -315,7 +295,7 @@ function createSignalContainer(signal) {
     return c;
 }
 
-function bindSignal2Track(c_sig, track, pos) {
+function alignSignalWithTrack(c_sig, track, pos) {
     //koordinaten anhand des Strecken KM suchen
     c_sig.x = Math.cos(deg2rad(track.deg)) * pos.km + track.start.x;
     c_sig.y = Math.sin(deg2rad(track.deg)) * -pos.km + track.start.y;
@@ -324,24 +304,20 @@ function bindSignal2Track(c_sig, track, pos) {
     if (pos.above) {
         c_sig.rotation = 270 - track.deg;
         //im rechten winkel zur Strecke ausrichten
-        c_sig.y -= Math.cos(deg2rad(track.deg)) * (grid_size / 2 - 4);
-        c_sig.x -= Math.sin(deg2rad(track.deg)) * (grid_size / 2 - 4);
+        c_sig.y -= Math.cos(deg2rad(track.deg)) * (grid_size / 2 - 14);
+        c_sig.x -= Math.sin(deg2rad(track.deg)) * (grid_size / 2 - 14);
     }
     else {
         c_sig.rotation = 90 - track.deg;
-        c_sig.y += Math.cos(deg2rad(track.deg)) * (grid_size / 2 - 4);
-        c_sig.x += Math.sin(deg2rad(track.deg)) * (grid_size / 2 - 4);
+        c_sig.y += Math.cos(deg2rad(track.deg)) * (grid_size / 2 - 14);
+        c_sig.x += Math.sin(deg2rad(track.deg)) * (grid_size / 2 - 14);
     }
-
-
 
     if (pos.flipped) {
         c_sig.rotation += 180;
-        //c_sig.regX = 0;
     }
     else {
         let sig_bounds = c_sig.getBounds();
-        //c_sig.regX = sig_bounds.width + sig_bounds.x;
     }
 }
 
@@ -413,7 +389,7 @@ function handleMouseMove(event) {
     if (mouseAction.action === MOUSE_ACTION.DND_SIGNAL) {
         let temp_hit = findTrack(false);
         if (temp_hit) {
-            bindSignal2Track(mouseAction.container, temp_hit.track, {
+            alignSignalWithTrack(mouseAction.container, temp_hit.track, {
                 km: temp_hit.km,
                 signal: mouseAction.container.signal,
                 above: temp_hit.above,
@@ -427,11 +403,12 @@ function handleMouseMove(event) {
                     above: mouseAction.hit_track.above,
                     flipped: event.nativeEvent.altKey
                 }
-                bindSignal2Track(mouseAction.container, mouseAction.hit_track.track, mouseAction.pos);
+                alignSignalWithTrack(mouseAction.container, mouseAction.hit_track.track, mouseAction.pos);
             }
         }
 
         if (temp_hit == null || mouseAction.hit_track == null) {
+            mouseAction.hit_track = null;
             mouseAction.container.rotation = 0;
             if (mouseAction.offset) {
                 let p = mouseAction.container.localToLocal(mouseAction.offset.x, mouseAction.offset.y, stage);
@@ -462,13 +439,16 @@ function handleStageMouseUp(event) {
     let p2 = stage.globalToLocal(stage.mouseX, stage.mouseY);
     if (mouseAction == null) return;
     if (mouseAction.action === MOUSE_ACTION.NONE) {
-
         if (event.nativeEvent.which == 1 && mode === MODE_PLAY && mouseAction.container?.name == "signal") {
-            ui.showPopup({ x: event.rawX, y: event.rawY, widht: 10, height: 10 }, mouseAction.container.signal.getHTML(), $(myCanvas));
-            $("#popup button").click(() => {
+            let popup = ui.showPopup({ x: event.rawX, y: event.rawY, widht: 10, height: 10 }, mouseAction.container.signal.getHTML(), $(myCanvas));
+            $(".popover-body button").click(mouseAction.container.signal,(e) => {
+                e.data.syncHTML(popup.tip);
                 reDrawEverything();
             })
+        }else if(event.nativeEvent.which == 1 && mode === MODE_EDIT && mouseAction.container?.name == "track"){
+            
         }
+
     } else if (mouseAction.action === MOUSE_ACTION.DND_SIGNAL) {
         overlay_container.removeChild(mouseAction.container);
        
@@ -536,7 +516,7 @@ function reDrawEverything() {
             t.draw(main_container);
             t.signals.forEach((p) => {
                 let c = main_container.addChild(createSignalContainer(p.signal));
-                bindSignal2Track(c, t, p);
+                alignSignalWithTrack(c, t, p);
             })
         })
         stage.update();

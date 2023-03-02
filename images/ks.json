@@ -3,39 +3,59 @@
         {"left":3,"top":45}
     },
 
-{"signal":"aus_hp","src":"ks","sourceRect":{"x":76,"y":1,"width":32,"height":62},"pos":
+{"signal":"schild","src":"ks","sourceRect":{"x":76,"y":1,"width":19,"height":111},"pos":
+        {"left":7,"top":37}
+    },
+
+{"signal":"aus_hp","src":"ks","sourceRect":{"x":76,"y":114,"width":32,"height":62},"pos":
         {"left":4,"top":33}
     },
 
-{"signal":"wrw_gelb","src":"ks","sourceRect":{"x":76,"y":65,"width":10,"height":96},"pos":
+{"signal":"wrw_gelb","src":"ks","sourceRect":{"x":97,"y":1,"width":10,"height":96},"pos":
         {"left":57,"top":175}
     },
 
-{"signal":"ne2","src":"ks","sourceRect":{"x":76,"y":163,"width":22,"height":35},"pos":
+{"signal":"ne2","src":"ks","sourceRect":{"x":76,"y":178,"width":22,"height":35},"pos":
         {"left":50,"top":203}
     },
 
-{"signal":"aus_zs3","src":"ks","sourceRect":{"x":76,"y":200,"width":26,"height":29},"pos":
+{"signal":"aus_zs3","src":"ks","sourceRect":{"x":100,"y":178,"width":26,"height":29},"pos":
         {"left":7,"top":4}
     },
 
-{"signal":"wrw","src":"ks","sourceRect":{"x":100,"y":65,"width":6,"height":85},"pos":
+{"signal":"wrw","src":"ks","sourceRect":{"x":109,"y":1,"width":6,"height":85},"pos":
         {"left":59,"top":177}
     },
 
-{"signal":"aus_ks1ks2","src":"ks","sourceRect":{"x":76,"y":231,"width":30,"height":14},"pos":
+{"signal":"aus_ks1ks2","src":"ks","sourceRect":{"x":76,"y":215,"width":30,"height":14},"pos":
         {"left":5,"top":56}
     },
 
-{"signal":"ks1","src":"ks","sourceRect":{"x":76,"y":247,"width":12,"height":15},"pos":
+{"signal":"zs7","src":"ks","sourceRect":{"x":109,"y":88,"width":17,"height":14},"pos":
+        {"left":11,"top":75}
+    },
+
+{"signal":"sh1","src":"ks","sourceRect":{"x":108,"y":209,"width":14,"height":14},"pos":
+        {"left":8,"top":75}
+    },
+
+{"signal":"ks1","src":"ks","sourceRect":{"x":108,"y":225,"width":12,"height":15},"pos":
         {"left":14,"top":56}
     },
 
-{"signal":"ks2","src":"ks","sourceRect":{"x":90,"y":247,"width":13,"height":13},"pos":
+{"signal":"ks2","src":"ks","sourceRect":{"x":76,"y":231,"width":13,"height":13},"pos":
         {"left":21,"top":55}
     },
 
-{"signal":"hp0","src":"ks","sourceRect":{"x":105,"y":247,"width":12,"height":14},"pos":
+{"signal":"hp0","src":"ks","sourceRect":{"x":91,"y":231,"width":12,"height":14},"pos":
         {"left":14,"top":40}
+    },
+
+{"signal":"verk","src":"ks","sourceRect":{"x":97,"y":99,"width":5,"height":5},"pos":
+        {"left":7,"top":37}
+    },
+
+{"signal":"zs1","src":"ks","sourceRect":{"x":104,"y":104,"width":5,"height":5},"pos":
+        {"left":17,"top":75}
     }
 ]

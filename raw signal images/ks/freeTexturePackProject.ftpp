@@ -45,6 +45,21 @@
       "folder": ""
     },
     {
+      "name": "schild.png",
+      "path": "/home/marcus/code/bahnhof/raw signal images/ks/schild.png",
+      "folder": ""
+    },
+    {
+      "name": "sh1.png",
+      "path": "/home/marcus/code/bahnhof/raw signal images/ks/sh1.png",
+      "folder": ""
+    },
+    {
+      "name": "verk.png",
+      "path": "/home/marcus/code/bahnhof/raw signal images/ks/verk.png",
+      "folder": ""
+    },
+    {
       "name": "wrw.png",
       "path": "/home/marcus/code/bahnhof/raw signal images/ks/wrw.png",
       "folder": ""
@@ -52,6 +67,16 @@
     {
       "name": "wrw_gelb.png",
       "path": "/home/marcus/code/bahnhof/raw signal images/ks/wrw_gelb.png",
+      "folder": ""
+    },
+    {
+      "name": "zs1.png",
+      "path": "/home/marcus/code/bahnhof/raw signal images/ks/zs1.png",
+      "folder": ""
+    },
+    {
+      "name": "zs7.png",
+      "path": "/home/marcus/code/bahnhof/raw signal images/ks/zs7.png",
       "folder": ""
     }
   ],
