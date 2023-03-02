@@ -21,10 +21,9 @@ class VisualElement {
         this.#_image = image;
     }
 
-    get switchable(){
+    get switchable() {
         return this.#_enabled == null;
     }
-
 
     get blinkt() {
         return this.#_blinkt;
@@ -164,7 +163,7 @@ function initSignals() {
         new VisualElement("wrw", { enabled: true }),
         new VisualElement("hp0", { gruppe: 1, btn_text: "Hp 0" }),
         new VisualElement("ks1", { gruppe: 1, btn_text: "Ks 1" }),
-        new VisualElement("zs1", { gruppe: 2, btn_text: "Zs 1", allowed: (s) => s._signalStellung.hp0 || s._signalStellung.aus }),
+        new VisualElement("zs1", { gruppe: 2, btn_text: "Zs 1", allowed: (s) => s._signalStellung.hp0 || s._signalStellung.aus, blinkt: true }),
         new VisualElement("sh1", { gruppe: 2, btn_text: "Sh 1", allowed: (s) => s._signalStellung.hp0 || s._signalStellung.aus }),
         new VisualElement("aus", { gruppe: 1, btn_text: "aus", image: null }),
     ], "hp0");

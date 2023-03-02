@@ -118,7 +118,7 @@ class signalShape {
     getHTML() {
         let ul = $("<ul>", { class: "list-group list-group-flush" });
 
-        let switchable_visuell_elements = this._template.elements.filter((e) => e.enabled == null);
+        let switchable_visuell_elements = this._template.elements.filter((e) => e.switchable);
         for (let g = 1; g <= 5; g++) {
             let elements_in_group = switchable_visuell_elements.filter(e => e.gruppe == g);
             if (elements_in_group.length) {
@@ -132,7 +132,7 @@ class signalShape {
 
     syncHTML(popup) {
         let buttons = $("button", popup);
-        let switchable_visuell_elements = this._template.elements.filter((e) => e.enabled == null);
+        let switchable_visuell_elements = this._template.elements.filter((e) => e.switchable);
         switchable_visuell_elements.forEach(element => {
             let button = $("#btn_" + element.id, popup);
             if (button.length) {
