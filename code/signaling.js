@@ -21,6 +21,9 @@ class VisualElement {
         this.#_image = image;
     }
 
+    get switchable(){
+        return this.#_enabled == null;
+    }
 
 
     get blinkt() {
@@ -29,10 +32,6 @@ class VisualElement {
 
     set blinkt(v) {
         this.#_blinkt = v;
-    }
-
-    get enabled() {
-        return this.#_enabled;
     }
 
     get image() {
@@ -61,7 +60,7 @@ class VisualElement {
     disableAllOther = (s, gruppe) => s._template.elements.forEach((e) => { if (e.gruppe === gruppe) e.disable(s) });
 
     isEnabled(signal) {
-        if (this.#_enabled == null)
+        if (this.switchable)
             return signal._signalStellung[this.#_id] === true;
         else if (typeof this.#_enabled == "boolean")
             return this.#_enabled;

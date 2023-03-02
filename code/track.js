@@ -116,7 +116,7 @@ class signalShape {
     }
 
     getHTML() {
-        return this._template.elements.filter((e) => e.enabled == null).map((e) => ui.create_toggleButton(e.btn_text, e.id, () => { e.toggle(this) }));
+        return this._template.elements.filter((e) => e.switchable).map((e) => ui.create_toggleButton(e.btn_text, e.id, () => { e.toggle(this) }));
     }
 
 }
