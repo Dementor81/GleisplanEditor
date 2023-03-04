@@ -115,11 +115,9 @@ const ui = {
     $dummy.css({ position: "absolute", left: r.x + rect.x, top: r.y + rect.y });
     let popup = bootstrap.Popover.getOrCreateInstance($dummy);
     if (popup) {
-      $(document).off("click");
+      $(document).off("mousedown");
       popup.dispose();
-    }
-
-    let random = Math.random();
+    }   
 
     popup = new bootstrap.Popover($dummy, {
       html: true,
@@ -130,15 +128,16 @@ const ui = {
       content: content
     });
     $dummy[0].addEventListener('hidden.bs.popover', (e) => {
-      $(document).off("click");
+      $(document).off("mousedown");
       let p = bootstrap.Popover.getOrCreateInstance(e.target)
       if (p) p.dispose();
       $(e.target).remove();
 
     }, { once: true });
     $dummy[0].addEventListener('shown.bs.popover', (e) => {
-      $(document).on("click", (event) => {
+      $(document).on("mousedown", (event) => {
         let $target = $(event.target);
+
         if ($target.closest('div.popover').length == 0) {
           let p = bootstrap.Popover.getOrCreateInstance(e.target)
           if (p)

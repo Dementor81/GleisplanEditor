@@ -1,0 +1,25 @@
+[ 
+{"signal":"Lf7_80_Tafel","src":"basic","sourceRect":{"x":1,"y":1,"width":217,"height":647},"pos":
+        {"left":0,"top":0}
+    },
+
+{"signal":"Ne_4_g","src":"basic","sourceRect":{"x":220,"y":1,"width":148,"height":643},"pos":
+        {"left":19,"top":1}
+    },
+
+{"signal":"Lf_6_Signal","src":"basic","sourceRect":{"x":370,"y":1,"width":298,"height":562},"pos":
+        {"left":1,"top":1}
+    },
+
+{"signal":"Zs3_Form","src":"basic","sourceRect":{"x":1,"y":650,"width":213,"height":467},"pos":
+        {"left":20,"top":20}
+    },
+
+{"signal":"Ne_1","src":"basic","sourceRect":{"x":370,"y":565,"width":200,"height":306},"pos":
+        {"left":0,"top":0}
+    },
+
+{"signal":"Ne_4_k","src":"basic","sourceRect":{"x":670,"y":1,"width":198,"height":298},"pos":
+        {"left":1,"top":0}
+    }
+]

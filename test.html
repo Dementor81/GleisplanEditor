@@ -46,7 +46,7 @@
             $dummy.css({ position: "absolute", left: r.x + rect.x, top: r.y + rect.y });
             let popup = bootstrap.Popover.getOrCreateInstance($dummy);
             if (popup) {
-                $(document).off("click");
+                $(document).off("mouseup");
                 popup.dispose();
             }
 
@@ -61,22 +61,23 @@
                 content: $("<div>", { id: "popup" }).html(content)
             });
             $dummy[0].addEventListener('hidden.bs.popover', (e) => {
-                $(document).off("click");
+                $(document).off("mouseup");
                 let p = bootstrap.Popover.getOrCreateInstance(e.target)
                 if (p) p.dispose();
                 $(e.target).remove();
 
             }, { once: true });
             $dummy[0].addEventListener('shown.bs.popover', (e) => {
-                $(document).on("click", (event) => {
+                $(document).on("mouseup", (event) => {
                     let $target = $(event.target);
+                    console.log(event);
                     if ($target.closest('div.popover').length == 0) {
                         let p = bootstrap.Popover.getOrCreateInstance(e.target)
                         if (p)
-                        p.hide();
+                            p.hide();
                     }
                 })
-                console.log("shown.bs.popover");
+
             }, { once: true });
             popup.show();
         }
@@ -87,6 +88,10 @@
                 showPopup({ x: e.offsetX, y: e.offsetY, width: 10, height: 10 }, $("<h6>", { class: "dropdown-header" }).text("Signal"), $("#thing"));
 
             })
+
+            thing.oncontextmenu = function () {
+                return false;
+            };
 
 
         }

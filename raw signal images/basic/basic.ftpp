@@ -1,0 +1,66 @@
+{
+  "meta": {
+    "version": "0.6.7"
+  },
+  "savePath": "/home/marcus/code/bahnhof/images",
+  "images": [
+    {
+      "name": "Lf7_80_Tafel.png",
+      "path": "/home/marcus/code/bahnhof/raw signal images/basic/Lf7_80_Tafel.png",
+      "folder": ""
+    },
+    {
+      "name": "Lf_6_Signal.png",
+      "path": "/home/marcus/code/bahnhof/raw signal images/basic/Lf_6_Signal.png",
+      "folder": ""
+    },
+    {
+      "name": "Ne_1.png",
+      "path": "/home/marcus/code/bahnhof/raw signal images/basic/Ne_1.png",
+      "folder": ""
+    },
+    {
+      "name": "Ne_4_g.png",
+      "path": "/home/marcus/code/bahnhof/raw signal images/basic/Ne_4_g.png",
+      "folder": ""
+    },
+    {
+      "name": "Ne_4_k.png",
+      "path": "/home/marcus/code/bahnhof/raw signal images/basic/Ne_4_k.png",
+      "folder": ""
+    },
+    {
+      "name": "Zs3_Form.png",
+      "path": "/home/marcus/code/bahnhof/raw signal images/basic/Zs3_Form.png",
+      "folder": ""
+    }
+  ],
+  "folders": [],
+  "packOptions": {
+    "textureName": "basic",
+    "textureFormat": "png",
+    "removeFileExtension": true,
+    "prependFolderName": true,
+    "base64Export": false,
+    "tinify": false,
+    "tinifyKey": "",
+    "scale": 1,
+    "filter": "none",
+    "exporter": "custom",
+    "fileName": "pack-result",
+    "savePath": "/home/marcus/code/bahnhof/images",
+    "width": 2048,
+    "height": 2048,
+    "fixedSize": false,
+    "powerOfTwo": false,
+    "padding": 1,
+    "extrude": 0,
+    "allowRotation": false,
+    "allowTrim": true,
+    "trimMode": "trim",
+    "alphaThreshold": "0",
+    "detectIdentical": true,
+    "packer": "MaxRectsPacker",
+    "packerMethod": "Smart"
+  }
+}

@@ -15,22 +15,22 @@ const MOUSE_ACTION = {
     DND_SIGNAL: 4
 }
 
+const track_color = "#000000";
+const stroke = 2;
+const grid_size = 60;
+const signale_scale = 0.3;
 
-
-
-'use strict';
-var grid_size = 60;
-var signale_scale = 0.3;
 var stage, main_container, overlay_container, ui_container, grid_container;
 var drawingCanvas;
-var color = "#000000";
-var stroke = 4;
+
+
 var startpoint;
 var previousTouch;
 var showGrid = true;
 var mode = MODE_EDIT;
 var pl;
 var mouseAction = null;
+var selectedTrack;
 
 var tracks = [];
 var signals = [];
@@ -48,6 +48,7 @@ function init() {
     pl.start().then(() => {
         $("#collapseOne .accordion-body").append(newItemButton(signalTemplates.ks_hp));
         $("#collapseTwo .accordion-body").append(newItemButton(signalTemplates.ks_vr));
+        $("#collapseThree .accordion-body").append(newItemButton(signalTemplates.ne4));
     });
 
 
@@ -77,6 +78,9 @@ function init() {
     overlay_container = new createjs.Container();
     overlay_container.name = "overlay";
     stage.addChild(overlay_container);
+
+    createjs.Ticker.addEventListener("tick", stage);
+    createjs.Ticker.setFPS(25);
 
 
     stage.on("stagemousedown", handleStageMouseDown);
@@ -161,6 +165,15 @@ function init() {
         a[0].click();
     })
 
+    document.addEventListener("keydown", (e) => {
+        console.log(e);
+        if (e.code == "Delete" && selectedTrack != null) {
+            deleteTrack(selectedTrack);
+            selectedTrack = null;
+            save();
+        }
+    });
+
     $("#sidebar .newItem").on("mousedown", (e) => {
         mouseAction = {
             action: MOUSE_ACTION.DND_SIGNAL,
@@ -180,6 +193,7 @@ function init() {
     changeMode(MODE_EDIT);
 
     $(window).resize(onResizeWindow);
+    myCanvas.focus();
 }
 
 function changeMode(newMode) {
@@ -228,10 +242,10 @@ function handleStageMouseDown(event) {
     //console.log(main_container.mouseX + "/" + main_container.mouseY);
 
     let hittest = getHitTest();
-
+    console.log(hittest);
     /* if (hittest != null) {
 
-        console.log(hittest.name, hittest.getBounds());
+        console.log(hittest);
     } */
 
     mouseAction = {
@@ -345,7 +359,7 @@ function startTrackDrawing() {
     startpoint = stage.globalToLocal(stage.mouseX, stage.mouseY);
     drawingCanvas = new createjs.Shape();
     main_container.addChild(drawingCanvas);
-    drawingCanvas.graphics.c().setStrokeStyle(stroke).beginStroke(color).moveTo(startpoint.x, startpoint.y);
+    drawingCanvas.graphics.c().setStrokeStyle(stroke).beginStroke(track_color).moveTo(startpoint.x, startpoint.y);
 }
 
 function handleMouseMove(event) {
@@ -441,17 +455,18 @@ function handleStageMouseUp(event) {
     if (mouseAction.action === MOUSE_ACTION.NONE) {
         if (event.nativeEvent.which == 1 && mode === MODE_PLAY && mouseAction.container?.name == "signal") {
             let popup = ui.showPopup({ x: event.rawX, y: event.rawY, widht: 10, height: 10 }, mouseAction.container.signal.getHTML(), $(myCanvas));
-            $(".popover-body button").click(mouseAction.container.signal,(e) => {
+            $(".popover-body button").click(mouseAction.container.signal, (e) => {
                 e.data.syncHTML(popup.tip);
                 reDrawEverything();
             })
-        }else if(event.nativeEvent.which == 1 && mode === MODE_EDIT && mouseAction.container?.name == "track"){
-            
+        } else if (event.nativeEvent.which == 1 && mode === MODE_EDIT && mouseAction.container?.name == "track") {
+            selectTrack(mouseAction.container);
+            stage.update();
         }
 
     } else if (mouseAction.action === MOUSE_ACTION.DND_SIGNAL) {
         overlay_container.removeChild(mouseAction.container);
-       
+
         if (mouseAction.hit_track) {
             main_container.addChild(mouseAction.container);
             mouseAction.hit_track.track.AddSignal(mouseAction.pos);
@@ -494,6 +509,28 @@ function handleStageMouseUp(event) {
 
 
     mouseAction = null;
+}
+
+function selectTrack(track) {
+    if (selectedTrack)
+        selectedTrack.color.style = track_color;
+
+    selectedTrack = track
+    /* let box = new createjs.Shape();
+    box.graphics.setStrokeStyle(1).beginStroke("#e00").drawRect(track.start.x-5, track.start.y-5,track.end.x-track.start.x +5 ,track.end.y-track.start.y + 5 );
+    
+    ui_container.addChild(box); */
+
+    selectedTrack.color.style = "red";
+}
+
+function deleteTrack(trackShape) {
+    main_container.removeChild(trackShape);
+    
+    const index = tracks.indexOf(trackShape.track);
+    if (index > -1) { 
+        tracks.splice(index, 1);
+    }
 }
 
 function createTrack(p1, p2) {
@@ -588,22 +625,22 @@ function loadFromJson(json) {
         console.error(`stored version ${loaded.version} to old`)
 }
 
-function newItemButton(template){
+function newItemButton(template) {
     return ui.div("newItem").css("background-image", 'url(' + GetDataURL_FromTemplate(template) + ')')
-    .attr("data-signal",template.id)
-    .on("mousedown", (e) => {
-        mouseAction = {
-            action: MOUSE_ACTION.DND_SIGNAL,
-            template: signalTemplates[e.target.attributes['data-signal'].value]
-        };
+        .attr("data-signal", template.id)
+        .on("mousedown", (e) => {
+            mouseAction = {
+                action: MOUSE_ACTION.DND_SIGNAL,
+                template: signalTemplates[e.target.attributes['data-signal'].value]
+            };
 
-        //mouseup beim document anmelden, weil mouseup im stage nicht ausgelöst wird, wenn mousedown nicht auch auf der stage war                
-        document.addEventListener("mouseup", handleStageMouseUp, { once: true });
+            //mouseup beim document anmelden, weil mouseup im stage nicht ausgelöst wird, wenn mousedown nicht auch auf der stage war                
+            document.addEventListener("mouseup", handleStageMouseUp, { once: true });
 
-        stage.addEventListener("stagemousemove", handleMouseMove);
+            stage.addEventListener("stagemousemove", handleMouseMove);
 
-        startDragAndDropSignal(e.offsetX, e.offsetY);
-    })
+            startDragAndDropSignal(e.offsetX, e.offsetY);
+        })
 }
 
 
@@ -619,7 +656,7 @@ function GetDataURL_FromTemplate(template) {
     signal.draw(s);
     let sig_bounds = s.getBounds();
 
-    s.cache(sig_bounds.x, sig_bounds.y,sig_bounds.width,sig_bounds.height);
+    s.cache(sig_bounds.x, sig_bounds.y, sig_bounds.width, sig_bounds.height);
     let data_url = s.bitmapCache.getCacheDataURL();
     c.remove();
     return data_url;

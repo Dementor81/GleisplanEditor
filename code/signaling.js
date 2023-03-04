@@ -174,6 +174,12 @@ function initSignals() {
         new VisualElement("ks2", { gruppe: 1, btn_text: "Ks 2", pos: [21, 60] }),
         new VisualElement("ks1", { gruppe: 1, btn_text: "Ks 1", pos: [6, 60] })
     ], "ks2");
+
+    signalTemplates.ne4 = new SignalTemplate("ne4", "basic", [
+        new VisualElement("Ne_4_g", {gruppe: 1, btn_text: "groß" }),        
+        new VisualElement("Ne_4_k", { gruppe: 1, btn_text: "klein" }),        
+    ], "Ne_4_g");
+
 }
 
 

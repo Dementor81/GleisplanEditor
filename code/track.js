@@ -36,8 +36,30 @@ class trackShape {
     draw(container) {
         let shape = new createjs.Shape();
         shape.name = "track";
+        shape.track = this;
+
+        let hit = new createjs.Shape();
+
+        let y1 = this.start.y - Math.cos(deg2rad(this.deg)) * 5;
+        let x1 = this.start.x - Math.sin(deg2rad(this.deg)) * 5;
+
+        let y2 = this.start.y + Math.cos(deg2rad(this.deg)) * 5;
+        let x2 = this.start.x + Math.sin(deg2rad(this.deg)) * 5;
+
+        let y3 = this.end.y + Math.cos(deg2rad(this.deg)) * 5;
+        let x3 = this.end.x + Math.sin(deg2rad(this.deg)) * 5;
+
+        let y4 = this.end.y - Math.cos(deg2rad(this.deg)) * 5;
+        let x4 = this.end.x - Math.sin(deg2rad(this.deg)) * 5;
+
+        hit.graphics.beginFill(1,"#000").mt(x1,y1).lt(x2,y2).lt(x3,y3).lt(x4,y4).lt(x1,y1);
+        shape.hitArea = hit;
+
+        //container.addChild(hit);
         container.addChild(shape);
-        shape.graphics.setStrokeStyle(stroke, "round").beginStroke("#000000").moveTo(this.start.x, this.start.y).lineTo(this.end.x, this.end.y);
+        shape.graphics.setStrokeStyle(stroke, "round").beginStroke(track_color);
+        shape.color = shape.graphics.command;
+        shape.graphics.moveTo(this.start.x, this.start.y).lineTo(this.end.x, this.end.y);
     }
 
     AddSignal(position) {
