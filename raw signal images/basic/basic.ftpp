@@ -5,33 +5,33 @@
   "savePath": "/home/marcus/code/bahnhof/images",
   "images": [
     {
-      "name": "Lf7_80_Tafel.png",
-      "path": "/home/marcus/code/bahnhof/raw signal images/basic/Lf7_80_Tafel.png",
-      "folder": ""
-    },
-    {
-      "name": "Lf_6_Signal.png",
-      "path": "/home/marcus/code/bahnhof/raw signal images/basic/Lf_6_Signal.png",
-      "folder": ""
-    },
-    {
-      "name": "Ne_1.png",
-      "path": "/home/marcus/code/bahnhof/raw signal images/basic/Ne_1.png",
-      "folder": ""
-    },
-    {
-      "name": "Ne_4_g.png",
-      "path": "/home/marcus/code/bahnhof/raw signal images/basic/Ne_4_g.png",
-      "folder": ""
-    },
-    {
-      "name": "Ne_4_k.png",
-      "path": "/home/marcus/code/bahnhof/raw signal images/basic/Ne_4_k.png",
-      "folder": ""
-    },
-    {
       "name": "Zs3_Form.png",
       "path": "/home/marcus/code/bahnhof/raw signal images/basic/Zs3_Form.png",
+      "folder": ""
+    },
+    {
+      "name": "lf6.png",
+      "path": "/home/marcus/code/bahnhof/raw signal images/basic/lf6.png",
+      "folder": ""
+    },
+    {
+      "name": "lf7.png",
+      "path": "/home/marcus/code/bahnhof/raw signal images/basic/lf7.png",
+      "folder": ""
+    },
+    {
+      "name": "ne1.png",
+      "path": "/home/marcus/code/bahnhof/raw signal images/basic/ne1.png",
+      "folder": ""
+    },
+    {
+      "name": "ne4_g.png",
+      "path": "/home/marcus/code/bahnhof/raw signal images/basic/ne4_g.png",
+      "folder": ""
+    },
+    {
+      "name": "ne4_k.png",
+      "path": "/home/marcus/code/bahnhof/raw signal images/basic/ne4_k.png",
       "folder": ""
     }
   ],

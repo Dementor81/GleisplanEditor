@@ -20,7 +20,7 @@ const stroke = 2;
 const grid_size = 60;
 const signale_scale = 0.3;
 
-var stage, main_container, overlay_container, ui_container, grid_container;
+var stage, main_container, overlay_container, ui_container, grid_container, signal_container, track_container;
 var drawingCanvas;
 
 
@@ -49,6 +49,10 @@ function init() {
         $("#collapseOne .accordion-body").append(newItemButton(signalTemplates.ks_hp));
         $("#collapseTwo .accordion-body").append(newItemButton(signalTemplates.ks_vr));
         $("#collapseThree .accordion-body").append(newItemButton(signalTemplates.ne4));
+        $("#collapseThree .accordion-body").append(newItemButton(signalTemplates.ne1));
+        $("#collapseThree .accordion-body").append(newItemButton(signalTemplates.lf6));
+        $("#collapseThree .accordion-body").append(newItemButton(signalTemplates.lf7));
+        $("#collapseThree .accordion-body").append(newItemButton(signalTemplates.zs3));
     });
 
 
@@ -61,23 +65,19 @@ function init() {
         createjs.Touch.enable(stage); */
     createjs.Ticker.framerate = 24;
 
-    grid_container = new createjs.Container();
-    grid_container.name = "main";
-    grid_container.mouseChildren = true;
-    stage.addChild(grid_container);
+    const create_container = n => {
+        let c = new createjs.Container();
+        c.name = n;
+        c.mouseChildren = true;
+        return c;
+    }
 
-    main_container = new createjs.Container();
-    main_container.name = "main";
-    main_container.mouseChildren = true;
-    stage.addChild(main_container);
-
-    ui_container = new createjs.Container();
-    ui_container.name = "ui";
-    stage.addChild(ui_container);
-
-    overlay_container = new createjs.Container();
-    overlay_container.name = "overlay";
-    stage.addChild(overlay_container);
+    stage.addChild(grid_container = create_container("grid"));
+    stage.addChild(main_container = create_container("main"));
+    main_container.addChild(signal_container = create_container("signals"));
+    main_container.addChild(track_container = create_container("tracks"));
+    stage.addChild(ui_container = create_container("ui"));
+    stage.addChild(overlay_container = create_container("overlay"));
 
     createjs.Ticker.addEventListener("tick", stage);
     createjs.Ticker.setFPS(25);
@@ -104,7 +104,7 @@ function init() {
         stage.x -= (globalPoint.x - point.x);
         stage.y -= (globalPoint.y - point.y);
 
-        drawGrid(main_container);
+        drawGrid();
         stage.update();
         //console.log("scale: " + main_container.scale);
         save();
@@ -133,7 +133,7 @@ function init() {
                     stage.x += touch.clientX - previousTouch.clientX;
                     stage.y += touch.clientY - previousTouch.clientY;
 
-                    drawGrid(main_container);
+                    drawGrid();
                 };
 
                 previousTouch = touch;
@@ -146,11 +146,11 @@ function init() {
 
     $(btnDrawTracks).click(() => changeMode(MODE_EDIT));
 
-    $("#btnGrid").click(() => { showGrid = !showGrid; drawGrid(main_container); stage.update(); })
+    $("#btnGrid").click(() => { showGrid = !showGrid; drawGrid(); stage.update(); })
 
-    $("#btnClear").click(() => { tracks = []; main_container.removeAllChildren(); drawGrid(main_container); save(); stage.update(); })
+    $("#btnClear").click(() => { tracks = []; signal_container.removeAllChildren(); track_container.removeAllChildren(); drawGrid(); save(); stage.update(); })
 
-    $("#btnCenter").click(() => { stage.scale = 1; stage.x = 0; stage.y = 0; save(); drawGrid(main_container); stage.update(); })
+    $("#btnCenter").click(() => { stage.scale = 1; stage.x = 0; stage.y = 0; save(); drawGrid(); stage.update(); })
 
     $("#btnImage").click((e) => {
         /* let bounds =   main_container.getBounds()
@@ -166,7 +166,6 @@ function init() {
     })
 
     document.addEventListener("keydown", (e) => {
-        console.log(e);
         if (e.code == "Delete" && selectedTrack != null) {
             deleteTrack(selectedTrack);
             selectedTrack = null;
@@ -206,7 +205,7 @@ function changeMode(newMode) {
 function onResizeWindow() {
     $(myCanvas).attr("height", $(CanvasContainer).height() - 5);
     $(myCanvas).attr("width", $(CanvasContainer).width());
-    drawGrid(main_container);
+    drawGrid();
     stage.update();
 }
 
@@ -242,7 +241,7 @@ function handleStageMouseDown(event) {
     //console.log(main_container.mouseX + "/" + main_container.mouseY);
 
     let hittest = getHitTest();
-    console.log(hittest);
+    //console.log(hittest);
     /* if (hittest != null) {
 
         console.log(hittest);
@@ -468,7 +467,7 @@ function handleStageMouseUp(event) {
         overlay_container.removeChild(mouseAction.container);
 
         if (mouseAction.hit_track) {
-            main_container.addChild(mouseAction.container);
+            signal_container.addChild(mouseAction.container);
             mouseAction.hit_track.track.AddSignal(mouseAction.pos);
         }
         save();
@@ -506,8 +505,6 @@ function handleStageMouseUp(event) {
     } else if (mouseAction.action === MOUSE_ACTION.SCROLL) {
         save();
     }
-
-
     mouseAction = null;
 }
 
@@ -525,17 +522,23 @@ function selectTrack(track) {
 }
 
 function deleteTrack(trackShape) {
-    main_container.removeChild(trackShape);
-    
+    track_container.removeChild(trackShape);
+
     const index = tracks.indexOf(trackShape.track);
-    if (index > -1) { 
+    if (index > -1) {
         tracks.splice(index, 1);
     }
+    trackShape.track.signals.forEach(s => {
+        let i = signal_container.children.findIndex(c => c.signal === s.signal);
+        if (i != -1)
+            signal_container.removeChildAt(i);
+    });
+
 }
 
 function createTrack(p1, p2) {
     let track = new trackShape(p1, p2);
-    track.draw(main_container);
+    track.draw(track_container);
     tracks.push(track);
 }
 
@@ -547,12 +550,13 @@ function reDrawEverything() {
             reDrawEverything();
         }, 500);
     else {
-        main_container.removeAllChildren();
+        track_container.removeAllChildren();
+        signal_container.removeAllChildren();
         tracks.forEach((t) => {
 
-            t.draw(main_container);
+            t.draw(track_container);
             t.signals.forEach((p) => {
-                let c = main_container.addChild(createSignalContainer(p.signal));
+                let c = signal_container.addChild(createSignalContainer(p.signal));
                 alignSignalWithTrack(c, t, p);
             })
         })
@@ -626,7 +630,7 @@ function loadFromJson(json) {
 }
 
 function newItemButton(template) {
-    return ui.div("newItem").css("background-image", 'url(' + GetDataURL_FromTemplate(template) + ')')
+    return $("<button>",{class:"newItem"}).css("background-image", 'url(' + GetDataURL_FromTemplate(template) + ')')
         .attr("data-signal", template.id)
         .on("mousedown", (e) => {
             mouseAction = {

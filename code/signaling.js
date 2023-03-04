@@ -97,6 +97,31 @@ class VisualElement {
     };
 }
 
+class TextElement{
+    #_pos = 0;
+    #_id = "";
+    #_btn_text;
+    #_format;
+    #_color;
+
+    constructor(id,{ btn_text = "", pos = null, format = "bold 20px Arial", color = "#333" } = {}) {
+        this.#_btn_text = btn_text;
+        this.#_pos = pos;
+        this.#_format = format
+        this.#_color = color;
+    }
+
+    get id() { return this.#_id; }
+    get btn_text() { return this.#_btn_text; }
+    get pos() { return this.#_pos; }
+    get format() { return this.#_format; }
+    get color() { return this.#_color; }
+
+
+    getText = s => "8";//s._signalStellung[this.#_id];
+    setText = (s,text) => s._signalStellung[this.#_id] = text;
+}
+
 class SignalTemplate {
     #_id = null;
     #_start = null;
@@ -176,9 +201,28 @@ function initSignals() {
     ], "ks2");
 
     signalTemplates.ne4 = new SignalTemplate("ne4", "basic", [
-        new VisualElement("Ne_4_g", {gruppe: 1, btn_text: "groß" }),        
-        new VisualElement("Ne_4_k", { gruppe: 1, btn_text: "klein" }),        
-    ], "Ne_4_g");
+        new VisualElement("ne4_g", {gruppe: 1, btn_text: "groß" }),        
+        new VisualElement("ne4_k", { gruppe: 1, btn_text: "klein" }),        
+    ], "ne4_g");
+
+    signalTemplates.ne1 = new SignalTemplate("ne1", "basic", [
+        new VisualElement("ne1", { enabled: true }),        
+    ]);
+
+    signalTemplates.lf6 = new SignalTemplate("lf6", "basic", [
+        new VisualElement("lf6", { enabled: true }),
+        new TextElement("geschw",{pos:[30,8], format:"bold 30px Arial"})    
+    ]);
+
+    signalTemplates.lf7 = new SignalTemplate("lf7", "basic", [
+        new VisualElement("lf7", { enabled: true }),
+        new TextElement("geschw",{pos:[20,10], format:"bold 40px Arial"})
+    ]);
+
+    signalTemplates.zs3 = new SignalTemplate("zs3", "basic", [
+        new VisualElement("Zs3_Form", { enabled: true }),
+        new TextElement("geschw",{pos:[30,25], format:"bold 25px Arial", color:"#eee"})        
+    ]);
 
 }
 

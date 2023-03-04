@@ -102,8 +102,14 @@ class signalShape {
             if (x instanceof VisualElement) {
                 if (x.isEnabled(this) && x.isAllowed(this))
                     this.addImage(x.image, { blinkt: x.blinkt, pos: x.pos });
-            } else if (typeof x == "object") {
-                //keine Ahnung was hier passieren soll
+            } else if (x instanceof TextElement){                
+                var js_text = new createjs.Text(x.getText(this), x.format, x.color);            
+                js_text.x = x.pos[0];
+                js_text.y = x.pos[1];
+                js_text.textAlign = "center";
+                js_text.textBaseline = "top";
+                js_text.lineHeight = 20;
+                this._rendering.container.addChild(js_text);           
             }
         }
 
