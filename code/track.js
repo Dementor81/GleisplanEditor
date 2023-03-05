@@ -52,7 +52,7 @@ class trackShape {
         let y4 = this.end.y - Math.cos(deg2rad(this.deg)) * 5;
         let x4 = this.end.x - Math.sin(deg2rad(this.deg)) * 5;
 
-        hit.graphics.beginFill(1,"#000").mt(x1,y1).lt(x2,y2).lt(x3,y3).lt(x4,y4).lt(x1,y1);
+        hit.graphics.beginFill(1, "#000").mt(x1, y1).lt(x2, y2).lt(x3, y3).lt(x4, y4).lt(x1, y1);
         shape.hitArea = hit;
 
         //container.addChild(hit);
@@ -99,17 +99,17 @@ class signalShape {
 
         for (let v in this._template.elements) {
             let x = this._template.elements[v]
-            if (x instanceof VisualElement) {
-                if (x.isEnabled(this) && x.isAllowed(this))
-                    this.addImage(x.image, { blinkt: x.blinkt, pos: x.pos });
-            } else if (x instanceof TextElement){                
-                var js_text = new createjs.Text(x.getText(this), x.format, x.color);            
+            if (x instanceof TextElement) {
+                var js_text = new createjs.Text(x.getText(this), x.format, x.color);
                 js_text.x = x.pos[0];
                 js_text.y = x.pos[1];
                 js_text.textAlign = "center";
                 js_text.textBaseline = "top";
                 js_text.lineHeight = 20;
-                this._rendering.container.addChild(js_text);           
+                this._rendering.container.addChild(js_text);
+            } else if (x instanceof VisualElement) {
+                if (x.isEnabled(this) && x.isAllowed(this))
+                    this.addImage(x.image, { blinkt: x.blinkt, pos: x.pos });
             }
         }
 

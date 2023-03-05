@@ -1,0 +1,91 @@
+{
+  "meta": {
+    "version": "0.6.7"
+  },
+  "savePath": "/home/marcus/code/bahnhof/images",
+  "images": [
+    {
+      "name": "basis.png",
+      "path": "/home/marcus/code/bahnhof/raw signal images/hv/basis.png",
+      "folder": ""
+    },
+    {
+      "name": "hp0.png",
+      "path": "/home/marcus/code/bahnhof/raw signal images/hv/hp0.png",
+      "folder": ""
+    },
+    {
+      "name": "hp1.png",
+      "path": "/home/marcus/code/bahnhof/raw signal images/hv/hp1.png",
+      "folder": ""
+    },
+    {
+      "name": "hp1_1.png",
+      "path": "/home/marcus/code/bahnhof/raw signal images/hv/hp1_1.png",
+      "folder": ""
+    },
+    {
+      "name": "hp2.png",
+      "path": "/home/marcus/code/bahnhof/raw signal images/hv/hp2.png",
+      "folder": ""
+    },
+    {
+      "name": "vr.png",
+      "path": "/home/marcus/code/bahnhof/raw signal images/hv/vr.png",
+      "folder": ""
+    },
+    {
+      "name": "vr0.png",
+      "path": "/home/marcus/code/bahnhof/raw signal images/hv/vr0.png",
+      "folder": ""
+    },
+    {
+      "name": "vr1.png",
+      "path": "/home/marcus/code/bahnhof/raw signal images/hv/vr1.png",
+      "folder": ""
+    },
+    {
+      "name": "vr2.png",
+      "path": "/home/marcus/code/bahnhof/raw signal images/hv/vr2.png",
+      "folder": ""
+    },
+    {
+      "name": "wrw.png",
+      "path": "/home/marcus/code/bahnhof/raw signal images/hv/wrw.png",
+      "folder": ""
+    },
+    {
+      "name": "zs1.png",
+      "path": "/home/marcus/code/bahnhof/raw signal images/hv/zs1.png",
+      "folder": ""
+    }
+  ],
+  "folders": [],
+  "packOptions": {
+    "textureName": "hv",
+    "textureFormat": "png",
+    "removeFileExtension": true,
+    "prependFolderName": true,
+    "base64Export": false,
+    "tinify": false,
+    "tinifyKey": "",
+    "scale": 1,
+    "filter": "none",
+    "exporter": "custom",
+    "fileName": "pack-result",
+    "savePath": "/home/marcus/code/bahnhof/images",
+    "width": 2048,
+    "height": 2048,
+    "fixedSize": false,
+    "powerOfTwo": false,
+    "padding": 1,
+    "extrude": 0,
+    "allowRotation": false,
+    "allowTrim": true,
+    "trimMode": "trim",
+    "alphaThreshold": "0",
+    "detectIdentical": true,
+    "packer": "OptimalPacker",
+    "packerMethod": "Automatic"
+  }
+}

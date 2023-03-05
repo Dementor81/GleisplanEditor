@@ -47,6 +47,7 @@ function init() {
 
     pl.start().then(() => {
         $("#collapseOne .accordion-body").append(newItemButton(signalTemplates.ks_hp));
+        $("#collapseOne .accordion-body").append(newItemButton(signalTemplates.hv_hp));
         $("#collapseTwo .accordion-body").append(newItemButton(signalTemplates.ks_vr));
         $("#collapseThree .accordion-body").append(newItemButton(signalTemplates.ne4));
         $("#collapseThree .accordion-body").append(newItemButton(signalTemplates.ne1));
@@ -74,8 +75,8 @@ function init() {
 
     stage.addChild(grid_container = create_container("grid"));
     stage.addChild(main_container = create_container("main"));
-    main_container.addChild(signal_container = create_container("signals"));
     main_container.addChild(track_container = create_container("tracks"));
+    main_container.addChild(signal_container = create_container("signals"));
     stage.addChild(ui_container = create_container("ui"));
     stage.addChild(overlay_container = create_container("overlay"));
 
@@ -451,9 +452,9 @@ function handleStageMouseUp(event) {
 
     let p2 = stage.globalToLocal(stage.mouseX, stage.mouseY);
     if (mouseAction == null) return;
-    if (mouseAction.action === MOUSE_ACTION.NONE) {
+    if (mouseAction.action === MOUSE_ACTION.NONE && mouseAction.distance(stage.mouseX, stage.mouseY) < 4) {
         if (event.nativeEvent.which == 1 && mode === MODE_PLAY && mouseAction.container?.name == "signal") {
-            let popup = ui.showPopup({ x: event.rawX, y: event.rawY, widht: 10, height: 10 }, mouseAction.container.signal.getHTML(), $(myCanvas));
+            let popup = ui.showPopup({ x: event.rawX, y: event.rawY, widht: 10, height: 10}, mouseAction.container.signal._template.title , mouseAction.container.signal.getHTML(), $(myCanvas));
             $(".popover-body button").click(mouseAction.container.signal, (e) => {
                 e.data.syncHTML(popup.tip);
                 reDrawEverything();

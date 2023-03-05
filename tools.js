@@ -105,7 +105,7 @@ const ui = {
   create_buttonGroup: function (items) {
     return $("<div>", { class: "btn-group", role: "group" }).append(items);
   },
-  showPopup: function (r, content, parent) {
+  showPopup: function (r,title, content, parent) {
     let $dummy = $("#dummy");
     let rect = parent[0].getBoundingClientRect();
     if ($dummy.length == 0) {
@@ -122,7 +122,7 @@ const ui = {
     popup = new bootstrap.Popover($dummy, {
       html: true,
       trigger: "manual",
-      title: "test",
+      title: title,
       placement: "right",
       sanitize: false,
       content: content
