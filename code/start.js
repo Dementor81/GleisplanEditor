@@ -295,7 +295,7 @@ function createSignalContainer(signal) {
     c.name = "signal";
     c.signal = signal;
     c.mouseChildren = false;
-    c.scale = signale_scale;
+    c.scale = signal._template.scale;
 
     signal.draw(c);
     let sig_bounds = c.getBounds();
@@ -652,6 +652,7 @@ function newItemButton(template) {
 
 function GetDataURL_FromTemplate(template) {
 
+ 
     let signal = new signalShape(template);
 
     let c = $("<canvas>").attr({ width: 100, height: 100 });
@@ -665,7 +666,5 @@ function GetDataURL_FromTemplate(template) {
     let data_url = s.bitmapCache.getCacheDataURL();
     c.remove();
     return data_url;
-
-
 }
 

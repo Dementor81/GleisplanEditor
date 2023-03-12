@@ -97,23 +97,23 @@ class VisualElement {
     };
 }
 
-class TextElement extends VisualElement{
-    
+class TextElement extends VisualElement {
+
     #_format = "";
     #_color = "#000";
 
-    constructor(id,{ format = "bold 20px Arial", color = "#333" } = {}) {
-        super(id,arguments[1]);
+    constructor(id, { format = "bold 20px Arial", color = "#333" } = {}) {
+        super(id, arguments[1]);
         this.#_format = format
         this.#_color = color;
     }
-    
+
     get format() { return this.#_format; }
     get color() { return this.#_color; }
 
 
     getText = s => "8";//s._signalStellung[this.id];
-    setText = (s,text) => s._signalStellung[this.id] = text;
+    setText = (s, text) => s._signalStellung[this.id] = text;
 }
 
 class SignalTemplate {
@@ -121,6 +121,7 @@ class SignalTemplate {
     #_title = null;
     #_start = null;
     #_json_file = null;
+    #_scale = null;
 
     get id() {
         return this.#_id;
@@ -137,12 +138,18 @@ class SignalTemplate {
     get json_file() {
         return this.#_json_file;
     }
+    
+    get scale() {
+        return this.#_scale;
+    }
 
-    constructor(id, title, json_file, elements, start) {
+    constructor(id, title, json_file, elements, start, scale = 0.3) {
         this.#_id = id;
         this.#_title = title;
         this.#_start = start;
         this.#_json_file = json_file;
+        this.#_scale = scale;
+
         this.elements = {};
         //add a forEach function to the elements Object
         this.elements.forEach = f => {
@@ -181,21 +188,24 @@ class SignalTemplate {
 }
 
 function initSignals() {
-    signalTemplates.hv_hp = new SignalTemplate("hv_hp","Hv Hauptsignal", "hv", [
+    signalTemplates.hv_hp = new SignalTemplate("hv_hp", "Hv Hauptsignal", "hv", [
         new VisualElement("basis", { enabled: true }),
+        new VisualElement("hp", { enabled: true }),
+        new VisualElement("bk", { enabled: true }),
         new VisualElement("vr", { enabled: true }),
         new VisualElement("wrw", { enabled: true }),
-        new VisualElement("hp0", { gruppe: 1, btn_text: "Hp 0" }),
-        new VisualElement("hp1", { gruppe: 1, btn_text: "Hp 1" }),
-        new VisualElement("hp2", { gruppe: 1, btn_text: "Hp 2" }),
+        new VisualElement("zs1_aus", { enabled: true }),
+        new VisualElement("hp0", { image: "bk_hp0", gruppe: 1, btn_text: "Hp 0" }),
+        new VisualElement("hp1", { image: "esig_hp1", gruppe: 1, btn_text: "Hp 1" }),
+        new VisualElement("hp2", { image: "esig_hp2", gruppe: 1, btn_text: "Hp 2" }),
         new VisualElement("vr0", { gruppe: 2, btn_text: "Vr 0", allowed: (s) => s._signalStellung.hp1 || s._signalStellung.hp2 }),
         new VisualElement("vr1", { gruppe: 2, btn_text: "Vr 1", allowed: (s) => s._signalStellung.hp1 || s._signalStellung.hp2 }),
         new VisualElement("vr2", { gruppe: 2, btn_text: "Vr 2", allowed: (s) => s._signalStellung.hp1 || s._signalStellung.hp2 }),
         new VisualElement("zs1", { gruppe: 3, btn_text: "Zs 1", allowed: (s) => s._signalStellung.hp0 || s._signalStellung.aus }),
         new VisualElement("aus", { gruppe: 1, btn_text: "aus", image: null }),
-    ], "hp0");
+    ], "hp0", 0.15);
 
-    signalTemplates.ks_hp = new SignalTemplate("ks_hp","Ks Hauptsignal", "ks", [
+    signalTemplates.ks_hp = new SignalTemplate("ks_hp", "Ks Hauptsignal", "ks", [
         new VisualElement("basis", { enabled: true }),
         new VisualElement("aus_hp", { enabled: true }),
         //new VisualElement("aus_zs3", { enabled: true }),
@@ -207,35 +217,35 @@ function initSignals() {
         new VisualElement("aus", { gruppe: 1, btn_text: "aus", image: null }),
     ], "hp0");
 
-    signalTemplates.ks_vr = new SignalTemplate("ks_vr","Ks Vorsignal", "ks", [
+    signalTemplates.ks_vr = new SignalTemplate("ks_vr", "Ks Vorsignal", "ks", [
         new VisualElement("basis", { enabled: true }),
         new VisualElement("ne2", { enabled: true }),
         new VisualElement("ks2", { gruppe: 1, btn_text: "Ks 2", pos: [21, 60] }),
         new VisualElement("ks1", { gruppe: 1, btn_text: "Ks 1", pos: [6, 60] })
     ], "ks2");
 
-    signalTemplates.ne4 = new SignalTemplate("ne4","Ne 4", "basic", [
-        new VisualElement("ne4_g", {gruppe: 1, btn_text: "groß" }),        
-        new VisualElement("ne4_k", { gruppe: 1, btn_text: "klein" }),        
+    signalTemplates.ne4 = new SignalTemplate("ne4", "Ne 4", "basic", [
+        new VisualElement("ne4_g", { gruppe: 1, btn_text: "groß" }),
+        new VisualElement("ne4_k", { gruppe: 1, btn_text: "klein" }),
     ], "ne4_g");
 
-    signalTemplates.ne1 = new SignalTemplate("ne1","Ne 1", "basic", [
-        new VisualElement("ne1", { enabled: true }),        
+    signalTemplates.ne1 = new SignalTemplate("ne1", "Ne 1", "basic", [
+        new VisualElement("ne1", { enabled: true }),
     ]);
 
     signalTemplates.lf6 = new SignalTemplate("lf6", "Lf 6", "basic", [
         new VisualElement("lf6", { enabled: true }),
-        new TextElement("geschw",{pos:[30,8], format:"bold 30px Arial"})    
+        new TextElement("geschw", { pos: [30, 8], format: "bold 30px Arial" })
     ]);
 
     signalTemplates.lf7 = new SignalTemplate("lf7", "Lf 7", "basic", [
         new VisualElement("lf7", { enabled: true }),
-        new TextElement("geschw",{pos:[20,10], format:"bold 40px Arial"})
+        new TextElement("geschw", { pos: [20, 10], format: "bold 40px Arial" })
     ]);
 
-    signalTemplates.zs3 = new SignalTemplate("zs3","Zs 3 (alleinst.)", "basic", [
+    signalTemplates.zs3 = new SignalTemplate("zs3", "Zs 3 (alleinst.)", "basic", [
         new VisualElement("Zs3_Form", { enabled: true }),
-        new TextElement("geschw",{pos:[30,25], format:"bold 25px Arial", color:"#eee"})        
+        new TextElement("geschw", { pos: [30, 25], format: "bold 25px Arial", color: "#eee" })
     ]);
 
 }

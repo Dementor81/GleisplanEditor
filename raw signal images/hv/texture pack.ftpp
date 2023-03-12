@@ -5,28 +5,78 @@
   "savePath": "/home/marcus/code/bahnhof/images",
   "images": [
     {
+      "name": "asig.png",
+      "path": "/home/marcus/code/bahnhof/raw signal images/hv/asig.png",
+      "folder": ""
+    },
+    {
+      "name": "asig_hp0.png",
+      "path": "/home/marcus/code/bahnhof/raw signal images/hv/asig_hp0.png",
+      "folder": ""
+    },
+    {
+      "name": "asig_hp00.png",
+      "path": "/home/marcus/code/bahnhof/raw signal images/hv/asig_hp00.png",
+      "folder": ""
+    },
+    {
       "name": "basis.png",
       "path": "/home/marcus/code/bahnhof/raw signal images/hv/basis.png",
       "folder": ""
     },
     {
-      "name": "hp0.png",
-      "path": "/home/marcus/code/bahnhof/raw signal images/hv/hp0.png",
+      "name": "bk.png",
+      "path": "/home/marcus/code/bahnhof/raw signal images/hv/bk.png",
       "folder": ""
     },
     {
-      "name": "hp1.png",
-      "path": "/home/marcus/code/bahnhof/raw signal images/hv/hp1.png",
+      "name": "bk_hp0.png",
+      "path": "/home/marcus/code/bahnhof/raw signal images/hv/bk_hp0.png",
       "folder": ""
     },
     {
-      "name": "hp1_1.png",
-      "path": "/home/marcus/code/bahnhof/raw signal images/hv/hp1_1.png",
+      "name": "esig_hp1.png",
+      "path": "/home/marcus/code/bahnhof/raw signal images/hv/esig_hp1.png",
       "folder": ""
     },
     {
-      "name": "hp2.png",
-      "path": "/home/marcus/code/bahnhof/raw signal images/hv/hp2.png",
+      "name": "esig_hp2.png",
+      "path": "/home/marcus/code/bahnhof/raw signal images/hv/esig_hp2.png",
+      "folder": ""
+    },
+    {
+      "name": "hp.png",
+      "path": "/home/marcus/code/bahnhof/raw signal images/hv/hp.png",
+      "folder": ""
+    },
+    {
+      "name": "kennlicht.png",
+      "path": "/home/marcus/code/bahnhof/raw signal images/hv/kennlicht.png",
+      "folder": ""
+    },
+    {
+      "name": "ne2.png",
+      "path": "/home/marcus/code/bahnhof/raw signal images/hv/ne2.png",
+      "folder": ""
+    },
+    {
+      "name": "sbk.png",
+      "path": "/home/marcus/code/bahnhof/raw signal images/hv/sbk.png",
+      "folder": ""
+    },
+    {
+      "name": "sbk_hp1.png",
+      "path": "/home/marcus/code/bahnhof/raw signal images/hv/sbk_hp1.png",
+      "folder": ""
+    },
+    {
+      "name": "sh1.png",
+      "path": "/home/marcus/code/bahnhof/raw signal images/hv/sh1.png",
+      "folder": ""
+    },
+    {
+      "name": "verk_aus.png",
+      "path": "/home/marcus/code/bahnhof/raw signal images/hv/verk_aus.png",
       "folder": ""
     },
     {
@@ -57,6 +107,11 @@
     {
       "name": "zs1.png",
       "path": "/home/marcus/code/bahnhof/raw signal images/hv/zs1.png",
+      "folder": ""
+    },
+    {
+      "name": "zs1_aus.png",
+      "path": "/home/marcus/code/bahnhof/raw signal images/hv/zs1_aus.png",
       "folder": ""
     }
   ],

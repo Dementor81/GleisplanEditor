@@ -82,11 +82,25 @@
             popup.show();
         }
 
+        function showContextMenu(r, parent) {
+            const dropdownList = bootstrap.Dropdown.getOrCreateInstance(dropdownMenuLink);
+            let $dummy = $(".dropdown");            
+            let rect = parent[0].getBoundingClientRect();
+
+            $dummy.css({ position: "absolute", left: r.x + rect.x, top: r.y + rect.y });
+            dropdownList.toggle();
+        }
+
 
         function init() {
-            $(thing).click((e) => {
+            /* $(thing).click((e) => {
                 showPopup({ x: e.offsetX, y: e.offsetY, width: 10, height: 10 }, $("<h6>", { class: "dropdown-header" }).text("Signal"), $("#thing"));
 
+            }) */
+
+            $(thing).click((e) => {
+                e.stopPropagation();
+                showContextMenu({ x: e.offsetX, y: e.offsetY, width: 10, height: 10 }, $(thing));
             })
 
             thing.oncontextmenu = function () {
@@ -107,7 +121,18 @@
 
 
     <div id="thing" style="position: absolute; top: 50px;left: 100px; width: 500px; height: 500px;margin-left: 83px;"
-        class="bg-secondary rounded" draggable="true"></div>
+        class="bg-secondary rounded" draggable="false"></div>
+
+    <div class="dropdown" style="position: absolute; left: 50px; top:50px;">
+        <a class="btn btn-secondary dropdown-toggle visually-hidden" href="#" role="button" id="dropdownMenuLink"
+            data-bs-toggle="dropdown"> </a>
+
+        <ul class="dropdown-menu" aria-labelledby="dropdownMenuLink">
+            <li><a class="dropdown-item" href="#">Action</a></li>
+            <li><a class="dropdown-item" href="#">Another action</a></li>
+            <li><a class="dropdown-item" href="#">Something else here</a></li>
+        </ul>
+    </div>
 
 
 </body>

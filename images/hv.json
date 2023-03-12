@@ -1,45 +1,89 @@
 [ 
-{"signal":"vr","src":"hv","sourceRect":{"x":1,"y":1,"width":49,"height":49},"pos":
-        {"left":7,"top":145}
+{"signal":"basis","src":"hv","sourceRect":{"x":1,"y":1,"width":42,"height":302},"pos":
+        {"left":27,"top":265}
     },
 
-{"signal":"basis","src":"hv","sourceRect":{"x":52,"y":1,"width":32,"height":313},"pos":
-        {"left":15,"top":49}
+{"signal":"hp","src":"hv","sourceRect":{"x":45,"y":1,"width":49,"height":188},"pos":
+        {"left":24,"top":78}
     },
 
-{"signal":"hp2","src":"hv","sourceRect":{"x":1,"y":52,"width":22,"height":57},"pos":
-        {"left":20,"top":57}
+{"signal":"vr","src":"hv","sourceRect":{"x":45,"y":191,"width":75,"height":76},"pos":
+        {"left":11,"top":227}
     },
 
-{"signal":"wrw","src":"hv","sourceRect":{"x":1,"y":111,"width":5,"height":57},"pos":
-        {"left":28,"top":252}
+{"signal":"asig","src":"hv","sourceRect":{"x":96,"y":1,"width":41,"height":95},"pos":
+        {"left":30,"top":87}
     },
 
-{"signal":"vr0","src":"hv","sourceRect":{"x":1,"y":170,"width":45,"height":32},"pos":
-        {"left":9,"top":154}
+{"signal":"vr2","src":"hv","sourceRect":{"x":96,"y":98,"width":68,"height":54},"pos":
+        {"left":15,"top":238}
     },
 
-{"signal":"zs1","src":"hv","sourceRect":{"x":8,"y":111,"width":14,"height":12},"pos":
-        {"left":24,"top":123}
+{"signal":"vr1","src":"hv","sourceRect":{"x":139,"y":1,"width":68,"height":54},"pos":
+        {"left":15,"top":238}
     },
 
-{"signal":"hp0","src":"hv","sourceRect":{"x":8,"y":125,"width":22,"height":9},"pos":
-        {"left":20,"top":105}
+{"signal":"vr0","src":"hv","sourceRect":{"x":122,"y":154,"width":68,"height":54},"pos":
+        {"left":15,"top":238}
     },
 
-{"signal":"hp1","src":"hv","sourceRect":{"x":24,"y":111,"width":22,"height":9},"pos":
-        {"left":20,"top":105}
+{"signal":"esig_hp2","src":"hv","sourceRect":{"x":166,"y":57,"width":39,"height":93},"pos":
+        {"left":29,"top":87}
     },
 
-{"signal":"hp1_1","src":"hv","sourceRect":{"x":8,"y":136,"width":21,"height":9},"pos":
-        {"left":21,"top":57}
+{"signal":"bk","src":"hv","sourceRect":{"x":192,"y":152,"width":39,"height":93},"pos":
+        {"left":29,"top":87}
     },
 
-{"signal":"vr1","src":"hv","sourceRect":{"x":1,"y":204,"width":45,"height":32},"pos":
-        {"left":9,"top":154}
+{"signal":"ne2","src":"hv","sourceRect":{"x":122,"y":210,"width":36,"height":53},"pos":
+        {"left":30,"top":425}
     },
 
-{"signal":"vr2","src":"hv","sourceRect":{"x":1,"y":238,"width":45,"height":32},"pos":
-        {"left":9,"top":154}
+{"signal":"sh1","src":"hv","sourceRect":{"x":207,"y":57,"width":33,"height":30},"pos":
+        {"left":34,"top":128}
+    },
+
+{"signal":"wrw","src":"hv","sourceRect":{"x":233,"y":89,"width":8,"height":89},"pos":
+        {"left":44,"top":395}
+    },
+
+{"signal":"zs1","src":"hv","sourceRect":{"x":209,"y":1,"width":28,"height":27},"pos":
+        {"left":35,"top":188}
+    },
+
+{"signal":"zs1_aus","src":"hv","sourceRect":{"x":160,"y":210,"width":28,"height":27},"pos":
+        {"left":35,"top":188}
+    },
+
+{"signal":"sbk_hp1","src":"hv","sourceRect":{"x":160,"y":247,"width":39,"height":17},"pos":
+        {"left":29,"top":163}
+    },
+
+{"signal":"bk_hp0","src":"hv","sourceRect":{"x":201,"y":247,"width":39,"height":17},"pos":
+        {"left":29,"top":163}
+    },
+
+{"signal":"sbk","src":"hv","sourceRect":{"x":122,"y":266,"width":39,"height":17},"pos":
+        {"left":29,"top":163}
+    },
+
+{"signal":"esig_hp1","src":"hv","sourceRect":{"x":45,"y":269,"width":39,"height":16},"pos":
+        {"left":29,"top":87}
+    },
+
+{"signal":"verk_aus","src":"hv","sourceRect":{"x":209,"y":30,"width":20,"height":21},"pos":
+        {"left":17,"top":236}
+    },
+
+{"signal":"asig_hp00","src":"hv","sourceRect":{"x":96,"y":154,"width":19,"height":22},"pos":
+        {"left":52,"top":106}
+    },
+
+{"signal":"asig_hp0","src":"hv","sourceRect":{"x":139,"y":57,"width":18,"height":22},"pos":
+        {"left":30,"top":106}
+    },
+
+{"signal":"kennlicht","src":"hv","sourceRect":{"x":231,"y":30,"width":10,"height":10},"pos":
+        {"left":34,"top":128}
     }
 ]
