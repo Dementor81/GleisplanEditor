@@ -9,7 +9,7 @@
     <link rel="shortcut icon" type="image/ico" href="favicon.ico" />
     <title>Gleisplan</title>
     <link rel="stylesheet" href="start.css">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet"
+    <!--     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet"
         integrity="sha384-GLhlTQ8iRABdZLl6O3oVMWSktQOp6b7In1Zl3/Jr59b6EGGoI1aFkw7cmDA6j6gD" crossorigin="anonymous">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.5.0/font/bootstrap-icons.css">
 
@@ -18,7 +18,14 @@
         integrity="sha384-w76AqPfDkMBDXo30jS1Sgez6pr3x5MlQ1ZAGC+nuZB+EYdgRZgiwxhTBTkF7CXvN"
         crossorigin="anonymous"></script>
     <script src="https://code.jquery.com/jquery-3.6.3.min.js"></script>
-    <script src="https://code.createjs.com/1.0.0/createjs.min.js"></script>
+    <script src="https://code.createjs.com/1.0.0/createjs.min.js"></script> -->
+
+    <link rel="stylesheet" href="dev/bootstrap-5.2.2/bootstrap-icons.css">
+    <link href="dev/bootstrap-5.2.2/css/bootstrap.min.css" rel="stylesheet">
+    <script src="dev/bootstrap-5.2.2/js/bootstrap.bundle.min.js"></script>
+    <script src="dev/jquery-3.6.1.js"></script>
+    <script src="dev/createjs.js"></script>
+
     <script src="code/preLoader.js"></script>
     <script src="code/signaling.js"></script>
 
@@ -83,15 +90,47 @@
         }
 
         function showContextMenu(r, parent) {
-            const dropdownList = bootstrap.Dropdown.getOrCreateInstance(dropdownMenuLink);
-            let $dummy = $(".dropdown");            
+            const dropdownList = bootstrap.Dropdown.getOrCreateInstance(createDropDown([{ text: "test1" }, { text: "test2" }, { text: "test3", childs: [{ text: "test4" }] }]));
+            dropdownList._parent.addEventListener('hidden.bs.dropdown', (e) => {
+                const t = $(e.target);
+                if (!t.hasClass("submenu"))
+                    $(e.target).parent().remove();
+            });
+            let $dummy = $(dropdownList._parent);
             let rect = parent[0].getBoundingClientRect();
 
             $dummy.css({ position: "absolute", left: r.x + rect.x, top: r.y + rect.y });
             dropdownList.toggle();
         }
 
+        function createDropDown(items) {
+            let a = $("<a>", { class: "visually-hidden" })
+                .attr("data-bs-toggle", "dropdown")
+                .attr("data-bs-auto-close", "outside");
+            let div = $("<div>", { id: "generated_menu", class: "dropdown" }).append([a,
+                $("<ul>", { class: "dropdown-menu" }).append(createDropDownItems(items))
+            ]);
+            $(document.body).append(div);
+            return a;
+        }
 
+        function createDropDownItems(items) {
+            return items.map(item => {
+                const li = $("<li>");
+                const a = $("<a>", { class: "dropdown-item", href: "#" }).text(item.text);
+                if (item.childs) {
+                    li.addClass("dropend");
+                    a.addClass("dropdown-toggle submenu");
+                    a.attr("type", "button");
+                    a.attr("data-bs-toggle", "dropdown");
+                    a.append($("<ul>", { class: "dropdown-menu dropdown-menu-end" }).append(createDropDownItems(item.childs)));
+                }
+                li.append(a);
+                return li;
+            });
+        }
+
+        
         function init() {
             /* $(thing).click((e) => {
                 showPopup({ x: e.offsetX, y: e.offsetY, width: 10, height: 10 }, $("<h6>", { class: "dropdown-header" }).text("Signal"), $("#thing"));
@@ -99,8 +138,10 @@
             }) */
 
             $(thing).click((e) => {
-                e.stopPropagation();
-                showContextMenu({ x: e.offsetX, y: e.offsetY, width: 10, height: 10 }, $(thing));
+                if (!$("#generated_menu").length) {
+                    e.stopPropagation();
+                    showContextMenu({ x: e.offsetX, y: e.offsetY, width: 10, height: 10 }, $(thing));
+                }
             })
 
             thing.oncontextmenu = function () {
@@ -124,13 +165,20 @@
         class="bg-secondary rounded" draggable="false"></div>
 
     <div class="dropdown" style="position: absolute; left: 50px; top:50px;">
-        <a class="btn btn-secondary dropdown-toggle visually-hidden" href="#" role="button" id="dropdownMenuLink"
-            data-bs-toggle="dropdown"> </a>
+        <a class="" data-bs-auto-close="outside" id="dropdownMenuLink" data-bs-toggle="dropdown"> test</a>
 
-        <ul class="dropdown-menu" aria-labelledby="dropdownMenuLink">
+        <ul class="dropdown-menu">
             <li><a class="dropdown-item" href="#">Action</a></li>
             <li><a class="dropdown-item" href="#">Another action</a></li>
             <li><a class="dropdown-item" href="#">Something else here</a></li>
+            <li class="dropend">
+                <a class="dropdown-item dropdown-toggle" type="button" data-bs-toggle="dropdown">untermenü </a>
+                <ul class="dropdown-menu  dropdown-menu-end">
+                    <li><a class="dropdown-item" href="#">Action</a></li>
+                    <li><a class="dropdown-item" href="#">Another action</a></li>
+                    <li><a class="dropdown-item" href="#">Something else here</a></li>
+                </ul>
+            </li>
         </ul>
     </div>
 
