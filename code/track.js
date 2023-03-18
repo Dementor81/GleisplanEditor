@@ -85,6 +85,7 @@ class signalShape {
 
     _template = null;
     _signalStellung = null;
+    options = ["asig"];
 
     constructor(template) {
         this._template = template;
@@ -180,6 +181,10 @@ class signalShape {
 
             }
         });
+    }
+
+    getContectMenu() {
+        return this._template.contextMenu;
     }
 
 }

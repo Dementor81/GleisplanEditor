@@ -9,8 +9,9 @@ class VisualElement {
     #_pos = 0;
     #_gruppe = null;
     #_btn_text = "";
+    #_options = null;
 
-    constructor(id, { allowed = true, enabled = null, gruppe = 0, btn_text = id, blinkt = false, pos = null, image = id } = {}) {
+    constructor(id, { allowed = true, enabled = null, gruppe = 0, btn_text = id, blinkt = false, pos = null, image = id, options = [] } = {}) {
         this.#_id = id;
         this.#_allowed = allowed;
         this.#_enabled = enabled;
@@ -19,6 +20,7 @@ class VisualElement {
         this.#_btn_text = btn_text;
         this.#_pos = pos;
         this.#_image = image;
+        this.#_options = options;
     }
 
     get switchable() {
@@ -70,6 +72,8 @@ class VisualElement {
     }
 
     isAllowed(signal) {
+        if (this.#_options?.length && (signal.options == null || !signal.options.some(r => Array.isArray(this.#_options) ? this.#_options.includes(r) : r == this.#_options))) return false;
+
         if (typeof this.#_allowed == "function")
             return this.#_allowed(signal);
         else
@@ -123,6 +127,8 @@ class SignalTemplate {
     #_json_file = null;
     #_scale = null;
 
+    contextMenu = [];
+
     get id() {
         return this.#_id;
     }
@@ -138,7 +144,7 @@ class SignalTemplate {
     get json_file() {
         return this.#_json_file;
     }
-    
+
     get scale() {
         return this.#_scale;
     }
@@ -172,11 +178,22 @@ class SignalTemplate {
         }
 
 
-        elements.forEach(element => {
-            this.elements[element.id] = element;
-        });
+        if (elements) {
+            if (Array.isArray(elements))
+                elements.forEach(element => {
+                    this.add(new VisualElement(element, { enabled: true }));
+                });
+            else
+                this.add(new VisualElement(elements, { enabled: true }));
+        }
+
+
 
         pl.add(this.#_id, json_file);
+    }
+
+    add(element) {
+        this.elements[element.id] = element;
     }
 
 
@@ -188,65 +205,85 @@ class SignalTemplate {
 }
 
 function initSignals() {
+
+    const menu1 = {
+        text: "Verwendung", childs: [
+            { text: "Esig", option:"Esig" },
+            { text: "Asig", option:"Asig" },
+            { text: "Zsig", option:"Zsig" },
+            { text: "Bksig", option:"Bksig" },
+            { text: "Sbk", option:"Sbk" },
+
+        ]
+    }
+
     signalTemplates.hv_hp = new SignalTemplate("hv_hp", "Hv Hauptsignal", "hv", [
-        new VisualElement("basis", { enabled: true }),
-        new VisualElement("hp", { enabled: true }),
-        new VisualElement("bk", { enabled: true }),
-        new VisualElement("vr", { enabled: true }),
-        new VisualElement("wrw", { enabled: true }),
-        new VisualElement("zs1_aus", { enabled: true }),
-        new VisualElement("hp0", { image: "bk_hp0", gruppe: 1, btn_text: "Hp 0" }),
-        new VisualElement("hp1", { image: "esig_hp1", gruppe: 1, btn_text: "Hp 1" }),
-        new VisualElement("hp2", { image: "esig_hp2", gruppe: 1, btn_text: "Hp 2" }),
-        new VisualElement("vr0", { gruppe: 2, btn_text: "Vr 0", allowed: (s) => s._signalStellung.hp1 || s._signalStellung.hp2 }),
-        new VisualElement("vr1", { gruppe: 2, btn_text: "Vr 1", allowed: (s) => s._signalStellung.hp1 || s._signalStellung.hp2 }),
-        new VisualElement("vr2", { gruppe: 2, btn_text: "Vr 2", allowed: (s) => s._signalStellung.hp1 || s._signalStellung.hp2 }),
-        new VisualElement("zs1", { gruppe: 3, btn_text: "Zs 1", allowed: (s) => s._signalStellung.hp0 || s._signalStellung.aus }),
-        new VisualElement("aus", { gruppe: 1, btn_text: "aus", image: null }),
+        "basis",
+        "hp",
+        "bk",
+        "vr",
+        "wrw",
+        "zs1_aus",
     ], "hp0", 0.15);
 
-    signalTemplates.ks_hp = new SignalTemplate("ks_hp", "Ks Hauptsignal", "ks", [
-        new VisualElement("basis", { enabled: true }),
-        new VisualElement("aus_hp", { enabled: true }),
-        //new VisualElement("aus_zs3", { enabled: true }),
-        new VisualElement("wrw", { enabled: true }),
-        new VisualElement("hp0", { gruppe: 1, btn_text: "Hp 0" }),
-        new VisualElement("ks1", { gruppe: 1, btn_text: "Ks 1" }),
-        new VisualElement("zs1", { gruppe: 2, btn_text: "Zs 1", allowed: (s) => s._signalStellung.hp0 || s._signalStellung.aus, blinkt: true }),
-        new VisualElement("sh1", { gruppe: 2, btn_text: "Sh 1", allowed: (s) => s._signalStellung.hp0 || s._signalStellung.aus }),
-        new VisualElement("aus", { gruppe: 1, btn_text: "aus", image: null }),
-    ], "hp0");
+    signalTemplates.hv_hp.add(new VisualElement("hp0", { image: "bk_hp0", gruppe: 1, btn_text: "Hp 0" }));
+    signalTemplates.hv_hp.add(new VisualElement("hp1", { image: "esig_hp1", gruppe: 1, btn_text: "Hp 1" }));
+    signalTemplates.hv_hp.add(new VisualElement("hp2", { image: "esig_hp2", gruppe: 1, btn_text: "Hp 2" }));
+    signalTemplates.hv_hp.add(new VisualElement("vr0", { gruppe: 2, btn_text: "Vr 0", allowed: (s) => s._signalStellung.hp1 || s._signalStellung.hp2 }));
+    signalTemplates.hv_hp.add(new VisualElement("vr1", { gruppe: 2, btn_text: "Vr 1", allowed: (s) => s._signalStellung.hp1 || s._signalStellung.hp2 }));
+    signalTemplates.hv_hp.add(new VisualElement("vr2", { gruppe: 2, btn_text: "Vr 2", allowed: (s) => s._signalStellung.hp1 || s._signalStellung.hp2 }));
+    signalTemplates.hv_hp.add(new VisualElement("zs1", { gruppe: 3, btn_text: "Zs 1", allowed: (s) => s._signalStellung.hp0 || s._signalStellung.aus }));
+    signalTemplates.hv_hp.add(new VisualElement("aus", { gruppe: 1, btn_text: "aus", image: null }));
 
-    signalTemplates.ks_vr = new SignalTemplate("ks_vr", "Ks Vorsignal", "ks", [
-        new VisualElement("basis", { enabled: true }),
-        new VisualElement("ne2", { enabled: true }),
-        new VisualElement("ks2", { gruppe: 1, btn_text: "Ks 2", pos: [21, 60] }),
-        new VisualElement("ks1", { gruppe: 1, btn_text: "Ks 1", pos: [6, 60] })
-    ], "ks2");
 
-    signalTemplates.ne4 = new SignalTemplate("ne4", "Ne 4", "basic", [
-        new VisualElement("ne4_g", { gruppe: 1, btn_text: "groß" }),
-        new VisualElement("ne4_k", { gruppe: 1, btn_text: "klein" }),
-    ], "ne4_g");
+    signalTemplates.hv_hp_1 = new SignalTemplate("hv_hp_1", "Hv Hauptsignal", "hv", [
+        "basis",
+        "hp",
+        "asig",
+        "vr",
+        "wrw",
+        "zs1_aus",
+    ], "hp0", 0.15);
+    signalTemplates.hv_hp_1.add(new VisualElement("hp0", { image: "asig_hp0", gruppe: 1, btn_text: "Hp 0" }));
+    signalTemplates.hv_hp_1.add(new VisualElement("hp00", { options: "asig", image: "asig_hp00", enabled: true, allowed: (s) => !s._signalStellung.sh1 && s._signalStellung.hp0 }));
+    signalTemplates.hv_hp_1.add(new VisualElement("hp1", { image: "esig_hp1", gruppe: 1, btn_text: "Hp 1" }));
+    signalTemplates.hv_hp_1.add(new VisualElement("hp2", { image: "esig_hp2", gruppe: 1, btn_text: "Hp 2" }));
+    signalTemplates.hv_hp_1.add(new VisualElement("vr0", { gruppe: 2, btn_text: "Vr 0", allowed: (s) => s._signalStellung.hp1 || s._signalStellung.hp2 }));
+    signalTemplates.hv_hp_1.add(new VisualElement("vr1", { gruppe: 2, btn_text: "Vr 1", allowed: (s) => s._signalStellung.hp1 || s._signalStellung.hp2 }));
+    signalTemplates.hv_hp_1.add(new VisualElement("vr2", { gruppe: 2, btn_text: "Vr 2", allowed: (s) => s._signalStellung.hp1 || s._signalStellung.hp2 }));
+    signalTemplates.hv_hp_1.add(new VisualElement("zs1", { gruppe: 3, btn_text: "Zs 1", allowed: (s) => s._signalStellung.hp0 || s._signalStellung.aus }));
+    signalTemplates.hv_hp_1.add(new VisualElement("aus", { gruppe: 1, btn_text: "aus", image: null }));
 
-    signalTemplates.ne1 = new SignalTemplate("ne1", "Ne 1", "basic", [
-        new VisualElement("ne1", { enabled: true }),
-    ]);
+    signalTemplates.hv_hp_1.contextMenu.push(menu1);
 
-    signalTemplates.lf6 = new SignalTemplate("lf6", "Lf 6", "basic", [
-        new VisualElement("lf6", { enabled: true }),
-        new TextElement("geschw", { pos: [30, 8], format: "bold 30px Arial" })
-    ]);
+    signalTemplates.ks_hp = new SignalTemplate("ks_hp", "Ks Hauptsignal", "ks", ["basis", "aus_hp", "wrw"], "hp0");
+    signalTemplates.ks_hp.add(new VisualElement("hp0", { gruppe: 1, btn_text: "Hp 0" }))
+    signalTemplates.ks_hp.add(new VisualElement("ks1", { gruppe: 1, btn_text: "Ks 1" }))
+    signalTemplates.ks_hp.add(new VisualElement("zs1", { gruppe: 2, btn_text: "Zs 1", allowed: (s) => s._signalStellung.hp0 || s._signalStellung.aus, blinkt: true }),)
+    signalTemplates.ks_hp.add(new VisualElement("sh1", { gruppe: 2, btn_text: "Sh 1", allowed: (s) => s._signalStellung.hp0 || s._signalStellung.aus }),)
+    signalTemplates.ks_hp.add(new VisualElement("aus", { gruppe: 1, btn_text: "aus", image: null }),)
 
-    signalTemplates.lf7 = new SignalTemplate("lf7", "Lf 7", "basic", [
-        new VisualElement("lf7", { enabled: true }),
-        new TextElement("geschw", { pos: [20, 10], format: "bold 40px Arial" })
-    ]);
+    signalTemplates.ks_vr = new SignalTemplate("ks_vr", "Ks Vorsignal", "ks", ["basis", "ne2"], "ks2");
+    signalTemplates.ks_vr.add(new VisualElement("ks2", { gruppe: 1, btn_text: "Ks 2", pos: [21, 60] }));
+    signalTemplates.ks_vr.add(new VisualElement("ks1", { gruppe: 1, btn_text: "Ks 1", pos: [6, 60] }));
 
-    signalTemplates.zs3 = new SignalTemplate("zs3", "Zs 3 (alleinst.)", "basic", [
-        new VisualElement("Zs3_Form", { enabled: true }),
-        new TextElement("geschw", { pos: [30, 25], format: "bold 25px Arial", color: "#eee" })
-    ]);
+    signalTemplates.ne4 = new SignalTemplate("ne4", "Ne 4", "basic", [], "ne4_g");
+    signalTemplates.ne4.add(new VisualElement("ne4_g", { gruppe: 1, btn_text: "groß" }))
+    signalTemplates.ne4.add(new VisualElement("ne4_k", { gruppe: 1, btn_text: "klein" }))
+
+    signalTemplates.ne1 = new SignalTemplate("ne1", "Ne 1", "basic", "ne1");
+
+    signalTemplates.lf6 = new SignalTemplate("lf6", "Lf 6", "basic", "lf6");
+    signalTemplates.lf6.add(new TextElement("geschw", { pos: [30, 8], format: "bold 30px Arial" }));
+
+
+    signalTemplates.lf7 = new SignalTemplate("lf7", "Lf 7", "basic", "lf7");
+    signalTemplates.lf7.add(new TextElement("geschw", { pos: [20, 10], format: "bold 40px Arial" }));
+
+
+    signalTemplates.zs3 = new SignalTemplate("zs3", "Zs 3 (alleinst.)", "basic", "Zs3_Form");
+    signalTemplates.zs3.add(new TextElement("geschw", { pos: [30, 25], format: "bold 25px Arial", color: "#eee" }));
+
 
 }
 

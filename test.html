@@ -89,8 +89,33 @@
             popup.show();
         }
 
-        function showContextMenu(r, parent) {
-            const dropdownList = bootstrap.Dropdown.getOrCreateInstance(createDropDown([{ text: "test1" }, { text: "test2" }, { text: "test3", childs: [{ text: "test4" }] }]));
+        function showContextMenu(point, parent, items) {
+            const createDropDownItems = function (items) {
+                return items.map(item => {
+                    const li = $("<li>");
+                    const a = $("<a>", { class: "dropdown-item", href: "#" }).text(item.text);
+                    if (item.childs) {
+                        li.addClass("dropend");
+                        a.addClass("dropdown-toggle submenu");
+                        a.attr("type", "button");
+                        a.attr("data-bs-toggle", "dropdown");
+                        a.append($("<ul>", { class: "dropdown-menu dropdown-menu-end" }).append(createDropDownItems(item.childs)));
+                    }
+                    li.append(a);
+                    return li;
+                });
+            }
+
+            let a = $("<a>", { class: "visually-hidden" })
+                .attr("data-bs-toggle", "dropdown")
+                .attr("data-bs-auto-close", "false");
+            let div = $("<div>", { id: "generated_menu", class: "dropdown" }).append([a,
+                $("<ul>", { class: "dropdown-menu" }).append(createDropDownItems(items))
+            ]);
+            $(document.body).append(div);
+            const dropdownList = bootstrap.Dropdown.getOrCreateInstance(a);
+            
+            setTimeout(() => dropdownList._config.autoClose = "outside", 2);
             dropdownList._parent.addEventListener('hidden.bs.dropdown', (e) => {
                 const t = $(e.target);
                 if (!t.hasClass("submenu"))
@@ -99,22 +124,11 @@
             let $dummy = $(dropdownList._parent);
             let rect = parent[0].getBoundingClientRect();
 
-            $dummy.css({ position: "absolute", left: r.x + rect.x, top: r.y + rect.y });
-            dropdownList.toggle();
+            $dummy.css({ position: "absolute", left: point.x + rect.x, top: point.y + rect.y });
+            dropdownList.show();
         }
 
-        function createDropDown(items) {
-            let a = $("<a>", { class: "visually-hidden" })
-                .attr("data-bs-toggle", "dropdown")
-                .attr("data-bs-auto-close", "outside");
-            let div = $("<div>", { id: "generated_menu", class: "dropdown" }).append([a,
-                $("<ul>", { class: "dropdown-menu" }).append(createDropDownItems(items))
-            ]);
-            $(document.body).append(div);
-            return a;
-        }
-
-        function createDropDownItems(items) {
+        /* function createDropDownItems(items) {
             return items.map(item => {
                 const li = $("<li>");
                 const a = $("<a>", { class: "dropdown-item", href: "#" }).text(item.text);
@@ -128,21 +142,28 @@
                 li.append(a);
                 return li;
             });
-        }
+        } */
 
-        
+
         function init() {
             /* $(thing).click((e) => {
                 showPopup({ x: e.offsetX, y: e.offsetY, width: 10, height: 10 }, $("<h6>", { class: "dropdown-header" }).text("Signal"), $("#thing"));
 
             }) */
+            //createDropDown()
+            $(thing).on("mousedown", e => {
+                e.stopPropagation();
 
-            $(thing).click((e) => {
-                if (!$("#generated_menu").length) {
-                    e.stopPropagation();
-                    showContextMenu({ x: e.offsetX, y: e.offsetY, width: 10, height: 10 }, $(thing));
-                }
             })
+            $(thing).on("mouseup", e => {
+                e.stopPropagation();
+                showContextMenu({ x: e.offsetX, y: e.offsetY, width: 10, height: 10 }, $(thing), [{ text: "test1" }, { text: "test2" }, { text: "test3", childs: [{ text: "test4" }] }]);
+            })
+            /* $(thing).click((e) => {
+                //if (!$("#generated_menu").length) {
+
+                //}
+            }) */
 
             thing.oncontextmenu = function () {
                 return false;

@@ -105,7 +105,7 @@ const ui = {
   create_buttonGroup: function (items) {
     return $("<div>", { class: "btn-group", role: "group" }).append(items);
   },
-  showPopup: function (r,title, content, parent) {
+  showPopup: function (r, title, content, parent) {
     let $dummy = $("#dummy");
     let rect = parent[0].getBoundingClientRect();
     if ($dummy.length == 0) {
@@ -117,7 +117,7 @@ const ui = {
     if (popup) {
       $(document).off("mousedown");
       popup.dispose();
-    }   
+    }
 
     popup = new bootstrap.Popover($dummy, {
       html: true,
@@ -148,11 +148,52 @@ const ui = {
     popup.show();
     return popup;
   },
-  div : function(c){
+
+  showContextMenu: function (point, parent, items, signal) {
+    const createDropDownItems = function (items) {
+      return items.map(item => {
+        const li = $("<li>");
+        const a = $("<a>", { class: "dropdown-item", href: "#" }).text(item.text);
+        if (item.childs) {
+          li.addClass("dropend");
+          a.addClass("dropdown-toggle submenu");
+          a.attr("type", "button");
+          a.attr("data-bs-toggle", "dropdown");
+          a.append($("<ul>", { class: "dropdown-menu dropdown-menu-end" }).append(createDropDownItems(item.childs)));
+        } else {
+          a.attr("data-signal-optione", item.option);
+          a.click(() => signal.options?.push(item.option));
+        }
+        li.append(a);
+        return li;
+      });
+    }
+
+    let a = $("<a>", { class: "visually-hidden" })
+      .attr("data-bs-toggle", "dropdown")
+      .attr("data-bs-auto-close", "false");
+    let div = $("<div>", { id: "generated_menu", class: "dropdown" }).append([a,
+      $("<ul>", { class: "dropdown-menu" }).append(createDropDownItems(items))
+    ]);
+    $(document.body).append(div);
+    const dropdownList = bootstrap.Dropdown.getOrCreateInstance(a);
+    setTimeout(() => dropdownList._config.autoClose = "outside", 2);
+    dropdownList._parent.addEventListener('hidden.bs.dropdown', (e) => {
+      const t = $(e.target);
+      if (!t.hasClass("submenu"))
+        $(e.target).parent().remove();
+    });
+    let $dummy = $(dropdownList._parent);
+    let rect = parent[0].getBoundingClientRect();
+
+    $dummy.css({ position: "absolute", left: point.x + rect.x, top: point.y + rect.y });
+    dropdownList.show();
+  },
+  div: function (c) {
     return $("<div>", { class: c });
-}
+  }
 }
 
-function log(param1,param2,param3,param4,param5) {
-  console.log(param1,param2,param3,param4,param5);
+function log(param1, param2, param3, param4, param5) {
+  console.log(param1, param2, param3, param4, param5);
 }

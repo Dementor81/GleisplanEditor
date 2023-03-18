@@ -48,6 +48,7 @@ function init() {
     pl.start().then(() => {
         $("#collapseOne .accordion-body").append(newItemButton(signalTemplates.ks_hp));
         $("#collapseOne .accordion-body").append(newItemButton(signalTemplates.hv_hp));
+        $("#collapseOne .accordion-body").append(newItemButton(signalTemplates.hv_hp_1));
         $("#collapseTwo .accordion-body").append(newItemButton(signalTemplates.ks_vr));
         $("#collapseThree .accordion-body").append(newItemButton(signalTemplates.ne4));
         $("#collapseThree .accordion-body").append(newItemButton(signalTemplates.ne1));
@@ -86,6 +87,7 @@ function init() {
 
     stage.on("stagemousedown", handleStageMouseDown);
     stage.on("stagemouseup", handleStageMouseUp);
+
 
     myCanvas.oncontextmenu = function () {
         return false;
@@ -236,8 +238,9 @@ function drawGrid() {
 
 
 function handleStageMouseDown(event) {
+    //console.log("handleStageMouseDown", event);
 
-    //console.log("handleStageMouseDown");
+
 
     //console.log(main_container.mouseX + "/" + main_container.mouseY);
 
@@ -363,6 +366,8 @@ function startTrackDrawing() {
 }
 
 function handleMouseMove(event) {
+    //console.log("handleMouseMove", event);
+
     if (!event.primary) { return; }
     if (mouseAction == null) return;
     //falls mouseMove noch läuft, obwohl der User keinen button mehr drückt
@@ -389,11 +394,11 @@ function handleMouseMove(event) {
                 startDragAndDropSignal();
             }
             else if (event.nativeEvent.which == 1 && mode === MODE_EDIT && mouseAction.container?.name != "signal") {
-                stage.addEventListener("stagemousemove", handleMouseMove);
+                //stage.addEventListener("stagemousemove", handleMouseMove);
                 startTrackDrawing();
                 mouseAction.action = MOUSE_ACTION.DRAW;
             } else if (event.nativeEvent.which == 3) {
-                stage.addEventListener("stagemousemove", handleMouseMove);
+                //stage.addEventListener("stagemousemove", handleMouseMove);
                 mouseAction.action = MOUSE_ACTION.SCROLL;
             }
         }
@@ -447,19 +452,25 @@ function handleMouseMove(event) {
 }
 
 
-function handleStageMouseUp(event) {
-    //console.log("handleStageMouseUp", event.nativeEvent.which);
+function handleStageMouseUp(e) {
+    //console.log("handleStageMouseUp", e);
 
     let p2 = stage.globalToLocal(stage.mouseX, stage.mouseY);
     if (mouseAction == null) return;
     if (mouseAction.action === MOUSE_ACTION.NONE && mouseAction.distance(stage.mouseX, stage.mouseY) < 4) {
-        if (event.nativeEvent.which == 1 && mode === MODE_PLAY && mouseAction.container?.name == "signal") {
-            let popup = ui.showPopup({ x: event.rawX, y: event.rawY, widht: 10, height: 10}, mouseAction.container.signal._template.title , mouseAction.container.signal.getHTML(), $(myCanvas));
-            $(".popover-body button").click(mouseAction.container.signal, (e) => {
-                e.data.syncHTML(popup.tip);
-                reDrawEverything();
-            })
-        } else if (event.nativeEvent.which == 1 && mode === MODE_EDIT && mouseAction.container?.name == "track") {
+        if (e.nativeEvent.which == 1 && mouseAction.container?.name == "signal") {
+            if (mode === MODE_PLAY) {
+                let popup = ui.showPopup({ x: e.rawX, y: e.rawY, widht: 10, height: 10 }, mouseAction.container.signal._template.title, mouseAction.container.signal.getHTML(), $(myCanvas));
+                $(".popover-body button").click(mouseAction.container.signal, (e) => {
+                    e.data.syncHTML(popup.tip);
+                    reDrawEverything();
+                })
+            } else if (mode === MODE_EDIT) {
+                if (!$("#generated_menu").length) {
+                    let context_menu = ui.showContextMenu({ x: e.rawX, y: e.rawY }, $(myCanvas), mouseAction.container.signal.getContectMenu(), mouseAction.container.signal);
+                }
+            }
+        } else if (e.nativeEvent.which == 1 && mode === MODE_EDIT && mouseAction.container?.name == "track") {
             selectTrack(mouseAction.container);
             stage.update();
         }
@@ -506,7 +517,8 @@ function handleStageMouseUp(event) {
     } else if (mouseAction.action === MOUSE_ACTION.SCROLL) {
         save();
     }
-    mouseAction = null;
+
+    stage.removeEventListener("stagemousemove", handleMouseMove);
 }
 
 function selectTrack(track) {
@@ -631,7 +643,7 @@ function loadFromJson(json) {
 }
 
 function newItemButton(template) {
-    return $("<button>",{class:"newItem"}).css("background-image", 'url(' + GetDataURL_FromTemplate(template) + ')')
+    return $("<button>", { class: "newItem" }).css("background-image", 'url(' + GetDataURL_FromTemplate(template) + ')')
         .attr("data-signal", template.id)
         .on("mousedown", (e) => {
             mouseAction = {
@@ -652,7 +664,7 @@ function newItemButton(template) {
 
 function GetDataURL_FromTemplate(template) {
 
- 
+
     let signal = new signalShape(template);
 
     let c = $("<canvas>").attr({ width: 100, height: 100 });
