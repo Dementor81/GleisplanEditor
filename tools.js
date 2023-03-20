@@ -150,7 +150,7 @@ const ui = {
   },
 
   showContextMenu: function (point, parent, items, signal) {
-    const createDropDownItems = function (items) {
+    const createDropDownItems = function (items, dd) {
       return items.map(item => {
         const li = $("<li>");
         const a = $("<a>", { class: "dropdown-item", href: "#" }).text(item.text);
@@ -159,24 +159,30 @@ const ui = {
           a.addClass("dropdown-toggle submenu");
           a.attr("type", "button");
           a.attr("data-bs-toggle", "dropdown");
-          a.append($("<ul>", { class: "dropdown-menu dropdown-menu-end" }).append(createDropDownItems(item.childs)));
+          a.append($("<ul>", { class: "dropdown-menu dropdown-menu-end" }).append(createDropDownItems(item.childs, dd)));
         } else {
-          a.attr("data-signal-optione", item.option);
-          a.click(() => signal.options?.push(item.option));
+          a.attr("data-signal-option", item.option);
+          a.toggleClass("active", signal.options.match(item.option));
+          a.click(() => {
+            signal.options?.set(item.option, true)
+            dd.hide();
+            reDrawEverything();
+          });
         }
         li.append(a);
         return li;
       });
     }
 
-    let a = $("<a>", { class: "visually-hidden" })
+
+    const a = $("<a>", { class: "visually-hidden" })
       .attr("data-bs-toggle", "dropdown")
       .attr("data-bs-auto-close", "false");
-    let div = $("<div>", { id: "generated_menu", class: "dropdown" }).append([a,
-      $("<ul>", { class: "dropdown-menu" }).append(createDropDownItems(items))
-    ]);
+    const ul = $("<ul>", { class: "dropdown-menu" });
+    const div = $("<div>", { id: "generated_menu", class: "dropdown" }).append([a, ul]);
     $(document.body).append(div);
     const dropdownList = bootstrap.Dropdown.getOrCreateInstance(a);
+    ul.append(createDropDownItems(items, dropdownList));
     setTimeout(() => dropdownList._config.autoClose = "outside", 2);
     dropdownList._parent.addEventListener('hidden.bs.dropdown', (e) => {
       const t = $(e.target);

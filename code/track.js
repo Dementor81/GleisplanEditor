@@ -85,13 +85,60 @@ class signalShape {
 
     _template = null;
     _signalStellung = null;
-    options = ["asig"];
+    options = {
+        map: new Map(),
+        set: function (o, value) {
+            const splitted = o.split('.');
+            if (splitted.length == 1) {
+                if (value)
+                    this.map.set(o, true);
+                else
+                    this.map.delete(o);
+            }
+            else if (splitted.length == 2)
+                this.map.set(splitted[0], splitted[1]);
+            else
+                throw new Error();
+        },
+        match: function (options) {
+            if (options == null || options.length == 0) return true; // wenn das visualElement keine Options fordert, ist es immer ein match
+            if (this.map.size == 0) return false; //wenn das signal keine optionen hat, kann es nir ein match sein
+            const match_single = (function (singleOptions) {
+                const splitted = singleOptions.split('.');
+                if (splitted.length == 1)
+                    return this.map.has(0);
+                else if (splitted.length == 2)
+                    return this.map.get(splitted[0]) == splitted[1];
+                else
+                    throw new Error();
+            }).bind(this);
+            if (Array.isArray(options)) {
+                return options.find(match_single) != null;
+            } else
+                return match_single(options);
+
+        }
+    };
+
 
     constructor(template) {
         this._template = template;
         this._signalStellung = {};
+
+        if (template.startOptions)
+            if (Array.isArray(template.startOptions))
+                template.start.forEach(i => this.options.set(i))
+            else
+                this.options.set(template.startOptions);
+
+
         if (template.start)
-            template.elements[template.start].enable(this);
+            if (Array.isArray(template.start))
+                template.start.forEach(i => template.elements[i].enable(this))
+            else
+                template.elements[template.start].enable(this);
+
+
 
     }
 
@@ -110,7 +157,10 @@ class signalShape {
                 this._rendering.container.addChild(js_text);
             } else if (x instanceof VisualElement) {
                 if (x.isEnabled(this) && x.isAllowed(this))
-                    this.addImage(x.image, { blinkt: x.blinkt, pos: x.pos });
+                    if (Array.isArray(x.image))
+                        x.image.forEach(i => this.addImage(i, { blinkt: x.blinkt, pos: x.pos }));
+                    else
+                        this.addImage(x.image, { blinkt: x.blinkt, pos: x.pos });
             }
         }
 

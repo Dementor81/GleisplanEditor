@@ -1,89 +1,97 @@
 [ 
-{"signal":"basis","src":"hv","sourceRect":{"x":1,"y":1,"width":42,"height":302},"pos":
-        {"left":27,"top":265}
+{"signal":"basis","src":"hv","sourceRect":{"x":1,"y":1,"width":83,"height":603},"pos":
+        {"left":56,"top":529}
     },
 
-{"signal":"hp","src":"hv","sourceRect":{"x":45,"y":1,"width":49,"height":188},"pos":
-        {"left":24,"top":78}
+{"signal":"hp","src":"hv","sourceRect":{"x":86,"y":1,"width":97,"height":376},"pos":
+        {"left":49,"top":155}
     },
 
-{"signal":"vr","src":"hv","sourceRect":{"x":45,"y":191,"width":75,"height":76},"pos":
-        {"left":11,"top":227}
+{"signal":"lampen_asig","src":"hv","sourceRect":{"x":86,"y":379,"width":83,"height":189},"pos":
+        {"left":57,"top":174}
     },
 
-{"signal":"asig","src":"hv","sourceRect":{"x":96,"y":1,"width":41,"height":95},"pos":
-        {"left":30,"top":87}
+{"signal":"lampen_bksig","src":"hv","sourceRect":{"x":185,"y":1,"width":77,"height":187},"pos":
+        {"left":59,"top":175}
     },
 
-{"signal":"vr2","src":"hv","sourceRect":{"x":96,"y":98,"width":68,"height":54},"pos":
-        {"left":15,"top":238}
+{"signal":"vr","src":"hv","sourceRect":{"x":264,"y":1,"width":149,"height":150},"pos":
+        {"left":23,"top":455}
     },
 
-{"signal":"vr1","src":"hv","sourceRect":{"x":139,"y":1,"width":68,"height":54},"pos":
-        {"left":15,"top":238}
+{"signal":"vr1","src":"hv","sourceRect":{"x":264,"y":153,"width":136,"height":107},"pos":
+        {"left":30,"top":476}
     },
 
-{"signal":"vr0","src":"hv","sourceRect":{"x":122,"y":154,"width":68,"height":54},"pos":
-        {"left":15,"top":238}
+{"signal":"vr2","src":"hv","sourceRect":{"x":185,"y":262,"width":136,"height":107},"pos":
+        {"left":30,"top":476}
     },
 
-{"signal":"esig_hp2","src":"hv","sourceRect":{"x":166,"y":57,"width":39,"height":93},"pos":
-        {"left":29,"top":87}
+{"signal":"vr0","src":"hv","sourceRect":{"x":185,"y":371,"width":136,"height":107},"pos":
+        {"left":30,"top":476}
     },
 
-{"signal":"bk","src":"hv","sourceRect":{"x":192,"y":152,"width":39,"height":93},"pos":
-        {"left":29,"top":87}
+{"signal":"ne2","src":"hv","sourceRect":{"x":323,"y":262,"width":70,"height":104},"pos":
+        {"left":61,"top":850}
     },
 
-{"signal":"ne2","src":"hv","sourceRect":{"x":122,"y":210,"width":36,"height":53},"pos":
-        {"left":30,"top":425}
+{"signal":"hp2","src":"hv","sourceRect":{"x":185,"y":190,"width":77,"height":31},"pos":
+        {"left":59,"top":321}
     },
 
-{"signal":"sh1","src":"hv","sourceRect":{"x":207,"y":57,"width":33,"height":30},"pos":
-        {"left":34,"top":128}
+{"signal":"esig_hp1","src":"hv","sourceRect":{"x":185,"y":223,"width":77,"height":31},"pos":
+        {"left":59,"top":175}
     },
 
-{"signal":"wrw","src":"hv","sourceRect":{"x":233,"y":89,"width":8,"height":89},"pos":
-        {"left":44,"top":395}
+{"signal":"lampen_sbk","src":"hv","sourceRect":{"x":323,"y":368,"width":77,"height":41},"pos":
+        {"left":59,"top":321}
     },
 
-{"signal":"zs1","src":"hv","sourceRect":{"x":209,"y":1,"width":28,"height":27},"pos":
-        {"left":35,"top":188}
+{"signal":"hp0","src":"hv","sourceRect":{"x":86,"y":570,"width":77,"height":31},"pos":
+        {"left":59,"top":321}
     },
 
-{"signal":"zs1_aus","src":"hv","sourceRect":{"x":160,"y":210,"width":28,"height":27},"pos":
-        {"left":35,"top":188}
+{"signal":"sbk_hp1","src":"hv","sourceRect":{"x":165,"y":570,"width":77,"height":31},"pos":
+        {"left":59,"top":321}
     },
 
-{"signal":"sbk_hp1","src":"hv","sourceRect":{"x":160,"y":247,"width":39,"height":17},"pos":
-        {"left":29,"top":163}
+{"signal":"sh1","src":"hv","sourceRect":{"x":323,"y":411,"width":64,"height":58},"pos":
+        {"left":69,"top":256}
     },
 
-{"signal":"bk_hp0","src":"hv","sourceRect":{"x":201,"y":247,"width":39,"height":17},"pos":
-        {"left":29,"top":163}
+{"signal":"zs1_schirm","src":"hv","sourceRect":{"x":323,"y":471,"width":55,"height":52},"pos":
+        {"left":70,"top":377}
     },
 
-{"signal":"sbk","src":"hv","sourceRect":{"x":122,"y":266,"width":39,"height":17},"pos":
-        {"left":29,"top":163}
+{"signal":"zs1","src":"hv","sourceRect":{"x":244,"y":480,"width":46,"height":45},"pos":
+        {"left":75,"top":381}
     },
 
-{"signal":"esig_hp1","src":"hv","sourceRect":{"x":45,"y":269,"width":39,"height":16},"pos":
-        {"left":29,"top":87}
+{"signal":"verk","src":"hv","sourceRect":{"x":171,"y":527,"width":40,"height":41},"pos":
+        {"left":34,"top":472}
     },
 
-{"signal":"verk_aus","src":"hv","sourceRect":{"x":209,"y":30,"width":20,"height":21},"pos":
-        {"left":17,"top":236}
+{"signal":"asig_grün","src":"hv","sourceRect":{"x":380,"y":471,"width":33,"height":32},"pos":
+        {"left":60,"top":174}
     },
 
-{"signal":"asig_hp00","src":"hv","sourceRect":{"x":96,"y":154,"width":19,"height":22},"pos":
-        {"left":52,"top":106}
+{"signal":"asig_hp00","src":"hv","sourceRect":{"x":380,"y":505,"width":33,"height":32},"pos":
+        {"left":106,"top":212}
     },
 
-{"signal":"asig_hp0","src":"hv","sourceRect":{"x":139,"y":57,"width":18,"height":22},"pos":
-        {"left":30,"top":106}
+{"signal":"asig_hp0","src":"hv","sourceRect":{"x":213,"y":527,"width":33,"height":32},"pos":
+        {"left":60,"top":212}
     },
 
-{"signal":"kennlicht","src":"hv","sourceRect":{"x":231,"y":30,"width":10,"height":10},"pos":
-        {"left":34,"top":128}
+{"signal":"asig_gelb","src":"hv","sourceRect":{"x":244,"y":561,"width":33,"height":32},"pos":
+        {"left":60,"top":320}
+    },
+
+{"signal":"verk_licht","src":"hv","sourceRect":{"x":248,"y":539,"width":19,"height":19},"pos":
+        {"left":39,"top":478}
+    },
+
+{"signal":"kennlicht","src":"hv","sourceRect":{"x":395,"y":262,"width":18,"height":19},"pos":
+        {"left":69,"top":256}
     }
 ]

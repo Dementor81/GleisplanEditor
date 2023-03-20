@@ -72,7 +72,7 @@ class VisualElement {
     }
 
     isAllowed(signal) {
-        if (this.#_options?.length && (signal.options == null || !signal.options.some(r => Array.isArray(this.#_options) ? this.#_options.includes(r) : r == this.#_options))) return false;
+        if (!signal.options.match(this.#_options)) return false;
 
         if (typeof this.#_allowed == "function")
             return this.#_allowed(signal);
@@ -208,27 +208,26 @@ function initSignals() {
 
     const menu1 = {
         text: "Verwendung", childs: [
-            { text: "Esig", option:"Esig" },
-            { text: "Asig", option:"Asig" },
-            { text: "Zsig", option:"Zsig" },
-            { text: "Bksig", option:"Bksig" },
-            { text: "Sbk", option:"Sbk" },
-
+            { text: "Esig", option: "verwendung.esig" },
+            { text: "Asig", option: "verwendung.asig" },
+            { text: "Zsig", option: "verwendung.zsig" },
+            { text: "Bksig", option: "verwendung.bksig" },
+            { text: "Sbk", option: "verwendung.sbk" },
         ]
     }
 
     signalTemplates.hv_hp = new SignalTemplate("hv_hp", "Hv Hauptsignal", "hv", [
         "basis",
         "hp",
-        "bk",
+        "lampen_bksig",
         "vr",
         "wrw",
-        "zs1_aus",
-    ], "hp0", 0.15);
+        "zs1_schirm",
+    ], ["hp0", "vr0"], 0.07);
 
-    signalTemplates.hv_hp.add(new VisualElement("hp0", { image: "bk_hp0", gruppe: 1, btn_text: "Hp 0" }));
+    signalTemplates.hv_hp.add(new VisualElement("hp0", { gruppe: 1, btn_text: "Hp 0" }));
     signalTemplates.hv_hp.add(new VisualElement("hp1", { image: "esig_hp1", gruppe: 1, btn_text: "Hp 1" }));
-    signalTemplates.hv_hp.add(new VisualElement("hp2", { image: "esig_hp2", gruppe: 1, btn_text: "Hp 2" }));
+    signalTemplates.hv_hp.add(new VisualElement("hp2", { gruppe: 1, btn_text: "Hp 2" }));
     signalTemplates.hv_hp.add(new VisualElement("vr0", { gruppe: 2, btn_text: "Vr 0", allowed: (s) => s._signalStellung.hp1 || s._signalStellung.hp2 }));
     signalTemplates.hv_hp.add(new VisualElement("vr1", { gruppe: 2, btn_text: "Vr 1", allowed: (s) => s._signalStellung.hp1 || s._signalStellung.hp2 }));
     signalTemplates.hv_hp.add(new VisualElement("vr2", { gruppe: 2, btn_text: "Vr 2", allowed: (s) => s._signalStellung.hp1 || s._signalStellung.hp2 }));
@@ -239,21 +238,21 @@ function initSignals() {
     signalTemplates.hv_hp_1 = new SignalTemplate("hv_hp_1", "Hv Hauptsignal", "hv", [
         "basis",
         "hp",
-        "asig",
+        "lampen_asig",
         "vr",
         "wrw",
-        "zs1_aus",
-    ], "hp0", 0.15);
+        "zs1_schirm",
+    ], ["hp0", "vr0"], 0.07);
     signalTemplates.hv_hp_1.add(new VisualElement("hp0", { image: "asig_hp0", gruppe: 1, btn_text: "Hp 0" }));
-    signalTemplates.hv_hp_1.add(new VisualElement("hp00", { options: "asig", image: "asig_hp00", enabled: true, allowed: (s) => !s._signalStellung.sh1 && s._signalStellung.hp0 }));
-    signalTemplates.hv_hp_1.add(new VisualElement("hp1", { image: "esig_hp1", gruppe: 1, btn_text: "Hp 1" }));
-    signalTemplates.hv_hp_1.add(new VisualElement("hp2", { image: "esig_hp2", gruppe: 1, btn_text: "Hp 2" }));
+    signalTemplates.hv_hp_1.add(new VisualElement("hp00", { options: ["verwendung.asig", "verwendung.zsig"], image: "asig_hp00", enabled: true, allowed: (s) => !s._signalStellung.sh1 && s._signalStellung.hp0 }));
+    signalTemplates.hv_hp_1.add(new VisualElement("hp1", { image: "asig_grün", gruppe: 1, btn_text: "Hp 1" }));
+    signalTemplates.hv_hp_1.add(new VisualElement("hp2", { image: ["asig_gelb", "asig_grün"], gruppe: 1, btn_text: "Hp 2" }));
     signalTemplates.hv_hp_1.add(new VisualElement("vr0", { gruppe: 2, btn_text: "Vr 0", allowed: (s) => s._signalStellung.hp1 || s._signalStellung.hp2 }));
     signalTemplates.hv_hp_1.add(new VisualElement("vr1", { gruppe: 2, btn_text: "Vr 1", allowed: (s) => s._signalStellung.hp1 || s._signalStellung.hp2 }));
     signalTemplates.hv_hp_1.add(new VisualElement("vr2", { gruppe: 2, btn_text: "Vr 2", allowed: (s) => s._signalStellung.hp1 || s._signalStellung.hp2 }));
     signalTemplates.hv_hp_1.add(new VisualElement("zs1", { gruppe: 3, btn_text: "Zs 1", allowed: (s) => s._signalStellung.hp0 || s._signalStellung.aus }));
     signalTemplates.hv_hp_1.add(new VisualElement("aus", { gruppe: 1, btn_text: "aus", image: null }));
-
+    signalTemplates.hv_hp_1.startOptions = "verwendung.asig";
     signalTemplates.hv_hp_1.contextMenu.push(menu1);
 
     signalTemplates.ks_hp = new SignalTemplate("ks_hp", "Ks Hauptsignal", "ks", ["basis", "aus_hp", "wrw"], "hp0");

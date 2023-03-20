@@ -302,12 +302,15 @@ function createSignalContainer(signal) {
 
     signal.draw(c);
     let sig_bounds = c.getBounds();
-    let hit = new createjs.Shape();
-    hit.graphics.beginFill("#000").drawRect(sig_bounds.x, sig_bounds.y, sig_bounds.width, sig_bounds.height);
-    c.hitArea = hit;
+    if (sig_bounds) { // schläft fehl, wenn nichts gezeichnet wurde
+        let hit = new createjs.Shape();
+        hit.graphics.beginFill("#000").drawRect(sig_bounds.x, sig_bounds.y, sig_bounds.width, sig_bounds.height);
+        c.hitArea = hit;
 
-    c.regX = sig_bounds.width / 2 + sig_bounds.x;
-    c.regY = sig_bounds.height + sig_bounds.y;
+        c.regX = sig_bounds.width / 2 + sig_bounds.x;
+        c.regY = sig_bounds.height + sig_bounds.y;
+    } else
+        console.error("Wahrscheinlich fehler beim Zeichen des Signals!");
 
     return c;
 }
