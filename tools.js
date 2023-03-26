@@ -104,7 +104,7 @@ const ui = {
       type: "button",
       id: "btn_" + id,
       class: "btn btn-primary btn-sm"
-    }).attr("data_signal", stellung.toString()).html(text).click(() => { signal._signalStellung[stellung[0]] = stellung[1] });
+    }).attr("data_signal", stellung.toString()).html(text).click(() => { signal.set(stellung) });
   },
   create_buttonGroup: function (items) {
     return $("<div>", { class: "btn-group", role: "group" }).append(items);

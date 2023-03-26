@@ -467,6 +467,7 @@ function handleStageMouseUp(e) {
                 $(".popover-body button").click(mouseAction.container.signal, (e) => {
                     e.data.syncHTML(popup.tip);
                     reDrawEverything();
+                    save();
                 })
             } else if (mode === MODE_EDIT) {
                 if (!$("#generated_menu").length) {
@@ -626,6 +627,8 @@ function receiver(key, value) {
         return value.map((item) => {
             return trackShape.FromObject(item);
         })
+    if (key == "options")
+        return { map: new Map(JSON.parse(value)) }
 
     return value;
 }

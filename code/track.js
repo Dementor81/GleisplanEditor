@@ -79,13 +79,14 @@ class signalShape {
     static FromObject(o) {
         let s = new signalShape(signalTemplates[o._template]);
         s._signalStellung = o._signalStellung;
+        s.options.map = o.options.map;
         return s;
     }
 
 
     _template = null;
     _signalStellung = {
-        
+
     };
 
 
@@ -121,6 +122,9 @@ class signalShape {
             } else
                 return match_single(options);
 
+        },
+        stringify: function () {
+            return JSON.stringify(Array.from(this.map.entries()))
         }
     };
 
@@ -132,7 +136,7 @@ class signalShape {
 
         if (template.startOptions)
             if (Array.isArray(template.startOptions))
-                template.start.forEach(i => this.options.set(i))
+                template.startOptions.forEach(i => this.options.set(i))
             else
                 this.options.set(template.startOptions);
 
@@ -146,10 +150,18 @@ class signalShape {
     }
 
     set(stellung) {
-        this._signalStellung[stellung[0]] = stellung[1];
+        if (this.check(stellung))
+            delete this._signalStellung[stellung[0]];
+        else
+            this._signalStellung[stellung[0]] = stellung[1];
+
     }
 
     get(stellung) {
+        return this._signalStellung[stellung];
+    }
+
+    check(stellung) {
         return this._signalStellung[stellung[0]] == stellung[1];
     }
 
@@ -167,7 +179,7 @@ class signalShape {
                 js_text.lineHeight = 20;
                 this._rendering.container.addChild(js_text);
             } else if (ve instanceof VisualElement) {
-                if (this.options.match(ve.options) && ve.isEnabled(this._signalStellung))
+                if (this.options.match(ve.options) && this._template.VisualElementIsAllowed(ve, this) &&  ve.isEnabled(this))
                     if (Array.isArray(ve.image))
                         ve.image.forEach(i => this.addImage(i, { blinkt: ve.blinkt, pos: ve.pos }));
                     else
@@ -230,17 +242,14 @@ class signalShape {
 
     syncHTML(popup) {
         let buttons = $("button", popup);
-        buttons.each((i,e) => {
+        buttons.each((i, e) => {
             const stellung = e.attributes['data_signal'].value.split(",");
-            $(e).toggleClass("active",this.get(stellung));
-            /* if (this.get(stellung)) {
-                button.addClass("active");
-                //button.attr("aria-pressed", "true");
-            }
-            else {
-                //button.attr("aria-pressed", "false");
-                button.removeClass("active");
-            } */
+            $(e).toggleClass("active", this.check(stellung));
+
+            if (this._template.StellungIsAllowed(stellung[0], this))
+                $(e).removeAttr('disabled');
+            else
+                $(e).attr('disabled', 'disabled');
         })
 
         /* let switchable_visuell_elements = this._template.elements.filter((e) => e.switchable && this.options.match(e.options));
@@ -255,12 +264,12 @@ class signalShape {
                     button.attr("aria-pressed", "false");
                     button.removeClass("active");
                 }
-
+    
                 if (element.isAllowed(this))
                     button.removeAttr('disabled');
                 else
                     button.attr('disabled', 'disabled');
-
+    
             }
         }); */
     }
