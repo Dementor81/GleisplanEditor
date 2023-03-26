@@ -46,15 +46,15 @@ function init() {
 
 
     pl.start().then(() => {
-        $("#collapseOne .accordion-body").append(newItemButton(signalTemplates.ks_hp));
         $("#collapseOne .accordion-body").append(newItemButton(signalTemplates.hv_hp));
+        /* $("#collapseOne .accordion-body").append(newItemButton(signalTemplates.hv_hp));
         $("#collapseOne .accordion-body").append(newItemButton(signalTemplates.hv_hp_1));
         $("#collapseTwo .accordion-body").append(newItemButton(signalTemplates.ks_vr));
         $("#collapseThree .accordion-body").append(newItemButton(signalTemplates.ne4));
         $("#collapseThree .accordion-body").append(newItemButton(signalTemplates.ne1));
         $("#collapseThree .accordion-body").append(newItemButton(signalTemplates.lf6));
         $("#collapseThree .accordion-body").append(newItemButton(signalTemplates.lf7));
-        $("#collapseThree .accordion-body").append(newItemButton(signalTemplates.zs3));
+        $("#collapseThree .accordion-body").append(newItemButton(signalTemplates.zs3)); */
     });
 
 

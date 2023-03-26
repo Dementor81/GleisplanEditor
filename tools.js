@@ -11,6 +11,10 @@ Number.prototype.outoff = function (a, b) {
   return this < min || this > max;
 };
 
+Array.prototype.remove = function (item) {
+  return this.filter(i => i != item);
+}
+
 function clone(obj) {
   var copy;
 
@@ -95,12 +99,12 @@ function deg2rad(deg) {
 }
 
 const ui = {
-  create_toggleButton: function (text, id, onclick) {
+  create_toggleButton: function (text, id, stellung, signal) {
     return $("<button>", {
       type: "button",
       id: "btn_" + id,
       class: "btn btn-primary btn-sm"
-    }).html(text).click(onclick);
+    }).attr("data_signal", stellung.toString()).html(text).click(() => { signal._signalStellung[stellung[0]] = stellung[1] });
   },
   create_buttonGroup: function (items) {
     return $("<div>", { class: "btn-group", role: "group" }).append(items);

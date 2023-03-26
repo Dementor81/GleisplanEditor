@@ -84,7 +84,11 @@ class signalShape {
 
 
     _template = null;
-    _signalStellung = null;
+    _signalStellung = {
+        
+    };
+
+
     options = {
         map: new Map(),
         set: function (o, value) {
@@ -106,7 +110,7 @@ class signalShape {
             const match_single = (function (singleOptions) {
                 const splitted = singleOptions.split('.');
                 if (splitted.length == 1)
-                    return this.map.has(0);
+                    return this.map.has(singleOptions);
                 else if (splitted.length == 2)
                     return this.map.get(splitted[0]) == splitted[1];
                 else
@@ -121,9 +125,10 @@ class signalShape {
     };
 
 
+
+
     constructor(template) {
         this._template = template;
-        this._signalStellung = {};
 
         if (template.startOptions)
             if (Array.isArray(template.startOptions))
@@ -134,33 +139,39 @@ class signalShape {
 
         if (template.start)
             if (Array.isArray(template.start))
-                template.start.forEach(i => template.elements[i].enable(this))
+                template.start.forEach(i => this.set(i));
             else
-                template.elements[template.start].enable(this);
+                this.set(template.start);
 
+    }
 
+    set(stellung) {
+        this._signalStellung[stellung[0]] = stellung[1];
+    }
 
+    get(stellung) {
+        return this._signalStellung[stellung[0]] == stellung[1];
     }
 
     draw(c) {
         this._rendering = { container: c };
 
         for (let v in this._template.elements) {
-            let x = this._template.elements[v]
-            if (x instanceof TextElement) {
-                var js_text = new createjs.Text(x.getText(this), x.format, x.color);
-                js_text.x = x.pos[0];
-                js_text.y = x.pos[1];
+            let ve = this._template.elements[v]
+            if (ve instanceof TextElement) {
+                var js_text = new createjs.Text(ve.getText(this), ve.format, ve.color);
+                js_text.x = ve.pos[0];
+                js_text.y = ve.pos[1];
                 js_text.textAlign = "center";
                 js_text.textBaseline = "top";
                 js_text.lineHeight = 20;
                 this._rendering.container.addChild(js_text);
-            } else if (x instanceof VisualElement) {
-                if (x.isEnabled(this) && x.isAllowed(this))
-                    if (Array.isArray(x.image))
-                        x.image.forEach(i => this.addImage(i, { blinkt: x.blinkt, pos: x.pos }));
+            } else if (ve instanceof VisualElement) {
+                if (this.options.match(ve.options) && ve.isEnabled(this._signalStellung))
+                    if (Array.isArray(ve.image))
+                        ve.image.forEach(i => this.addImage(i, { blinkt: ve.blinkt, pos: ve.pos }));
                     else
-                        this.addImage(x.image, { blinkt: x.blinkt, pos: x.pos });
+                        this.addImage(ve.image, { blinkt: ve.blinkt, pos: ve.pos });
             }
         }
 
@@ -195,15 +206,23 @@ class signalShape {
     }
 
     getHTML() {
-        let ul = $("<ul>", { class: "list-group list-group-flush" });
+        const ul = $("<ul>", { class: "list-group list-group-flush" });
 
-        let switchable_visuell_elements = this._template.elements.filter((e) => e.switchable);
-        for (let g = 1; g <= 5; g++) {
-            let elements_in_group = switchable_visuell_elements.filter(e => e.gruppe == g);
-            if (elements_in_group.length) {
-                ul.append($("<li>", { class: "list-group-item" }).append(ui.create_buttonGroup(elements_in_group.map((e) => ui.create_toggleButton(e.btn_text, e.id, () => { e.toggle(this) })))));
-            }
-        }
+        const switchable_visuell_elements = this._template.elements.filter((e) => e.switchable && this.options.match(e.options));
+        const groups = new Map();
+
+        switchable_visuell_elements.forEach(e => {
+            const s = e.stellung[0];
+            if (!groups.has(s))
+                groups.set(s, [e]);
+            else if (groups.get(s).find(i => i.stellung[1] === e.stellung[1]) == null)
+                groups.get(s).push(e);
+        })
+
+        groups.forEach((v) => {
+            ul.append($("<li>", { class: "list-group-item" }).append(ui.create_buttonGroup(v.map((e) => ui.create_toggleButton(e.btn_text, "", e.stellung, this)))));
+
+        })
 
         this.syncHTML(ul);
         return ul;
@@ -211,7 +230,20 @@ class signalShape {
 
     syncHTML(popup) {
         let buttons = $("button", popup);
-        let switchable_visuell_elements = this._template.elements.filter((e) => e.switchable);
+        buttons.each((i,e) => {
+            const stellung = e.attributes['data_signal'].value.split(",");
+            $(e).toggleClass("active",this.get(stellung));
+            /* if (this.get(stellung)) {
+                button.addClass("active");
+                //button.attr("aria-pressed", "true");
+            }
+            else {
+                //button.attr("aria-pressed", "false");
+                button.removeClass("active");
+            } */
+        })
+
+        /* let switchable_visuell_elements = this._template.elements.filter((e) => e.switchable && this.options.match(e.options));
         switchable_visuell_elements.forEach(element => {
             let button = $("#btn_" + element.id, popup);
             if (button.length) {
@@ -230,7 +262,7 @@ class signalShape {
                     button.attr('disabled', 'disabled');
 
             }
-        });
+        }); */
     }
 
     getContectMenu() {
