@@ -168,26 +168,33 @@ class signalShape {
     draw(c) {
         this._rendering = { container: c };
 
-        for (let v in this._template.elements) {
-            let ve = this._template.elements[v]
-            if (ve instanceof TextElement) {
-                var js_text = new createjs.Text(ve.getText(this), ve.format, ve.color);
-                js_text.x = ve.pos[0];
-                js_text.y = ve.pos[1];
-                js_text.textAlign = "center";
-                js_text.textBaseline = "top";
-                js_text.lineHeight = 20;
-                this._rendering.container.addChild(js_text);
-            } else if (ve instanceof VisualElement) {
-                if (this.options.match(ve.options) && this._template.VisualElementIsAllowed(ve, this) &&  ve.isEnabled(this))
+        this._template.elements.forEach(ve=>this.drawVisualElement(ve));
+        
+        this._rendering = null;
+    }
+
+    drawVisualElement(ve) {
+        if (ve instanceof TextElement) {
+            var js_text = new createjs.Text(ve.getText(this), ve.format, ve.color);
+            js_text.x = ve.pos[0];
+            js_text.y = ve.pos[1];
+            js_text.textAlign = "center";
+            js_text.textBaseline = "top";
+            js_text.lineHeight = 20;
+            this._rendering.container.addChild(js_text);
+        } else if (ve instanceof VisualElement) {
+            if (this.options.match(ve.options) && this._template.VisualElementIsAllowed(ve, this) && ve.isEnabled(this))
+                if (ve.image) {
                     if (Array.isArray(ve.image))
                         ve.image.forEach(i => this.addImage(i, { blinkt: ve.blinkt, pos: ve.pos }));
                     else
                         this.addImage(ve.image, { blinkt: ve.blinkt, pos: ve.pos });
-            }
+                }else if(ve.childs){
+                    ve.childs.forEach(c=>this.drawVisualElement(c));
+                }
         }
-
-        this._rendering = null;
+        else
+            console.log(ve);
     }
 
     addImage(texture_name, { pos = null, blinkt = false } = {}) {

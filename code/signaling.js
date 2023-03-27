@@ -8,8 +8,9 @@ class VisualElement {
     #_options = null;
     #_enabled = null;
     #_stellung = [];
+    #_childs = null;
 
-    constructor(image, { btn_text = null, blinkt = false, pos = null, enabled = null, options = [], stellung = null } = {}) {
+    constructor(image, { btn_text = null, blinkt = false, pos = null, enabled = null, options = [], stellung = null, childs = null } = {}) {
         this.#_blinkt = blinkt;
         this.#_btn_text = btn_text;
         this.#_pos = pos;
@@ -17,6 +18,7 @@ class VisualElement {
         this.#_options = options;
         this.#_enabled = enabled;
         this.#_stellung = stellung;
+        this.#_childs = childs;
     }
 
     get switchable() {
@@ -32,6 +34,7 @@ class VisualElement {
     get btn_text() { return this.#_btn_text; }
     get options() { return this.#_options; }
     get stellung() { return this.#_stellung; }
+    get childs() { return this.#_childs; }
 
     get pos() { return this.#_pos; }
     set pos(v) { this.#_pos = v; }
@@ -223,15 +226,29 @@ function initSignals() {
     t.add(new VisualElement("esig", { options: verw_strecke.remove("verwendung.sbk") }));
     t.add(new VisualElement("sbk", { options: verw_strecke }));
 
-    t.add(new VisualElement("asig_hp0", { btn_text: "Hp 0", options: verw_bahnhof, stellung: ["hp", 0] }));
-    t.add(new VisualElement("hp0", { btn_text: "Hp 0", options: verw_strecke, stellung: ["hp", 0] }));
+    t.add(new VisualElement(null, {
+        btn_text: "Hp 0", stellung: ["hp", 0], childs: [
+            new VisualElement("asig_hp0", { options: verw_bahnhof }),
+            new VisualElement("hp0", { options: verw_strecke })
+        ]
+    }));
+
     t.add(new VisualElement("hp00", { options: verw_bahnhof, stellung: ["hp00", 1] }));
 
-    t.add(new VisualElement("asig_hp1", { btn_text: "Hp 1", options: verw_bahnhof, stellung: ["hp", 1] }));
-    t.add(new VisualElement("esig_hp1", { btn_text: "Hp 1", options: verw_strecke.remove("verwendung.sbk"), stellung: ["hp", 1] }));
-    t.add(new VisualElement("sbk_hp1", { btn_text: "Hp 1", options: "verwendung.sbk", stellung: ["hp", 1] }));
-    t.add(new VisualElement(["asig_hp1", "asig_hp2"], { btn_text: "Hp 2", options: verw_bahnhof, stellung: ["hp", 2] }));
-    t.add(new VisualElement(["esig_hp1", "esig_hp2"], { btn_text: "Hp 2", options: verw_strecke.remove("verwendung.sbk"), stellung: ["hp", 2] }));
+    t.add(new VisualElement(null, {
+        btn_text: "Hp 1", stellung: ["hp", 1], childs: [
+            new VisualElement("asig_hp1", { options: verw_bahnhof }),
+            new VisualElement("esig_hp1", { options: verw_strecke.remove("verwendung.sbk") }),
+            new VisualElement("sbk_hp1", { options: "verwendung.sbk" })
+        ]
+    }));
+
+    t.add(new VisualElement(null, {
+        btn_text: "Hp 2", stellung: ["hp", 2], childs: [
+            new VisualElement(["asig_hp1", "asig_hp2"], { options: verw_bahnhof }),
+            new VisualElement(["esig_hp1", "esig_hp2"], { options: verw_strecke.remove("verwendung.sbk")})
+        ]
+    }));
 
     t.add(new VisualElement("vr0", { btn_text: "Vr 0", options: "vr", stellung: ["vr", 0] }));
     t.add(new VisualElement("vr1", { btn_text: "Vr 1", options: "vr", stellung: ["vr", 1] }));
