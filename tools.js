@@ -11,9 +11,11 @@ Number.prototype.outoff = function (a, b) {
   return this < min || this > max;
 };
 
+//returns a copy where the given item is missing
 Array.prototype.remove = function (item) {
   return this.filter(i => i != item);
 }
+
 
 function clone(obj) {
   var copy;

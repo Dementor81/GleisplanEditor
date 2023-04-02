@@ -107,15 +107,21 @@ class signalShape {
         },
         match: function (options) {
             if (options == null || options.length == 0) return true; // wenn das visualElement keine Options fordert, ist es immer ein match
-            if (this.map.size == 0) return false; //wenn das signal keine optionen hat, kann es nir ein match sein
+            //if (this.map.size == 0) return false; //wenn das signal keine optionen hat, kann es nie ein match sein
             const match_single = (function (singleOptions) {
                 const splitted = singleOptions.split('.');
+                const antiMatch = splitted[0][0] == '!';
+                let retValue;
+                if (antiMatch)
+                    splitted[0] = splitted[0].substring(1);
                 if (splitted.length == 1)
-                    return this.map.has(singleOptions);
+                    retValue = this.map.has(splitted[0]);
                 else if (splitted.length == 2)
-                    return this.map.get(splitted[0]) == splitted[1];
+                    retValue = this.map.get(splitted[0]) == splitted[1];
                 else
                     throw new Error();
+
+                return antiMatch ? !retValue : retValue;
             }).bind(this);
             if (Array.isArray(options)) {
                 return options.find(match_single) != null;
@@ -162,14 +168,14 @@ class signalShape {
     }
 
     check(stellung) {
-        return this._signalStellung[stellung[0]] == stellung[1];
+        return stellung == null || this._signalStellung[stellung[0]] == stellung[1];
     }
 
     draw(c) {
         this._rendering = { container: c };
 
-        this._template.elements.forEach(ve=>this.drawVisualElement(ve));
-        
+        this._template.elements.forEach(ve => this.drawVisualElement(ve));
+
         this._rendering = null;
     }
 
@@ -189,8 +195,8 @@ class signalShape {
                         ve.image.forEach(i => this.addImage(i, { blinkt: ve.blinkt, pos: ve.pos }));
                     else
                         this.addImage(ve.image, { blinkt: ve.blinkt, pos: ve.pos });
-                }else if(ve.childs){
-                    ve.childs.forEach(c=>this.drawVisualElement(c));
+                } else if (ve.childs) {
+                    ve.childs.forEach(c => this.drawVisualElement(c));
                 }
         }
         else
@@ -227,14 +233,31 @@ class signalShape {
     getHTML() {
         const ul = $("<ul>", { class: "list-group list-group-flush" });
 
-        const switchable_visuell_elements = this._template.elements.filter((e) => e.switchable && this.options.match(e.options));
+        const filterTree = (function (array) {
+            let a = [];
+            array.forEach(item => {
+                if (this.options.match(item.options)) {
+                    if (item.switchable) a.push(item);
+                    if (item.childs)
+                        a = a.concat(filterTree(item.childs));
+
+                }
+            })
+
+            return a;
+        }).bind(this);
+
+
+        const switchable_visuell_elements = filterTree(this._template.elements);
+
+
         const groups = new Map();
 
         switchable_visuell_elements.forEach(e => {
             const s = e.stellung[0];
             if (!groups.has(s))
                 groups.set(s, [e]);
-            else if (groups.get(s).find(i => i.stellung[1] === e.stellung[1]) == null)
+            else
                 groups.get(s).push(e);
         })
 
