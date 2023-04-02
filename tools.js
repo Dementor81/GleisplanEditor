@@ -170,9 +170,10 @@ const ui = {
           a.attr("data-signal-option", item.option);
           a.toggleClass("active", signal.options.match(item.option));
           a.click(() => {
-            signal.options?.set(item.option, true)
+            signal.options?.set(item.option, !a.hasClass("active"));
             dd.hide();
             reDrawEverything();
+            save();
           });
         }
         li.append(a);

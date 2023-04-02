@@ -47,13 +47,14 @@ function init() {
 
     pl.start().then(() => {
         $("#collapseOne .accordion-body").append(newItemButton(signalTemplates.hv_hp));
-         $("#collapseOne .accordion-body").append(newItemButton(signalTemplates.ks_hp));
+        $("#collapseOne .accordion-body").append(newItemButton(signalTemplates.ks_hp));
+        $("#collapseTwo .accordion-body").append(newItemButton(signalTemplates.hv_vr));
         $("#collapseTwo .accordion-body").append(newItemButton(signalTemplates.ks_vr));
-        /*$("#collapseThree .accordion-body").append(newItemButton(signalTemplates.ne4));
+        $("#collapseThree .accordion-body").append(newItemButton(signalTemplates.ne4));
         $("#collapseThree .accordion-body").append(newItemButton(signalTemplates.ne1));
         $("#collapseThree .accordion-body").append(newItemButton(signalTemplates.lf6));
         $("#collapseThree .accordion-body").append(newItemButton(signalTemplates.lf7));
-        $("#collapseThree .accordion-body").append(newItemButton(signalTemplates.zs3)); */
+        $("#collapseThree .accordion-body").append(newItemButton(signalTemplates.zs3));
     });
 
 
@@ -678,7 +679,7 @@ function GetDataURL_FromTemplate(template) {
     let s = new createjs.Stage(c[0]);
     signal.draw(s);
     let sig_bounds = s.getBounds();
-
+    if (sig_bounds == null) throw Error(template.title + " has no visual Element visible");
     s.cache(sig_bounds.x, sig_bounds.y, sig_bounds.width, sig_bounds.height);
     let data_url = s.bitmapCache.getCacheDataURL();
     c.remove();
