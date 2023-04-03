@@ -11,9 +11,21 @@ Number.prototype.outoff = function (a, b) {
   return this < min || this > max;
 };
 
+Number.prototype.is = function (a) {
+  return a.includes(this)
+};
+
 //returns a copy where the given item is missing
 Array.prototype.remove = function (item) {
   return this.filter(i => i != item);
+}
+
+function deepEqual(x, y) {
+  const ok = Object.keys, tx = typeof x, ty = typeof y;
+  return x && y && tx === 'object' && tx === ty ? (
+    ok(x).length === ok(y).length &&
+      ok(x).every(key => deepEqual(x[key], y[key]))
+  ) : (x === y);
 }
 
 
