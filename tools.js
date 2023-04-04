@@ -12,7 +12,7 @@ Number.prototype.outoff = function (a, b) {
 };
 
 Number.prototype.is = function (a) {
-  return a.includes(this)
+  return Array.from(arguments).includes(this)
 };
 
 //returns a copy where the given item is missing
@@ -24,7 +24,7 @@ function deepEqual(x, y) {
   const ok = Object.keys, tx = typeof x, ty = typeof y;
   return x && y && tx === 'object' && tx === ty ? (
     ok(x).length === ok(y).length &&
-      ok(x).every(key => deepEqual(x[key], y[key]))
+    ok(x).every(key => deepEqual(x[key], y[key]))
   ) : (x === y);
 }
 
@@ -219,6 +219,12 @@ const ui = {
   }
 }
 
-function log(param1, param2, param3, param4, param5) {
-  console.log(param1, param2, param3, param4, param5);
+const geometry = {
+  length: function (p1, p2) {
+    return Math.sqrt(Math.pow(p1.x - p2.x, 2) + Math.pow(p1.y - p2.y, 2));
+  },
+  slope: function (p1, p2) {
+    return (p1.y - p2.y) / (p1.x - p2.x);
+  }
+
 }

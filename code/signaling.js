@@ -310,7 +310,7 @@ function initSignals() {
         new VisualElement("verk", { pos: [7, 85], options: "wdh", enabled: (s) => s.get("hp") == 2 })
     ], [["hp", 2]]);
     signalTemplates.ks_vr.contextMenu = [].concat(menu.wiederholer);
-    signalTemplates.ks_vr = t;
+    
 
     //ne4
     signalTemplates.ne4 = new SignalTemplate("ne4", "Ne 4", "basic", [
