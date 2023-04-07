@@ -118,7 +118,22 @@ const ui = {
       type: "button",
       id: "btn_" + id,
       class: "btn btn-primary btn-sm"
-    }).attr("data_signal", stellung.toString()).html(text).click(() => { signal.set(stellung) });
+    }).attr("data_signal", stellung).html(text).click(() => { signal.set(stellung) });
+  },
+  create_Input: function (text, stellung, signal) {
+    const id = uuidv4();
+    return $("<div>",{class:"form-floating"}).append([$("<input>", {
+      type: "number",
+      id: id,
+      class: "form-control  form-control-sm",
+      value: signal.get(stellung)
+    }).attr("data_signal", stellung).on("input", (e) => {
+      signal.set(stellung, e.target.value);
+      reDrawEverything();
+      save();
+    }),
+    $("<label>", { for: id, text:text })
+    ]);
   },
   create_buttonGroup: function (items) {
     return $("<div>", { class: "btn-group", role: "group" }).append(items);

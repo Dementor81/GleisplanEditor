@@ -361,10 +361,6 @@ function startDragAndDropSignal(mouseX, mouseY) {
     stage.update();
 }
 
-function startTrackDrawing() {
-
-}
-
 function handleMouseMove(event) {
     //console.log("handleMouseMove", event);
 
@@ -394,12 +390,10 @@ function handleMouseMove(event) {
                 startDragAndDropSignal();
             }
             else if (event.nativeEvent.which == 1 && mode === MODE_EDIT && mouseAction.container?.name != "signal") {
-                //stage.addEventListener("stagemousemove", handleMouseMove);
-                mouseAction.previousPoint = mouseAction.startOfTrack = { x: Math.round(local_point.x / grid_size) * grid_size, y: Math.round(local_point.y / grid_size) * grid_size };
-                /* mouseAction.lineShape = new createjs.Shape();
+                //stage.addEventListener("stagemousemove", handleMouseMove);                
+                mouseAction.lineShape = new createjs.Shape();
                 overlay_container.addChild(mouseAction.lineShape);
-                mouseAction.lineShape.graphics.c().setStrokeStyle(stroke).beginStroke(track_color).moveTo(mouseAction.startOfTrack.x, mouseAction.startOfTrack.y).lineTo(mouseAction.startOfTrack.x, mouseAction.startOfTrack.y); */
-                mouseAction.ankerPoints = [mouseAction.startOfTrack];
+                mouseAction.ankerPoints = [{ x: Math.round(local_point.x / grid_size) * grid_size, y: Math.round(local_point.y / grid_size) * grid_size }];
                 mouseAction.action = MOUSE_ACTION.BUILD_TRACK;
             } else if (event.nativeEvent.which == 3) {
                 //stage.addEventListener("stagemousemove", handleMouseMove);
@@ -442,15 +436,11 @@ function handleMouseMove(event) {
             mouseAction.container.y = local_point.y;
         }
     } else if (mouseAction.action === MOUSE_ACTION.BUILD_TRACK) {
-        trackDrawing();
-
-        overlay_container.removeAllChildren();
-        const lineShape = new createjs.Shape();
-        overlay_container.addChild(lineShape);
-        lineShape.graphics.c().setStrokeStyle(stroke).beginStroke(track_color).moveTo(mouseAction.ankerPoints[0].x, mouseAction.ankerPoints[0].y);
+        trackDrawing();        
+        mouseAction.lineShape.graphics.c().setStrokeStyle(stroke).beginStroke(track_color).moveTo(mouseAction.ankerPoints[0].x, mouseAction.ankerPoints[0].y);
         for (let index = 1; index < mouseAction.ankerPoints.length; index++) {
             const co = mouseAction.ankerPoints[index];
-            lineShape.graphics.lt(co.x, co.y);
+            mouseAction.lineShape.graphics.lt(co.x, co.y);
         }
     }
     else if (mouseAction.action === MOUSE_ACTION.SCROLL) {
@@ -471,7 +461,7 @@ function trackDrawing() {
     const pc = { x: Math.round(local_point.x / grid_size) * grid_size, y: Math.round(local_point.y / grid_size) * grid_size };
 
     //der letzte und aktuelle Punkt sind unterschiedlich und die Pause ist nahe am pc
-    if (!deepEqual(p1, pc) && geometry.length(local_point, pc) < 10) {
+    if (!deepEqual(p1, pc)) {
         const i = mouseAction.ankerPoints.findIndex(p => pc.x === p.x && pc.y === p.y);
         if (i > 0) {
             mouseAction.ankerPoints.splice(i);
@@ -480,7 +470,7 @@ function trackDrawing() {
             if (Math.abs(p0.x - pc.x) < (grid_size * 1.5) && mouseAction.ankerPoints.length > 1) {
                 const slope = geometry.slope(p0, pc);
 
-                if (slope.is(1, 0, -1)) mouseAction.ankerPoints[mouseAction.ankerPoints.length - 1] = pc;
+                if (slope.is(1, 0, -1)  && geometry.length(local_point, pc) < 10) mouseAction.ankerPoints[mouseAction.ankerPoints.length - 1] = pc;
             } else {
                 const slope = geometry.slope(p1, pc);
                 if (slope.is(1, 0, -1)) {

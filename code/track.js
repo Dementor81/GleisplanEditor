@@ -107,7 +107,6 @@ class signalShape {
         },
         match: function (options) {
             if (options == null || options.length == 0) return true; // wenn das visualElement keine Options fordert, ist es immer ein match
-            //if (this.map.size == 0) return false; //wenn das signal keine optionen hat, kann es nie ein match sein
             const match_single = (function (singleOptions) {
                 const splitted = singleOptions.split('.');
                 const antiMatch = splitted[0][0] == '!';
@@ -155,12 +154,14 @@ class signalShape {
 
     }
 
-    set(stellung) {
-        if (this.check(stellung))
-            delete this._signalStellung[stellung[0]];
+    set(stellung, value) {
+        const splitted = stellung.split("=");
+        if (splitted.length == 1)
+            this._signalStellung[splitted[0]] = value;
+        else if (this.check(stellung))
+            delete this._signalStellung[splitted[0]];
         else
-            this._signalStellung[stellung[0]] = stellung[1];
-
+            this._signalStellung[splitted[0]] = splitted[1];
     }
 
     get(stellung) {
@@ -168,7 +169,9 @@ class signalShape {
     }
 
     check(stellung) {
-        return stellung == null || this._signalStellung[stellung[0]] == stellung[1];
+        if (stellung == null) return true;
+        const splitted = stellung.split("=");
+        return splitted.length == 1 || this._signalStellung[splitted[0]] == splitted[1];
     }
 
     draw(c) {
@@ -254,15 +257,18 @@ class signalShape {
         const groups = new Map();
 
         switchable_visuell_elements.forEach(e => {
-            const s = e.stellung[0];
+            const s = e.stellung.split("=")[0];
             if (!groups.has(s))
                 groups.set(s, [e]);
             else
                 groups.get(s).push(e);
         })
 
-        groups.forEach((v) => {
-            ul.append($("<li>", { class: "list-group-item" }).append(ui.create_buttonGroup(v.map((e) => ui.create_toggleButton(e.btn_text, "", e.stellung, this)))));
+        groups.forEach((group) => {
+            if (!(group[0] instanceof TextElement))
+                ul.append($("<li>", { class: "list-group-item" }).append(ui.create_buttonGroup(group.map((e) => ui.create_toggleButton(e.btn_text, "", e.stellung, this)))));
+            else
+                ul.append($("<li>", { class: "list-group-item" }).append(ui.create_Input(group[0].btn_text, group[0].stellung, this)));
 
         })
 
@@ -273,7 +279,7 @@ class signalShape {
     syncHTML(popup) {
         let buttons = $("button", popup);
         buttons.each((i, e) => {
-            const stellung = e.attributes['data_signal'].value.split(",");
+            const stellung = e.attributes['data_signal'].value;
             $(e).toggleClass("active", this.check(stellung));
 
             if (this._template.StellungIsAllowed(stellung[0], this))

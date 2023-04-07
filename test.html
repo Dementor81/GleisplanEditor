@@ -42,133 +42,10 @@
 
         $(() => { init(); });
 
-        function showPopup(r, content, parent) {
-            let $dummy = $("#dummy");
-            let rect = parent[0].getBoundingClientRect();
-            if ($dummy.length == 0) {
-
-                $dummy = $("<div>", { id: "dummy", width: r.width, height: r.height });
-                $(document.body).append($dummy)
-            }
-            $dummy.css({ position: "absolute", left: r.x + rect.x, top: r.y + rect.y });
-            let popup = bootstrap.Popover.getOrCreateInstance($dummy);
-            if (popup) {
-                $(document).off("mouseup");
-                popup.dispose();
-            }
-
-            let random = Math.random();
-
-            popup = new bootstrap.Popover($dummy, {
-                html: true,
-                trigger: "manual",
-                title: "test",
-                placement: "right",
-                sanitize: false,
-                content: $("<div>", { id: "popup" }).html(content)
-            });
-            $dummy[0].addEventListener('hidden.bs.popover', (e) => {
-                $(document).off("mouseup");
-                let p = bootstrap.Popover.getOrCreateInstance(e.target)
-                if (p) p.dispose();
-                $(e.target).remove();
-
-            }, { once: true });
-            $dummy[0].addEventListener('shown.bs.popover', (e) => {
-                $(document).on("mouseup", (event) => {
-                    let $target = $(event.target);
-                    console.log(event);
-                    if ($target.closest('div.popover').length == 0) {
-                        let p = bootstrap.Popover.getOrCreateInstance(e.target)
-                        if (p)
-                            p.hide();
-                    }
-                })
-
-            }, { once: true });
-            popup.show();
-        }
-
-        function showContextMenu(point, parent, items) {
-            const createDropDownItems = function (items) {
-                return items.map(item => {
-                    const li = $("<li>");
-                    const a = $("<a>", { class: "dropdown-item", href: "#" }).text(item.text);
-                    if (item.childs) {
-                        li.addClass("dropend");
-                        a.addClass("dropdown-toggle submenu");
-                        a.attr("type", "button");
-                        a.attr("data-bs-toggle", "dropdown");
-                        a.append($("<ul>", { class: "dropdown-menu dropdown-menu-end" }).append(createDropDownItems(item.childs)));
-                    }
-                    li.append(a);
-                    return li;
-                });
-            }
-
-            let a = $("<a>", { class: "visually-hidden" })
-                .attr("data-bs-toggle", "dropdown")
-                .attr("data-bs-auto-close", "false");
-            let div = $("<div>", { id: "generated_menu", class: "dropdown" }).append([a,
-                $("<ul>", { class: "dropdown-menu" }).append(createDropDownItems(items))
-            ]);
-            $(document.body).append(div);
-            const dropdownList = bootstrap.Dropdown.getOrCreateInstance(a);
-            
-            setTimeout(() => dropdownList._config.autoClose = "outside", 2);
-            dropdownList._parent.addEventListener('hidden.bs.dropdown', (e) => {
-                const t = $(e.target);
-                if (!t.hasClass("submenu"))
-                    $(e.target).parent().remove();
-            });
-            let $dummy = $(dropdownList._parent);
-            let rect = parent[0].getBoundingClientRect();
-
-            $dummy.css({ position: "absolute", left: point.x + rect.x, top: point.y + rect.y });
-            dropdownList.show();
-        }
-
-        /* function createDropDownItems(items) {
-            return items.map(item => {
-                const li = $("<li>");
-                const a = $("<a>", { class: "dropdown-item", href: "#" }).text(item.text);
-                if (item.childs) {
-                    li.addClass("dropend");
-                    a.addClass("dropdown-toggle submenu");
-                    a.attr("type", "button");
-                    a.attr("data-bs-toggle", "dropdown");
-                    a.append($("<ul>", { class: "dropdown-menu dropdown-menu-end" }).append(createDropDownItems(item.childs)));
-                }
-                li.append(a);
-                return li;
-            });
-        } */
-
+        
 
         function init() {
-            /* $(thing).click((e) => {
-                showPopup({ x: e.offsetX, y: e.offsetY, width: 10, height: 10 }, $("<h6>", { class: "dropdown-header" }).text("Signal"), $("#thing"));
-
-            }) */
-            //createDropDown()
-            $(thing).on("mousedown", e => {
-                e.stopPropagation();
-
-            })
-            $(thing).on("mouseup", e => {
-                e.stopPropagation();
-                showContextMenu({ x: e.offsetX, y: e.offsetY, width: 10, height: 10 }, $(thing), [{ text: "test1" }, { text: "test2" }, { text: "test3", childs: [{ text: "test4" }] }]);
-            })
-            /* $(thing).click((e) => {
-                //if (!$("#generated_menu").length) {
-
-                //}
-            }) */
-
-            thing.oncontextmenu = function () {
-                return false;
-            };
-
+            $("input").on("input",(e)=>console.log(e.originalEvent.data));
 
         }
 
@@ -183,24 +60,11 @@
 
 
     <div id="thing" style="position: absolute; top: 50px;left: 100px; width: 500px; height: 500px;margin-left: 83px;"
-        class="bg-secondary rounded" draggable="false"></div>
+        class="bg-secondary rounded" draggable="false">
+    <input type="number" >
+    </div>
 
-    <div class="dropdown" style="position: absolute; left: 50px; top:50px;">
-        <a class="" data-bs-auto-close="outside" id="dropdownMenuLink" data-bs-toggle="dropdown"> test</a>
-
-        <ul class="dropdown-menu">
-            <li><a class="dropdown-item" href="#">Action</a></li>
-            <li><a class="dropdown-item" href="#">Another action</a></li>
-            <li><a class="dropdown-item" href="#">Something else here</a></li>
-            <li class="dropend">
-                <a class="dropdown-item dropdown-toggle" type="button" data-bs-toggle="dropdown">untermenü </a>
-                <ul class="dropdown-menu  dropdown-menu-end">
-                    <li><a class="dropdown-item" href="#">Action</a></li>
-                    <li><a class="dropdown-item" href="#">Another action</a></li>
-                    <li><a class="dropdown-item" href="#">Something else here</a></li>
-                </ul>
-            </li>
-        </ul>
+    
     </div>
 
 
