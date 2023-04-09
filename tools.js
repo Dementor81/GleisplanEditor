@@ -15,8 +15,15 @@ Number.prototype.is = function (a) {
   return Array.from(arguments).includes(this)
 };
 
-//returns a copy where the given item is missing
 Array.prototype.remove = function (item) {
+  const index = this.indexOf(item);
+  if (index > -1) {
+    this.splice(index, 1);
+  }
+}
+
+//returns a copy where the given item is missing
+Array.prototype.without = function (item) {
   return this.filter(i => i != item);
 }
 
@@ -122,7 +129,7 @@ const ui = {
   },
   create_Input: function (text, stellung, signal) {
     const id = uuidv4();
-    return $("<div>",{class:"form-floating"}).append([$("<input>", {
+    return $("<div>", { class: "form-floating" }).append([$("<input>", {
       type: "number",
       id: id,
       class: "form-control  form-control-sm",
@@ -132,7 +139,7 @@ const ui = {
       reDrawEverything();
       save();
     }),
-    $("<label>", { for: id, text:text })
+    $("<label>", { for: id, text: text })
     ]);
   },
   create_buttonGroup: function (items) {
@@ -240,6 +247,11 @@ const geometry = {
   },
   slope: function (p1, p2) {
     return (p1.y - p2.y) / (p1.x - p2.x);
+  },
+
+  within: function (pA, pB, pC) {
+    if (pC.x.outoff(pA.x, pB.x) || pC.y.outoff(pA.y, pB.y)) return false;
+    return (pB.x - pA.x) * (pC.y - pA.y) == (pC.x - pA.x) * (pB.y - pA.y);
   }
 
 }

@@ -20,9 +20,7 @@ const stroke = 2;
 const grid_size = 60;
 const signale_scale = 0.3;
 
-var stage, main_container, overlay_container, ui_container, grid_container, signal_container, track_container;
-var drawingCanvas;
-
+var stage, main_container, overlay_container, ui_container, signal_container, track_container, grid;
 
 var startpoint;
 var previousTouch;
@@ -60,12 +58,11 @@ function init() {
 
 
     stage = new createjs.Stage(myCanvas);
-    stage.autoClear = true;
     stage.enableDOMEvents(true);
     /* console.log(createjs.Touch.isSupported());
     if (createjs.Touch.isSupported())
         createjs.Touch.enable(stage); */
-    createjs.Ticker.framerate = 24;
+    createjs.Ticker.framerate = 30;
 
     const create_container = n => {
         let c = new createjs.Container();
@@ -74,7 +71,7 @@ function init() {
         return c;
     }
 
-    stage.addChild(grid_container = create_container("grid"));
+
     stage.addChild(main_container = create_container("main"));
     main_container.addChild(track_container = create_container("tracks"));
     main_container.addChild(signal_container = create_container("signals"));
@@ -82,7 +79,7 @@ function init() {
     stage.addChild(overlay_container = create_container("overlay"));
 
     createjs.Ticker.addEventListener("tick", stage);
-    createjs.Ticker.setFPS(25);
+
 
 
     stage.on("stagemousedown", handleStageMouseDown);
@@ -149,7 +146,7 @@ function init() {
 
     $(btnDrawTracks).click(() => changeMode(MODE_EDIT));
 
-    $("#btnGrid").click(() => { showGrid = !showGrid; drawGrid(); stage.update(); })
+    $(btnGrid).click((e) => { onShowGrid(!$(btnGrid).hasClass("active")) })
 
     $("#btnClear").click(() => { tracks = []; signal_container.removeAllChildren(); track_container.removeAllChildren(); drawGrid(); save(); stage.update(); })
 
@@ -170,7 +167,7 @@ function init() {
 
     document.addEventListener("keydown", (e) => {
         if (e.code == "Delete" && selectedTrack != null) {
-            deleteTrack(selectedTrack);
+            deleteTrack(null, selectedTrack);
             selectedTrack = null;
             save();
         }
@@ -193,6 +190,7 @@ function init() {
     loadRecent();
     onResizeWindow();
     changeMode(MODE_EDIT);
+    onShowGrid(showGrid);
 
     $(window).resize(onResizeWindow);
     myCanvas.focus();
@@ -205,6 +203,13 @@ function changeMode(newMode) {
     mode = newMode;
 }
 
+function onShowGrid(on) {
+    showGrid = on;
+    drawGrid();
+    stage.update();
+    $(btnGrid).toggleClass("active", on);
+}
+
 function onResizeWindow() {
     $(myCanvas).attr("height", $(CanvasContainer).height() - 5);
     $(myCanvas).attr("width", $(CanvasContainer).width());
@@ -213,26 +218,36 @@ function onResizeWindow() {
 }
 
 function drawGrid() {
-    grid_container.removeAllChildren();
-    if (showGrid) {
-        let grid = new createjs.Shape();
+    if (!grid) {
+        grid = new createjs.Shape();
         grid.name = "grid";
         grid.mouseEnabled = false;
-        grid.graphics.c().setStrokeStyle(1, "round").setStrokeDash([5, 5], 2 - Math.floor(stage.y / (2 * stage.scale)) * 2).beginStroke("#eee");
-        let bounds = stage.canvas.getBoundingClientRect();
+        main_container.addChildAt(grid, 0);
+        grid.graphics.setStrokeStyle(1, "round");
+    }
+    grid.visible = showGrid;
+    if (showGrid) {
+        grid.graphics.c().setStrokeStyle(1, "round").setStrokeDash([5, 5], 2).beginStroke("#ccc");
 
-        let i = Math.floor(stage.x / (grid_size * stage.scale)) * -(grid_size);
-        while (i < (bounds.width / stage.scale) - (stage.x / stage.scale)) { //spalten                
-            grid.graphics.moveTo(i, 0 - stage.y / stage.scale).lineTo(i, (bounds.height / stage.scale) - stage.y / stage.scale);
-            i += grid_size;
+        const bounds = stage.canvas.getBoundingClientRect();        
+        const scale = stage.scale;
+        const size = { width: bounds.width / scale, height: bounds.height / scale };
+        let x = 0;
+        while (x < size.width) {
+            grid.graphics.moveTo(x, -grid_size).lineTo(x, size.height)
+            x += grid_size
         }
-        grid.graphics.setStrokeDash([5, 5], 2 - Math.floor(stage.x / (2 * stage.scale)) * 2).beginStroke("#eee");
-        i = Math.floor(stage.y / (grid_size * stage.scale)) * -grid_size;
-        while (i < (bounds.height / stage.scale) - stage.y / stage.scale) { //zeilen
-            grid.graphics.moveTo(0 - stage.x / stage.scale, i).lineTo((bounds.width / stage.scale) - stage.x / stage.scale, i);
-            i += grid_size;
+
+        let y = 0;
+        while (y < size.height) {
+            grid.graphics.moveTo(-grid_size, y).lineTo(size.width, y)
+            y += grid_size
         }
-        grid_container.addChild(grid);
+        grid.cache(-grid_size, -grid_size, size.width + grid_size * scale, size.height + grid_size * scale, scale);
+
+        const scaled_grid_size = grid_size * stage.scale;
+        grid.x = Math.floor(stage.x / scaled_grid_size) * -grid_size;
+        grid.y = Math.floor(stage.y / scaled_grid_size) * -grid_size;        
     }
 }
 
@@ -436,7 +451,7 @@ function handleMouseMove(event) {
             mouseAction.container.y = local_point.y;
         }
     } else if (mouseAction.action === MOUSE_ACTION.BUILD_TRACK) {
-        trackDrawing();        
+        trackDrawing();
         mouseAction.lineShape.graphics.c().setStrokeStyle(stroke).beginStroke(track_color).moveTo(mouseAction.ankerPoints[0].x, mouseAction.ankerPoints[0].y);
         for (let index = 1; index < mouseAction.ankerPoints.length; index++) {
             const co = mouseAction.ankerPoints[index];
@@ -470,7 +485,7 @@ function trackDrawing() {
             if (Math.abs(p0.x - pc.x) < (grid_size * 1.5) && mouseAction.ankerPoints.length > 1) {
                 const slope = geometry.slope(p0, pc);
 
-                if (slope.is(1, 0, -1)  && geometry.length(local_point, pc) < 10) mouseAction.ankerPoints[mouseAction.ankerPoints.length - 1] = pc;
+                if (slope.is(1, 0, -1) && geometry.length(local_point, pc) < 10) mouseAction.ankerPoints[mouseAction.ankerPoints.length - 1] = pc;
             } else {
                 const slope = geometry.slope(p1, pc);
                 if (slope.is(1, 0, -1)) {
@@ -524,11 +539,15 @@ function handleStageMouseUp(e) {
                 const p0 = mouseAction.ankerPoints[i - 1];
                 const p1 = mouseAction.ankerPoints[i];
                 const p2 = mouseAction.ankerPoints.length > i + 1 ? mouseAction.ankerPoints[i + 1] : null
+                //steigung ändert sich, also track erstellen
                 if (!p2 || geometry.slope(p0, p1) != geometry.slope(p1, p2)) {
-                    createTrack(tmpPoint, p1);
+
+
+                    checkAndCreateTrack(tmpPoint, p1);
                     tmpPoint = p1;
                 }
             }
+
 
 
             save();
@@ -541,6 +560,8 @@ function handleStageMouseUp(e) {
     }
 
     stage.removeEventListener("stagemousemove", handleMouseMove);
+
+    console.log(p2, stage.mouseX, stage.mouseY);
 }
 
 function selectTrack(track) {
@@ -556,19 +577,36 @@ function selectTrack(track) {
     selectedTrack.color.style = "red";
 }
 
-function deleteTrack(trackShape) {
+function deleteTrack(track, trackShape) {
+    if (!track)
+        track = trackShape.track;
+    else
+        trackShape = track_container.children.find(c => c.track === track)
+
     track_container.removeChild(trackShape);
 
-    const index = tracks.indexOf(trackShape.track);
-    if (index > -1) {
-        tracks.splice(index, 1);
-    }
-    trackShape.track.signals.forEach(s => {
+    tracks.remove(track);
+
+    track.signals.forEach(s => {
         let i = signal_container.children.findIndex(c => c.signal === s.signal);
         if (i != -1)
             signal_container.removeChildAt(i);
     });
 
+}
+
+function checkAndCreateTrack(start, end) {
+    const slope = geometry.slope(start, end);
+    const filteredTracks = tracks.filter(track => geometry.slope(track.start, track.end) == slope && (geometry.within(start, end, track.start) || geometry.within(start, end, track.end)));
+    if (filteredTracks.length == 0)
+        createTrack(start, end);
+    else {
+        filteredTracks.forEach(track => {
+            if (geometry.within(start, end, track.start) && geometry.within(start, end, track.end))
+                deleteTrack(track);
+        });
+        createTrack(start, end);
+    }
 }
 
 function createTrack(p1, p2) {
@@ -654,9 +692,9 @@ function receiver(key, value) {
 function loadFromJson(json) {
     let loaded = JSON.parse(json, receiver);
     if (loaded.version >= 0.15) {
-        stage.x = loaded.scrollX;
+        /* stage.x = loaded.scrollX;
         stage.y = loaded.scrollY;
-        stage.scale = loaded.zoom;
+        stage.scale = loaded.zoom; */
         tracks = loaded.tracks;
         reDrawEverything();
         /* loaded.tracks.forEach(s => {

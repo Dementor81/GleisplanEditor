@@ -215,7 +215,7 @@ function initSignals() {
         new VisualElement("wgwgw", { options: "mastschild.wgwgw" }),
         new VisualElement("asig", { options: verw_bahnhof }),
         new VisualElement("sh1_aus", { options: verw_bahnhof }),
-        new VisualElement("esig", { options: verw_strecke.remove("verwendung.sbk") }),
+        new VisualElement("esig", { options: verw_strecke.without("verwendung.sbk") }),
         new VisualElement("sbk", { options: verw_strecke }),
         new VisualElement(null, {
             btn_text: "Hp 0", stellung: "hp=0", childs: [
@@ -227,14 +227,14 @@ function initSignals() {
         new VisualElement(null, {
             btn_text: "Hp 1", stellung: "hp=1", childs: [
                 new VisualElement("asig_hp1", { options: verw_bahnhof }),
-                new VisualElement("esig_hp1", { options: verw_strecke.remove("verwendung.sbk") }),
+                new VisualElement("esig_hp1", { options: verw_strecke.without("verwendung.sbk") }),
                 new VisualElement("sbk_hp1", { options: "verwendung.sbk" })
             ]
         }),
         new VisualElement(null, {
             btn_text: "Hp 2", stellung: "hp=2", childs: [
                 new VisualElement(["asig_hp1", "asig_hp2"], { options: verw_bahnhof }),
-                new VisualElement(["esig_hp1", "esig_hp2"], { options: verw_strecke.remove("verwendung.sbk") })
+                new VisualElement(["esig_hp1", "esig_hp2"], { options: verw_strecke.without("verwendung.sbk") })
             ]
         }),
         new VisualElement(null, {
