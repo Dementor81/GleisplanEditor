@@ -600,7 +600,7 @@ function deleteTrack(track, trackShape) {
 
 function checkAndCreateTrack(start, end) {
     if (tracks.some(track => geometry.within(track.start, track.end, start) && geometry.within(track.start, track.end, end))) return;
-    
+
     if (start.x > end.x) {
         const hlp = start
         start = end;
@@ -622,6 +622,21 @@ function checkAndCreateTrack(start, end) {
         });
         //createTrack(start, end);
     }
+}
+
+function connectTracks() {
+    tracks.forEach(track => {
+        track.points = [];
+        tracks.forEach(t => {
+            let ip = null;
+            if(geometry.within(track.start, track.end, t.start))
+                ip = t.start;
+            else if(geometry.within(track.start, track.end, t.end))
+                ip = t.end;
+            if(ip)
+            track.points.push({km:geometry.distance(track.start,ip),track:t})
+        });
+    })
 }
 
 function createTrack(p1, p2) {

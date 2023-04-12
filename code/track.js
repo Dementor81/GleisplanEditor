@@ -16,6 +16,7 @@ class trackShape {
     end = null;
     deg = null;
     signals = [];
+    points = [];
 
     constructor(start, end) {
 
