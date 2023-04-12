@@ -33,6 +33,34 @@ class trackShape {
         this.deg = Math.atan(dy / dx) * (180 / Math.PI);
     }
 
+    setNewStart(newStart) {
+        //1. check is slope is the same
+        if (geometry.slope(this.start, this.end) != geometry.slope(newStart, this.end)) return;
+
+        //2. check if new x is lower then old x
+        if (newStart.x >= this.start.x) return;
+
+        //3. calculate distance between new and old start
+        const lengthAdded = geometry.length(newStart, this.start);
+
+        //4. set new start
+        this.start = newStart;
+
+        //5. reposition all signals acording to the new length
+        this.signals.forEach(p => p.km += lengthAdded);
+    }
+
+    setNewEnd(newEnd) {
+        //1. check is slope is the same
+        if (geometry.slope(this.start, this.end) != geometry.slope(newEnd, this.end)) return;
+
+        //2. check if new x is higher then old x
+        if (newEnd.x <= this.start.x) return;
+
+        //3. set new end
+        this.end = newEnd;
+    }
+
     draw(container) {
         let shape = new createjs.Shape();
         shape.name = "track";

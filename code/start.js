@@ -62,7 +62,7 @@ function init() {
     /* console.log(createjs.Touch.isSupported());
     if (createjs.Touch.isSupported())
         createjs.Touch.enable(stage); */
-    createjs.Ticker.framerate = 30;
+    createjs.Ticker.framerate = 1;
 
     const create_container = n => {
         let c = new createjs.Container();
@@ -217,7 +217,7 @@ function onResizeWindow() {
     stage.update();
 }
 
-function drawGrid() {
+function drawGrid(repaint = true) {
     if (!grid) {
         grid = new createjs.Shape();
         grid.name = "grid";
@@ -227,27 +227,29 @@ function drawGrid() {
     }
     grid.visible = showGrid;
     if (showGrid) {
-        grid.graphics.c().setStrokeStyle(1, "round").setStrokeDash([5, 5], 2).beginStroke("#ccc");
+        if (repaint) {
+            grid.graphics.c().setStrokeStyle(1, "round").setStrokeDash([5, 5], 2).beginStroke("#ccc");
 
-        const bounds = stage.canvas.getBoundingClientRect();        
-        const scale = stage.scale;
-        const size = { width: bounds.width / scale, height: bounds.height / scale };
-        let x = 0;
-        while (x < size.width) {
-            grid.graphics.moveTo(x, -grid_size).lineTo(x, size.height)
-            x += grid_size
+            const bounds = stage.canvas.getBoundingClientRect();
+            const scale = stage.scale;
+            const size = { width: bounds.width / scale, height: bounds.height / scale };
+            let x = 0;
+            while (x < size.width) {
+                grid.graphics.moveTo(x, -grid_size).lineTo(x, size.height)
+                x += grid_size
+            }
+
+            let y = 0;
+            while (y < size.height) {
+                grid.graphics.moveTo(-grid_size, y).lineTo(size.width, y)
+                y += grid_size
+            }
+            grid.cache(-grid_size, -grid_size, size.width + grid_size * scale, size.height + grid_size * scale, scale);
+
         }
-
-        let y = 0;
-        while (y < size.height) {
-            grid.graphics.moveTo(-grid_size, y).lineTo(size.width, y)
-            y += grid_size
-        }
-        grid.cache(-grid_size, -grid_size, size.width + grid_size * scale, size.height + grid_size * scale, scale);
-
         const scaled_grid_size = grid_size * stage.scale;
         grid.x = Math.floor(stage.x / scaled_grid_size) * -grid_size;
-        grid.y = Math.floor(stage.y / scaled_grid_size) * -grid_size;        
+        grid.y = Math.floor(stage.y / scaled_grid_size) * -grid_size;
     }
 }
 
@@ -352,7 +354,7 @@ function alignSignalWithTrack(c_sig, track, pos) {
         c_sig.rotation += 180;
     }
     else {
-        let sig_bounds = c_sig.getBounds();
+        //let sig_bounds = c_sig.getBounds();
     }
 }
 
@@ -461,7 +463,7 @@ function handleMouseMove(event) {
     else if (mouseAction.action === MOUSE_ACTION.SCROLL) {
         stage.x += event.nativeEvent.movementX;
         stage.y += event.nativeEvent.movementY;
-        drawGrid();
+        drawGrid(false);
     }
 
 
@@ -547,6 +549,7 @@ function handleStageMouseUp(e) {
                     tmpPoint = p1;
                 }
             }
+            reDrawEverything();
 
 
 
@@ -596,16 +599,28 @@ function deleteTrack(track, trackShape) {
 }
 
 function checkAndCreateTrack(start, end) {
+    if (tracks.some(track => geometry.within(track.start, track.end, start) && geometry.within(track.start, track.end, end))) return;
+    
+    if (start.x > end.x) {
+        const hlp = start
+        start = end;
+        end = hlp;
+    }
+
     const slope = geometry.slope(start, end);
     const filteredTracks = tracks.filter(track => geometry.slope(track.start, track.end) == slope && (geometry.within(start, end, track.start) || geometry.within(start, end, track.end)));
     if (filteredTracks.length == 0)
         createTrack(start, end);
     else {
         filteredTracks.forEach(track => {
-            if (geometry.within(start, end, track.start) && geometry.within(start, end, track.end))
-                deleteTrack(track);
+            if (geometry.within(track.start, track.end, start) && geometry.within(track.start, track.end, end))
+                return
+            if (geometry.within(start, end, track.start))
+                track.setNewStart(start);
+            if (geometry.within(start, end, track.end))
+                track.setNewEnd(end);
         });
-        createTrack(start, end);
+        //createTrack(start, end);
     }
 }
 
