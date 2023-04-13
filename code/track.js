@@ -69,7 +69,12 @@ class trackShape {
 
         let hit = new createjs.Shape();
 
-        let y1 = this.start.y - Math.cos(deg2rad(this.deg)) * 5;
+        let p1 = geometry.perpendicular(this.start, this.deg, -8);
+        let p2 = geometry.perpendicular(this.start, this.deg, 8);
+        const p3 = geometry.perpendicular(this.end, this.deg, 8);
+        const p4 = geometry.perpendicular(this.end, this.deg, -8);
+
+        /* let y1 = this.start.y - Math.cos(deg2rad(this.deg)) * 5;
         let x1 = this.start.x - Math.sin(deg2rad(this.deg)) * 5;
 
         let y2 = this.start.y + Math.cos(deg2rad(this.deg)) * 5;
@@ -79,9 +84,9 @@ class trackShape {
         let x3 = this.end.x + Math.sin(deg2rad(this.deg)) * 5;
 
         let y4 = this.end.y - Math.cos(deg2rad(this.deg)) * 5;
-        let x4 = this.end.x - Math.sin(deg2rad(this.deg)) * 5;
+        let x4 = this.end.x - Math.sin(deg2rad(this.deg)) * 5; */
 
-        hit.graphics.beginFill(1, "#000").mt(x1, y1).lt(x2, y2).lt(x3, y3).lt(x4, y4).lt(x1, y1);
+        hit.graphics.beginFill(1, "#f00").mt(p1.x, p1.y).lt(p2.x, p2.y).lt(p3.x, p3.y).lt(p4.x, p4.y).lt(p1.x, p1.y);
         shape.hitArea = hit;
 
         //container.addChild(hit);
@@ -89,6 +94,26 @@ class trackShape {
         shape.graphics.setStrokeStyle(stroke, "round").beginStroke(track_color);
         shape.color = shape.graphics.command;
         shape.graphics.moveTo(this.start.x, this.start.y).lineTo(this.end.x, this.end.y);
+        if (!this.points.some(p => p.km == 0)) {
+            //prellbock beim start
+            p1 = geometry.perpendicular(this.start, this.deg, -6);
+            p2 = geometry.perpendicular(this.start, this.deg, 6);
+            shape.graphics.moveTo(p1.x, p1.y).lineTo(p2.x, p2.y);
+        }
+        const length = geometry.length(this.start, this.end);
+        if (!this.points.some(p => p.km == length)) {
+            //prellbock beim ende
+            p1 = geometry.perpendicular(this.end, this.deg, -6);
+            p2 = geometry.perpendicular(this.end, this.deg, 6);
+            shape.graphics.moveTo(p1.x, p1.y).lineTo(p2.x, p2.y);
+        }
+
+        //Filter points at start end end
+        this.points.filter(p=>p.km != 0 && p.km != length).forEach(p=>{
+            //draw point
+        })
+
+
     }
 
     AddSignal(position) {

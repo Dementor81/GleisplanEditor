@@ -1,7 +1,7 @@
 'use strict';
 
 const VERSION = '0.43'
-const EXCLUDE_JSON = [];
+const EXCLUDE_JSON = ["points"];
 
 const MODE_PLAY = 1;
 const MODE_EDIT = 2;
@@ -549,6 +549,7 @@ function handleStageMouseUp(e) {
                     tmpPoint = p1;
                 }
             }
+            connectTracks();
             reDrawEverything();
 
 
@@ -564,7 +565,7 @@ function handleStageMouseUp(e) {
 
     stage.removeEventListener("stagemousemove", handleMouseMove);
 
-    console.log(p2, stage.mouseX, stage.mouseY);
+
 }
 
 function selectTrack(track) {
@@ -625,18 +626,28 @@ function checkAndCreateTrack(start, end) {
 }
 
 function connectTracks() {
-    tracks.forEach(track => {
-        track.points = [];
-        tracks.forEach(t => {
-            let ip = null;
-            if(geometry.within(track.start, track.end, t.start))
-                ip = t.start;
-            else if(geometry.within(track.start, track.end, t.end))
-                ip = t.end;
-            if(ip)
-            track.points.push({km:geometry.distance(track.start,ip),track:t})
-        });
-    })
+    tracks.forEach(track => track.points = []);
+    for (let i = 0; i < tracks.length; i++) {
+        const track = tracks[i];
+        for (let j = 0; j < tracks.length; j++) {
+            const t = tracks[j];
+            if (t != track) {
+                let ip = null;
+                if (geometry.within(track.start, track.end, t.start))
+                    ip = t.start;
+                else if (geometry.within(track.start, track.end, t.end))
+                    ip = t.end;
+                if (ip) {
+                    track.points.push({ km: geometry.length(track.start, ip), track: t })
+                    t.points.push({ km: geometry.length(t.start, ip), track: track });
+                }
+            }
+
+        }
+    }
+
+
+
 }
 
 function createTrack(p1, p2) {
@@ -726,6 +737,7 @@ function loadFromJson(json) {
         stage.y = loaded.scrollY;
         stage.scale = loaded.zoom; */
         tracks = loaded.tracks;
+        connectTracks();
         reDrawEverything();
         /* loaded.tracks.forEach(s => {
             createTrack(s.start, s.end);

@@ -252,6 +252,13 @@ const geometry = {
   within: function (pA, pB, pC) {
     if (pC.x.outoff(pA.x, pB.x) || pC.y.outoff(pA.y, pB.y)) return false;
     return (pB.x - pA.x) * (pC.y - pA.y) == (pC.x - pA.x) * (pB.y - pA.y);
+  },
+
+  perpendicular: function (p, deg, distance) {
+    return {
+      y: p.y + Math.cos(deg2rad(deg)) * distance,
+      x: p.x + Math.sin(deg2rad(deg)) * distance
+    }
   }
 
 }
