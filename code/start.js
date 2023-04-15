@@ -31,7 +31,6 @@ var mouseAction = null;
 var selectedTrack;
 
 var tracks = [];
-var signals = [];
 
 var signalTemplates = {}
 
@@ -487,7 +486,7 @@ function trackDrawing() {
             if (Math.abs(p0.x - pc.x) < (grid_size * 1.5) && mouseAction.ankerPoints.length > 1) {
                 const slope = geometry.slope(p0, pc);
 
-                if (slope.is(1, 0, -1) && geometry.length(local_point, pc) < 10) mouseAction.ankerPoints[mouseAction.ankerPoints.length - 1] = pc;
+                if (slope.is(1, 0, -1) && geometry.distance(local_point, pc) < 10) mouseAction.ankerPoints[mouseAction.ankerPoints.length - 1] = pc;
             } else {
                 const slope = geometry.slope(p1, pc);
                 if (slope.is(1, 0, -1)) {
@@ -631,15 +630,16 @@ function connectTracks() {
         const track = tracks[i];
         for (let j = 0; j < tracks.length; j++) {
             const t = tracks[j];
-            if (t != track) {
+            //darf sich nicht selbst finden und die Weiche darf keinen 90° winkel aufweisen
+            if (t != track && (t.deg + track.deg) != 0) {
                 let ip = null;
                 if (geometry.within(track.start, track.end, t.start))
                     ip = t.start;
                 else if (geometry.within(track.start, track.end, t.end))
                     ip = t.end;
                 if (ip) {
-                    track.points.push({ km: geometry.length(track.start, ip), track: t })
-                    t.points.push({ km: geometry.length(t.start, ip), track: track });
+                    track.points.push({ km: geometry.distance(track.start, ip), track: t })
+                    t.points.push({ km: geometry.distance(t.start, ip), track: track });
                 }
             }
 
@@ -654,6 +654,7 @@ function createTrack(p1, p2) {
     let track = new trackShape(p1, p2);
     track.draw(track_container);
     tracks.push(track);
+    console.log(track.deg);
 }
 
 
@@ -692,8 +693,6 @@ function replacer(key, value) {
 function getSaveString() {
     return JSON.stringify({
         tracks: tracks,
-        //signals: signals,
-        version: 0.15,
         zoom: stage.scale,
         scrollX: stage.x,
         scrollY: stage.y
@@ -701,15 +700,22 @@ function getSaveString() {
 }
 
 function save() {
-    localStorage.setItem("bahnhof_last1", getSaveString());
+    localStorage.setItem("bahnhof_last1", `0.16;${getSaveString()}`);
 }
 
 function loadRecent() {
     try {
-        let x = localStorage.getItem('bahnhof_last1');
+        const x = localStorage.getItem('bahnhof_last1');
         if (x != null) {
-            loadFromJson(x);
+            const indexOfFirst = x.indexOf(';');
+            if (indexOfFirst > -1) {
+                const loaded_version = parseFloat(x.substring(0, indexOfFirst));
+                if (loaded_version >= 0.16)
+                    loadFromJson(x.slice(indexOfFirst + 1));
+                else
+                    console.error(`stored version ${loaded_version} to old`);
 
+            }
         }
     } catch (error) {
         console.error(error);
@@ -732,18 +738,12 @@ function receiver(key, value) {
 
 function loadFromJson(json) {
     let loaded = JSON.parse(json, receiver);
-    if (loaded.version >= 0.15) {
-        /* stage.x = loaded.scrollX;
-        stage.y = loaded.scrollY;
-        stage.scale = loaded.zoom; */
-        tracks = loaded.tracks;
-        connectTracks();
-        reDrawEverything();
-        /* loaded.tracks.forEach(s => {
-            createTrack(s.start, s.end);
-        }); */
-    } else
-        console.error(`stored version ${loaded.version} to old`)
+    /* stage.x = loaded.scrollX;
+    stage.y = loaded.scrollY;
+    stage.scale = loaded.zoom; */
+    tracks = loaded.tracks;
+    connectTracks();
+    reDrawEverything();
 }
 
 function newItemButton(template) {

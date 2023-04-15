@@ -242,8 +242,12 @@ const ui = {
 }
 
 const geometry = {
-  length: function (p1, p2) {
-    return Math.sqrt(Math.pow(p1.x - p2.x, 2) + Math.pow(p1.y - p2.y, 2));
+  PRECISION: 6,
+  distance: function (p1, p2) {
+    return Math.round(Math.sqrt(Math.pow(p1.x - p2.x, 2) + Math.pow(p1.y - p2.y, 2)), this.PRECISION);
+  },
+  length: function (v) {
+    return Math.round(Math.sqrt(Math.pow(v.x, 2) + Math.pow(v.y, 2)), this.PRECISION);
   },
   slope: function (p1, p2) {
     return (p1.y - p2.y) / (p1.x - p2.x);
@@ -254,11 +258,36 @@ const geometry = {
     return (pB.x - pA.x) * (pC.y - pA.y) == (pC.x - pA.x) * (pB.y - pA.y);
   },
 
+  //calculates a point which is perpendicular to the given vector
   perpendicular: function (p, deg, distance) {
     return {
       y: p.y + Math.cos(deg2rad(deg)) * distance,
       x: p.x + Math.sin(deg2rad(deg)) * distance
     }
+  },
+
+  parallel: function (deg, distance) {
+    return {
+      y: Math.sin(deg2rad(deg)) * -distance,
+      x: Math.cos(deg2rad(deg)) * distance
+    }
+  },
+
+  //returns the unit vector of the given vector
+  unit: function (v) {
+    const length = this.length(v);
+    return this.multiply(v, 1 / length);
+  },
+
+  multiply: function (v, s) {
+    return {
+      x: Math.round(v.x * s, this.PRECISION),
+      y: Math.round(v.y * s, this.PRECISION)
+    }
+  },
+
+  add: function (v1, v2) {
+    return { x: v1.x + v2.x, y: v1.y + v2.y }
   }
 
 }

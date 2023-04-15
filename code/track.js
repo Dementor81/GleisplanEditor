@@ -14,8 +14,11 @@ class trackShape {
 
     start = null;
     end = null;
-    deg = null;
     signals = [];
+
+    deg = 0;
+    length = 0;
+    vector = null;
     points = [];
 
     constructor(start, end) {
@@ -29,10 +32,16 @@ class trackShape {
             this.end = start;
         }
 
-        let dx = (this.end.x - this.start.x);
-        let dy = (this.start.y - this.end.y); // start ende vertauscht, da das Koordinatensystem gespiegelt arbeitet
-        this.deg = Math.atan(dy / dx) * (180 / Math.PI);
+
+        this.calcTempValues();
     }
+
+    calcTempValues() {
+        this.vector = { x: this.end.x - this.start.x, y: this.start.y - this.end.y }; // start ende vertauscht, da das Koordinatensystem gespiegelt arbeitet
+        this.deg = Math.atan(this.vector.y / this.vector.x) * (180 / Math.PI);
+        this.length = geometry.length(this.vector);
+    }
+    
 
     setNewStart(newStart) {
         //1. check is slope is the same
@@ -42,10 +51,11 @@ class trackShape {
         if (newStart.x >= this.start.x) return;
 
         //3. calculate distance between new and old start
-        const lengthAdded = geometry.length(newStart, this.start);
+        const lengthAdded = geometry.distance(newStart, this.start);
 
         //4. set new start
         this.start = newStart;
+        this.calcTempValues();
 
         //5. reposition all signals acording to the new length
         this.signals.forEach(p => p.km += lengthAdded);
@@ -60,6 +70,7 @@ class trackShape {
 
         //3. set new end
         this.end = newEnd;
+        this.calcTempValues();
     }
 
     draw(container) {
@@ -74,19 +85,7 @@ class trackShape {
         const p3 = geometry.perpendicular(this.end, this.deg, 8);
         const p4 = geometry.perpendicular(this.end, this.deg, -8);
 
-        /* let y1 = this.start.y - Math.cos(deg2rad(this.deg)) * 5;
-        let x1 = this.start.x - Math.sin(deg2rad(this.deg)) * 5;
-
-        let y2 = this.start.y + Math.cos(deg2rad(this.deg)) * 5;
-        let x2 = this.start.x + Math.sin(deg2rad(this.deg)) * 5;
-
-        let y3 = this.end.y + Math.cos(deg2rad(this.deg)) * 5;
-        let x3 = this.end.x + Math.sin(deg2rad(this.deg)) * 5;
-
-        let y4 = this.end.y - Math.cos(deg2rad(this.deg)) * 5;
-        let x4 = this.end.x - Math.sin(deg2rad(this.deg)) * 5; */
-
-        hit.graphics.beginFill(1, "#f00").mt(p1.x, p1.y).lt(p2.x, p2.y).lt(p3.x, p3.y).lt(p4.x, p4.y).lt(p1.x, p1.y);
+        hit.graphics.beginFill("#000").mt(p1.x, p1.y).lt(p2.x, p2.y).lt(p3.x, p3.y).lt(p4.x, p4.y).lt(p1.x, p1.y);
         shape.hitArea = hit;
 
         //container.addChild(hit);
@@ -100,17 +99,30 @@ class trackShape {
             p2 = geometry.perpendicular(this.start, this.deg, 6);
             shape.graphics.moveTo(p1.x, p1.y).lineTo(p2.x, p2.y);
         }
-        const length = geometry.length(this.start, this.end);
-        if (!this.points.some(p => p.km == length)) {
+        
+        if (!this.points.some(p => p.km == this.length)) {
             //prellbock beim ende
             p1 = geometry.perpendicular(this.end, this.deg, -6);
             p2 = geometry.perpendicular(this.end, this.deg, 6);
             shape.graphics.moveTo(p1.x, p1.y).lineTo(p2.x, p2.y);
         }
 
+        const unit = geometry.unit(this.vector);
+
         //Filter points at start end end
-        this.points.filter(p=>p.km != 0 && p.km != length).forEach(p=>{
+        this.points.filter(p => p.km != 0 && p.km != this.length).forEach(p => {
+
+            /* //draw point
+            let point = geometry.add(this.start, geometry.parallel(this.deg, p.km));
+            let test = geometry.perpendicular(point, this.deg, -8); */
+
             //draw point
+
+            let point = geometry.add(this.start,geometry.multiply(unit, p.km));
+            p1 = geometry.add(point,geometry.multiply(unit, 10));
+            p2 = geometry.add(point,geometry.parallel(p.track.deg, 10));
+
+            shape.graphics.beginFill("#000").moveTo(point.x, point.y).lineTo(p1.x, p1.y).lineTo(p2.x, p2.y).cp();
         })
 
 
@@ -126,6 +138,10 @@ class trackShape {
         if (i != -1) {
             this.signals.splice(i, 1);
         }
+    }
+
+    stringify() {
+        return { start: this.start, end: this.end, signals: this.signals };
     }
 }
 
