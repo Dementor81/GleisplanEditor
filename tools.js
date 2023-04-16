@@ -15,6 +15,11 @@ Number.prototype.is = function (a) {
   return Array.from(arguments).includes(this)
 };
 
+Number.prototype.round = function(places)  {
+  const x = Math.pow(10,places);
+  return Math.round(this * x) / x;
+}
+
 Array.prototype.remove = function (item) {
   const index = this.indexOf(item);
   if (index > -1) {
@@ -242,12 +247,12 @@ const ui = {
 }
 
 const geometry = {
-  PRECISION: 6,
+  PRECISION: 3,
   distance: function (p1, p2) {
-    return Math.round(Math.sqrt(Math.pow(p1.x - p2.x, 2) + Math.pow(p1.y - p2.y, 2)), this.PRECISION);
+    return Math.sqrt(Math.pow(p1.x - p2.x, 2) + Math.pow(p1.y - p2.y, 2)).round(this.PRECISION);
   },
   length: function (v) {
-    return Math.round(Math.sqrt(Math.pow(v.x, 2) + Math.pow(v.y, 2)), this.PRECISION);
+    return Math.sqrt(Math.pow(v.x, 2) + Math.pow(v.y, 2)).round(this.PRECISION);
   },
   slope: function (p1, p2) {
     return (p1.y - p2.y) / (p1.x - p2.x);
@@ -274,15 +279,15 @@ const geometry = {
   },
 
   //returns the unit vector of the given vector
-  unit: function (v) {
-    const length = this.length(v);
+  unit: function (v, l) {
+    const length = l ? l : this.length(v);
     return this.multiply(v, 1 / length);
   },
 
   multiply: function (v, s) {
     return {
-      x: Math.round(v.x * s, this.PRECISION),
-      y: Math.round(v.y * s, this.PRECISION)
+      x: (v.x * s).round(this.PRECISION),
+      y: (v.y * s).round(this.PRECISION)
     }
   },
 

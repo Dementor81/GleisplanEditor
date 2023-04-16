@@ -20,6 +20,7 @@ class trackShape {
     length = 0;
     vector = null;
     points = [];
+    unit = null;
 
     constructor(start, end) {
 
@@ -40,8 +41,9 @@ class trackShape {
         this.vector = { x: this.end.x - this.start.x, y: this.start.y - this.end.y }; // start ende vertauscht, da das Koordinatensystem gespiegelt arbeitet
         this.deg = Math.atan(this.vector.y / this.vector.x) * (180 / Math.PI);
         this.length = geometry.length(this.vector);
+        this.unit = geometry.unit(this.vector,this.length);
     }
-    
+
 
     setNewStart(newStart) {
         //1. check is slope is the same
@@ -99,7 +101,7 @@ class trackShape {
             p2 = geometry.perpendicular(this.start, this.deg, 6);
             shape.graphics.moveTo(p1.x, p1.y).lineTo(p2.x, p2.y);
         }
-        
+
         if (!this.points.some(p => p.km == this.length)) {
             //prellbock beim ende
             p1 = geometry.perpendicular(this.end, this.deg, -6);
@@ -107,7 +109,7 @@ class trackShape {
             shape.graphics.moveTo(p1.x, p1.y).lineTo(p2.x, p2.y);
         }
 
-        const unit = geometry.unit(this.vector);
+        
 
         //Filter points at start end end
         this.points.filter(p => p.km != 0 && p.km != this.length).forEach(p => {
@@ -118,12 +120,18 @@ class trackShape {
 
             //draw point
 
-            let point = geometry.add(this.start,geometry.multiply(unit, p.km));
-            p1 = geometry.add(point,geometry.multiply(unit, 10));
-            p2 = geometry.add(point,geometry.parallel(p.track.deg, 10));
+            let point = geometry.add(this.start, geometry.multiply(this.unit, p.km));
+            if (p.track.end.x > point.x) {
+                p1 = geometry.add(point, geometry.multiply(this.unit, 10));
+                p2 = geometry.add(point, geometry.parallel(p.track.deg, 10));
+            }
+            else {
+                p1 = geometry.add(point, geometry.multiply(this.unit, -10));
+                p2 = geometry.add(point, geometry.parallel(p.track.deg, -10));
+            }
 
             shape.graphics.beginFill("#000").moveTo(point.x, point.y).lineTo(p1.x, p1.y).lineTo(p2.x, p2.y).cp();
-        })
+        });
 
 
     }
