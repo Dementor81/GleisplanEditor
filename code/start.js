@@ -628,7 +628,7 @@ function connectTracks() {
     tracks.forEach(track => track.points = []);
     for (let i = 0; i < tracks.length; i++) {
         const track = tracks[i];
-        for (let j = 0; j < tracks.length; j++) {
+        for (let j = i+1; j < tracks.length; j++) {
             const t = tracks[j];
             //darf sich nicht selbst finden und die Weiche darf keinen 90° winkel aufweisen
             if (t != track && (t.deg + track.deg) != 0) {
@@ -637,9 +637,12 @@ function connectTracks() {
                     ip = t.start;
                 else if (geometry.within(track.start, track.end, t.end))
                     ip = t.end;
+                else {
+                    ip = geometry.getIntersectionPoint(track, t)
+                }
                 if (ip) {
-                    track.points.push({ km: geometry.distance(track.start, ip), track: t })
-                    t.points.push({ km: geometry.distance(t.start, ip), track: track });
+                    track.AddPoint({ km: geometry.distance(track.start, ip), track: t })
+                    t.AddPoint({ km: geometry.distance(t.start, ip), track: track });
                 }
             }
 

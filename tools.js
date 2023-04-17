@@ -15,8 +15,8 @@ Number.prototype.is = function (a) {
   return Array.from(arguments).includes(this)
 };
 
-Number.prototype.round = function(places)  {
-  const x = Math.pow(10,places);
+Number.prototype.round = function (places) {
+  const x = Math.pow(10, places);
   return Math.round(this * x) / x;
 }
 
@@ -258,9 +258,35 @@ const geometry = {
     return (p1.y - p2.y) / (p1.x - p2.x);
   },
 
+  //checks if point c is between a and b
   within: function (pA, pB, pC) {
     if (pC.x.outoff(pA.x, pB.x) || pC.y.outoff(pA.y, pB.y)) return false;
     return (pB.x - pA.x) * (pC.y - pA.y) == (pC.x - pA.x) * (pB.y - pA.y);
+  },
+  getIntersectionPoint: function (line1, line2) {
+    const denominator = ((line2.end.y - line2.start.y) * (line1.end.x - line1.start.x)) -
+      ((line2.end.x - line2.start.x) * (line1.end.y - line1.start.y));
+
+    // If the denominator is 0, the lines are parallel and don't intersect
+    if (denominator === 0) {
+      return null;
+    }
+
+    const ua = (((line2.end.x - line2.start.x) * (line1.start.y - line2.start.y)) -
+      ((line2.end.y - line2.start.y) * (line1.start.x - line2.start.x))) / denominator;
+    const ub = (((line1.end.x - line1.start.x) * (line1.start.y - line2.start.y)) -
+      ((line1.end.y - line1.start.y) * (line1.start.x - line2.start.x))) / denominator;
+
+    // If ua or ub is less than 0 or greater than 1, the intersection point is outside of the segments
+    if (ua < 0 || ua > 1 || ub < 0 || ub > 1) {
+      return null;
+    }
+
+    // Calculate the intersection point
+    const intersectionX = line1.start.x + ua * (line1.end.x - line1.start.x);
+    const intersectionY = line1.start.y + ua * (line1.end.y - line1.start.y);
+
+    return { x: intersectionX, y: intersectionY };
   },
 
   //calculates a point which is perpendicular to the given vector
@@ -293,6 +319,10 @@ const geometry = {
 
   add: function (v1, v2) {
     return { x: v1.x + v2.x, y: v1.y + v2.y }
-  }
+  },
+
+  flipY: v => ({ x: v.x, y: v.y * -1 }),
+
+  round: v => ({ x: Math.round(v.x), y: Math.round(v.y) })
 
 }
