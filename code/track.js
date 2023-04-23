@@ -90,16 +90,8 @@ class trackShape {
 
         hit.graphics.beginFill("#000").mt(p1.x, p1.y).lt(p2.x, p2.y).lt(p3.x, p3.y).lt(p4.x, p4.y).lt(p1.x, p1.y);
         shape.hitArea = hit;
-        var mtx = new createjs.Matrix2D();
-        mtx.scale(0.05, 0.05);
-        /* mtx.tx = p1.x;
-        mtx.ty = p1.y; */
-        texture.regX = 0;
-        texture.regY = 0;
-        texture.graphics.beginBitmapFill(loadQueue.getResult("grade"), 'repeat-x', mtx).drawRect(0,-8, this.length, 32);
-        texture.x = p1.x;
-        texture.y = p1.y;
-        texture.rotation = this.deg*-1;
+
+
 
         //container.addChild(hit);
         container.addChild(shape);
@@ -137,6 +129,45 @@ class trackShape {
             }
 
         });
+
+        let pointAtEnd = false;
+        let pointAtStart = false;
+
+        //kurve am ende
+        this.points.filter(p => p.km == this.length).forEach(p => {
+
+            const img = loadQueue.getResult("bogen");
+            const bmp = new createjs.Bitmap(img);
+            const imgSize = img.height * 0.05;
+            bmp.x = this.end.x - imgSize / 2 - 7.8;
+            bmp.y = this.end.y - imgSize / 2;
+            bmp.scale = 0.05;
+            bmp.rotation = p.track.deg*-1;
+            container.addChild(bmp);
+            pointAtEnd = true;
+        })
+
+        if (this.points.some(p => p.km == 0)) {
+            //prellbock beim start
+            pointAtStart = true;
+        }
+
+        const straightTrackImg = loadQueue.getResult("grade");
+        const trackHeight = straightTrackImg.height * 0.05;
+        var mtx = new createjs.Matrix2D();
+        mtx.scale(0.05, 0.05);
+        /* mtx.tx = p1.x;
+        mtx.ty = p1.y; */
+        texture.regX = 0;
+        texture.regY = trackHeight / 2;
+        let l = this.length;
+        if (pointAtEnd) l -= 30;
+        if (pointAtStart) l -= 23.8;
+        texture.graphics.beginBitmapFill(straightTrackImg, 'repeat-x', mtx).drawRect(0, 0, l, straightTrackImg.height);
+        texture.x = this.start.x + (pointAtStart ? 23.8 : 0);
+        texture.y = this.start.y;
+        texture.rotation = this.deg * -1;
+
     }
 
     AddSignal(position) {
