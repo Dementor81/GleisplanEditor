@@ -77,6 +77,7 @@ class trackShape {
 
     draw(container) {
         let shape = new createjs.Shape();
+        let texture = new createjs.Shape();
         shape.name = "track";
         shape.track = this;
 
@@ -89,9 +90,20 @@ class trackShape {
 
         hit.graphics.beginFill("#000").mt(p1.x, p1.y).lt(p2.x, p2.y).lt(p3.x, p3.y).lt(p4.x, p4.y).lt(p1.x, p1.y);
         shape.hitArea = hit;
+        var mtx = new createjs.Matrix2D();
+        mtx.scale(0.05, 0.05);
+        /* mtx.tx = p1.x;
+        mtx.ty = p1.y; */
+        texture.regX = 0;
+        texture.regY = 0;
+        texture.graphics.beginBitmapFill(loadQueue.getResult("grade"), 'repeat-x', mtx).drawRect(0,-8, this.length, 32);
+        texture.x = p1.x;
+        texture.y = p1.y;
+        texture.rotation = this.deg*-1;
 
         //container.addChild(hit);
         container.addChild(shape);
+        container.addChild(texture);
         shape.graphics.setStrokeStyle(stroke, "round").beginStroke(track_color);
         shape.color = shape.graphics.command;
         shape.graphics.moveTo(this.start.x, this.start.y).lineTo(this.end.x, this.end.y);
@@ -132,7 +144,7 @@ class trackShape {
         this.signals.splice(i + 1, 0, position);
     }
 
-    AddPoint(point){
+    AddPoint(point) {
         let i = this.points.findIndex((item) => point.km > item.km);
         this.points.splice(i + 1, 0, point);
     }

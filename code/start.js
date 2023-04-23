@@ -29,6 +29,7 @@ var mode = MODE_EDIT;
 var pl;
 var mouseAction = null;
 var selectedTrack;
+var loadQueue
 
 var tracks = [];
 
@@ -37,6 +38,12 @@ var signalTemplates = {}
 $(() => { init(); });
 
 function init() {
+
+    loadQueue = new createjs.LoadQueue(true);
+    loadQueue.loadManifest([
+        { src: "gleis.png", id: "grade" },
+        { src: "gleisbogen.png", id: "bogen" }
+    ], true, "images/");
 
     pl = new preLoader("images");
     initSignals();
@@ -628,7 +635,7 @@ function connectTracks() {
     tracks.forEach(track => track.points = []);
     for (let i = 0; i < tracks.length; i++) {
         const track = tracks[i];
-        for (let j = i+1; j < tracks.length; j++) {
+        for (let j = i + 1; j < tracks.length; j++) {
             const t = tracks[j];
             //darf sich nicht selbst finden und die Weiche darf keinen 90° winkel aufweisen
             if (t != track && (t.deg + track.deg) != 0) {
