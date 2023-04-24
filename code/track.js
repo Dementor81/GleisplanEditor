@@ -139,7 +139,7 @@ class trackShape {
             const img = loadQueue.getResult("bogen");
             const bmp = new createjs.Bitmap(img);
             const imgSize = img.height * 0.05;
-            bmp.x = this.end.x - imgSize / 2 - 7.8;
+            bmp.x = this.end.x - imgSize / 2;
             bmp.y = this.end.y - imgSize / 2;
             bmp.scale = 0.05;
             bmp.rotation = p.track.deg*-1;
@@ -156,15 +156,15 @@ class trackShape {
         const trackHeight = straightTrackImg.height * 0.05;
         var mtx = new createjs.Matrix2D();
         mtx.scale(0.05, 0.05);
-        /* mtx.tx = p1.x;
-        mtx.ty = p1.y; */
+        mtx.tx = (pointAtStart ? 23.8 : 0);
+        //mtx.ty = p1.y; 
         texture.regX = 0;
         texture.regY = trackHeight / 2;
         let l = this.length;
-        if (pointAtEnd) l -= 30;
+        if (pointAtEnd) l -= 24.8;
         if (pointAtStart) l -= 23.8;
-        texture.graphics.beginBitmapFill(straightTrackImg, 'repeat-x', mtx).drawRect(0, 0, l, straightTrackImg.height);
-        texture.x = this.start.x + (pointAtStart ? 23.8 : 0);
+        texture.graphics.beginBitmapFill(straightTrackImg, 'repeat-x', mtx).drawRect((pointAtStart ? 23.8 : 0), 0, l, straightTrackImg.height);
+        texture.x = this.start.x  ;
         texture.y = this.start.y;
         texture.rotation = this.deg * -1;
 
