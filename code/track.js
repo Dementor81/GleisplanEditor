@@ -133,16 +133,26 @@ class trackShape {
         let pointAtEnd = false;
         let pointAtStart = false;
 
+        const track_scale = 0.10;
         //kurve am ende
+
+        const curvedTrackImg = loadQueue.getResult("bogen");
+
         this.points.filter(p => p.km == this.length).forEach(p => {
 
-            const img = loadQueue.getResult("bogen");
-            const bmp = new createjs.Bitmap(img);
-            const imgSize = img.height * 0.05;
-            bmp.x = this.end.x - imgSize / 2;
-            bmp.y = this.end.y - imgSize / 2;
-            bmp.scale = 0.05;
-            bmp.rotation = p.track.deg*-1;
+            const bmp = new createjs.Bitmap(curvedTrackImg);
+            bmp.regX = curvedTrackImg.height / 2;
+            bmp.regY = curvedTrackImg.height / 2;
+            bmp.x = this.end.x;
+            bmp.y = this.end.y;
+            bmp.scale = track_scale;
+            if (p.track.deg == -45)
+                bmp.rotation = 45;
+            else if (p.track.deg == 45)
+                bmp.rotation = 180;
+            else if (this.deg == -45)
+                bmp.rotation = 225;
+
             container.addChild(bmp);
             pointAtEnd = true;
         })
@@ -152,21 +162,49 @@ class trackShape {
             pointAtStart = true;
         }
 
+
+
         const straightTrackImg = loadQueue.getResult("grade");
-        const trackHeight = straightTrackImg.height * 0.05;
-        var mtx = new createjs.Matrix2D();
-        mtx.scale(0.05, 0.05);
-        mtx.tx = (pointAtStart ? 23.8 : 0);
-        //mtx.ty = p1.y; 
-        texture.regX = 0;
-        texture.regY = trackHeight / 2;
         let l = this.length;
-        if (pointAtEnd) l -= 24.8;
-        if (pointAtStart) l -= 23.8;
-        texture.graphics.beginBitmapFill(straightTrackImg, 'repeat-x', mtx).drawRect((pointAtStart ? 23.8 : 0), 0, l, straightTrackImg.height);
-        texture.x = this.start.x  ;
-        texture.y = this.start.y;
-        texture.rotation = this.deg * -1;
+
+        let x = 0;
+        let tile_width = 50;
+
+        const track_container = new createjs.Container();
+
+        if (pointAtEnd) l -= curvedTrackImg.height / 2 * track_scale;
+        if (pointAtStart) x = curvedTrackImg.height / 2 * track_scale;
+
+
+
+
+        if (l - x < tile_width * track_scale) {
+            track_container.addChild(new createjs.Bitmap(straightTrackImg).set({
+                y: 0,
+                x: x,
+                sourceRect: new createjs.Rectangle(0, 0, (l - x) / track_scale, straightTrackImg.height),
+                scale: track_scale
+            }));
+        } else {
+            const cx = ((l - x) % (tile_width * track_scale)) / Math.floor((l - x) / (tile_width * track_scale));
+
+            while (x + (tile_width * track_scale + cx) <= l) {
+                track_container.addChild(new createjs.Bitmap(straightTrackImg).set({
+                    y: 0,
+                    x: x,
+                    sourceRect: new createjs.Rectangle(0, 0, tile_width + cx / track_scale, straightTrackImg.height),
+                    scale: track_scale
+                }));
+                x += (tile_width * track_scale + cx);
+            }
+        }
+
+        track_container.regY = straightTrackImg.height * track_scale / 2;
+        track_container.x = this.start.x;
+        track_container.y = this.start.y;
+        track_container.rotation = this.deg * -1;
+
+        container.addChild(track_container);
 
     }
 

@@ -17,7 +17,7 @@ const MOUSE_ACTION = {
 
 const track_color = "#000000";
 const stroke = 2;
-const grid_size = 60;
+const grid_size = 70;
 const signale_scale = 0.3;
 
 var stage, main_container, overlay_container, ui_container, signal_container, track_container, grid;
@@ -748,9 +748,9 @@ function receiver(key, value) {
 
 function loadFromJson(json) {
     let loaded = JSON.parse(json, receiver);
-    /* stage.x = loaded.scrollX;
+    stage.x = loaded.scrollX;
     stage.y = loaded.scrollY;
-    stage.scale = loaded.zoom; */
+    stage.scale = loaded.zoom; 
     tracks = loaded.tracks;
     connectTracks();
     reDrawEverything();
