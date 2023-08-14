@@ -1,10 +1,9 @@
-'use strict';
+"use strict";
 
 class trackShape {
     static findTrackbySignal(s) {
-        return tracks.find((t) => t.signals.find((o) => o.signal == s) != undefined)
+        return tracks.find((t) => t.signals.find((o) => o.signal == s) != undefined);
     }
-
 
     static FromObject(o) {
         let t = new trackShape(o.start, o.end);
@@ -19,31 +18,30 @@ class trackShape {
     deg = 0;
     length = 0;
     vector = null;
-    points = [];
+    switches = [];
     unit = null;
 
     constructor(start, end) {
-
         if (start.x < end.x) {
             this.start = start;
             this.end = end;
-        }
-        else {
+        } else {
             this.start = end;
             this.end = start;
         }
-
 
         this.calcTempValues();
     }
 
     calcTempValues() {
-        this.vector = { x: this.end.x - this.start.x, y: this.start.y - this.end.y }; // start ende vertauscht, da das Koordinatensystem gespiegelt arbeitet
+        this.vector = {
+            x: this.end.x - this.start.x,
+            y: this.start.y - this.end.y,
+        }; // start ende vertauscht, da das Koordinatensystem gespiegelt arbeitet
         this.deg = Math.atan(this.vector.y / this.vector.x) * (180 / Math.PI);
         this.length = geometry.length(this.vector);
         this.unit = geometry.unit(this.vector, this.length);
     }
-
 
     setNewStart(newStart) {
         //1. check is slope is the same
@@ -60,7 +58,7 @@ class trackShape {
         this.calcTempValues();
 
         //5. reposition all signals acording to the new length
-        this.signals.forEach(p => p.km += lengthAdded);
+        this.signals.forEach((p) => (p.km += lengthAdded));
     }
 
     setNewEnd(newEnd) {
@@ -77,7 +75,6 @@ class trackShape {
 
     draw(container) {
         let shape = new createjs.Shape();
-        let texture = new createjs.Shape();
         shape.name = "track";
         shape.track = this;
 
@@ -91,94 +88,154 @@ class trackShape {
         hit.graphics.beginFill("#000").mt(p1.x, p1.y).lt(p2.x, p2.y).lt(p3.x, p3.y).lt(p4.x, p4.y).lt(p1.x, p1.y);
         shape.hitArea = hit;
 
-
-
         //container.addChild(hit);
         container.addChild(shape);
-        container.addChild(texture);
         shape.graphics.setStrokeStyle(stroke, "round").beginStroke(track_color);
         shape.color = shape.graphics.command;
         shape.graphics.moveTo(this.start.x, this.start.y).lineTo(this.end.x, this.end.y);
-        if (!this.points.some(p => p.km == 0)) {
+        if (!this.switches.some((p) => p.km == 0)) {
             //prellbock beim start
             p1 = geometry.perpendicular(this.start, this.deg, -6);
             p2 = geometry.perpendicular(this.start, this.deg, 6);
             shape.graphics.moveTo(p1.x, p1.y).lineTo(p2.x, p2.y);
         }
 
-        if (!this.points.some(p => p.km == this.length)) {
+        if (!this.switches.some((p) => p.km == this.length)) {
             //prellbock beim ende
             p1 = geometry.perpendicular(this.end, this.deg, -6);
             p2 = geometry.perpendicular(this.end, this.deg, 6);
             shape.graphics.moveTo(p1.x, p1.y).lineTo(p2.x, p2.y);
         }
 
-        //Filter points at start end end
-        this.points.filter(p => p.km != 0 && p.km != this.length).forEach(p => {
-
-            let point = geometry.round(geometry.add(this.start, geometry.flipY(geometry.multiply(this.unit, p.km))));
-            if (!deepEqual(point, p.track.end)) {
-                p1 = geometry.add(point, geometry.flipY(geometry.multiply(this.unit, 10)));
-                p2 = geometry.add(point, geometry.flipY(geometry.multiply(p.track.unit, 10)));
-                shape.graphics.beginFill("#000").moveTo(point.x, point.y).lineTo(p1.x, p1.y).lineTo(p2.x, p2.y).cp();
-            }
-            if (!deepEqual(point, p.track.start)) {
-                p1 = geometry.add(point, geometry.flipY(geometry.multiply(this.unit, -10)));
-                p2 = geometry.add(point, geometry.flipY(geometry.multiply(p.track.unit, -10)));
-                shape.graphics.beginFill("#000").moveTo(point.x, point.y).lineTo(p1.x, p1.y).lineTo(p2.x, p2.y).cp();
-            }
-
-        });
+        //Weichen malen (kleines Dreieck in die Weiche)
+        //Filter switches at start end end
+        this.switches
+            .filter((p) => p.km != 0 && p.km != this.length)
+            .forEach((p) => {
+                let point = geometry.round(
+                    geometry.add(this.start, geometry.flipY(geometry.multiply(this.unit, p.km)))
+                );
+                if (!deepEqual(point, p.track.end)) {
+                    p1 = geometry.add(point, geometry.flipY(geometry.multiply(this.unit, 10)));
+                    p2 = geometry.add(point, geometry.flipY(geometry.multiply(p.track.unit, 10)));
+                    shape.graphics
+                        .beginFill("#000")
+                        .moveTo(point.x, point.y)
+                        .lineTo(p1.x, p1.y)
+                        .lineTo(p2.x, p2.y)
+                        .cp();
+                }
+                if (!deepEqual(point, p.track.start)) {
+                    p1 = geometry.add(point, geometry.flipY(geometry.multiply(this.unit, -10)));
+                    p2 = geometry.add(point, geometry.flipY(geometry.multiply(p.track.unit, -10)));
+                    shape.graphics
+                        .beginFill("#000")
+                        .moveTo(point.x, point.y)
+                        .lineTo(p1.x, p1.y)
+                        .lineTo(p2.x, p2.y)
+                        .cp();
+                }
+            });
 
         let pointAtEnd = false;
         let pointAtStart = false;
 
-        const track_scale = 0.10;
+        const track_scale = 0.1;
         //kurve am ende
 
         const curvedTrackImg = loadQueue.getResult("bogen");
 
-        this.points.filter(p => p.km == this.length).forEach(p => {
+        this.switches
+            .filter((p) => p.km == this.length)
+            .forEach((p) => {
+                const bmp = new createjs.Bitmap(curvedTrackImg);
+                bmp.regX = curvedTrackImg.height / 2;
+                bmp.regY = curvedTrackImg.height / 2;
+                bmp.x = this.end.x;
+                bmp.y = this.end.y;
+                bmp.scale = track_scale;
+                if (p.track.deg == -45) bmp.rotation = 45;
+                else if (p.track.deg == 45) bmp.rotation = 180;
+                else if (this.deg == -45) bmp.rotation = 225;
 
-            const bmp = new createjs.Bitmap(curvedTrackImg);
-            bmp.regX = curvedTrackImg.height / 2;
-            bmp.regY = curvedTrackImg.height / 2;
-            bmp.x = this.end.x;
-            bmp.y = this.end.y;
-            bmp.scale = track_scale;
-            if (p.track.deg == -45)
-                bmp.rotation = 45;
-            else if (p.track.deg == 45)
-                bmp.rotation = 180;
-            else if (this.deg == -45)
-                bmp.rotation = 225;
+                //container.addChild(bmp);
+                pointAtEnd = true;
+            });
 
-            container.addChild(bmp);
-            pointAtEnd = true;
-        })
-
-        if (this.points.some(p => p.km == 0)) {
+        if (this.switches.some((p) => p.km == 0)) {
             //prellbock beim start
             pointAtStart = true;
         }
 
-
-
-        const straightTrackImg = loadQueue.getResult("grade");
+        const SCHWELLEN_VARIANTEN = 24;
+        const schwellenImg = loadQueue.getResult("schwellen");
+        const kleinEisenImg = loadQueue.getResult("kleineisen");
         let l = this.length;
+        const schwellenBreite = schwellenImg.width / SCHWELLEN_VARIANTEN;
+        const schwellenGap = schwellenBreite * 1.4;
+        const rail_offset = (schwellenImg.height * track_scale) / 5;
 
-        let x = 0;
+        let x_offset = 0;
         let tile_width = 50;
 
-        const track_container = new createjs.Container();
+        const texture_container = new createjs.Container();
 
-        if (pointAtEnd) l -= curvedTrackImg.height / 2 * track_scale;
-        if (pointAtStart) x = curvedTrackImg.height / 2 * track_scale;
+        if (pointAtEnd) l -= grid_size / 2;
+        if (pointAtStart) x_offset = grid_size / 2;
 
+        const anzSchwellen = Math.floor((l - x_offset) / ((schwellenBreite + schwellenGap) * track_scale));
+        let random = 0;
+        for (let i = 0; i < anzSchwellen; i++) {
+            random = Math.randomInt(SCHWELLEN_VARIANTEN);
+            texture_container.addChild(
+                new createjs.Bitmap(schwellenImg).set({
+                    y: 0,
+                    x: (schwellenBreite + schwellenGap) * i * track_scale + x_offset,
+                    sourceRect: new createjs.Rectangle(
+                        random * schwellenBreite,
+                        0,
+                        schwellenBreite,
+                        schwellenImg.height
+                    ),
+                    scale: track_scale,
+                })
+            );
+        }
 
+        let rail_shape = new createjs.Shape();
+        texture_container.addChild(rail_shape);
+        let y = rail_offset;
 
+        const draw_rail = function (rail_shape, y) {
+            rail_shape.graphics.setStrokeStyle(1.4).beginStroke("#222");
+            rail_shape.graphics.moveTo(x_offset, y).lineTo(l, y);
+            rail_shape.graphics.setStrokeStyle(1.2).beginStroke("#999999");
+            rail_shape.graphics.moveTo(x_offset, y).lineTo(l, y);
+            rail_shape.graphics.setStrokeStyle(0.6).beginStroke("#eeeeee");
+            rail_shape.graphics.moveTo(x_offset, y).lineTo(l, y);
+        };
 
-        if (l - x < tile_width * track_scale) {
+        draw_rail(rail_shape, y);
+        y = schwellenImg.height * track_scale - rail_offset;
+        draw_rail(rail_shape, y);
+
+        y = rail_offset - (kleinEisenImg.height * track_scale) / 2;
+        let x = x_offset + (schwellenBreite / 2 - kleinEisenImg.width / 2) * track_scale;
+        let y2 = schwellenImg.height * track_scale - rail_offset - (kleinEisenImg.height * track_scale) / 2;
+        for (let i = 0; i < anzSchwellen; i++) {
+            [y, y2].forEach((_y) =>
+                texture_container.addChild(
+                    new createjs.Bitmap(kleinEisenImg).set({
+                        y: _y,
+                        x: x,
+                        scale: track_scale,
+                    })
+                )
+            );
+            x += (schwellenBreite + schwellenGap) * track_scale;
+        }
+
+        /* if (l - x < tile_width * track_scale) {
             track_container.addChild(new createjs.Bitmap(straightTrackImg).set({
                 y: 0,
                 x: x,
@@ -197,15 +254,14 @@ class trackShape {
                 }));
                 x += (tile_width * track_scale + cx);
             }
-        }
+        } */
 
-        track_container.regY = straightTrackImg.height * track_scale / 2;
-        track_container.x = this.start.x;
-        track_container.y = this.start.y;
-        track_container.rotation = this.deg * -1;
+        texture_container.regY = (schwellenImg.height * track_scale) / 2;
+        texture_container.x = this.start.x;
+        texture_container.y = this.start.y;
+        texture_container.rotation = this.deg * -1;
 
-        container.addChild(track_container);
-
+        container.addChild(texture_container);
     }
 
     AddSignal(position) {
@@ -213,9 +269,9 @@ class trackShape {
         this.signals.splice(i + 1, 0, position);
     }
 
-    AddPoint(point) {
-        let i = this.points.findIndex((item) => point.km > item.km);
-        this.points.splice(i + 1, 0, point);
+    AddSwitch(point) {
+        let i = this.switches.findIndex((item) => point.km > item.km);
+        this.switches.splice(i + 1, 0, point);
     }
 
     removeSignal(s) {
@@ -238,85 +294,58 @@ class signalShape {
         return s;
     }
 
-
     _template = null;
-    _signalStellung = {
-
-    };
-
+    _signalStellung = {};
 
     options = {
         map: new Map(),
         set: function (o, value) {
-            const splitted = o.split('.');
+            const splitted = o.split(".");
             if (splitted.length == 1) {
-                if (value)
-                    this.map.set(o, true);
-                else
-                    this.map.delete(o);
-            }
-            else if (splitted.length == 2)
-                this.map.set(splitted[0], splitted[1]);
-            else
-                throw new Error();
+                if (value) this.map.set(o, true);
+                else this.map.delete(o);
+            } else if (splitted.length == 2) this.map.set(splitted[0], splitted[1]);
+            else throw new Error();
         },
         match: function (options) {
             if (options == null || options.length == 0) return true; // wenn das visualElement keine Options fordert, ist es immer ein match
-            const match_single = (function (singleOptions) {
-                const splitted = singleOptions.split('.');
-                const antiMatch = splitted[0][0] == '!';
+            const match_single = function (singleOptions) {
+                const splitted = singleOptions.split(".");
+                const antiMatch = splitted[0][0] == "!";
                 let retValue;
-                if (antiMatch)
-                    splitted[0] = splitted[0].substring(1);
-                if (splitted.length == 1)
-                    retValue = this.map.has(splitted[0]);
-                else if (splitted.length == 2)
-                    retValue = this.map.get(splitted[0]) == splitted[1];
-                else
-                    throw new Error();
+                if (antiMatch) splitted[0] = splitted[0].substring(1);
+                if (splitted.length == 1) retValue = this.map.has(splitted[0]);
+                else if (splitted.length == 2) retValue = this.map.get(splitted[0]) == splitted[1];
+                else throw new Error();
 
                 return antiMatch ? !retValue : retValue;
-            }).bind(this);
+            }.bind(this);
             if (Array.isArray(options)) {
                 return options.find(match_single) != null;
-            } else
-                return match_single(options);
-
+            } else return match_single(options);
         },
         stringify: function () {
-            return JSON.stringify(Array.from(this.map.entries()))
-        }
+            return JSON.stringify(Array.from(this.map.entries()));
+        },
     };
-
-
-
 
     constructor(template) {
         this._template = template;
 
         if (template.startOptions)
-            if (Array.isArray(template.startOptions))
-                template.startOptions.forEach(i => this.options.set(i))
-            else
-                this.options.set(template.startOptions);
-
+            if (Array.isArray(template.startOptions)) template.startOptions.forEach((i) => this.options.set(i));
+            else this.options.set(template.startOptions);
 
         if (template.start)
-            if (Array.isArray(template.start))
-                template.start.forEach(i => this.set(i));
-            else
-                this.set(template.start);
-
+            if (Array.isArray(template.start)) template.start.forEach((i) => this.set(i));
+            else this.set(template.start);
     }
 
     set(stellung, value) {
         const splitted = stellung.split("=");
-        if (splitted.length == 1)
-            this._signalStellung[splitted[0]] = value;
-        else if (this.check(stellung))
-            delete this._signalStellung[splitted[0]];
-        else
-            this._signalStellung[splitted[0]] = splitted[1];
+        if (splitted.length == 1) this._signalStellung[splitted[0]] = value;
+        else if (this.check(stellung)) delete this._signalStellung[splitted[0]];
+        else this._signalStellung[splitted[0]] = splitted[1];
     }
 
     get(stellung) {
@@ -332,7 +361,7 @@ class signalShape {
     draw(c) {
         this._rendering = { container: c };
 
-        this._template.elements.forEach(ve => this.drawVisualElement(ve));
+        this._template.elements.forEach((ve) => this.drawVisualElement(ve));
 
         this._rendering = null;
     }
@@ -350,82 +379,79 @@ class signalShape {
             if (this.options.match(ve.options) && this._template.VisualElementIsAllowed(ve, this) && ve.isEnabled(this))
                 if (ve.image) {
                     if (Array.isArray(ve.image))
-                        ve.image.forEach(i => this.addImage(i, { blinkt: ve.blinkt, pos: ve.pos }));
+                        ve.image.forEach((i) => this.addImage(i, { blinkt: ve.blinkt, pos: ve.pos }));
                     else
-                        this.addImage(ve.image, { blinkt: ve.blinkt, pos: ve.pos });
+                        this.addImage(ve.image, {
+                            blinkt: ve.blinkt,
+                            pos: ve.pos,
+                        });
                 } else if (ve.childs) {
-                    ve.childs.forEach(c => this.drawVisualElement(c));
+                    ve.childs.forEach((c) => this.drawVisualElement(c));
                 }
-        }
-        else
-            console.log(ve);
+        } else console.log(ve);
     }
 
     addImage(texture_name, { pos = null, blinkt = false } = {}) {
         if (texture_name == null || texture_name == "") return;
 
-        let bmp = pl.getImage(this._template.json_file, texture_name);;
+        let bmp = pl.getImage(this._template.json_file, texture_name);
         if (bmp != null) {
             if (pos) {
                 bmp.x = pos[0];
                 bmp.y = pos[1];
             }
 
-
             this._rendering.container.addChild(bmp);
 
             if (blinkt) {
-                createjs.Tween.get(bmp, { loop: true })
-                    .wait(1000)
-                    .to({ alpha: 0 }, 200)
-                    .wait(800)
-                    .to({ alpha: 1 }, 50)
+                createjs.Tween.get(bmp, { loop: true }).wait(1000).to({ alpha: 0 }, 200).wait(800).to({ alpha: 1 }, 50);
             }
 
             return bmp;
-        }
-        else
-            console.log(texture_name + " nicht gezeichnet")
+        } else console.log(texture_name + " nicht gezeichnet");
     }
 
     getHTML() {
         const ul = $("<ul>", { class: "list-group list-group-flush" });
 
-        const filterTree = (function (array) {
+        const filterTree = function (array) {
             let a = [];
-            array.forEach(item => {
+            array.forEach((item) => {
                 if (this.options.match(item.options)) {
                     if (item.switchable) a.push(item);
-                    if (item.childs)
-                        a = a.concat(filterTree(item.childs));
-
+                    if (item.childs) a = a.concat(filterTree(item.childs));
                 }
-            })
+            });
 
             return a;
-        }).bind(this);
-
+        }.bind(this);
 
         const switchable_visuell_elements = filterTree(this._template.elements);
 
-
         const groups = new Map();
 
-        switchable_visuell_elements.forEach(e => {
+        switchable_visuell_elements.forEach((e) => {
             const s = e.stellung.split("=")[0];
-            if (!groups.has(s))
-                groups.set(s, [e]);
-            else
-                groups.get(s).push(e);
-        })
+            if (!groups.has(s)) groups.set(s, [e]);
+            else groups.get(s).push(e);
+        });
 
         groups.forEach((group) => {
             if (!(group[0] instanceof TextElement))
-                ul.append($("<li>", { class: "list-group-item" }).append(ui.create_buttonGroup(group.map((e) => ui.create_toggleButton(e.btn_text, "", e.stellung, this)))));
+                ul.append(
+                    $("<li>", { class: "list-group-item" }).append(
+                        ui.create_buttonGroup(
+                            group.map((e) => ui.create_toggleButton(e.btn_text, "", e.stellung, this))
+                        )
+                    )
+                );
             else
-                ul.append($("<li>", { class: "list-group-item" }).append(ui.create_Input(group[0].btn_text, group[0].stellung, this)));
-
-        })
+                ul.append(
+                    $("<li>", { class: "list-group-item" }).append(
+                        ui.create_Input(group[0].btn_text, group[0].stellung, this)
+                    )
+                );
+        });
 
         this.syncHTML(ul);
         return ul;
@@ -434,14 +460,12 @@ class signalShape {
     syncHTML(popup) {
         let buttons = $("button", popup);
         buttons.each((i, e) => {
-            const stellung = e.attributes['data_signal'].value;
+            const stellung = e.attributes["data_signal"].value;
             $(e).toggleClass("active", this.check(stellung));
 
-            if (this._template.StellungIsAllowed(stellung[0], this))
-                $(e).removeAttr('disabled');
-            else
-                $(e).attr('disabled', 'disabled');
-        })
+            if (this._template.StellungIsAllowed(stellung[0], this)) $(e).removeAttr("disabled");
+            else $(e).attr("disabled", "disabled");
+        });
 
         /* let switchable_visuell_elements = this._template.elements.filter((e) => e.switchable && this.options.match(e.options));
         switchable_visuell_elements.forEach(element => {
@@ -468,5 +492,4 @@ class signalShape {
     getContectMenu() {
         return this._template.contextMenu;
     }
-
 }

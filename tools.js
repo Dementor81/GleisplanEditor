@@ -32,6 +32,10 @@ Array.prototype.without = function (item) {
   return this.filter(i => i != item);
 }
 
+Math.randomInt = function(max) {
+  return Math.floor(Math.random() * (max + 1));
+}
+
 function deepEqual(x, y) {
   const ok = Object.keys, tx = typeof x, ty = typeof y;
   return x && y && tx === 'object' && tx === ty ? (
