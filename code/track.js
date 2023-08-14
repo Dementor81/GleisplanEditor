@@ -186,7 +186,8 @@ class trackShape {
         const anzSchwellen = Math.floor((l - x_offset) / ((schwellenBreite + schwellenGap) * track_scale));
         let random = 0;
         for (let i = 0; i < anzSchwellen; i++) {
-            random = Math.randomInt(SCHWELLEN_VARIANTEN);
+            random = Math.randomInt(SCHWELLEN_VARIANTEN-1);
+            console.log(random)
             texture_container.addChild(
                 new createjs.Bitmap(schwellenImg).set({
                     y: 0,
@@ -201,6 +202,8 @@ class trackShape {
                 })
             );
         }
+
+        
 
         let rail_shape = new createjs.Shape();
         texture_container.addChild(rail_shape);
