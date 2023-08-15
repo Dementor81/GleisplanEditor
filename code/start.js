@@ -6,6 +6,7 @@ const EXCLUDE_JSON = ["switches"];
 const MODE_PLAY = 1;
 const MODE_EDIT = 2;
 
+
 const MOUSE_ACTION = {
     NONE: 0,
     SCROLL: 1,
@@ -15,18 +16,21 @@ const MOUSE_ACTION = {
 };
 
 const track_color = "#000000";
+const TRACK_SCALE = 0.1;
+
 const stroke = 2;
 const grid_size = 70;
-const signale_scale = 0.3;
+const signale_scale = 0.1;
 
 var stage,
-    main_container,
-    overlay_container,
-    ui_container,
+main_container,
+overlay_container,
+ui_container,
     signal_container,
     track_container,
     grid;
-
+    
+var TEXTURE_MODE = false;
 var startpoint;
 var previousTouch;
 var showGrid = true;
@@ -175,6 +179,11 @@ function init() {
 
     $(btnGrid).click((e) => {
         onShowGrid(!$(btnGrid).hasClass("active"));
+    });
+
+    $(btnTexture).click((e) => {
+        TEXTURE_MODE = !TEXTURE_MODE;
+        reDrawEverything();
     });
 
     $("#btnClear").click(() => {

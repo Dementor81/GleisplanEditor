@@ -90,181 +90,205 @@ class trackShape {
 
         //container.addChild(hit);
         container.addChild(shape);
-        shape.graphics.setStrokeStyle(stroke, "round").beginStroke(track_color);
-        shape.color = shape.graphics.command;
-        shape.graphics.moveTo(this.start.x, this.start.y).lineTo(this.end.x, this.end.y);
-        if (!this.switches.some((p) => p.km == 0)) {
-            //prellbock beim start
-            p1 = geometry.perpendicular(this.start, this.deg, -6);
-            p2 = geometry.perpendicular(this.start, this.deg, 6);
-            shape.graphics.moveTo(p1.x, p1.y).lineTo(p2.x, p2.y);
-        }
 
-        if (!this.switches.some((p) => p.km == this.length)) {
-            //prellbock beim ende
-            p1 = geometry.perpendicular(this.end, this.deg, -6);
-            p2 = geometry.perpendicular(this.end, this.deg, 6);
-            shape.graphics.moveTo(p1.x, p1.y).lineTo(p2.x, p2.y);
-        }
+        if (!TEXTURE_MODE) {
+            shape.graphics.setStrokeStyle(stroke, "round").beginStroke(track_color);
+            shape.color = shape.graphics.command;
+            shape.graphics.moveTo(this.start.x, this.start.y).lineTo(this.end.x, this.end.y);
+            if (!this.switches.some((p) => p.km == 0)) {
+                //prellbock beim start
+                p1 = geometry.perpendicular(this.start, this.deg, -6);
+                p2 = geometry.perpendicular(this.start, this.deg, 6);
+                shape.graphics.moveTo(p1.x, p1.y).lineTo(p2.x, p2.y);
+            }
 
-        //Weichen malen (kleines Dreieck in die Weiche)
-        //Filter switches at start end end
-        this.switches
-            .filter((p) => p.km != 0 && p.km != this.length)
-            .forEach((p) => {
-                let point = geometry.round(
-                    geometry.add(this.start, geometry.flipY(geometry.multiply(this.unit, p.km)))
+            if (!this.switches.some((p) => p.km == this.length)) {
+                //prellbock beim ende
+                p1 = geometry.perpendicular(this.end, this.deg, -6);
+                p2 = geometry.perpendicular(this.end, this.deg, 6);
+                shape.graphics.moveTo(p1.x, p1.y).lineTo(p2.x, p2.y);
+            }
+            //Weichen malen (kleines Dreieck in die Weiche)
+            //Filter switches at start end end
+            this.switches
+                .filter((p) => p.km != 0 && p.km != this.length)
+                .forEach((p) => {
+                    let point = geometry.round(geometry.add(this.start, geometry.flipY(geometry.multiply(this.unit, p.km))));
+                    if (!deepEqual(point, p.track.end)) {
+                        p1 = geometry.add(point, geometry.flipY(geometry.multiply(this.unit, 10)));
+                        p2 = geometry.add(point, geometry.flipY(geometry.multiply(p.track.unit, 10)));
+                        shape.graphics.beginFill("#000").moveTo(point.x, point.y).lineTo(p1.x, p1.y).lineTo(p2.x, p2.y).cp();
+                    }
+                    if (!deepEqual(point, p.track.start)) {
+                        p1 = geometry.add(point, geometry.flipY(geometry.multiply(this.unit, -10)));
+                        p2 = geometry.add(point, geometry.flipY(geometry.multiply(p.track.unit, -10)));
+                        shape.graphics.beginFill("#000").moveTo(point.x, point.y).lineTo(p1.x, p1.y).lineTo(p2.x, p2.y).cp();
+                    }
+                });
+        } else {
+            
+            const texture_container = new createjs.Container();
+            let rail_shape = new createjs.Shape();
+
+            const SCHWELLEN_VARIANTEN = 24;
+            const schwellenImg = loadQueue.getResult("schwellen");
+            const kleinEisenImg = loadQueue.getResult("kleineisen");
+            let l = this.length;
+            const schwellenBreite = schwellenImg.width / SCHWELLEN_VARIANTEN;
+            const schwellenGap = schwellenBreite * 1.4;
+            const rail_offset = (schwellenImg.height * TRACK_SCALE) / 5;
+
+            const radius = grid_size * 1.207;
+
+            this.switches
+                .filter((p) => p.km == this.length)
+                .forEach((p) => {
+                    if (p.track.deg == -45 || this.deg == 45) {
+                        this.drawArc(rail_shape, 270, 315, this.length - grid_size / 2, 0, radius, "#222", 1.4, -rail_offset);
+                        this.drawArc(rail_shape, 270, 315, this.length - grid_size / 2, 0, radius, "#999", 1.2, -rail_offset);
+                        this.drawArc(rail_shape, 270, 315, this.length - grid_size / 2, 0, radius, "#eee", 0.6, -rail_offset);
+
+                        this.drawArc(rail_shape, 270, 315, this.length - grid_size / 2, 0, radius, "#222", 1.4, -schwellenImg.height * TRACK_SCALE + rail_offset);
+                        this.drawArc(rail_shape, 270, 315, this.length - grid_size / 2, 0, radius, "#999", 1.2, -schwellenImg.height * TRACK_SCALE + rail_offset);
+                        this.drawArc(rail_shape, 270, 315, this.length - grid_size / 2, 0, radius, "#eee", 0.6, -schwellenImg.height * TRACK_SCALE + rail_offset);
+
+                        this.DrawImagesInCircle(texture_container, 270, 315, this.length - grid_size / 2, 0, radius, 12, schwellenImg, 0);
+                    } else {
+                        this.drawArc(rail_shape, 90, 45, this.length - grid_size / 2, 0, radius, "#222", 1.4, -rail_offset);
+                        this.drawArc(rail_shape, 90, 45, this.length - grid_size / 2, 0, radius, "#999", 1.2, -rail_offset);
+                        this.drawArc(rail_shape, 90, 45, this.length - grid_size / 2, 0, radius, "#eee", 0.6, -rail_offset);
+
+                        this.drawArc(rail_shape, 90, 45, this.length - grid_size / 2, 0, radius, "#222", 1.4, -schwellenImg.height * TRACK_SCALE + rail_offset);
+                        this.drawArc(rail_shape, 90, 45, this.length - grid_size / 2, 0, radius, "#999", 1.2, -schwellenImg.height * TRACK_SCALE + rail_offset);
+                        this.drawArc(rail_shape, 90, 45, this.length - grid_size / 2, 0, radius, "#eee", 0.6, -schwellenImg.height * TRACK_SCALE + rail_offset);
+
+                        this.DrawImagesInCircle(texture_container, 90, 45, this.length - grid_size / 2, 0, radius, 12, schwellenImg, 0);
+                    }
+                });
+
+            this.switches
+                .filter((p) => p.km != 0 && p.km != this.length)
+                .forEach((p) => {
+                    if(p.track.deg > 0){
+                        //weiche nach links
+                    }
+                });
+
+            let x_start = 0,
+                x_end = 0,
+                counter = 0,
+                weiche = null,
+                anzSchwellen = 0,
+                random = 0;
+
+            do {
+                if (this.switches.length > counter) {
+                    weiche = this.switches[counter];
+                    x_end = weiche.km - grid_size / 2;
+                } else x_end = this.length;
+                if (x_end > x_start) {
+                    anzSchwellen = Math.floor((x_end - x_start) / ((schwellenBreite + schwellenGap) * TRACK_SCALE));
+
+                    for (let i = 0; i < anzSchwellen; i++) {
+                        random = Math.randomInt(SCHWELLEN_VARIANTEN - 1);
+                        texture_container.addChild(
+                            new createjs.Bitmap(schwellenImg).set({
+                                y: 0,
+                                x: (schwellenBreite + schwellenGap) * i * TRACK_SCALE + x_start + (schwellenGap * TRACK_SCALE) / 2,
+                                sourceRect: new createjs.Rectangle(random * schwellenBreite, 0, schwellenBreite, schwellenImg.height),
+                                scale: TRACK_SCALE,
+                            })
+                        );
+                    }
+
+                    [rail_offset, schwellenImg.height * TRACK_SCALE - rail_offset].forEach((y) => {
+                        rail_shape.graphics.setStrokeStyle(1.4).beginStroke("#222");
+                        rail_shape.graphics.moveTo(x_start, y).lineTo(x_end, y);
+                        rail_shape.graphics.setStrokeStyle(1.2).beginStroke("#999999");
+                        rail_shape.graphics.moveTo(x_start, y).lineTo(x_end, y);
+                        rail_shape.graphics.setStrokeStyle(0.6).beginStroke("#eeeeee");
+                        rail_shape.graphics.moveTo(x_start, y).lineTo(x_end, y);
+                    });
+                }
+                x_start = x_end + grid_size;
+                counter++;
+            } while (x_start < this.length);
+
+            /* y = rail_offset - (kleinEisenImg.height * TRACK_SCALE) / 2;
+            let x = x_offset + (schwellenBreite / 2 - kleinEisenImg.width / 2) * TRACK_SCALE + (schwellenGap * TRACK_SCALE) / 2;
+            let y2 = schwellenImg.height * TRACK_SCALE - rail_offset - (kleinEisenImg.height * TRACK_SCALE) / 2;
+            for (let i = 0; i < anzSchwellen; i++) {
+                [y, y2].forEach((_y) =>
+                    texture_container.addChild(
+                        new createjs.Bitmap(kleinEisenImg).set({
+                            y: _y,
+                            x: x,
+                            scale: TRACK_SCALE,
+                        })
+                    )
                 );
-                if (!deepEqual(point, p.track.end)) {
-                    p1 = geometry.add(point, geometry.flipY(geometry.multiply(this.unit, 10)));
-                    p2 = geometry.add(point, geometry.flipY(geometry.multiply(p.track.unit, 10)));
-                    shape.graphics
-                        .beginFill("#000")
-                        .moveTo(point.x, point.y)
-                        .lineTo(p1.x, p1.y)
-                        .lineTo(p2.x, p2.y)
-                        .cp();
-                }
-                if (!deepEqual(point, p.track.start)) {
-                    p1 = geometry.add(point, geometry.flipY(geometry.multiply(this.unit, -10)));
-                    p2 = geometry.add(point, geometry.flipY(geometry.multiply(p.track.unit, -10)));
-                    shape.graphics
-                        .beginFill("#000")
-                        .moveTo(point.x, point.y)
-                        .lineTo(p1.x, p1.y)
-                        .lineTo(p2.x, p2.y)
-                        .cp();
-                }
-            });
+                x += (schwellenBreite + schwellenGap) * TRACK_SCALE;
+            }  */
 
-        let pointAtEnd = false;
-        let pointAtStart = false;
+            texture_container.addChild(rail_shape);
 
-        const track_scale = 0.1;
-        //kurve am ende
+            //texture_container.regY = (schwellenImg.height * track_scale) / 2;
+            texture_container.x = this.start.x;
+            texture_container.y = this.start.y - (schwellenImg.height * TRACK_SCALE) / 2;
+            texture_container.rotation = this.deg * -1;
 
-        const curvedTrackImg = loadQueue.getResult("bogen");
+            container.addChild(texture_container);
+        }
+    }
 
-        this.switches
-            .filter((p) => p.km == this.length)
-            .forEach((p) => {
-                const bmp = new createjs.Bitmap(curvedTrackImg);
-                bmp.regX = curvedTrackImg.height / 2;
-                bmp.regY = curvedTrackImg.height / 2;
-                bmp.x = this.end.x;
-                bmp.y = this.end.y;
-                bmp.scale = track_scale;
-                if (p.track.deg == -45) bmp.rotation = 45;
-                else if (p.track.deg == 45) bmp.rotation = 180;
-                else if (this.deg == -45) bmp.rotation = 225;
+    drawArc(shape, start_deg, end_deg, center_x, center_y, radius, color, thickness, offset = 0) {
+        let rad = start_deg * (Math.PI / 180);
+        if (start_deg > end_deg) {
+            start_deg = start_deg + end_deg;
+            end_deg = start_deg - end_deg;
+            start_deg = start_deg - end_deg;
 
-                //container.addChild(bmp);
-                pointAtEnd = true;
-            });
-
-        if (this.switches.some((p) => p.km == 0)) {
-            //prellbock beim start
-            pointAtStart = true;
+            offset = offset * -1;
         }
 
-        const SCHWELLEN_VARIANTEN = 24;
-        const schwellenImg = loadQueue.getResult("schwellen");
-        const kleinEisenImg = loadQueue.getResult("kleineisen");
-        let l = this.length;
-        const schwellenBreite = schwellenImg.width / SCHWELLEN_VARIANTEN;
-        const schwellenGap = schwellenBreite * 1.4;
-        const rail_offset = (schwellenImg.height * track_scale) / 5;
+        const offsetx = Math.cos(rad) * radius;
+        const offsety = Math.sin(rad) * radius;
+        shape.graphics
+            .setStrokeStyle(thickness)
+            .beginStroke(color)
+            .arc(center_x - offsetx, center_y - offsety, radius + offset, (Math.PI / 180) * start_deg, (Math.PI / 180) * end_deg);
+    }
 
-        let x_offset = 0;
-        let tile_width = 50;
+    DrawImagesInCircle(container, start_deg, end_deg, center_x, center_y, radius, numOfItems, img, offset = 0) {
+        const schwellenBreite = img.width / 24;
 
-        const texture_container = new createjs.Container();
+        let rad = start_deg * (Math.PI / 180);
+        if (start_deg > end_deg) {
+            start_deg = start_deg + end_deg;
+            end_deg = start_deg - end_deg;
+            start_deg = start_deg - end_deg;
 
-        if (pointAtEnd) l -= grid_size / 2;
-        if (pointAtStart) x_offset = grid_size / 2;
+            offset = img.height * TRACK_SCALE;
+        }
+        const steps = Math.abs(start_deg - end_deg) / numOfItems;
 
-        const anzSchwellen = Math.floor((l - x_offset) / ((schwellenBreite + schwellenGap) * track_scale));
+        const offsetx = Math.cos(rad) * radius;
+        const offsety = Math.sin(rad) * radius;
         let random = 0;
-        for (let i = 0; i < anzSchwellen; i++) {
-            random = Math.randomInt(SCHWELLEN_VARIANTEN-1);
-            console.log(random)
-            texture_container.addChild(
-                new createjs.Bitmap(schwellenImg).set({
-                    y: 0,
-                    x: (schwellenBreite + schwellenGap) * i * track_scale + x_offset,
-                    sourceRect: new createjs.Rectangle(
-                        random * schwellenBreite,
-                        0,
-                        schwellenBreite,
-                        schwellenImg.height
-                    ),
-                    scale: track_scale,
+        for (let degrees = start_deg + 1; degrees < end_deg + 1; degrees += steps) {
+            rad = degrees * (Math.PI / 180);
+            random = Math.randomInt(24 - 1);
+            container.addChild(
+                new createjs.Bitmap(img).set({
+                    x: center_x - offsetx + Math.cos(rad) * (radius + offset),
+                    y: center_y - offsety + Math.sin(rad) * (radius + offset),
+                    sourceRect: new createjs.Rectangle(random * schwellenBreite, 0, schwellenBreite, img.height),
+                    scale: TRACK_SCALE,
+                    rotation: degrees + 90,
                 })
             );
         }
-
-        
-
-        let rail_shape = new createjs.Shape();
-        texture_container.addChild(rail_shape);
-        let y = rail_offset;
-
-        const draw_rail = function (rail_shape, y) {
-            rail_shape.graphics.setStrokeStyle(1.4).beginStroke("#222");
-            rail_shape.graphics.moveTo(x_offset, y).lineTo(l, y);
-            rail_shape.graphics.setStrokeStyle(1.2).beginStroke("#999999");
-            rail_shape.graphics.moveTo(x_offset, y).lineTo(l, y);
-            rail_shape.graphics.setStrokeStyle(0.6).beginStroke("#eeeeee");
-            rail_shape.graphics.moveTo(x_offset, y).lineTo(l, y);
-        };
-
-        draw_rail(rail_shape, y);
-        y = schwellenImg.height * track_scale - rail_offset;
-        draw_rail(rail_shape, y);
-
-        y = rail_offset - (kleinEisenImg.height * track_scale) / 2;
-        let x = x_offset + (schwellenBreite / 2 - kleinEisenImg.width / 2) * track_scale;
-        let y2 = schwellenImg.height * track_scale - rail_offset - (kleinEisenImg.height * track_scale) / 2;
-        for (let i = 0; i < anzSchwellen; i++) {
-            [y, y2].forEach((_y) =>
-                texture_container.addChild(
-                    new createjs.Bitmap(kleinEisenImg).set({
-                        y: _y,
-                        x: x,
-                        scale: track_scale,
-                    })
-                )
-            );
-            x += (schwellenBreite + schwellenGap) * track_scale;
-        }
-
-        /* if (l - x < tile_width * track_scale) {
-            track_container.addChild(new createjs.Bitmap(straightTrackImg).set({
-                y: 0,
-                x: x,
-                sourceRect: new createjs.Rectangle(0, 0, (l - x) / track_scale, straightTrackImg.height),
-                scale: track_scale
-            }));
-        } else {
-            const cx = ((l - x) % (tile_width * track_scale)) / Math.floor((l - x) / (tile_width * track_scale));
-
-            while (x + (tile_width * track_scale + cx) <= l) {
-                track_container.addChild(new createjs.Bitmap(straightTrackImg).set({
-                    y: 0,
-                    x: x,
-                    sourceRect: new createjs.Rectangle(0, 0, tile_width + cx / track_scale, straightTrackImg.height),
-                    scale: track_scale
-                }));
-                x += (tile_width * track_scale + cx);
-            }
-        } */
-
-        texture_container.regY = (schwellenImg.height * track_scale) / 2;
-        texture_container.x = this.start.x;
-        texture_container.y = this.start.y;
-        texture_container.rotation = this.deg * -1;
-
-        container.addChild(texture_container);
+        stage.update();
     }
 
     AddSignal(position) {
@@ -272,9 +296,10 @@ class trackShape {
         this.signals.splice(i + 1, 0, position);
     }
 
-    AddSwitch(point) {
-        let i = this.switches.findIndex((item) => point.km > item.km);
-        this.switches.splice(i + 1, 0, point);
+    AddSwitch(weiche) {
+        let i = this.switches.findIndex((item) => weiche.km < item.km);
+        if (i == -1) this.switches.push(weiche);
+        else this.switches.splice(i, 0, weiche);
     }
 
     removeSignal(s) {
@@ -381,8 +406,7 @@ class signalShape {
         } else if (ve instanceof VisualElement) {
             if (this.options.match(ve.options) && this._template.VisualElementIsAllowed(ve, this) && ve.isEnabled(this))
                 if (ve.image) {
-                    if (Array.isArray(ve.image))
-                        ve.image.forEach((i) => this.addImage(i, { blinkt: ve.blinkt, pos: ve.pos }));
+                    if (Array.isArray(ve.image)) ve.image.forEach((i) => this.addImage(i, { blinkt: ve.blinkt, pos: ve.pos }));
                     else
                         this.addImage(ve.image, {
                             blinkt: ve.blinkt,
@@ -441,19 +465,8 @@ class signalShape {
 
         groups.forEach((group) => {
             if (!(group[0] instanceof TextElement))
-                ul.append(
-                    $("<li>", { class: "list-group-item" }).append(
-                        ui.create_buttonGroup(
-                            group.map((e) => ui.create_toggleButton(e.btn_text, "", e.stellung, this))
-                        )
-                    )
-                );
-            else
-                ul.append(
-                    $("<li>", { class: "list-group-item" }).append(
-                        ui.create_Input(group[0].btn_text, group[0].stellung, this)
-                    )
-                );
+                ul.append($("<li>", { class: "list-group-item" }).append(ui.create_buttonGroup(group.map((e) => ui.create_toggleButton(e.btn_text, "", e.stellung, this)))));
+            else ul.append($("<li>", { class: "list-group-item" }).append(ui.create_Input(group[0].btn_text, group[0].stellung, this)));
         });
 
         this.syncHTML(ul);

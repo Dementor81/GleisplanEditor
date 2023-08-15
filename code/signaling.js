@@ -255,7 +255,7 @@ function initSignals() {
             , enabled: s => s.get("hp") == 0 || s.get("hp") == null
         })
     ], ["hp=0", "vr=0"]);
-    t.scale = 0.07;
+    t.scale = 0.05;
     t.startOptions = ["verwendung.asig", "mastschild.wrw"];
     t.contextMenu = [].concat(menu.Verwendung, menu.Mastschild, menu.Vorsignal, menu.verkürzt);
     signalTemplates.hv_hp = t;
@@ -275,7 +275,7 @@ function initSignals() {
         new VisualElement("verk_licht", { btn_text: "Verkürzt", options: "verk", stellung: "verk=1" }),
 
     ], "vr=0");
-    t.scale = 0.07;
+    t.scale = 0.05;
 
     t.contextMenu = [].concat(menu.verkürzt, menu.wiederholer);
     signalTemplates.hv_vr = t;
