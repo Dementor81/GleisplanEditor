@@ -15,7 +15,17 @@ class trackShape {
     end = null;
     signals = [];
 
+    SCHWELLEN_VARIANTEN = 24;
+
+    //render values
+    schwellenHöhe = 0;
+    schwellenBreite = 0;
+    schwellenGap = 0;
+    rail_offset = 0;
+
+    //Temp values
     deg = 0;
+    rad = 0;
     length = 0;
     vector = null;
     switches = [];
@@ -38,7 +48,9 @@ class trackShape {
             x: this.end.x - this.start.x,
             y: this.start.y - this.end.y,
         }; // start ende vertauscht, da das Koordinatensystem gespiegelt arbeitet
-        this.deg = Math.atan(this.vector.y / this.vector.x) * (180 / Math.PI);
+        this.rad = Math.atan(this.vector.y / this.vector.x);
+        this.deg = this.rad * (180 / Math.PI);
+
         this.length = geometry.length(this.vector);
         this.unit = geometry.unit(this.vector, this.length);
     }
@@ -74,6 +86,16 @@ class trackShape {
     }
 
     draw(container) {
+        if (!loadQueue.loaded) {
+            console.log("waiting...");
+            setTimeout(
+                function () {
+                    this.draw(container);
+                }.bind(this),
+                500
+            );
+            return;
+        }
         let shape = new createjs.Shape();
         shape.name = "track";
         shape.track = this;
@@ -125,98 +147,102 @@ class trackShape {
                         shape.graphics.beginFill("#000").moveTo(point.x, point.y).lineTo(p1.x, p1.y).lineTo(p2.x, p2.y).cp();
                     }
                 });
-        } else {
-            
+            //} else {
             const texture_container = new createjs.Container();
             let rail_shape = new createjs.Shape();
-
-            const SCHWELLEN_VARIANTEN = 24;
             const schwellenImg = loadQueue.getResult("schwellen");
             const kleinEisenImg = loadQueue.getResult("kleineisen");
-            let l = this.length;
-            const schwellenBreite = schwellenImg.width / SCHWELLEN_VARIANTEN;
-            const schwellenGap = schwellenBreite * 1.4;
-            const rail_offset = (schwellenImg.height * TRACK_SCALE) / 5;
 
-            const radius = grid_size * 1.207;
+            this.schwellenHöhe = schwellenImg.height * TRACK_SCALE;
+            this.schwellenBreite = (schwellenImg.width / this.SCHWELLEN_VARIANTEN) * TRACK_SCALE;
+            this.schwellenGap = this.schwellenBreite * 1;
+            this.rail_offset = this.schwellenHöhe / 5;
 
             this.switches
-                .filter((p) => p.km == this.length)
+                .filter((p) => p.km == this.length && p.type === SWITCH_TYPE.ARCH)
                 .forEach((p) => {
-                    if (p.track.deg == -45 || this.deg == 45) {
-                        this.drawArc(rail_shape, 270, 315, this.length - grid_size / 2, 0, radius, "#222", 1.4, -rail_offset);
-                        this.drawArc(rail_shape, 270, 315, this.length - grid_size / 2, 0, radius, "#999", 1.2, -rail_offset);
-                        this.drawArc(rail_shape, 270, 315, this.length - grid_size / 2, 0, radius, "#eee", 0.6, -rail_offset);
-
-                        this.drawArc(rail_shape, 270, 315, this.length - grid_size / 2, 0, radius, "#222", 1.4, -schwellenImg.height * TRACK_SCALE + rail_offset);
-                        this.drawArc(rail_shape, 270, 315, this.length - grid_size / 2, 0, radius, "#999", 1.2, -schwellenImg.height * TRACK_SCALE + rail_offset);
-                        this.drawArc(rail_shape, 270, 315, this.length - grid_size / 2, 0, radius, "#eee", 0.6, -schwellenImg.height * TRACK_SCALE + rail_offset);
-
-                        this.DrawImagesInCircle(texture_container, 270, 315, this.length - grid_size / 2, 0, radius, 12, schwellenImg, 0);
-                    } else {
-                        this.drawArc(rail_shape, 90, 45, this.length - grid_size / 2, 0, radius, "#222", 1.4, -rail_offset);
-                        this.drawArc(rail_shape, 90, 45, this.length - grid_size / 2, 0, radius, "#999", 1.2, -rail_offset);
-                        this.drawArc(rail_shape, 90, 45, this.length - grid_size / 2, 0, radius, "#eee", 0.6, -rail_offset);
-
-                        this.drawArc(rail_shape, 90, 45, this.length - grid_size / 2, 0, radius, "#222", 1.4, -schwellenImg.height * TRACK_SCALE + rail_offset);
-                        this.drawArc(rail_shape, 90, 45, this.length - grid_size / 2, 0, radius, "#999", 1.2, -schwellenImg.height * TRACK_SCALE + rail_offset);
-                        this.drawArc(rail_shape, 90, 45, this.length - grid_size / 2, 0, radius, "#eee", 0.6, -schwellenImg.height * TRACK_SCALE + rail_offset);
-
-                        this.DrawImagesInCircle(texture_container, 90, 45, this.length - grid_size / 2, 0, radius, 12, schwellenImg, 0);
-                    }
+                    this.drawCurvedTrack(texture_container, p.km, this.deg, p.track.deg, schwellenImg);
                 });
 
-            this.switches
+            /* this.switches
                 .filter((p) => p.km != 0 && p.km != this.length)
                 .forEach((p) => {
-                    if(p.track.deg > 0){
-                        //weiche nach links
+                    switch (p.type) {
+                        case SWITCH_TYPE.RIGHT_BOTTOM:
+                            {
+                                texture_container.addChild(
+                                    new createjs.Bitmap(loadQueue.getResult("weicheRU")).set({
+                                        x: p.km - grid_size_2 - 3.4,
+                                        y: -0.4,
+                                        scale: 0.078,
+                                        rotation: 0,
+                                    })
+                                );
+                            }
+                            break;
+                        case SWITCH_TYPE.LEFT_TOP:
+                            {
+                                texture_container.addChild(
+                                    new createjs.Bitmap(loadQueue.getResult("weicheLO")).set({
+                                        x: p.km - grid_size_2 - 2,
+                                        y: -25,
+                                        scale: 0.13,
+                                        rotation: 0,
+                                    })
+                                );
+                            }
+                            break;
+
+                        default:
+                            break;
                     }
-                });
+                }); */
 
             let x_start = 0,
                 x_end = 0,
+                x = 0,
+                y = 0,
                 counter = 0,
                 weiche = null,
                 anzSchwellen = 0,
                 random = 0;
 
+            const cos = Math.cos(this.rad),
+                sin = Math.sin(this.rad);
+            const step = grid_size / cos;
+
             do {
                 if (this.switches.length > counter) {
                     weiche = this.switches[counter];
-                    x_end = weiche.km - grid_size / 2;
+                    x_end = weiche.km - step / 2;
                 } else x_end = this.length;
                 if (x_end > x_start) {
-                    anzSchwellen = Math.floor((x_end - x_start) / ((schwellenBreite + schwellenGap) * TRACK_SCALE));
+                    anzSchwellen = Math.floor((x_end - x_start) / (this.schwellenBreite + this.schwellenGap));
 
                     for (let i = 0; i < anzSchwellen; i++) {
-                        random = Math.randomInt(SCHWELLEN_VARIANTEN - 1);
+                        random = Math.randomInt(this.SCHWELLEN_VARIANTEN - 1);
                         texture_container.addChild(
                             new createjs.Bitmap(schwellenImg).set({
-                                y: 0,
-                                x: (schwellenBreite + schwellenGap) * i * TRACK_SCALE + x_start + (schwellenGap * TRACK_SCALE) / 2,
-                                sourceRect: new createjs.Rectangle(random * schwellenBreite, 0, schwellenBreite, schwellenImg.height),
+                                y: 0 - sin * ((this.schwellenBreite + this.schwellenGap) * i) - sin * x_start  - cos * (this.schwellenHöhe / 2),
+                                x: cos * ((this.schwellenBreite + this.schwellenGap) * i) + cos * x_start - sin * (this.schwellenHöhe / 2),
+                                sourceRect: new createjs.Rectangle((random * schwellenImg.width) / this.SCHWELLEN_VARIANTEN, 0, schwellenImg.width / this.SCHWELLEN_VARIANTEN, schwellenImg.height),
                                 scale: TRACK_SCALE,
+                                rotation: -this.deg,
                             })
                         );
                     }
 
-                    [rail_offset, schwellenImg.height * TRACK_SCALE - rail_offset].forEach((y) => {
-                        rail_shape.graphics.setStrokeStyle(1.4).beginStroke("#222");
-                        rail_shape.graphics.moveTo(x_start, y).lineTo(x_end, y);
-                        rail_shape.graphics.setStrokeStyle(1.2).beginStroke("#999999");
-                        rail_shape.graphics.moveTo(x_start, y).lineTo(x_end, y);
-                        rail_shape.graphics.setStrokeStyle(0.6).beginStroke("#eeeeee");
-                        rail_shape.graphics.moveTo(x_start, y).lineTo(x_end, y);
+                    [-this.schwellenHöhe / 2 + this.rail_offset, this.schwellenHöhe / 2 - this.rail_offset].forEach((y) => {
+                        this.drawStraightRail(rail_shape, x_start, x_end, y, this.rad);
                     });
                 }
-                x_start = x_end + grid_size;
+                x_start = x_end + step;
                 counter++;
             } while (x_start < this.length);
 
-            /* y = rail_offset - (kleinEisenImg.height * TRACK_SCALE) / 2;
-            let x = x_offset + (schwellenBreite / 2 - kleinEisenImg.width / 2) * TRACK_SCALE + (schwellenGap * TRACK_SCALE) / 2;
-            let y2 = schwellenImg.height * TRACK_SCALE - rail_offset - (kleinEisenImg.height * TRACK_SCALE) / 2;
+            /* y =  this.rail_offset - (kleinEisenImg.height * TRACK_SCALE) / 2;
+            let x = x_offset + (schwellenBreite / 2 - kleinEisenImg.width / 2) * TRACK_SCALE + ( this.schwellenGap * TRACK_SCALE) / 2;
+            let y2 = this.schwellenHöhe * TRACK_SCALE -  this.rail_offset - (kleinEisenImg.height * TRACK_SCALE) / 2;
             for (let i = 0; i < anzSchwellen; i++) {
                 [y, y2].forEach((_y) =>
                     texture_container.addChild(
@@ -227,68 +253,164 @@ class trackShape {
                         })
                     )
                 );
-                x += (schwellenBreite + schwellenGap) * TRACK_SCALE;
+                x += (schwellenBreite +  this.schwellenGap) * TRACK_SCALE;
             }  */
 
             texture_container.addChild(rail_shape);
 
-            //texture_container.regY = (schwellenImg.height * track_scale) / 2;
+            //texture_container.regY = (this.schwellenHöhe * TRACK_SCALE) / 2;
             texture_container.x = this.start.x;
-            texture_container.y = this.start.y - (schwellenImg.height * TRACK_SCALE) / 2;
-            texture_container.rotation = this.deg * -1;
+            texture_container.y = this.start.y;
+            //texture_container.rotation = this.deg * -1;
 
             container.addChild(texture_container);
         }
     }
 
-    drawArc(shape, start_deg, end_deg, center_x, center_y, radius, color, thickness, offset = 0) {
-        let rad = start_deg * (Math.PI / 180);
-        if (start_deg > end_deg) {
-            start_deg = start_deg + end_deg;
-            end_deg = start_deg - end_deg;
-            start_deg = start_deg - end_deg;
+    drawPoint(point, label = "", color = "#000", size = 5) {
+        const s = new createjs.Shape();
+        s.graphics.setStrokeStyle(1).beginStroke(color).beginFill(color).drawCircle(0, 0, size);
+        s.x = point.x;
+        s.y = point.y;
 
-            offset = offset * -1;
+        stage.addChild(s);
+
+        if (label) {
+            const text = new createjs.Text(label, "Italic 12px Arial", color);
+            text.x = point.x;
+            text.y = point.y - 5;
+            text.textBaseline = "alphabetic";
+            stage.addChild(text);
         }
-
-        const offsetx = Math.cos(rad) * radius;
-        const offsety = Math.sin(rad) * radius;
-        shape.graphics
-            .setStrokeStyle(thickness)
-            .beginStroke(color)
-            .arc(center_x - offsetx, center_y - offsety, radius + offset, (Math.PI / 180) * start_deg, (Math.PI / 180) * end_deg);
     }
 
-    DrawImagesInCircle(container, start_deg, end_deg, center_x, center_y, radius, numOfItems, img, offset = 0) {
-        const schwellenBreite = img.width / 24;
+    drawStraightRail(rail_shape, x_start, x_end, y, rad) {
+        let x1 = Math.cos(rad) * x_start + Math.sin(rad) * y,
+            y1 = 0 - Math.sin(rad) * x_start + Math.cos(rad) * y,
+            x2 = Math.cos(rad) * x_end + Math.sin(rad) * y,
+            y2 = 0 - Math.sin(rad) * x_end + Math.cos(rad) * y;
 
-        let rad = start_deg * (Math.PI / 180);
-        if (start_deg > end_deg) {
-            start_deg = start_deg + end_deg;
-            end_deg = start_deg - end_deg;
-            start_deg = start_deg - end_deg;
+        rail_shape.graphics.setStrokeStyle(1.4).beginStroke("#222");
+        rail_shape.graphics.moveTo(x1, y1).lineTo(x2, y2);
+        rail_shape.graphics.setStrokeStyle(1.2).beginStroke("#999999");
+        rail_shape.graphics.moveTo(x1, y1).lineTo(x2, y2);
+        rail_shape.graphics.setStrokeStyle(0.6).beginStroke("#eeeeee");
+        rail_shape.graphics.moveTo(x1, y1).lineTo(x2, y2);
+    }
 
-            offset = img.height * TRACK_SCALE;
+    drawCurvedTrack(container, x, startDeg, endDeg, img) {
+        let y1 = 0,
+            y2 = 0,
+            clockwise = 0;
+        if (startDeg == 0 && endDeg == 45) {
+            y2 = -grid_size_2;
+            clockwise = 0;
+        } else if (startDeg == 0 && endDeg == -45) {
+            y2 = 0 - grid_size_2;
+            clockwise = 0;
+        } else if (startDeg == 45 && endDeg == 0) {
+            y1 = 0 - grid_size_2;
+            clockwise = 0;
+        } else if (startDeg == -45 && endDeg == 0) {
+            y1 = grid_size_2;
+            clockwise = 1;
         }
-        const steps = Math.abs(start_deg - end_deg) / numOfItems;
 
-        const offsetx = Math.cos(rad) * radius;
-        const offsety = Math.sin(rad) * radius;
-        let random = 0;
-        for (let degrees = start_deg + 1; degrees < end_deg + 1; degrees += steps) {
-            rad = degrees * (Math.PI / 180);
-            random = Math.randomInt(24 - 1);
+        let p1 = { x: x - grid_size_2, y: y1 };
+        let p2 = { x: x + grid_size_2, y: y2 };
+
+        this.DrawImagesInCircle(container, 45, clockwise, p1, p2, img, this.schwellenHöhe / 2);
+        const shape = new createjs.Shape();
+        container.addChild(shape);
+        this.drawCurvedRail(shape, clockwise, p1, p2, -this.schwellenHöhe / 2 + this.rail_offset);
+        this.drawCurvedRail(shape, clockwise, p1, p2, this.schwellenHöhe / 2 - this.rail_offset);
+    }
+
+    drawCurvedRail(rail_shape, clockwise, p1, p2, radius_offset) {
+        this.drawArc(rail_shape, 45, clockwise, p1, p2, "#222", 1.4, radius_offset);
+        this.drawArc(rail_shape, 45, clockwise, p1, p2, "#999", 1.2, radius_offset);
+        this.drawArc(rail_shape, 45, clockwise, p1, p2, "#eee", 0.6, radius_offset);
+    }
+
+    drawArc(rail_shape, deg, clockwise, p1, p2, color, thickness, offset = 0) {
+        // Define the desired angle in radians
+        let desiredAngle = deg2rad(deg);
+
+        // Calculate the distance between the two points
+        let distance = geometry.distance(p1, p2);
+
+        // Calculate the radius of the circle
+        let radius = distance / 2 / Math.sin(desiredAngle / 2);
+
+        let h = Math.sqrt(Math.pow(radius, 2) - Math.pow(distance / 2, 2));
+
+        if (clockwise) h *= -1;
+
+        // Calculate the angle between the x-axis and the line connecting the two points
+        let lineAngle = Math.atan2(p2.y - p1.y, p2.x - p1.x);
+
+        //1st calculate the midpoint between p1 and p2, then calc a perpendicular point by adding 90° to the lineAngle with h as heigth above the midpoint.
+        let pointC = { x: (p1.x + p2.x) / 2 - Math.cos(lineAngle + Math.PI / 2) * h, y: (p1.y + p2.y) / 2 - Math.sin(lineAngle + Math.PI / 2) * h };
+        //drawPoint(pointC, "pC", "#000", 3);
+
+        //drawLine(midpoint, pointC);
+
+        // Calculate the starting and ending angles for drawing the circular curve
+        if (!clockwise) lineAngle += Math.PI;
+        let startAngle = lineAngle - desiredAngle / 2 - Math.PI / 2;
+        let endAngle = desiredAngle + startAngle;
+
+        rail_shape.graphics
+            .setStrokeStyle(thickness)
+            .beginStroke(color)
+            .arc(pointC.x, pointC.y, radius + offset, startAngle, endAngle);
+    }
+
+    DrawImagesInCircle(container, deg, clockwise, p1, p2, img, offset = 0) {
+        // Define the desired angle in radians
+        const desiredAngle = deg2rad(deg);
+
+        // Calculate the distance between the two points
+        const distance = geometry.distance(p1, p2);
+
+        // Calculate the radius of the circle
+        const radius = distance / 2 / Math.sin(desiredAngle / 2);
+
+        let length = 2 * Math.PI * radius * (deg / 360);
+        const step = desiredAngle / Math.floor(length / (this.schwellenGap + this.schwellenBreite));
+        const startOffset = desiredAngle / Math.floor(length / this.schwellenGap) / 2;
+
+        let h = Math.sqrt(Math.pow(radius, 2) - Math.pow(distance / 2, 2));
+
+        if (clockwise) h *= -1;
+
+        // Calculate the angle between the x-axis and the line connecting the two points
+        let lineAngle = Math.atan2(p2.y - p1.y, p2.x - p1.x);
+
+        //1st calculate the midpoint between p1 and p2, then calc a perpendicular point by adding 90° to the lineAngle with h as heigth above the midpoint.
+        let pointC = { x: (p1.x + p2.x) / 2 - Math.cos(lineAngle + Math.PI / 2) * h, y: (p1.y + p2.y) / 2 - Math.sin(lineAngle + Math.PI / 2) * h };
+        //drawPoint(pointC, "pC", "#000", 3);
+
+        //drawLine(midpoint, pointC);
+
+        // Calculate the starting and ending angles for drawing the circular curve
+        if (!clockwise) lineAngle += Math.PI;
+        let startAngle = lineAngle - desiredAngle / 2 - Math.PI / 2 + startOffset;
+        let endAngle = desiredAngle + startAngle - step;
+        let random;
+        for (let rad = startAngle; rad < endAngle; rad += step) {
+            random = Math.randomInt(this.SCHWELLEN_VARIANTEN - 1);
+
             container.addChild(
                 new createjs.Bitmap(img).set({
-                    x: center_x - offsetx + Math.cos(rad) * (radius + offset),
-                    y: center_y - offsety + Math.sin(rad) * (radius + offset),
-                    sourceRect: new createjs.Rectangle(random * schwellenBreite, 0, schwellenBreite, img.height),
+                    x: pointC.x + Math.cos(rad) * (radius + offset),
+                    y: pointC.y + Math.sin(rad) * (radius + offset),
                     scale: TRACK_SCALE,
-                    rotation: degrees + 90,
+                    sourceRect: new createjs.Rectangle((random * img.width) / this.SCHWELLEN_VARIANTEN, 0, img.width / this.SCHWELLEN_VARIANTEN, img.height),
+                    rotation: (rad * 180) / Math.PI + 90,
                 })
             );
         }
-        stage.update();
     }
 
     AddSignal(position) {

@@ -1,15 +1,14 @@
 <!DOCTYPE html>
 <html lang="de">
-
-<head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-    <meta http-equiv="Cache-control" content="no-cache, no-store, must-revalidate">
-    <meta http-equiv="Pragma" content="no-cache">
-    <link rel="shortcut icon" type="image/ico" href="favicon.ico" />
-    <title>Gleisplan</title>
-    <link rel="stylesheet" href="start.css">
-    <!--     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet"
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+        <meta http-equiv="Cache-control" content="no-cache, no-store, must-revalidate" />
+        <meta http-equiv="Pragma" content="no-cache" />
+        <link rel="shortcut icon" type="image/ico" href="favicon.ico" />
+        <title>Gleisplan</title>
+        <link rel="stylesheet" href="start.css" />
+        <!--     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet"
         integrity="sha384-GLhlTQ8iRABdZLl6O3oVMWSktQOp6b7In1Zl3/Jr59b6EGGoI1aFkw7cmDA6j6gD" crossorigin="anonymous">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.5.0/font/bootstrap-icons.css">
 
@@ -20,54 +19,164 @@
     <script src="https://code.jquery.com/jquery-3.6.3.min.js"></script>
     <script src="https://code.createjs.com/1.0.0/createjs.min.js"></script> -->
 
-    <link rel="stylesheet" href="dev/bootstrap-5.2.2/bootstrap-icons.css">
-    <link href="dev/bootstrap-5.2.2/css/bootstrap.min.css" rel="stylesheet">
-    <script src="dev/bootstrap-5.2.2/js/bootstrap.bundle.min.js"></script>
-    <script src="dev/jquery-3.6.1.js"></script>
-    <script src="dev/createjs.js"></script>
+        <link rel="stylesheet" href="dev/bootstrap-5.2.2/bootstrap-icons.css" />
+        <link href="dev/bootstrap-5.2.2/css/bootstrap.min.css" rel="stylesheet" />
+        <script src="dev/bootstrap-5.2.2/js/bootstrap.bundle.min.js"></script>
+        <script src="dev/jquery-3.6.1.js"></script>
+        <script src="dev/createjs.js"></script>
 
-    <script src="code/preLoader.js"></script>
-    <script src="code/signaling.js"></script>
+        <script src="code/preLoader.js"></script>
+        <script src="code/signaling.js"></script>
 
-    <script src="tools.js"></script>
-    <script src="code/track.js?02"></script>
+        <script src="tools.js"></script>
+        <script src="code/track.js?02"></script>
 
+        <style type="text/css"></style>
+        <script>
+            "use strict";
 
-    <style type="text/css">
+            $(() => {
+                init();
+            });
 
-    </style>
-    <script>
+            function init() {}
+        </script>
+    </head>
 
-        'use strict';
+    <body>
+        <!DOCTYPE html>
+        <html>
+            <head>
+                <title>Circular Curve Drawing</title>
+            </head>
+            <body>
+                <canvas id="myCanvas" width="1000" height="1000"></canvas>
+                <script>
+                    function perpendicular(p1, p2, h) {
+                        // Step 1: Calculate the slope of the line
+                        const slope = geometry.slope(p1, p2);
 
-        $(() => { init(); });
+                        // Step 2: Calculate the negative reciprocal of the slope for the perpendicular line
+                        const perpendicularSlope = -1 / slope;
 
-        
+                        // Step 3: Calculate the midpoint of the line segment
+                        const midpoint = {
+                            x: (point1.x + point2.x) / 2,
+                            y: (point1.y + point2.y) / 2,
+                        };
 
-        function init() {
-            $("input").on("input",(e)=>console.log(e.originalEvent.data));
+                        // Step 4: Calculate the equation of the perpendicular line (y = mx + b)
+                        const perpendicularIntercept = midpoint.y - perpendicularSlope * midpoint.x;
 
-        }
+                        // Step 5: Calculate the coordinates of the point where the perpendicular line intersects the original line
 
+                        // Calculate the change in x and y based on the desired height
+                        const dx = Math.sqrt(h ** 2 / (1 + perpendicularSlope ** 2));
+                        const dy = perpendicularSlope * dx;
 
+                        // Calculate the coordinates of the point above the midpoint
+                        const perpendicularPointX = midpoint.x + dx;
+                        const perpendicularPointY = midpoint.y + dy;
 
+                        return { x: perpendicularPointX, y: perpendicularPointY };
+                    }
 
-    </script>
-</head>
+                    function drawLine(ctx,p1, p2,color = "#000",size=1) {
+                       
+                        ctx.strokeStyle = color;
+                        ctx.lineWidth = size;
 
-<body>
+                        // draw a red line
+                        ctx.beginPath();
+                        ctx.moveTo(p1.x, p1.y);
+                        ctx.lineTo(p2.x, p2.y);
+                        ctx.stroke();
+                    }
 
+                    function drawPoint(context, point, label, color, size) {
+                        if (color == null) {
+                            color = "#000";
+                        }
+                        if (size == null) {
+                            size = 5;
+                        }
 
+                        const radius = 0.5 * size;
 
-    <div id="thing" style="position: absolute; top: 50px;left: 100px; width: 500px; height: 500px;margin-left: 83px;"
-        class="bg-secondary rounded" draggable="false">
-    <input type="number" >
-    </div>
+                        // to increase smoothing for numbers with decimal part
+                        const pointX = Math.round(point.x - radius);
+                        const pointY = Math.round(point.y - radius);
 
-    
-    </div>
+                        context.beginPath();
+                        context.fillStyle = color;
+                        context.fillRect(pointX, pointY, size, size);
+                        context.fill();
 
+                        if (label) {
+                            var textX = Math.round(point.x);
+                            var textY = Math.round(pointY - 5);
 
-</body>
+                            context.font = "Italic 14px Arial";
+                            context.fillStyle = color;
+                            context.textAlign = "center";
+                            context.fillText(label, textX, textY);
+                        }
+                    }
 
+                    // Get the canvas element and its context
+                    var canvas = document.getElementById("myCanvas");
+                    var context = canvas.getContext("2d");
+
+                    // Define the two given points
+                    const point1 = { x: 100, y: 300 };
+                    const point2 = { x: 170, y: 335 };
+
+                    drawPoint(context, point1, "p1", "#000", 3);
+                    drawPoint(context, point2, "p2", "#000", 3);
+                    drawLine(context,point1,point2);
+
+                    // Define the desired angle in radians
+                    var desiredAngle = deg2rad(45);
+
+                    // Calculate the midpoint between the two points
+                    var midpoint = {
+                        x: (point1.x + point2.x) / 2,
+                        y: (point1.y + point2.y) / 2,
+                    };
+
+                    drawPoint(context, midpoint, "pm", "#000", 3);
+
+                    
+
+                    // Calculate the distance between the two points
+                    var distance = geometry.distance(point1, point2);
+
+                    // Calculate the radius of the circle
+                    var radius = distance / 2 / Math.sin(desiredAngle / 2);
+
+                    let h = Math.sqrt(Math.pow(radius, 2) - Math.pow(distance / 2, 2));
+
+                    let pointC = perpendicular(point1, point2, h);
+                    drawPoint(context, pointC, "pC", "#000", 3);
+
+                    drawLine(context,midpoint,pointC);
+
+                    // Calculate the angle between the x-axis and the line connecting the two points
+                    var lineAngle = Math.atan2(point2.y - point1.y, point2.x - point1.x);
+
+                    // Calculate the starting and ending angles for drawing the circular curve
+                    var startAngle = lineAngle - desiredAngle / 2 + Math.PI/2;
+                    var endAngle = lineAngle + desiredAngle / 2+ Math.PI/2;
+
+                    // Draw the circular curve
+                    context.beginPath();
+
+                    context.arc(pointC.x, pointC.y, radius, startAngle, endAngle);
+                    context.strokeStyle = "blue";
+                    context.lineWidth = 2;
+                    context.stroke();
+                </script>
+            </body>
+        </html>
+    </body>
 </html>
