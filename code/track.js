@@ -55,6 +55,10 @@ class trackShape {
         this.unit = geometry.unit(this.vector, this.length);
     }
 
+    getPointfromKm(km) {
+        return { x: (cos(this.rad) * km).round(0), y: -(sin(this.rad) * km).round(0) };
+    }
+
     setNewStart(newStart) {
         //1. check is slope is the same
         if (geometry.slope(this.start, this.end) != geometry.slope(newStart, this.end)) return;
@@ -147,7 +151,7 @@ class trackShape {
                         shape.graphics.beginFill("#000").moveTo(point.x, point.y).lineTo(p1.x, p1.y).lineTo(p2.x, p2.y).cp();
                     }
                 });
-            //} else {
+        } else {
             const texture_container = new createjs.Container();
             let rail_shape = new createjs.Shape();
             const schwellenImg = loadQueue.getResult("schwellen");
@@ -161,7 +165,7 @@ class trackShape {
             this.switches
                 .filter((p) => p.km == this.length && p.type === SWITCH_TYPE.ARCH)
                 .forEach((p) => {
-                    this.drawCurvedTrack(texture_container, p.km, this.deg, p.track.deg, schwellenImg);
+                    this.drawCurvedTrack2(texture_container, p.km, this.deg, p.track.deg, schwellenImg);
                 });
 
             /* this.switches
@@ -198,97 +202,126 @@ class trackShape {
                     }
                 }); */
 
-            let x_start = 0,
-                x_end = 0,
+            let km_start = 0,
+                km_end = 0,
                 x = 0,
                 y = 0,
                 counter = 0,
                 weiche = null,
-                anzSchwellen = 0,
-                random = 0;
-
-            const cos = Math.cos(this.rad),
-                sin = Math.sin(this.rad);
-            const step = grid_size / cos;
+                next_weiche = null,
+                switch_values = {},
+                next_switch_values = {},
+                endpoint = this.getPointfromKm(this.length),
+                startpoint = { x: 0, y: 0 };
 
             do {
                 if (this.switches.length > counter) {
                     weiche = this.switches[counter];
-                    x_end = weiche.km - step / 2;
-                } else x_end = this.length;
-                if (x_end > x_start) {
-                    anzSchwellen = Math.floor((x_end - x_start) / (this.schwellenBreite + this.schwellenGap));
 
-                    for (let i = 0; i < anzSchwellen; i++) {
-                        random = Math.randomInt(this.SCHWELLEN_VARIANTEN - 1);
-                        texture_container.addChild(
-                            new createjs.Bitmap(schwellenImg).set({
-                                y: 0 - sin * ((this.schwellenBreite + this.schwellenGap) * i) - sin * x_start  - cos * (this.schwellenHöhe / 2),
-                                x: cos * ((this.schwellenBreite + this.schwellenGap) * i) + cos * x_start - sin * (this.schwellenHöhe / 2),
-                                sourceRect: new createjs.Rectangle((random * schwellenImg.width) / this.SCHWELLEN_VARIANTEN, 0, schwellenImg.width / this.SCHWELLEN_VARIANTEN, schwellenImg.height),
-                                scale: TRACK_SCALE,
-                                rotation: -this.deg,
-                            })
-                        );
+                    if (weiche.km > 0) {
+                        //weiche nach mir
+                        switch_values = this.calcValuesForCurvedRail(weiche.km, this.deg, weiche.track.deg);
+                        if (this.deg == 0) {
+                            endpoint = switch_values.p1;
+                        } else {
+                            endpoint = switch_values.p2;
+                        }
+                    } else {
+                        //weiche vor mir
+                        switch_values = this.calcValuesForCurvedRail(weiche.km, weiche.track.deg, this.deg);
+                        if (this.deg == 0) {
+                            startpoint = switch_values.p1;
+                        } else {
+                            startpoint = switch_values.p2;
+                        }
                     }
 
+                    if (this.switches.length > counter + 1) {
+                        next_weiche = this.switches[counter+1];
+                        next_switch_values = this.calcValuesForCurvedRail(next_weiche.km, this.deg, next_weiche.track.deg);
+                        if (this.deg == 0) {
+                            endpoint = next_switch_values.p1;
+                        } else {
+                            endpoint = next_switch_values.p2;
+                        }
+
+
+                    }
+
+                    this.drawPoint(switch_values.p1, "p1");
+                    this.drawPoint(switch_values.p2, "p2");
+                }
+
+                if (1) {
+                    this.drawSchwellen(startpoint, endpoint, texture_container, schwellenImg);
+
                     [-this.schwellenHöhe / 2 + this.rail_offset, this.schwellenHöhe / 2 - this.rail_offset].forEach((y) => {
-                        this.drawStraightRail(rail_shape, x_start, x_end, y, this.rad);
+                        this.drawStraightRail(rail_shape, startpoint, endpoint, y);
                     });
                 }
-                x_start = x_end + step;
+                
                 counter++;
-            } while (x_start < this.length);
-
-            /* y =  this.rail_offset - (kleinEisenImg.height * TRACK_SCALE) / 2;
-            let x = x_offset + (schwellenBreite / 2 - kleinEisenImg.width / 2) * TRACK_SCALE + ( this.schwellenGap * TRACK_SCALE) / 2;
-            let y2 = this.schwellenHöhe * TRACK_SCALE -  this.rail_offset - (kleinEisenImg.height * TRACK_SCALE) / 2;
-            for (let i = 0; i < anzSchwellen; i++) {
-                [y, y2].forEach((_y) =>
-                    texture_container.addChild(
-                        new createjs.Bitmap(kleinEisenImg).set({
-                            y: _y,
-                            x: x,
-                            scale: TRACK_SCALE,
-                        })
-                    )
-                );
-                x += (schwellenBreite +  this.schwellenGap) * TRACK_SCALE;
-            }  */
+            } while (this.switches.length > counter);
 
             texture_container.addChild(rail_shape);
 
-            //texture_container.regY = (this.schwellenHöhe * TRACK_SCALE) / 2;
             texture_container.x = this.start.x;
             texture_container.y = this.start.y;
-            //texture_container.rotation = this.deg * -1;
 
             container.addChild(texture_container);
         }
     }
 
-    drawPoint(point, label = "", color = "#000", size = 5) {
+    drawSchwellen(startPoint, endPoint, texture_container, schwellenImg) {
+        const cos = Math.cos(this.rad),
+            sin = Math.sin(this.rad);
+
+        //kleine verschieben, damit man mit einer lücke anfängt - Zentrierung der schwelle
+        let x = startPoint.x + cos * (this.schwellenGap / 2) - sin * (this.schwellenHöhe / 2);
+        let y = startPoint.y - sin * (this.schwellenGap / 2) - cos * (this.schwellenHöhe / 2);
+
+        let anzSchwellen = Math.floor(geometry.distance(startPoint, endPoint) / (this.schwellenBreite + this.schwellenGap));
+        for (let i = 0; i < anzSchwellen; i++) {
+            let random = Math.randomInt(this.SCHWELLEN_VARIANTEN - 1);
+            texture_container.addChild(
+                new createjs.Bitmap(schwellenImg).set({
+                    y: y,
+                    x: x,
+                    sourceRect: new createjs.Rectangle((random * schwellenImg.width) / this.SCHWELLEN_VARIANTEN, 0, schwellenImg.width / this.SCHWELLEN_VARIANTEN, schwellenImg.height),
+                    scale: TRACK_SCALE,
+                    rotation: -this.deg,
+                })
+            );
+            y -= sin * (this.schwellenBreite + this.schwellenGap);
+            x += cos * (this.schwellenBreite + this.schwellenGap);
+        }
+    }
+
+    drawPoint(point, label = "", color = "#000", size = 1) {
         const s = new createjs.Shape();
         s.graphics.setStrokeStyle(1).beginStroke(color).beginFill(color).drawCircle(0, 0, size);
-        s.x = point.x;
-        s.y = point.y;
+        s.x = point.x + this.start.x;
+        s.y = point.y + this.start.y;
 
         stage.addChild(s);
 
         if (label) {
-            const text = new createjs.Text(label, "Italic 12px Arial", color);
-            text.x = point.x;
-            text.y = point.y - 5;
+            const text = new createjs.Text(label, "Italic 10px Arial", color);
+            text.x = s.x;
+            text.y = s.y - 5;
             text.textBaseline = "alphabetic";
             stage.addChild(text);
         }
     }
 
-    drawStraightRail(rail_shape, x_start, x_end, y, rad) {
-        let x1 = Math.cos(rad) * x_start + Math.sin(rad) * y,
-            y1 = 0 - Math.sin(rad) * x_start + Math.cos(rad) * y,
-            x2 = Math.cos(rad) * x_end + Math.sin(rad) * y,
-            y2 = 0 - Math.sin(rad) * x_end + Math.cos(rad) * y;
+    drawStraightRail(rail_shape, startPoint, endPoint, y) {
+        const cos = Math.cos(this.rad),
+            sin = Math.sin(this.rad);
+
+        let x1 = startPoint.x + sin * y,
+            x2 = endPoint.x + sin * y,
+            y1 = startPoint.y + cos * y,
+            y2 = endPoint.y + cos * y;
 
         rail_shape.graphics.setStrokeStyle(1.4).beginStroke("#222");
         rail_shape.graphics.moveTo(x1, y1).lineTo(x2, y2);
@@ -298,118 +331,103 @@ class trackShape {
         rail_shape.graphics.moveTo(x1, y1).lineTo(x2, y2);
     }
 
-    drawCurvedTrack(container, x, startDeg, endDeg, img) {
-        let y1 = 0,
-            y2 = 0,
-            clockwise = 0;
-        if (startDeg == 0 && endDeg == 45) {
-            y2 = -grid_size_2;
-            clockwise = 0;
-        } else if (startDeg == 0 && endDeg == -45) {
-            y2 = 0 - grid_size_2;
-            clockwise = 0;
-        } else if (startDeg == 45 && endDeg == 0) {
-            y1 = 0 - grid_size_2;
-            clockwise = 0;
-        } else if (startDeg == -45 && endDeg == 0) {
-            y1 = grid_size_2;
-            clockwise = 1;
+    calcValuesForCurvedRail(km, startDeg, endDeg) {
+        const switchpoint = this.getPointfromKm(km);
+        const cord_2 = Math.sin(π / 8) * CURVE_RADIUS;
+
+        let x = cord_2 / Math.cos(π / 8);
+        let p1 = { x: switchpoint.x - x, y: switchpoint.y };
+
+        let x2 = x * Math.sin(π / 4);
+        let p2 = { x: switchpoint.x + x2, y: switchpoint.y - x2 };
+
+        let centerpoint = {};
+
+        let deg = 0;
+        if (startDeg == 0) {
+            p1 = { x: switchpoint.x - x, y: switchpoint.y };
+            p2 = { x: switchpoint.x + x2, y: switchpoint.y };
+            centerpoint = { x: p1.x, y: p1.y };
+            if (endDeg == 45) {
+                deg = 45;
+                centerpoint.y -= CURVE_RADIUS;
+                p2.y -= x2;
+            } else if (endDeg == -45) {
+                deg = 270;
+                centerpoint.y += CURVE_RADIUS;
+                p2.y += x2;
+            }
+        } else {
+            p1 = { x: switchpoint.x + x, y: switchpoint.y };
+            p2 = { x: switchpoint.x - x2, y: switchpoint.y };
+            centerpoint = { x: p1.x, y: p1.y };
+            if (startDeg == 45 && endDeg == 0) {
+                deg = 225;
+                p2.y += x2;
+                centerpoint.y += CURVE_RADIUS;
+            } else if (startDeg == -45 && endDeg == 0) {
+                deg = 90;
+                p2.y -= x2;
+                centerpoint.y -= CURVE_RADIUS;
+            }
         }
 
-        let p1 = { x: x - grid_size_2, y: y1 };
-        let p2 = { x: x + grid_size_2, y: y2 };
+        return {
+            p1: p1,
+            p2: p2,
+            centerpoint: centerpoint,
+            deg: deg,
+        };
+    }
 
-        this.DrawImagesInCircle(container, 45, clockwise, p1, p2, img, this.schwellenHöhe / 2);
+    drawCurvedTrack2(container, km, startDeg, endDeg, img) {
+        const values = this.calcValuesForCurvedRail(km, startDeg, endDeg);
+
+        this.DrawImagesInCircle(container, values.centerpoint, CURVE_RADIUS, values.deg, img, this.schwellenHöhe / 2);
+
         const shape = new createjs.Shape();
         container.addChild(shape);
-        this.drawCurvedRail(shape, clockwise, p1, p2, -this.schwellenHöhe / 2 + this.rail_offset);
-        this.drawCurvedRail(shape, clockwise, p1, p2, this.schwellenHöhe / 2 - this.rail_offset);
+        this.drawCurvedRail2(shape, values.centerpoint, values.deg, CURVE_RADIUS - this.schwellenHöhe / 2 + this.rail_offset);
+        this.drawCurvedRail2(shape, values.centerpoint, values.deg, CURVE_RADIUS + this.schwellenHöhe / 2 - this.rail_offset);
     }
 
-    drawCurvedRail(rail_shape, clockwise, p1, p2, radius_offset) {
-        this.drawArc(rail_shape, 45, clockwise, p1, p2, "#222", 1.4, radius_offset);
-        this.drawArc(rail_shape, 45, clockwise, p1, p2, "#999", 1.2, radius_offset);
-        this.drawArc(rail_shape, 45, clockwise, p1, p2, "#eee", 0.6, radius_offset);
+    drawCurvedRail2(rail_shape, centerpoint, start_deg, radius) {
+        this.drawArc2(rail_shape, centerpoint, radius, start_deg, "#222", 1.4);
+        this.drawArc2(rail_shape, centerpoint, radius, start_deg, "#999", 1.2);
+        this.drawArc2(rail_shape, centerpoint, radius, start_deg, "#eee", 0.6);
     }
 
-    drawArc(rail_shape, deg, clockwise, p1, p2, color, thickness, offset = 0) {
-        // Define the desired angle in radians
-        let desiredAngle = deg2rad(deg);
-
-        // Calculate the distance between the two points
-        let distance = geometry.distance(p1, p2);
-
-        // Calculate the radius of the circle
-        let radius = distance / 2 / Math.sin(desiredAngle / 2);
-
-        let h = Math.sqrt(Math.pow(radius, 2) - Math.pow(distance / 2, 2));
-
-        if (clockwise) h *= -1;
-
-        // Calculate the angle between the x-axis and the line connecting the two points
-        let lineAngle = Math.atan2(p2.y - p1.y, p2.x - p1.x);
-
-        //1st calculate the midpoint between p1 and p2, then calc a perpendicular point by adding 90° to the lineAngle with h as heigth above the midpoint.
-        let pointC = { x: (p1.x + p2.x) / 2 - Math.cos(lineAngle + Math.PI / 2) * h, y: (p1.y + p2.y) / 2 - Math.sin(lineAngle + Math.PI / 2) * h };
-        //drawPoint(pointC, "pC", "#000", 3);
-
-        //drawLine(midpoint, pointC);
-
-        // Calculate the starting and ending angles for drawing the circular curve
-        if (!clockwise) lineAngle += Math.PI;
-        let startAngle = lineAngle - desiredAngle / 2 - Math.PI / 2;
-        let endAngle = desiredAngle + startAngle;
-
+    drawArc2(rail_shape, centerpoint, radius, start_deg, color, thickness) {
         rail_shape.graphics
             .setStrokeStyle(thickness)
             .beginStroke(color)
-            .arc(pointC.x, pointC.y, radius + offset, startAngle, endAngle);
+            .arc(centerpoint.x, centerpoint.y, radius, deg2rad(start_deg), deg2rad(start_deg + 45));
     }
 
-    DrawImagesInCircle(container, deg, clockwise, p1, p2, img, offset = 0) {
-        // Define the desired angle in radians
-        const desiredAngle = deg2rad(deg);
+    DrawImagesInCircle(container, centerpoint, radius, deg, img, offset = 0) {
+        const circ = (π / 4) * radius;
+        let anzSchwellen = Math.floor(circ / (this.schwellenBreite + this.schwellenGap));
 
-        // Calculate the distance between the two points
-        const distance = geometry.distance(p1, p2);
-
-        // Calculate the radius of the circle
-        const radius = distance / 2 / Math.sin(desiredAngle / 2);
-
-        let length = 2 * Math.PI * radius * (deg / 360);
-        const step = desiredAngle / Math.floor(length / (this.schwellenGap + this.schwellenBreite));
-        const startOffset = desiredAngle / Math.floor(length / this.schwellenGap) / 2;
-
-        let h = Math.sqrt(Math.pow(radius, 2) - Math.pow(distance / 2, 2));
-
-        if (clockwise) h *= -1;
-
-        // Calculate the angle between the x-axis and the line connecting the two points
-        let lineAngle = Math.atan2(p2.y - p1.y, p2.x - p1.x);
-
-        //1st calculate the midpoint between p1 and p2, then calc a perpendicular point by adding 90° to the lineAngle with h as heigth above the midpoint.
-        let pointC = { x: (p1.x + p2.x) / 2 - Math.cos(lineAngle + Math.PI / 2) * h, y: (p1.y + p2.y) / 2 - Math.sin(lineAngle + Math.PI / 2) * h };
-        //drawPoint(pointC, "pC", "#000", 3);
-
-        //drawLine(midpoint, pointC);
-
-        // Calculate the starting and ending angles for drawing the circular curve
-        if (!clockwise) lineAngle += Math.PI;
-        let startAngle = lineAngle - desiredAngle / 2 - Math.PI / 2 + startOffset;
-        let endAngle = desiredAngle + startAngle - step;
+        let startAngle = deg2rad(deg);
+        let endAngle = startAngle + π / 4;
+        const step = (endAngle - startAngle) / anzSchwellen;
+        let rad = startAngle;
         let random;
-        for (let rad = startAngle; rad < endAngle; rad += step) {
+
+        for (let i = 0; i < anzSchwellen; i++) {
             random = Math.randomInt(this.SCHWELLEN_VARIANTEN - 1);
 
             container.addChild(
                 new createjs.Bitmap(img).set({
-                    x: pointC.x + Math.cos(rad) * (radius + offset),
-                    y: pointC.y + Math.sin(rad) * (radius + offset),
+                    x: centerpoint.x + Math.cos(rad) * (radius + offset),
+                    y: centerpoint.y + Math.sin(rad) * (radius + offset),
                     scale: TRACK_SCALE,
                     sourceRect: new createjs.Rectangle((random * img.width) / this.SCHWELLEN_VARIANTEN, 0, img.width / this.SCHWELLEN_VARIANTEN, img.height),
                     rotation: (rad * 180) / Math.PI + 90,
                 })
             );
+
+            rad += step;
         }
     }
 

@@ -31,6 +31,7 @@ const stroke = 2;
 const grid_size = 70;
 const grid_size_2 = grid_size/2;
 const signale_scale = 0.1;
+const CURVE_RADIUS = grid_size * 1.2;
 
 var stage, main_container, overlay_container, ui_container, signal_container, track_container, grid;
 
