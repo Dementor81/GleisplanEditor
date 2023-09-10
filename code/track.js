@@ -303,14 +303,14 @@ class trackShape {
         s.x = point.x + this.start.x;
         s.y = point.y + this.start.y;
 
-        stage.addChild(s);
+        overlay_container.addChild(s);
 
         if (label) {
             const text = new createjs.Text(label, "Italic 10px Arial", color);
             text.x = s.x;
             text.y = s.y - 5;
             text.textBaseline = "alphabetic";
-            stage.addChild(text);
+            overlay_container.addChild(text);
         }
     }
 

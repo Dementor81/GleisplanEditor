@@ -210,6 +210,7 @@ function init() {
             deleteTrack(null, selectedTrack);
             selectedTrack = null;
             save();
+            reDrawEverything();
         }
     });
 
@@ -724,6 +725,7 @@ function reDrawEverything() {
     else {
         track_container.removeAllChildren();
         signal_container.removeAllChildren();
+        overlay_container.removeAllChildren();
         tracks.forEach((t) => {
             t.draw(track_container);
             t.signals.forEach((p) => {
@@ -794,6 +796,7 @@ function loadFromJson(json) {
     stage.scale = loaded.zoom;
     tracks = loaded.tracks;
     connectTracks();
+    drawGrid();
     reDrawEverything();
 }
 
