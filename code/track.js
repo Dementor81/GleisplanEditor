@@ -90,16 +90,7 @@ class trackShape {
     }
 
     draw(container) {
-        if (!loadQueue.loaded) {
-            console.log("waiting...");
-            setTimeout(
-                function () {
-                    this.draw(container);
-                }.bind(this),
-                500
-            );
-            return;
-        }
+        
         let shape = new createjs.Shape();
         shape.name = "track";
         shape.track = this;
@@ -158,8 +149,8 @@ class trackShape {
             texture_container.track = this;
             texture_container.mouseChildren = false;
             let rail_shape = new createjs.Shape();
-            const schwellenImg = loadQueue.getResult("schwellen");
-            const kleinEisenImg = loadQueue.getResult("kleineisen");
+            const schwellenImg = pl.getImage("schwellen");
+            //const kleinEisenImg = loadQueue.getResult("kleineisen");
 
             this.schwellenHöhe = schwellenImg.height * TRACK_SCALE;
             this.schwellenBreite = (schwellenImg.width / this.SCHWELLEN_VARIANTEN) * TRACK_SCALE;
@@ -566,7 +557,7 @@ class signalShape {
     addImage(texture_name, { pos = null, blinkt = false } = {}) {
         if (texture_name == null || texture_name == "") return;
 
-        let bmp = pl.getImage(this._template.json_file, texture_name);
+        let bmp = pl.getSprite(this._template.json_file, texture_name);
         if (bmp != null) {
             if (pos) {
                 bmp.x = pos[0];

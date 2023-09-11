@@ -54,22 +54,11 @@ $(() => {
 });
 
 function init() {
-    loadQueue = new createjs.LoadQueue(true);
-    loadQueue.loadManifest(
-        [
-            { src: "gleis.png", id: "grade" },
-            { src: "gleisbogen.png", id: "bogen" },
-            { src: "kleineisen.png", id: "kleineisen" },
-            { src: "schwellen.png", id: "schwellen" },
-            { src: "weiche_RU.png", id: "weicheRU" },
-            { src: "weiche_LO.png", id: "weicheLO" },
-        ],
-        true,
-        "images/"
-    );
-
+    
     pl = new preLoader("images");
     initSignals();
+
+    pl.addImage("schwellen.png", "schwellen")
 
     pl.start().then(() => {
         $("#collapseOne .accordion-body").append(newItemButton(signalTemplates.hv_hp));

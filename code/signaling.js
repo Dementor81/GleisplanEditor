@@ -150,7 +150,7 @@ class SignalTemplate {
                 intStartElements(startElements);
         }
 
-        pl.add(this.#_id, json_file);
+        pl.addSpriteSheet(this.#_id, json_file);
     }
 
     add(element) {
