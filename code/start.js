@@ -29,7 +29,7 @@ const TRACK_SCALE = 0.1;
 
 const stroke = 2;
 const grid_size = 70;
-const grid_size_2 = grid_size/2;
+const grid_size_2 = grid_size / 2;
 const signale_scale = 0.1;
 const CURVE_RADIUS = grid_size * 1.2;
 
@@ -171,6 +171,7 @@ function init() {
 
     $(btnTexture).click((e) => {
         TEXTURE_MODE = !TEXTURE_MODE;
+        $(btnGrid).toggleClass("active", TEXTURE_MODE);
         reDrawEverything();
     });
 
@@ -207,7 +208,7 @@ function init() {
 
     document.addEventListener("keydown", (e) => {
         if (e.code == "Delete" && selectedTrack != null) {
-            deleteTrack(null, selectedTrack);
+            deleteTrack(selectedTrack, null);
             selectedTrack = null;
             save();
             reDrawEverything();
@@ -230,7 +231,7 @@ function init() {
         startDragAndDropSignal(e.offsetX, e.offsetY);
     });
 
-    
+
     onResizeWindow();
     changeMode(MODE_EDIT);
     onShowGrid(showGrid);
@@ -562,6 +563,9 @@ function handleStageMouseUp(e) {
         } else if (e.nativeEvent.which == 1 && mode === MODE_EDIT && mouseAction.container?.name == "track") {
             selectTrack(mouseAction.container);
             stage.update();
+        }else{
+            selectTrack(null);
+            stage.update();
         }
     } else if (mouseAction.action === MOUSE_ACTION.DND_SIGNAL) {
         overlay_container.removeChild(mouseAction.container);
@@ -601,17 +605,26 @@ function handleStageMouseUp(e) {
     stage.removeEventListener("stagemousemove", handleMouseMove);
 }
 
-function selectTrack(track) {
-    if (selectedTrack) selectedTrack.color.style = track_color;
+function selectTrack(container) {
+    if (selectedTrack) {
+        //selectedTrack.color.style = track_color;
+        let c = track_container.children.find((c)=>c.track == selectedTrack)
+        if(c)c.shadow = null;
+    }
 
-    selectedTrack = track;
+    selectedTrack = container?.track;
     /* let box = new createjs.Shape();
     box.graphics.setStrokeStyle(1).beginStroke("#e00").drawRect(track.start.x-5, track.start.y-5,track.end.x-track.start.x +5 ,track.end.y-track.start.y + 5 );
     
     ui_container.addChild(box); */
-
-    selectedTrack.color.style = "red";
+    if (container) {
+        //selectedTrack.color.style = "red";
+        container.shadow = new createjs.Shadow("#ff0000", 0, 0, 5);
+    }
+    
 }
+
+
 
 function deleteTrack(track, trackShape) {
     if (!track) track = trackShape.track;
@@ -680,11 +693,11 @@ function connectTracks() {
                 } else if (geometry.within(track.start, track.end, t.start)) {
                     km_track = geometry.distance(track.start, t.start);
                     km_t = 0;
-                    switch_type = t.deg > 0?SWITCH_TYPE.LEFT_TOP:SWITCH_TYPE.RIGHT_BOTTOM;
+                    switch_type = t.deg > 0 ? SWITCH_TYPE.LEFT_TOP : SWITCH_TYPE.RIGHT_BOTTOM;
                 } else if (geometry.within(track.start, track.end, t.end)) {
                     km_track = geometry.distance(track.start, t.end);
                     km_t = t.length;
-                    switch_type = t.deg > 0?SWITCH_TYPE.LEFT_BOTTOM:SWITCH_TYPE.RIGHT_TOP;
+                    switch_type = t.deg > 0 ? SWITCH_TYPE.LEFT_BOTTOM : SWITCH_TYPE.RIGHT_TOP;
                 } else {
                     let intersection_point = geometry.getIntersectionPoint(track, t);
                     if (intersection_point) {
@@ -697,12 +710,12 @@ function connectTracks() {
                     track.AddSwitch({
                         km: km_track,
                         track: t,
-                        type:switch_type
+                        type: switch_type
                     });
                     t.AddSwitch({
                         km: km_t,
                         track: track,
-                        type:switch_type
+                        type: switch_type
                     });
                 }
             }
@@ -726,8 +739,11 @@ function reDrawEverything() {
         track_container.removeAllChildren();
         signal_container.removeAllChildren();
         overlay_container.removeAllChildren();
+        
         tracks.forEach((t) => {
-            t.draw(track_container);
+            let c = t.draw(track_container);
+            if(selectedTrack == t)
+                selectTrack(c);
             t.signals.forEach((p) => {
                 let c = signal_container.addChild(createSignalContainer(p.signal));
                 alignSignalWithTrack(c, t, p);

@@ -151,8 +151,12 @@ class trackShape {
                         shape.graphics.beginFill("#000").moveTo(point.x, point.y).lineTo(p1.x, p1.y).lineTo(p2.x, p2.y).cp();
                     }
                 });
+                return shape;
         } else {
             const texture_container = new createjs.Container();
+            texture_container.name = "track";
+            texture_container.track = this;
+            texture_container.mouseChildren = false;
             let rail_shape = new createjs.Shape();
             const schwellenImg = loadQueue.getResult("schwellen");
             const kleinEisenImg = loadQueue.getResult("kleineisen");
@@ -269,6 +273,7 @@ class trackShape {
             texture_container.y = this.start.y;
 
             container.addChild(texture_container);
+            return texture_container;
         }
     }
 
