@@ -54,11 +54,10 @@ $(() => {
 });
 
 function init() {
-    
     pl = new preLoader("images");
     initSignals();
 
-    pl.addImage("schwellen.png", "schwellen")
+    pl.addImage("schwellen.png", "schwellen");
 
     pl.start().then(() => {
         $("#collapseOne .accordion-body").append(newItemButton(signalTemplates.hv_hp));
@@ -166,10 +165,9 @@ function init() {
 
     $("#btnClear").click(() => {
         tracks = [];
-        signal_container.removeAllChildren();
-        track_container.removeAllChildren();
-        drawGrid();
+        
         save();
+        reDrawEverything();
         stage.update();
     });
 
@@ -219,7 +217,6 @@ function init() {
 
         startDragAndDropSignal(e.offsetX, e.offsetY);
     });
-
 
     onResizeWindow();
     changeMode(MODE_EDIT);
@@ -552,7 +549,7 @@ function handleStageMouseUp(e) {
         } else if (e.nativeEvent.which == 1 && mode === MODE_EDIT && mouseAction.container?.name == "track") {
             selectTrack(mouseAction.container);
             stage.update();
-        }else{
+        } else {
             selectTrack(null);
             stage.update();
         }
@@ -597,8 +594,8 @@ function handleStageMouseUp(e) {
 function selectTrack(container) {
     if (selectedTrack) {
         //selectedTrack.color.style = track_color;
-        let c = track_container.children.find((c)=>c.track == selectedTrack)
-        if(c)c.shadow = null;
+        let c = track_container.children.find((c) => c.track == selectedTrack);
+        if (c) c.shadow = null;
     }
 
     selectedTrack = container?.track;
@@ -610,10 +607,7 @@ function selectTrack(container) {
         //selectedTrack.color.style = "red";
         container.shadow = new createjs.Shadow("#ff0000", 0, 0, 5);
     }
-    
 }
-
-
 
 function deleteTrack(track, trackShape) {
     if (!track) track = trackShape.track;
@@ -699,12 +693,12 @@ function connectTracks() {
                     track.AddSwitch({
                         km: km_track,
                         track: t,
-                        type: switch_type
+                        type: switch_type,
                     });
                     t.AddSwitch({
                         km: km_t,
                         track: track,
-                        type: switch_type
+                        type: switch_type,
                     });
                 }
             }
@@ -716,7 +710,6 @@ function createTrack(p1, p2) {
     let track = new trackShape(p1, p2);
     track.draw(track_container);
     tracks.push(track);
-    console.log(track.deg);
 }
 
 function reDrawEverything() {
@@ -728,11 +721,10 @@ function reDrawEverything() {
         track_container.removeAllChildren();
         signal_container.removeAllChildren();
         overlay_container.removeAllChildren();
-        
+
         tracks.forEach((t) => {
             let c = t.draw(track_container);
-            if(selectedTrack == t)
-                selectTrack(c);
+            if (selectedTrack == t) selectTrack(c);
             t.signals.forEach((p) => {
                 let c = signal_container.addChild(createSignalContainer(p.signal));
                 alignSignalWithTrack(c, t, p);
