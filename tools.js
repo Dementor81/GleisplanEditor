@@ -46,14 +46,6 @@ function deepEqual(x, y) {
     return x && y && tx === "object" && tx === ty ? ok(x).length === ok(y).length && ok(x).every((key) => deepEqual(x[key], y[key])) : x === y;
 }
 
-function cos(value) {
-    return Math.cos(value);
-}
-
-function sin(value) {
-  return Math.sin(value);
-}
-
 function clone(obj) {
     var copy;
 
@@ -310,8 +302,8 @@ const geometry = {
     //calculates a point which is perpendicular to the given vector
     perpendicular: function (p, deg, distance) {
         return {
-            y: p.y + Math.cos(deg2rad(deg)) * distance,
-            x: p.x + Math.sin(deg2rad(deg)) * distance,
+            y: p.y + Math.sin(deg2rad(deg+90)) * distance,
+            x: p.x + Math.cos(deg2rad(deg+90)) * distance,
         };
     },
 
@@ -343,3 +335,25 @@ const geometry = {
 
     round: (v) => ({ x: Math.round(v.x), y: Math.round(v.y) }),
 };
+
+//sw=switch location
+//rad= angle of track_1 in rad
+//c= end of the track_2 to find angle
+function findAngle(sw, c, rad=0) {
+    let atan = Math.atan2((c.y - sw.y) , c.x - sw.x) - rad;
+    if (atan < 0) atan += 2 * π; //macht aus neg Winkeln durch addition von 360° positive winkel
+
+    let val = (atan * 180) / π;
+    console.log(val);
+    return val;
+}
+
+function rotatePointAroundPivot(angle, pivot, point) {
+    var cos = Math.cos(angle);
+    var sin = Math.sin(angle);
+    var dx = point.x - pivot.x;
+    var dy = point.y - pivot.y;
+    var x = dx * cos - dy * sin + pivot.x;
+    var y = dy * cos + dx * sin + pivot.y;
+    return { x: x, y: y };
+}

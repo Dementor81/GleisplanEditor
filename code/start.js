@@ -17,11 +17,11 @@ const MOUSE_ACTION = {
 const SWITCH_TYPE = {
     NONE: 0,
     ARCH: 1,
-    LEFT_TOP: 2,
-    LEFT_BOTTOM: 3,
-    RIGHT_TOP: 4,
-    RIGHT_BOTTOM: 5,
-    DKW: 6,
+    TO_RIGHT: 2, //45°
+    FROM_RIGHT: 4, //135°
+    FROM_LEFT: 6, //225°
+    TO_LEFT: 8, //315°
+    DKW: 9,
 };
 
 const track_color = "#000000";
@@ -58,6 +58,7 @@ function init() {
     initSignals();
 
     pl.addImage("schwellen.png", "schwellen");
+    pl.addImage("weiche_RU.png", "weiche_ru");
 
     pl.start().then(() => {
         $("#collapseOne .accordion-body").append(newItemButton(signalTemplates.hv_hp));
@@ -165,7 +166,7 @@ function init() {
 
     $("#btnClear").click(() => {
         tracks = [];
-        
+
         save();
         reDrawEverything();
         stage.update();
@@ -655,12 +656,14 @@ function checkAndCreateTrack(start, end) {
 
 function connectTracks() {
     tracks.forEach((track) => (track.switches = []));
+
     for (let i = 0; i < tracks.length; i++) {
         const track = tracks[i];
         for (let j = i + 1; j < tracks.length; j++) {
             const t = tracks[j];
             //darf sich nicht selbst finden und die Weiche darf keinen 90° winkel aufweisen
-            if (t != track && t.deg + track.deg && t.deg + track.deg != 0) {
+            if (t != track && t.deg + track.deg != 0) {
+                let angleDeg;
                 let km_track = 0,
                     km_t = 0,
                     switch_type = SWITCH_TYPE.NONE;
@@ -669,18 +672,28 @@ function connectTracks() {
                     km_track = 0;
                     km_t = t.length;
                     switch_type = SWITCH_TYPE.ARCH;
+                    
                 } else if (deepEqual(track.end, t.start)) {
                     km_track = track.length;
                     km_t = 0;
                     switch_type = SWITCH_TYPE.ARCH;
+                    
                 } else if (geometry.within(track.start, track.end, t.start)) {
                     km_track = geometry.distance(track.start, t.start);
                     km_t = 0;
-                    switch_type = t.deg > 0 ? SWITCH_TYPE.LEFT_TOP : SWITCH_TYPE.RIGHT_BOTTOM;
+                    switch_type = ((findAngle(t.start, t.end, track.rad) / 45) % 8) + 1;
                 } else if (geometry.within(track.start, track.end, t.end)) {
                     km_track = geometry.distance(track.start, t.end);
                     km_t = t.length;
-                    switch_type = t.deg > 0 ? SWITCH_TYPE.LEFT_BOTTOM : SWITCH_TYPE.RIGHT_TOP;
+                    switch_type = ((findAngle(t.end, t.start, track.rad) / 45) % 8) + 1;
+                } else if (geometry.within(t.start, t.end, track.end)) {
+                    km_track = track.length;
+                    km_t = geometry.distance(t.start, track.end);
+                    switch_type = ((findAngle(track.end, track.start, t.rad) / 45) % 8) + 1;
+                } else if (geometry.within(t.start, t.end, track.start)) {
+                    km_track = 0;
+                    km_t = geometry.distance(t.start, track.start);
+                    switch_type = ((findAngle(track.start, track.end, t.rad) / 45) % 8) + 1;
                 } else {
                     let intersection_point = geometry.getIntersectionPoint(track, t);
                     if (intersection_point) {
@@ -721,6 +734,7 @@ function reDrawEverything() {
         track_container.removeAllChildren();
         signal_container.removeAllChildren();
         overlay_container.removeAllChildren();
+        ui_container.removeAllChildren();
 
         tracks.forEach((t) => {
             let c = t.draw(track_container);
