@@ -280,13 +280,15 @@ class trackShape {
             sin = Math.sin(this.rad);
 
         //kleine verschieben, damit man mit einer lücke anfängt - Zentrierung der schwelle
-        /* let x = startPoint.x + cos * (this.schwellenGap / 2) - sin * (this.schwellenHöhe / 2);
-        let y = startPoint.y + sin * (this.schwellenGap / 2) - cos * (this.schwellenHöhe / 2); */
 
         let x = startPoint.x + sin * (this.schwellenHöhe / 2) + cos * (this.schwellenGap / 2);
         let y = startPoint.y - cos * (this.schwellenHöhe / 2) + sin * (this.schwellenGap / 2);
+        let l = geometry.distance(startPoint, endPoint);
+        let tmp = l / (this.schwellenBreite + this.schwellenGap);
+        let anzSchwellen = Math.floor(tmp);
+        let custom_gap = (tmp - anzSchwellen) * (this.schwellenBreite + this.schwellenGap)/anzSchwellen + this.schwellenGap;
+        anzSchwellen * this.schwellenBreite;
 
-        let anzSchwellen = Math.floor(geometry.distance(startPoint, endPoint) / (this.schwellenBreite + this.schwellenGap));
         for (let i = 0; i < anzSchwellen; i++) {
             let random = Math.randomInt(this.SCHWELLEN_VARIANTEN - 1);
             texture_container.addChild(
@@ -298,8 +300,8 @@ class trackShape {
                     rotation: this.deg,
                 })
             );
-            y += sin * (this.schwellenBreite + this.schwellenGap);
-            x += cos * (this.schwellenBreite + this.schwellenGap);
+            y += sin * (this.schwellenBreite + custom_gap);
+            x += cos * (this.schwellenBreite + custom_gap);
         }
     }
 
@@ -336,65 +338,6 @@ class trackShape {
         rail_shape.graphics.setStrokeStyle(0.6).beginStroke("#eeeeee");
         rail_shape.graphics.moveTo(x1, y1).lineTo(x2, y2);
     }
-
-    /* calcValuesForCurvedRail(sw, km, startDeg, endDeg) {
-        const switchpoint = this.getPointfromKm(km);
-        const cord_2 = Math.sin(π / 8) * CURVE_RADIUS;
-
-        let x = cord_2 / Math.cos(π / 8);
-        let p1 = null;
-
-        let x2 = x * Math.sin(π / 4);
-        let p2 = null;
-        let p3 = { x: switchpoint.x + x2, y: switchpoint.y };
-
-        let centerpoint = {};
-
-        let deg = 0;
-        if (startDeg == 0) {
-            p1 = { x: switchpoint.x - x, y: switchpoint.y };
-            p2 = { x: switchpoint.x + x2, y: switchpoint.y };
-            centerpoint = { x: p1.x, y: p1.y };
-            if (sw.type == SWITCH_TYPE.FROM_RIGHT) {
-                p2 = { x: switchpoint.x - x2, y: switchpoint.y + x2 };
-                centerpoint = { x: switchpoint.x + x, y: switchpoint.y + CURVE_RADIUS };
-                deg = 225;
-            } else if (endDeg == 45) {
-                deg = 45;
-                centerpoint.y -= CURVE_RADIUS;
-                p2.y -= x2;
-            } else if (endDeg == -45) {
-                deg = 270;
-                centerpoint.y += CURVE_RADIUS;
-                p2.y += x2;
-            }
-        } else {
-            p1 = { x: switchpoint.x - x2, y: switchpoint.y };
-            p2 = { x: switchpoint.x + x, y: switchpoint.y };
-
-            centerpoint = { x: switchpoint.x + x, y: p1.y };
-            if (startDeg == 45 && endDeg == 0) {
-                deg = 225;
-                p1.y += x2;
-                p3.y -= x2;
-                centerpoint.y += CURVE_RADIUS;
-            } else if (startDeg == -45 && endDeg == 0) {
-                deg = 90;
-                p1.y -= x2;
-                p3.y += x2;
-                p2.x = switchpoint.x + x;
-                centerpoint.y -= CURVE_RADIUS;
-            }
-        }
-
-        return {
-            p1: p1,
-            p2: p2,
-            p3: p3,
-            centerpoint: centerpoint,
-            deg: deg,
-        };
-    } */
 
     calcValuesForCurvedRail2(sw) {
         const switchpoint = this.getPointfromKm(sw.km);
@@ -544,15 +487,16 @@ class trackShape {
         const schwelle = pl.getImage("schwellen");
         let random;
         let dir = p.type.is(SWITCH_TYPE.FROM_RIGHT, SWITCH_TYPE.FROM_LEFT) ? -1 : 1;
-        const schwellen = this.rad == 0 ? [0, 0, 0, 1, 2, 3, 4, 5, 6, 7, 8, 8, 4] : [0, 0, 0, 1, 2, 3, 4, 5, 6, 7, 8, 8.5, 4.5, 4.3, 0];
+        const schwellen = this.rad == 0 ? [0, 0, 0, 1, 2, 3, 4, 5, 6, 7, 8.2, 7] : [0, 0, 0, 1, 2, 3, 4, 5, 6, 7, 8.3, 7.5, 4.5, 0, ];
+        const custom_gap = this.rad == 0 ?2.599999999:2.54975;
         schwellen.forEach((y, i) => {
             random = Math.randomInt(this.SCHWELLEN_VARIANTEN - 1);
             let yy = switch_values.p1.y;
-            yy += Math.sin(this.rad) * ((this.schwellenBreite + this.schwellenGap) * (i * dir) + (this.schwellenGap/2 * dir));
+            yy += Math.sin(this.rad) * ((this.schwellenBreite + custom_gap) * (i * dir) + (this.schwellenGap / 2) * dir);
             yy += Math.sin(this.rad + π / 2) * (p.type.is(SWITCH_TYPE.FROM_RIGHT, SWITCH_TYPE.TO_RIGHT) ? -this.schwellenHöhe / 2 : this.schwellenHöhe / 2 - schwelle.height * (TRACK_SCALE + y / 100));
 
             let xx = switch_values.p1.x;
-            xx += Math.cos(this.rad) * ((this.schwellenBreite + this.schwellenGap) * (i * dir) + (this.schwellenGap/2 * dir));
+            xx += Math.cos(this.rad) * ((this.schwellenBreite + custom_gap) * (i * dir) + (this.schwellenGap / 2) * dir);
             xx += Math.cos(this.rad + π / 2) * (p.type.is(SWITCH_TYPE.FROM_RIGHT, SWITCH_TYPE.TO_RIGHT) ? -this.schwellenHöhe / 2 : this.schwellenHöhe / 2 - schwelle.height * (TRACK_SCALE + y / 100));
 
             container.addChild(
@@ -581,13 +525,15 @@ class trackShape {
     }
 
     DrawImagesInCircle(container, centerpoint, radius, deg, img, offset = 0) {
-        const perimeter = (π / 4) * radius;
-        let anzSchwellen = Math.floor(perimeter / (this.schwellenBreite + this.schwellenGap));
+        const l = (π / 4) * radius;
+        let tmp = l / (this.schwellenBreite + this.schwellenGap);
+        let anzSchwellen = Math.floor(tmp);
 
         let startAngle = deg2rad(deg);
         let endAngle = startAngle + π / 4;
+
         const step = (endAngle - startAngle) / anzSchwellen;
-        let rad = startAngle;
+        let rad = startAngle+step/4;
         let random;
 
         for (let i = 0; i < anzSchwellen; i++) {
