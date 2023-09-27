@@ -132,7 +132,7 @@ class trackShape {
                 .filter((p) => p.km != 0 && p.km != this.length)
                 .forEach((p) => {
                     let point = geometry.round(geometry.add(this.start, geometry.multiply(this.unit, p.km)));
-                    this.drawPoint(point, p.type);
+                    //this.drawPoint(point, p.type);
                     if (!deepEqual(point, p.track.end)) {
                         p1 = geometry.add(point, geometry.multiply(this.unit, 10));
                         p2 = geometry.add(point, geometry.multiply(p.track.unit, 10));
@@ -413,8 +413,6 @@ class trackShape {
             if (angleDeg < 0) angleDeg += 360;
 
             type = ((angleDeg / 45) % 8) + 1;
-
-            this.drawPoint(geometry.add(this.start, switchpoint), angleDeg);
         }
 
         const cord_2 = Math.sin(π / 8) * CURVE_RADIUS;
@@ -471,11 +469,6 @@ class trackShape {
                 break;
         }
 
-        this.drawPoint(geometry.add(this.start, p1), "p1");
-        this.drawPoint(geometry.add(this.start, p2), "p2");
-        this.drawPoint(geometry.add(this.start, p3), "p3");
-        this.drawPoint(geometry.add(this.start, centerpoint), "c");
-
         let angle = sw.km.is(0, this.length) ? sw.track.deg : this.deg;
         if (sw.type != SWITCH_TYPE.ARCH && angle != 0) {
             if (angle == 45) {
@@ -488,7 +481,7 @@ class trackShape {
                 } else if (type == SWITCH_TYPE.FROM_RIGHT) {
                     p2 = { x: switchpoint.x - x, y: switchpoint.y };
                     p1 = { x: switchpoint.x + x2, y: switchpoint.y + x2 };
-                    p3 = { x: switchpoint.x - x2, y: switchpoint.y - x2};
+                    p3 = { x: switchpoint.x - x2, y: switchpoint.y - x2 };
                     centerpoint = { x: p2.x, y: p2.y + CURVE_RADIUS };
                     deg = 270;
                 }
@@ -497,7 +490,7 @@ class trackShape {
                 if (type == SWITCH_TYPE.TO_RIGHT) {
                     p2 = { x: switchpoint.x + x, y: switchpoint.y };
                     p1 = { x: switchpoint.x - x2, y: switchpoint.y + x2 };
-                    p3 = { x: switchpoint.x + x2, y: switchpoint.y - x2};
+                    p3 = { x: switchpoint.x + x2, y: switchpoint.y - x2 };
                     centerpoint = { x: p2.x, y: p2.y + CURVE_RADIUS };
                     deg = 225;
                 } else if (type == SWITCH_TYPE.FROM_LEFT) {
@@ -508,12 +501,11 @@ class trackShape {
                     deg = 45;
                 }
             }
-
-            this.drawPoint(geometry.add(this.start, p1), "p1", "red");
-            this.drawPoint(geometry.add(this.start, p2), "p2", "red");
-            this.drawPoint(geometry.add(this.start, p3), "p3", "red");
-            this.drawPoint(geometry.add(this.start, centerpoint), "c", "red");
         }
+        /* this.drawPoint(geometry.add(this.start, p1), "p1");
+        this.drawPoint(geometry.add(this.start, p2), "p2");
+        this.drawPoint(geometry.add(this.start, p3), "p3");
+        this.drawPoint(geometry.add(this.start, centerpoint), "c"); */
 
         return {
             p1: p1,
@@ -527,9 +519,6 @@ class trackShape {
 
     drawCurvedTrack2(container, sw, km, startDeg, endDeg, img) {
         const values = this.calcValuesForCurvedRail2(sw, km, startDeg, endDeg);
-        this.drawPoint(geometry.add(this.start, values.p1), "p1", "blue");
-        this.drawPoint(geometry.add(this.start, values.p2), "p2", "blue");
-        this.drawPoint(geometry.add(this.start, values.centerpoint), "c", "blue");
 
         this.DrawImagesInCircle(container, values.centerpoint, CURVE_RADIUS, values.deg, img, this.schwellenHöhe / 2);
 
@@ -546,10 +535,6 @@ class trackShape {
     }
 
     drawSwitch(container, p, switch_values) {
-        this.drawPoint(geometry.add(this.start, switch_values.p1), "p1", "blue");
-        this.drawPoint(geometry.add(this.start, switch_values.p2), "p2", "blue");
-        this.drawPoint(geometry.add(this.start, switch_values.p3), "p3", "blue");
-
         const s = new createjs.Shape();
 
         [-this.schwellenHöhe / 2 + this.rail_offset, this.schwellenHöhe / 2 - this.rail_offset].forEach((y) => {
@@ -559,12 +544,22 @@ class trackShape {
         const schwelle = pl.getImage("schwellen");
         let random;
         let dir = p.type.is(SWITCH_TYPE.FROM_RIGHT, SWITCH_TYPE.FROM_LEFT) ? -1 : 1;
-        [0, 0, 0, 1, 2, 3, 4, 5, 6, 7, 8, 8, 3].forEach((y, i) => {
+        const schwellen = this.rad == 0 ? [0, 0, 0, 1, 2, 3, 4, 5, 6, 7, 8, 8, 4] : [0, 0, 0, 1, 2, 3, 4, 5, 6, 7, 8, 8.5, 4.5, 4.3, 0];
+        schwellen.forEach((y, i) => {
             random = Math.randomInt(this.SCHWELLEN_VARIANTEN - 1);
+            let yy = switch_values.p1.y;
+            yy += Math.sin(this.rad) * ((this.schwellenBreite + this.schwellenGap) * (i * dir) + (this.schwellenGap/2 * dir));
+            yy += Math.sin(this.rad + π / 2) * (p.type.is(SWITCH_TYPE.FROM_RIGHT, SWITCH_TYPE.TO_RIGHT) ? -this.schwellenHöhe / 2 : this.schwellenHöhe / 2 - schwelle.height * (TRACK_SCALE + y / 100));
+
+            let xx = switch_values.p1.x;
+            xx += Math.cos(this.rad) * ((this.schwellenBreite + this.schwellenGap) * (i * dir) + (this.schwellenGap/2 * dir));
+            xx += Math.cos(this.rad + π / 2) * (p.type.is(SWITCH_TYPE.FROM_RIGHT, SWITCH_TYPE.TO_RIGHT) ? -this.schwellenHöhe / 2 : this.schwellenHöhe / 2 - schwelle.height * (TRACK_SCALE + y / 100));
+
             container.addChild(
                 new createjs.Bitmap(schwelle).set({
-                    x: switch_values.p1.x + ( (this.schwellenBreite + this.schwellenGap) * (i * dir)),
-                    y: p.type.is(SWITCH_TYPE.FROM_RIGHT, SWITCH_TYPE.TO_RIGHT) ? -this.schwellenHöhe / 2 : this.schwellenHöhe / 2 - schwelle.height * (TRACK_SCALE + y / 100),
+                    x: xx,
+                    y: yy,
+                    regX: dir == -1 ? schwelle.width / this.SCHWELLEN_VARIANTEN : 0, //die schwellen, die Rückwärtslaufen gezeichnet werden, an der anderen Seite ausrichten
                     scale: TRACK_SCALE,
                     scaleY: TRACK_SCALE + y / 100,
                     sourceRect: new createjs.Rectangle((random * schwelle.width) / this.SCHWELLEN_VARIANTEN, 0, schwelle.width / this.SCHWELLEN_VARIANTEN, schwelle.height),
