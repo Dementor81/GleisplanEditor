@@ -58,7 +58,7 @@ function init() {
     initSignals();
 
     pl.addImage("schwellen.png", "schwellen");
-    pl.addImage("weiche_RU.png", "weiche_ru");
+    pl.addImage("dkw.png", "dkw");
 
     pl.start().then(() => {
         $("#collapseOne .accordion-body").append(newItemButton(signalTemplates.hv_hp));
@@ -160,7 +160,7 @@ function init() {
 
     $(btnTexture).click((e) => {
         TEXTURE_MODE = !TEXTURE_MODE;
-        $(btnGrid).toggleClass("active", TEXTURE_MODE);
+        $(btnTexture).toggleClass("active", TEXTURE_MODE);
         reDrawEverything();
     });
 
