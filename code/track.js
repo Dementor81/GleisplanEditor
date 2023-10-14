@@ -135,10 +135,9 @@ class trackShape {
             //Weichen malen (kleines Dreieck in die Weiche)
             //Filter switches at start end end
             this.switches
-                .filter((p) => p.km != 0 && p.km != this.length)
+                .filter((p) => p.km != 0 && p.km != this.length && p.type!= SWITCH_TYPE.CROSSING)
                 .forEach((p) => {
-                    let point = geometry.round(geometry.add(this.start, geometry.multiply(this.unit, p.km)));
-                    //this.drawPoint(point, p.type);
+                    let point = geometry.add(this.getPointfromKm(p.km),this.start);
                     if (!deepEqual(point, p.track.end)) {
                         p1 = geometry.add(point, geometry.multiply(this.unit, 10));
                         p2 = geometry.add(point, geometry.multiply(p.track.unit, 10));
@@ -149,6 +148,8 @@ class trackShape {
                         p2 = geometry.add(point, geometry.multiply(p.track.unit, -10));
                         shape.graphics.beginFill("#000").moveTo(point.x, point.y).lineTo(p1.x, p1.y).lineTo(p2.x, p2.y).cp();
                     }
+
+
                 });
             return shape;
         } else {

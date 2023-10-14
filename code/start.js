@@ -22,6 +22,7 @@ const SWITCH_TYPE = {
     FROM_LEFT: 6, //225°
     TO_LEFT: 8, //315°
     DKW: 9,
+    CROSSING: 10,
 };
 
 const track_color = "#000000";
@@ -304,7 +305,7 @@ function handleStageMouseDown(event) {
         startPoint: { x: event.stageX, y: event.stageY },
         offset: hittest?.globalToLocal(stage.mouseX, stage.mouseY),
         distance: function (x, y) {
-            return Math.abs(this.startPoint.x - x) + Math.abs(this.startPoint.y - y);
+            return geometry.distance(this.startPoint, { x: x, y: y });
         },
     };
 
@@ -365,24 +366,20 @@ function createSignalContainer(signal) {
 
 function alignSignalWithTrack(c_sig, track, pos) {
     //koordinaten anhand des Strecken KM suchen
-    c_sig.x = Math.cos(deg2rad(track.deg)) * pos.km + track.start.x;
-    c_sig.y = Math.sin(deg2rad(track.deg)) * -pos.km + track.start.y;
-
+    c_sig.x = Math.cos(track.rad) * pos.km + track.start.x;
+    c_sig.y = Math.sin(track.rad) * pos.km + track.start.y;
+    let p;
     if (pos.above) {
-        c_sig.rotation = 270 - track.deg;
-        //im rechten winkel zur Strecke ausrichten
-        c_sig.y -= Math.cos(deg2rad(track.deg)) * (grid_size / 2 - 14);
-        c_sig.x -= Math.sin(deg2rad(track.deg)) * (grid_size / 2 - 14);
+        c_sig.rotation = 270 + track.deg;
+        p = geometry.perpendicular(c_sig, track.deg, -(grid_size_2 - 14));
     } else {
-        c_sig.rotation = 90 - track.deg;
-        c_sig.y += Math.cos(deg2rad(track.deg)) * (grid_size / 2 - 14);
-        c_sig.x += Math.sin(deg2rad(track.deg)) * (grid_size / 2 - 14);
+        c_sig.rotation = 90 + track.deg;
+        p = geometry.perpendicular(c_sig, track.deg, grid_size_2 - 14);
     }
-
+    c_sig.x = p.x;
+    c_sig.y = p.y;
     if (pos.flipped) {
         c_sig.rotation += 180;
-    } else {
-        //let sig_bounds = c_sig.getBounds();
     }
 }
 
@@ -533,58 +530,65 @@ function handleStageMouseUp(e) {
 
     let p2 = stage.globalToLocal(stage.mouseX, stage.mouseY);
     if (mouseAction == null) return;
-    if (mouseAction.action === MOUSE_ACTION.NONE && mouseAction.distance(stage.mouseX, stage.mouseY) < 4) {
-        if (e.nativeEvent.which == 1 && mouseAction.container?.name == "signal") {
-            if (mode === MODE_PLAY) {
-                let popup = ui.showPopup({ x: e.rawX, y: e.rawY, widht: 10, height: 10 }, mouseAction.container.signal._template.title, mouseAction.container.signal.getHTML(), $(myCanvas));
-                $(".popover-body button").click(mouseAction.container.signal, (e) => {
-                    e.data.syncHTML(popup.tip);
-                    reDrawEverything();
-                    save();
-                });
-            } else if (mode === MODE_EDIT) {
-                if (!$("#generated_menu").length) {
-                    let context_menu = ui.showContextMenu({ x: e.rawX, y: e.rawY }, $(myCanvas), mouseAction.container.signal.getContectMenu(), mouseAction.container.signal);
+    if (e.nativeEvent.which == 1) {
+        if (mouseAction.action === MOUSE_ACTION.NONE && mouseAction.distance(stage.mouseX, stage.mouseY) < 4) {
+            if (mouseAction.container?.name == "signal") {
+                if (mode === MODE_PLAY) {
+                    let popup = ui.showPopup({ x: e.rawX, y: e.rawY, widht: 10, height: 10 }, mouseAction.container.signal._template.title, mouseAction.container.signal.getHTML(), $(myCanvas));
+                    $(".popover-body button").click(mouseAction.container.signal, (e) => {
+                        e.data.syncHTML(popup.tip);
+                        reDrawEverything();
+                        save();
+                    });
+                } else if (mode === MODE_EDIT) {
+                    if (!$("#generated_menu").length) {
+                        let context_menu = ui.showContextMenu({ x: e.rawX, y: e.rawY }, $(myCanvas), mouseAction.container.signal.getContectMenu(), mouseAction.container.signal);
+                    }
                 }
-            }
-        } else if (e.nativeEvent.which == 1 && mode === MODE_EDIT && mouseAction.container?.name == "track") {
-            selectTrack(mouseAction.container);
-            stage.update();
-        } else {
-            selectTrack(null);
-            stage.update();
-        }
-    } else if (mouseAction.action === MOUSE_ACTION.DND_SIGNAL) {
-        overlay_container.removeChild(mouseAction.container);
-
-        if (mouseAction.hit_track) {
-            signal_container.addChild(mouseAction.container);
-            mouseAction.hit_track.track.AddSignal(mouseAction.pos);
-        }
-        save();
-        overlay_container.removeAllChildren();
-        stage.update();
-    } else if (mouseAction.action === MOUSE_ACTION.BUILD_TRACK) {
-        if (mouseAction.ankerPoints.length > 1) {
-            let tmpPoint = mouseAction.ankerPoints[0];
-            for (let i = 1; i < mouseAction.ankerPoints.length; i++) {
-                const p0 = mouseAction.ankerPoints[i - 1];
-                const p1 = mouseAction.ankerPoints[i];
-                const p2 = mouseAction.ankerPoints.length > i + 1 ? mouseAction.ankerPoints[i + 1] : null;
-                //steigung ändert sich, also track erstellen
-                if (!p2 || geometry.slope(p0, p1) != geometry.slope(p1, p2)) {
-                    checkAndCreateTrack(tmpPoint, p1);
-                    tmpPoint = p1;
+            } else if (mouseAction.container?.name == "track") {
+                if (mode === MODE_EDIT) {
+                    selectTrack(mouseAction.container);
+                    stage.update();
+                }else if(true){ //detect switch
+                    //change switch
                 }
-            }
-            connectTracks();
-            reDrawEverything();
 
+            } else {
+                selectTrack(null);
+                stage.update();
+            }
+        } else if (mouseAction.action === MOUSE_ACTION.DND_SIGNAL) {
+            overlay_container.removeChild(mouseAction.container);
+
+            if (mouseAction.hit_track) {
+                signal_container.addChild(mouseAction.container);
+                mouseAction.hit_track.track.AddSignal(mouseAction.pos);
+            }
             save();
-        }
-        overlay_container.removeAllChildren();
+            overlay_container.removeAllChildren();
+            stage.update();
+        } else if (mouseAction.action === MOUSE_ACTION.BUILD_TRACK) {
+            if (mouseAction.ankerPoints.length > 1) {
+                let tmpPoint = mouseAction.ankerPoints[0];
+                for (let i = 1; i < mouseAction.ankerPoints.length; i++) {
+                    const p0 = mouseAction.ankerPoints[i - 1];
+                    const p1 = mouseAction.ankerPoints[i];
+                    const p2 = mouseAction.ankerPoints.length > i + 1 ? mouseAction.ankerPoints[i + 1] : null;
+                    //steigung ändert sich, also track erstellen
+                    if (!p2 || geometry.slope(p0, p1) != geometry.slope(p1, p2)) {
+                        checkAndCreateTrack(tmpPoint, p1);
+                        tmpPoint = p1;
+                    }
+                }
+                connectTracks();
+                reDrawEverything();
 
-        stage.update();
+                save();
+            }
+            overlay_container.removeAllChildren();
+
+            stage.update();
+        }
     } else if (mouseAction.action === MOUSE_ACTION.SCROLL) {
         save();
     }
@@ -607,6 +611,7 @@ function selectTrack(container) {
     if (container) {
         //selectedTrack.color.style = "red";
         container.shadow = new createjs.Shadow("#ff0000", 0, 0, 5);
+        console.log(selectedTrack);
     }
 }
 
@@ -650,71 +655,69 @@ function checkAndCreateTrack(start, end) {
             if (geometry.within(start, end, track.start)) track.setNewStart(start);
             if (geometry.within(start, end, track.end)) track.setNewEnd(end);
         });
-        //createTrack(start, end);
     }
+}
+
+function detectSwitch(t1, t2, recursion = false) {
+    if (deepEqual(t1.start, t2.start) || deepEqual(t1.end, t2.end)) return;
+
+    let km_t1 = 0,
+        km_t2 = 0,
+        switch_type = SWITCH_TYPE.NONE,
+        switch_location;
+
+    if (t1.deg + t2.deg != 0) {
+        if (deepEqual(t1.start, t2.end)) {
+            switch_location = t1.start;
+            switch_type = SWITCH_TYPE.ARCH;
+        } else if (geometry.within(t1.start, t1.end, t2.start, true)) {
+            switch_location = t2.start;
+            switch_type = ((findAngle(switch_location, t2.end, t1.rad) / 45) % 8) + 1;
+        } else if (geometry.within(t1.start, t1.end, t2.end, true)) {
+            switch_location = t2.end;
+            switch_type = ((findAngle(switch_location, t2.start, t1.rad) / 45) % 8) + 1;
+        }
+
+        if (switch_type == SWITCH_TYPE.NONE && !recursion) {
+            if (detectSwitch(t2, t1, true)) return true;
+        }
+    }
+
+    if (switch_type == SWITCH_TYPE.NONE) {
+        switch_location = geometry.getIntersectionPoint(t1, t2);
+        if (switch_location && !(deepEqual(switch_location, t2.start) || deepEqual(switch_location, t2.end) || deepEqual(switch_location, t1.start) || deepEqual(switch_location, t1.end))) {
+            switch_type = t2.deg + t1.deg == 0 ? SWITCH_TYPE.CROSSING : SWITCH_TYPE.DKW;
+        }
+    }
+
+    if (switch_type != SWITCH_TYPE.NONE) {
+        km_t1 = geometry.distance(t1.start, switch_location);
+        km_t2 = geometry.distance(t2.start, switch_location);
+
+        t1.AddSwitch({
+            km: km_t1,
+            track: t2,
+            type: switch_type,
+        });
+        t2.AddSwitch({
+            km: km_t2,
+            track: t1,
+            type: switch_type,
+        });
+
+        return true;
+    }
+    return false;
 }
 
 function connectTracks() {
     tracks.forEach((track) => (track.switches = []));
 
     for (let i = 0; i < tracks.length; i++) {
-        const track = tracks[i];
+        const t1 = tracks[i];
         for (let j = i + 1; j < tracks.length; j++) {
-            const t = tracks[j];
-            //darf sich nicht selbst finden und die Weiche darf keinen 90° winkel aufweisen
-            if (t != track && t.deg + track.deg != 0) {
-                let angleDeg;
-                let km_track = 0,
-                    km_t = 0,
-                    switch_type = SWITCH_TYPE.NONE;
-
-                if (deepEqual(track.start, t.end)) {
-                    km_track = 0;
-                    km_t = t.length;
-                    switch_type = SWITCH_TYPE.ARCH;
-                    
-                } else if (deepEqual(track.end, t.start)) {
-                    km_track = track.length;
-                    km_t = 0;
-                    switch_type = SWITCH_TYPE.ARCH;
-                    
-                } else if (geometry.within(track.start, track.end, t.start)) {
-                    km_track = geometry.distance(track.start, t.start);
-                    km_t = 0;
-                    switch_type = ((findAngle(t.start, t.end, track.rad) / 45) % 8) + 1;
-                } else if (geometry.within(track.start, track.end, t.end)) {
-                    km_track = geometry.distance(track.start, t.end);
-                    km_t = t.length;
-                    switch_type = ((findAngle(t.end, t.start, track.rad) / 45) % 8) + 1;
-                } else if (geometry.within(t.start, t.end, track.end)) {
-                    km_track = track.length;
-                    km_t = geometry.distance(t.start, track.end);
-                    switch_type = ((findAngle(track.end, track.start, t.rad) / 45) % 8) + 1;
-                } else if (geometry.within(t.start, t.end, track.start)) {
-                    km_track = 0;
-                    km_t = geometry.distance(t.start, track.start);
-                    switch_type = ((findAngle(track.start, track.end, t.rad) / 45) % 8) + 1;
-                } else {
-                    let intersection_point = geometry.getIntersectionPoint(track, t);
-                    if (intersection_point) {
-                        km_track = geometry.distance(track.start, intersection_point);
-                        km_t = geometry.distance(t.start, intersection_point);
-                        switch_type = SWITCH_TYPE.DKW;
-                    }
-                }
-                if (km_track != 0 || km_t != 0) {
-                    track.AddSwitch({
-                        km: km_track,
-                        track: t,
-                        type: switch_type,
-                    });
-                    t.AddSwitch({
-                        km: km_t,
-                        track: track,
-                        type: switch_type,
-                    });
-                }
-            }
+            const t2 = tracks[j];
+            if (t1.deg != t2.deg) detectSwitch(t1, t2);
         }
     }
 }

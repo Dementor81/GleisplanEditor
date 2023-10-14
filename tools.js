@@ -30,6 +30,7 @@ Array.prototype.remove = function (item) {
     }
 };
 
+
 //returns a copy where the given item is missing
 Array.prototype.without = function (item) {
     return this.filter((i) => i != item);
@@ -272,7 +273,8 @@ const geometry = {
     },
 
     //checks if point c is between a and b
-    within: function (pA, pB, pC) {
+    within: function (pA, pB, pC, exclude) {
+        if(exclude && (deepEqual(pA, pC)||deepEqual(pB, pC))) return false;
         if (pC.x.outoff(pA.x, pB.x) || pC.y.outoff(pA.y, pB.y)) return false;
         return (pB.x - pA.x) * (pC.y - pA.y) == (pC.x - pA.x) * (pB.y - pA.y);
     },
@@ -344,7 +346,6 @@ function findAngle(sw, c, rad=0) {
     if (atan < 0) atan += 2 * π; //macht aus neg Winkeln durch addition von 360° positive winkel
 
     let val = (atan * 180) / π;
-    console.log(val);
     return val;
 }
 
