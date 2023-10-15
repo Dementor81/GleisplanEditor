@@ -47,6 +47,7 @@ var selectedTrack;
 var loadQueue;
 
 var tracks = [];
+var switches = [];
 
 var signalTemplates = {};
 
@@ -294,10 +295,8 @@ function handleStageMouseDown(event) {
 
     let hittest = getHitTest();
     //console.log(hittest);
-    /* if (hittest != null) {
 
-        console.log(hittest);
-    } */
+    console.log(hittest ? hittest : "nothing hit");
 
     mouseAction = {
         action: MOUSE_ACTION.NONE,
@@ -549,10 +548,9 @@ function handleStageMouseUp(e) {
                 if (mode === MODE_EDIT) {
                     selectTrack(mouseAction.container);
                     stage.update();
-                }else if(true){ //detect switch
-                    //change switch
                 }
-
+            } else if (mouseAction.container?.name == "switch") {
+                switch_A_Switch(mouseAction.container.sw, mouseAction);
             } else {
                 selectTrack(null);
                 stage.update();
@@ -594,6 +592,23 @@ function handleStageMouseUp(e) {
     }
 
     stage.removeEventListener("stagemousemove", handleMouseMove);
+}
+
+function switch_A_Switch(sw, mouseAction) {
+    if (!sw.type.is(SWITCH_TYPE.DKW)) {
+        if (sw.branch == sw.t1) sw.branch = sw.t2;
+        else sw.branch = sw.t1;
+    } else {
+        if (mouseAction.offset.x < sw.location.x) {
+            if (sw.from == sw.t1) sw.from = sw.t2;
+            else sw.from = sw.t1;
+        } else {
+            if (sw.branch == sw.t1) sw.branch = sw.t2;
+            else sw.branch = sw.t1;
+        }
+    }
+
+    reRenderSwitch(sw);
 }
 
 function selectTrack(container) {
@@ -694,15 +709,38 @@ function detectSwitch(t1, t2, recursion = false) {
         km_t1 = geometry.distance(t1.start, switch_location);
         km_t2 = geometry.distance(t2.start, switch_location);
 
+        const sw = {
+            type: switch_type,
+            location: switch_location,
+        };
+
+        //stellt sicher, das immer das durchgehende hauptgleis t1 ist
+        if (deepEqual(switch_location, t1.start, t1.end)) {
+            sw.t1 = t2;
+            sw.t2 = t1;
+        } else {
+            sw.t1 = t1;
+            sw.t2 = t2;
+        }
+
+        //stellt die Weiche standardmäßig ins Hauptgelis
+        sw.branch = sw.t1;
+
+        if (switch_type == SWITCH_TYPE.DKW) sw.from = sw.t1;
+
+        switches.push(sw);
+
         t1.AddSwitch({
             km: km_t1,
             track: t2,
             type: switch_type,
+            sw: sw,
         });
         t2.AddSwitch({
             km: km_t2,
             track: t1,
             type: switch_type,
+            sw: sw,
         });
 
         return true;
@@ -712,7 +750,7 @@ function detectSwitch(t1, t2, recursion = false) {
 
 function connectTracks() {
     tracks.forEach((track) => (track.switches = []));
-
+    switches = [];
     for (let i = 0; i < tracks.length; i++) {
         const t1 = tracks[i];
         for (let j = i + 1; j < tracks.length; j++) {
@@ -726,29 +764,6 @@ function createTrack(p1, p2) {
     let track = new trackShape(p1, p2);
     track.draw(track_container);
     tracks.push(track);
-}
-
-function reDrawEverything() {
-    if (!pl.loaded)
-        setTimeout(() => {
-            reDrawEverything();
-        }, 500);
-    else {
-        track_container.removeAllChildren();
-        signal_container.removeAllChildren();
-        overlay_container.removeAllChildren();
-        ui_container.removeAllChildren();
-
-        tracks.forEach((t) => {
-            let c = t.draw(track_container);
-            if (selectedTrack == t) selectTrack(c);
-            t.signals.forEach((p) => {
-                let c = signal_container.addChild(createSignalContainer(p.signal));
-                alignSignalWithTrack(c, t, p);
-            });
-        });
-        stage.update();
-    }
 }
 
 function replacer(key, value) {

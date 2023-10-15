@@ -107,7 +107,7 @@ class trackShape {
 
             let p1 = geometry.perpendicular(this.start, this.deg, -8);
             let p2 = geometry.perpendicular(this.start, this.deg, 8);
-            const p3 = geometry.perpendicular(this.end, this.deg, 8);
+            let p3 = geometry.perpendicular(this.end, this.deg, 8);
             const p4 = geometry.perpendicular(this.end, this.deg, -8);
 
             hit.graphics.beginFill("#000").mt(p1.x, p1.y).lt(p2.x, p2.y).lt(p3.x, p3.y).lt(p4.x, p4.y).lt(p1.x, p1.y);
@@ -132,25 +132,8 @@ class trackShape {
                 p2 = geometry.perpendicular(this.end, this.deg, 6);
                 shape.graphics.moveTo(p1.x, p1.y).lineTo(p2.x, p2.y);
             }
-            //Weichen malen (kleines Dreieck in die Weiche)
-            //Filter switches at start end end
-            this.switches
-                .filter((p) => p.km != 0 && p.km != this.length && p.type!= SWITCH_TYPE.CROSSING)
-                .forEach((p) => {
-                    let point = geometry.add(this.getPointfromKm(p.km),this.start);
-                    if (!deepEqual(point, p.track.end)) {
-                        p1 = geometry.add(point, geometry.multiply(this.unit, 10));
-                        p2 = geometry.add(point, geometry.multiply(p.track.unit, 10));
-                        shape.graphics.beginFill("#000").moveTo(point.x, point.y).lineTo(p1.x, p1.y).lineTo(p2.x, p2.y).cp();
-                    }
-                    if (!deepEqual(point, p.track.start)) {
-                        p1 = geometry.add(point, geometry.multiply(this.unit, -10));
-                        p2 = geometry.add(point, geometry.multiply(p.track.unit, -10));
-                        shape.graphics.beginFill("#000").moveTo(point.x, point.y).lineTo(p1.x, p1.y).lineTo(p2.x, p2.y).cp();
-                    }
-
-
-                });
+            
+            
             return shape;
         } else {
             const texture_container = new createjs.Container();
@@ -456,7 +439,7 @@ class trackShape {
             container.addChild(
                 new createjs.Bitmap(img).set({
                     y: switch_values.p3.y,
-                    x: switch_values.p3.x - 1.8 + (sw.track.deg == 45 ? 0 : img.width*TRACK_SCALE),
+                    x: switch_values.p3.x - 1.8 + (sw.track.deg == 45 ? 0 : img.width * TRACK_SCALE),
                     regY: img.height / 2,
                     scale: TRACK_SCALE,
                     scaleX: sw.track.deg == 45 ? TRACK_SCALE : -TRACK_SCALE,

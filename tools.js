@@ -30,7 +30,6 @@ Array.prototype.remove = function (item) {
     }
 };
 
-
 //returns a copy where the given item is missing
 Array.prototype.without = function (item) {
     return this.filter((i) => i != item);
