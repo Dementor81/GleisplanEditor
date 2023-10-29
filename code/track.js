@@ -15,19 +15,7 @@ class trackShape {
     end = null;
     signals = [];
 
-    SCHWELLEN_VARIANTEN = 24;
 
-    RAIL = [
-        [1.4, "#222"],
-        [1.2, "#999999"],
-        [0.6, "#eeeeee"],
-    ];
-
-    //render values
-    schwellenHöhe = 0;
-    schwellenBreite = 0;
-    schwellenGap = 0;
-    rail_offset = 0;
 
     //Temp values
     deg = 0;

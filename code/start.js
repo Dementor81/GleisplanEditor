@@ -6,6 +6,8 @@ const EXCLUDE_JSON = ["switches"];
 const MODE_PLAY = 1;
 const MODE_EDIT = 2;
 
+const GRID_SIZE = 70;
+
 const MOUSE_ACTION = {
     NONE: 0,
     SCROLL: 1,
@@ -25,15 +27,6 @@ const SWITCH_TYPE = {
     CROSSING: 10,
 };
 
-const track_color = "#000000";
-const TRACK_SCALE = 0.1;
-
-const stroke = 2;
-const grid_size = 70;
-const grid_size_2 = grid_size / 2;
-const signale_scale = 0.1;
-const CURVE_RADIUS = grid_size * 1.2;
-
 var stage, main_container, overlay_container, ui_container, signal_container, track_container, grid;
 
 var TEXTURE_MODE = false;
@@ -45,6 +38,8 @@ var pl;
 var mouseAction = null;
 var selectedTrack;
 var loadQueue;
+
+var renderer;
 
 var tracks = [];
 var switches = [];
@@ -163,15 +158,14 @@ function init() {
     $(btnTexture).click((e) => {
         TEXTURE_MODE = !TEXTURE_MODE;
         $(btnTexture).toggleClass("active", TEXTURE_MODE);
-        reDrawEverything();
+        selectRenderer(TEXTURE_MODE);
     });
 
     $("#btnClear").click(() => {
         tracks = [];
 
         save();
-        reDrawEverything();
-        stage.update();
+        clearCanvas();
     });
 
     $("#btnCenter").click(() => {
@@ -201,7 +195,7 @@ function init() {
             deleteTrack(selectedTrack, null);
             selectedTrack = null;
             save();
-            reDrawEverything();
+            renderer.reDrawEverything();
         }
     });
 
@@ -224,6 +218,7 @@ function init() {
     onResizeWindow();
     changeMode(MODE_EDIT);
     onShowGrid(showGrid);
+    selectRenderer(false);
 
     $(window).resize(onResizeWindow);
     myCanvas.focus();
@@ -234,6 +229,23 @@ function changeMode(newMode) {
     $(btnDrawTracks).toggleClass("active", newMode == MODE_EDIT);
     $([myCanvas, sidebar]).toggleClass("toggled", newMode == MODE_EDIT);
     mode = newMode;
+}
+
+function selectRenderer(textured) {    
+    if (textured) {
+        renderer = new trackRendering_basic();
+    } else {
+        renderer = new trackRendering_basic();
+    }
+    renderer.reDrawEverything();
+}
+
+function clearCanvas() {
+    track_container.removeAllChildren();
+    signal_container.removeAllChildren();
+    overlay_container.removeAllChildren();
+    ui_container.removeAllChildren();
+    stage.update();
 }
 
 function onShowGrid(on) {
@@ -271,20 +283,20 @@ function drawGrid(repaint = true) {
             };
             let x = 0;
             while (x < size.width) {
-                grid.graphics.moveTo(x, -grid_size).lineTo(x, size.height);
-                x += grid_size;
+                grid.graphics.moveTo(x, -GRID_SIZE).lineTo(x, size.height);
+                x += GRID_SIZE;
             }
 
             let y = 0;
             while (y < size.height) {
-                grid.graphics.moveTo(-grid_size, y).lineTo(size.width, y);
-                y += grid_size;
+                grid.graphics.moveTo(-GRID_SIZE, y).lineTo(size.width, y);
+                y += GRID_SIZE;
             }
-            grid.cache(-grid_size, -grid_size, size.width + grid_size * scale, size.height + grid_size * scale, scale);
+            grid.cache(-GRID_SIZE, -GRID_SIZE, size.width + GRID_SIZE * scale, size.height + GRID_SIZE * scale, scale);
         }
-        const scaled_grid_size = grid_size * stage.scale;
-        grid.x = Math.floor(stage.x / scaled_grid_size) * -grid_size;
-        grid.y = Math.floor(stage.y / scaled_grid_size) * -grid_size;
+        const scaled_grid_size = GRID_SIZE * stage.scale;
+        grid.x = Math.floor(stage.x / scaled_grid_size) * -GRID_SIZE;
+        grid.y = Math.floor(stage.y / scaled_grid_size) * -GRID_SIZE;
     }
 }
 
@@ -328,12 +340,12 @@ function findTrack(use_offset) {
      if (circleShape == null) {
          circleShape = new createjs.Shape();
          circleShape.name = "circle";
-         circleShape.graphics.setStrokeStyle(1).beginStroke("#e00").drawCircle(0, 0, grid_size / 2);
+         circleShape.graphics.setStrokeStyle(1).beginStroke("#e00").drawCircle(0, 0, GRID_SIZE / 2);
          overlay_container.addChild(circleShape);
      }
      circleShape.x = local_point.x
      circleShape.y = local_point.y */
-    let circle = { x: local_point.x, y: local_point.y, radius: grid_size / 2 };
+    let circle = { x: local_point.x, y: local_point.y, radius: GRID_SIZE / 2 };
     let r;
     for (let index = 0; index < tracks.length; index++) {
         const track = tracks[index];
@@ -395,7 +407,7 @@ function startDragAndDropSignal(mouseX, mouseY) {
     overlay_container.addChild(mouseAction.container);
     /* let circle = new createjs.Shape();
     circle.name = "circle";
-    circle.graphics.setStrokeStyle(1).beginStroke("#e00").drawCircle(0, 0, grid_size / 2);
+    circle.graphics.setStrokeStyle(1).beginStroke("#e00").drawCircle(0, 0, GRID_SIZE / 2);
     mouseAction.container.addChild(circle); */
     stage.update();
 }
@@ -433,8 +445,8 @@ function handleMouseMove(event) {
                 overlay_container.addChild(mouseAction.lineShape);
                 mouseAction.ankerPoints = [
                     {
-                        x: Math.round(local_point.x / grid_size) * grid_size,
-                        y: Math.round(local_point.y / grid_size) * grid_size,
+                        x: Math.round(local_point.x / GRID_SIZE) * GRID_SIZE,
+                        y: Math.round(local_point.y / GRID_SIZE) * GRID_SIZE,
                     },
                 ];
                 mouseAction.action = MOUSE_ACTION.BUILD_TRACK;
@@ -478,8 +490,8 @@ function handleMouseMove(event) {
             mouseAction.container.y = local_point.y;
         }
     } else if (mouseAction.action === MOUSE_ACTION.BUILD_TRACK) {
-        trackDrawing();
-        mouseAction.lineShape.graphics.c().setStrokeStyle(stroke).beginStroke(track_color).moveTo(mouseAction.ankerPoints[0].x, mouseAction.ankerPoints[0].y);
+        setTrackAnchorPoints();
+        mouseAction.lineShape.graphics.c().setStrokeStyle(trackRendering_basic.STROKE).beginStroke(trackRendering_basic.TRACK_COLOR).moveTo(mouseAction.ankerPoints[0].x, mouseAction.ankerPoints[0].y);
         for (let index = 1; index < mouseAction.ankerPoints.length; index++) {
             const co = mouseAction.ankerPoints[index];
             mouseAction.lineShape.graphics.lt(co.x, co.y);
@@ -493,14 +505,14 @@ function handleMouseMove(event) {
     stage.update();
 }
 
-function trackDrawing() {
+function setTrackAnchorPoints() {
     let local_point = stage.globalToLocal(stage.mouseX, stage.mouseY);
 
     const p1 = mouseAction.ankerPoints[mouseAction.ankerPoints.length - 1];
     const p0 = mouseAction.ankerPoints.length > 1 ? mouseAction.ankerPoints[mouseAction.ankerPoints.length - 2] : p1;
     const pc = {
-        x: Math.round(local_point.x / grid_size) * grid_size,
-        y: Math.round(local_point.y / grid_size) * grid_size,
+        x: Math.round(local_point.x / GRID_SIZE) * GRID_SIZE,
+        y: Math.round(local_point.y / GRID_SIZE) * GRID_SIZE,
     };
 
     //der letzte und aktuelle Punkt sind unterschiedlich und die Pause ist nahe am pc
@@ -508,9 +520,9 @@ function trackDrawing() {
         const i = mouseAction.ankerPoints.findIndex((p) => pc.x === p.x && pc.y === p.y);
         if (i > 0) {
             mouseAction.ankerPoints.splice(i);
-            trackDrawing();
+            setTrackAnchorPoints();
         } else {
-            if (Math.abs(p0.x - pc.x) < grid_size * 1.5 && mouseAction.ankerPoints.length > 1) {
+            if (Math.abs(p0.x - pc.x) < GRID_SIZE * 1.5 && mouseAction.ankerPoints.length > 1) {
                 const slope = geometry.slope(p0, pc);
 
                 if (slope.is(1, 0, -1) && geometry.distance(local_point, pc) < 10) mouseAction.ankerPoints[mouseAction.ankerPoints.length - 1] = pc;
@@ -536,7 +548,7 @@ function handleStageMouseUp(e) {
                     let popup = ui.showPopup({ x: e.rawX, y: e.rawY, widht: 10, height: 10 }, mouseAction.container.signal._template.title, mouseAction.container.signal.getHTML(), $(myCanvas));
                     $(".popover-body button").click(mouseAction.container.signal, (e) => {
                         e.data.syncHTML(popup.tip);
-                        reDrawEverything();
+                        renderer.reDrawEverything();
                         save();
                     });
                 } else if (mode === MODE_EDIT) {
@@ -579,7 +591,7 @@ function handleStageMouseUp(e) {
                     }
                 }
                 connectTracks();
-                reDrawEverything();
+                renderer.reDrawEverything();
 
                 save();
             }
@@ -608,7 +620,7 @@ function switch_A_Switch(sw, mouseAction) {
         }
     }
 
-    reRenderSwitch(sw);
+    renderer.reRenderSwitch(sw);
 }
 
 function selectTrack(container) {
@@ -762,7 +774,7 @@ function connectTracks() {
 
 function createTrack(p1, p2) {
     let track = new trackShape(p1, p2);
-    track.draw(track_container);
+    renderer.renderTrack(track_container,track);
     tracks.push(track);
 }
 
@@ -826,7 +838,7 @@ function loadFromJson(json) {
     tracks = loaded.tracks;
     connectTracks();
     drawGrid();
-    reDrawEverything();
+    renderer.reDrawEverything();
 }
 
 function newItemButton(template) {
