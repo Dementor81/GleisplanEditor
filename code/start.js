@@ -7,6 +7,7 @@ const MODE_PLAY = 1;
 const MODE_EDIT = 2;
 
 const GRID_SIZE = 70;
+const GRID_SIZE_2 = GRID_SIZE / 2;
 
 const MOUSE_ACTION = {
     NONE: 0,
@@ -231,9 +232,9 @@ function changeMode(newMode) {
     mode = newMode;
 }
 
-function selectRenderer(textured) {    
+function selectRenderer(textured) { 
     if (textured) {
-        renderer = new trackRendering_basic();
+        renderer = new trackRendering_textured();
     } else {
         renderer = new trackRendering_basic();
     }
@@ -382,10 +383,10 @@ function alignSignalWithTrack(c_sig, track, pos) {
     let p;
     if (pos.above) {
         c_sig.rotation = 270 + track.deg;
-        p = geometry.perpendicular(c_sig, track.deg, -(grid_size_2 - 14));
+        p = geometry.perpendicular(c_sig, track.deg, -(GRID_SIZE_2 - 14));
     } else {
         c_sig.rotation = 90 + track.deg;
-        p = geometry.perpendicular(c_sig, track.deg, grid_size_2 - 14);
+        p = geometry.perpendicular(c_sig, track.deg, GRID_SIZE_2 - 14);
     }
     c_sig.x = p.x;
     c_sig.y = p.y;

@@ -46,11 +46,13 @@
 <body>
     <div class="visually-hidden" style="font-family: DIN condenced;">dummy to load font face</div>
 
-    <div id="toolbar">
+    <div id="toolbar" class="navbar-dark rounded-pill">
+        <a id="navbarBrand" class="navbar-brand" href="#" >Gleisplan Editor</a>
         <button id="btnPlay" type="button" class="btn btn-secondary btn-sm" title="Signale bedienen">
-            <i class="bi bi-cursor-fill"></i>
+            Play <i class="bi bi-cursor-fill"></i>
         </button>
         <button id="btnDrawTracks" type="button" class="btn btn-secondary btn-sm active" title="Gleise zeichnen">
+            Build
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-tools"
                 viewBox="0 0 16 16">
                 <path
@@ -83,6 +85,12 @@
         <button id="btnTexture" type="button" class="btn btn-secondary btn-sm" title="Echte Schienen anzeigen">
             <i class="bi bi-emoji-sunglasses-fill"></i>
         </button>
+        <button id="btnPlaceSignals" type="button" class="btn btn-secondary btn-sm" title="Signale hinzufügen" data-bs-toggle="offcanvas" data-bs-target="#sidebar">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-sign-stop-lights-fill" viewBox="0 0 16 16">
+                <path d="M8 6a1 1 0 1 0 0-2 1 1 0 0 0 0 2Zm0 3a1 1 0 1 0 0-2 1 1 0 0 0 0 2Zm1 2a1 1 0 1 1-2 0 1 1 0 0 1 2 0Z"/>
+                <path d="M9.05.435c-.58-.58-1.52-.58-2.1 0L.436 6.95c-.58.58-.58 1.519 0 2.098l6.516 6.516c.58.58 1.519.58 2.098 0l6.516-6.516c.58-.58.58-1.519 0-2.098L9.05.435ZM6 4a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4Z"/>
+              </svg>
+        </button>
         <!-- <button id="btnSignal" type="button" class="btn btn-secondary btn-sm" data-bs-container="body"
                 data-bs-placement="bottom">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
@@ -96,59 +104,56 @@
 
         <!--  -->
     </div>
-    <div id="CanvasContainer">
-        <div id="sidebar" class="toggled">
-            <div class="accordion  accordion-flush" id="newItemMenu">
-                <div class="accordion-item">
-                    <h4 class="accordion-header" id="headingOne">
-                        <button class="accordion-button user-select-none" type="button" data-bs-toggle="collapse"
-                            data-bs-target="#collapseOne">
-                            Hauptsignal
-                        </button>
-                    </h4>
-                    <div id="collapseOne" class="accordion-collapse collapse show" aria-labelledby="headingOne"
-                        data-bs-parent="#newItemMenu">
-                        <div class="accordion-body">
+    <div id="CanvasContainer">        
+        <canvas id="myCanvas" width="10" height="10" ></canvas>
+    </div>
+    <div id="sidebar" class="offcanvas offcanvas-top"  data-bs-scroll="true" data-bs-backdrop="false" >
+        <div class="accordion  accordion-flush" id="newItemMenu">
+            <div class="accordion-item">
+                <h4 class="accordion-header" id="headingOne">
+                    <button class="accordion-button user-select-none" type="button" data-bs-toggle="collapse"
+                        data-bs-target="#collapseOne">
+                        Hauptsignal
+                    </button>
+                </h4>
+                <div id="collapseOne" class="accordion-collapse collapse show" aria-labelledby="headingOne"
+                    data-bs-parent="#newItemMenu">
+                    <div class="accordion-body">
 
-                        </div>
                     </div>
                 </div>
-                <div class="accordion-item">
-                    <h2 class="accordion-header" id="headingTwo">
-                        <button class="accordion-button collapsed user-select-none" type="button"
-                            data-bs-toggle="collapse" data-bs-target="#collapseTwo" aria-expanded="false"
-                            aria-controls="collapseTwo">
-                            Vorsignal
-                        </button>
-                    </h2>
-                    <div id="collapseTwo" class="accordion-collapse collapse" aria-labelledby="headingTwo"
-                        data-bs-parent="#newItemMenu">
-                        <div class="accordion-body">
+            </div>
+            <div class="accordion-item">
+                <h2 class="accordion-header" id="headingTwo">
+                    <button class="accordion-button collapsed user-select-none" type="button"
+                        data-bs-toggle="collapse" data-bs-target="#collapseTwo" aria-expanded="false"
+                        aria-controls="collapseTwo">
+                        Vorsignal
+                    </button>
+                </h2>
+                <div id="collapseTwo" class="accordion-collapse collapse" aria-labelledby="headingTwo"
+                    data-bs-parent="#newItemMenu">
+                    <div class="accordion-body">
 
-                        </div>
                     </div>
                 </div>
-                <div class="accordion-item">
-                    <h2 class="accordion-header" id="headingThree">
-                        <button class="accordion-button collapsed user-select-none" type="button"
-                            data-bs-toggle="collapse" data-bs-target="#collapseThree" aria-expanded="false"
-                            aria-controls="collapseThree">
-                            Lf-Signale
-                        </button>
-                    </h2>
-                    <div id="collapseThree" class="accordion-collapse collapse" aria-labelledby="headingThree"
-                        data-bs-parent="#newItemMenu">
-                        <div class="accordion-body">
+            </div>
+            <div class="accordion-item">
+                <h2 class="accordion-header" id="headingThree">
+                    <button class="accordion-button collapsed user-select-none" type="button"
+                        data-bs-toggle="collapse" data-bs-target="#collapseThree" aria-expanded="false"
+                        aria-controls="collapseThree">
+                        Lf-Signale
+                    </button>
+                </h2>
+                <div id="collapseThree" class="accordion-collapse collapse" aria-labelledby="headingThree"
+                    data-bs-parent="#newItemMenu">
+                    <div class="accordion-body">
 
-                        </div>
                     </div>
                 </div>
             </div>
         </div>
-        <canvas id="myCanvas" width="10" height="10" class="toggled"></canvas>
-
-
-
     </div>
 
 

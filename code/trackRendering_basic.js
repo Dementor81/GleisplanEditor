@@ -4,18 +4,11 @@ class trackRendering_basic {
     static TRACK_COLOR = "#000000";
     static STROKE = 2;
 
-
     reDrawEverything() {
         clearCanvas();
-        if (!pl.loaded)
-            setTimeout(() => {
-                this.reDrawEverything();
-            }, 500);
-        else {
-            this.renderAllTracks();
-            this.renderAllSwitches();
-            stage.update();
-        }
+        this.renderAllTracks();
+        this.renderAllSwitches();
+        stage.update();
     }
 
     renderAllTracks() {
