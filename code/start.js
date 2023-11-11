@@ -1,7 +1,7 @@
 "use strict";
 
 const VERSION = "0.43";
-const EXCLUDE_JSON = ["switches"];
+const EXCLUDE_JSON = [];
 
 const MODE_PLAY = 1;
 const MODE_EDIT = 2;
@@ -93,8 +93,8 @@ function init() {
 
     createjs.Ticker.addEventListener("tick", stage);
 
-    stage.on("stagemousedown", handleStageMouseDown);
-    stage.on("stagemouseup", handleStageMouseUp);
+    stage.addEventListener("stagemousedown", handleStageMouseDown);
+    stage.addEventListener("stagemouseup", handleStageMouseUp);
 
     myCanvas.oncontextmenu = () => false;
     myCanvas.addEventListener("wheel", (event) => {
@@ -103,8 +103,9 @@ function init() {
         let point = new createjs.Point(stage.mouseX, stage.mouseY);
         let localPoint = stage.globalToLocal(point.x, point.y);
 
-        stage.scale -= 0.5 * (event.deltaY / Math.abs(event.deltaY));
-        if (stage.scale < 0.3) stage.scale = 0.3;
+        stage.scale -= event.deltaY / (1000 / stage.scale);
+
+        stage.scale = Math.min(Math.max(0.2, stage.scale), 6);       
 
         // Find where the original point is now
         let globalPoint = stage.localToGlobal(localPoint.x, localPoint.y);
@@ -114,7 +115,6 @@ function init() {
 
         drawGrid();
         stage.update();
-        //console.log("scale: " + main_container.scale);
         save();
     });
     if (createjs.Touch.isSupported()) {
@@ -200,22 +200,6 @@ function init() {
         }
     });
 
-    $("#sidebar .newItem").on("mousedown", (e) => {
-        mouseAction = {
-            action: MOUSE_ACTION.DND_SIGNAL,
-            template: signalTemplates[e.target.attributes["data-signal"].value],
-        };
-
-        //mouseup beim document anmelden, weil mouseup im stage nicht ausgelöst wird, wenn mousedown nicht auch auf der stage war
-        document.addEventListener("mouseup", handleStageMouseUp, {
-            once: true,
-        });
-
-        stage.addEventListener("stagemousemove", handleMouseMove);
-
-        startDragAndDropSignal(e.offsetX, e.offsetY);
-    });
-
     onResizeWindow();
     changeMode(MODE_EDIT);
     onShowGrid(showGrid);
@@ -232,7 +216,7 @@ function changeMode(newMode) {
     mode = newMode;
 }
 
-function selectRenderer(textured) { 
+function selectRenderer(textured) {
     if (textured) {
         renderer = new trackRendering_textured();
     } else {
@@ -378,15 +362,15 @@ function createSignalContainer(signal) {
 
 function alignSignalWithTrack(c_sig, track, pos) {
     //koordinaten anhand des Strecken KM suchen
-    c_sig.x = Math.cos(track.rad) * pos.km + track.start.x;
-    c_sig.y = Math.sin(track.rad) * pos.km + track.start.y;
+    c_sig.x = Math.cos(track._tmp.rad) * pos.km + track.start.x;
+    c_sig.y = Math.sin(track._tmp.rad) * pos.km + track.start.y;
     let p;
     if (pos.above) {
-        c_sig.rotation = 270 + track.deg;
-        p = geometry.perpendicular(c_sig, track.deg, -(GRID_SIZE_2 - 14));
+        c_sig.rotation = 270 + track._tmp.deg;
+        p = geometry.perpendicular(c_sig, track._tmp.deg, -(GRID_SIZE_2 - 14));
     } else {
-        c_sig.rotation = 90 + track.deg;
-        p = geometry.perpendicular(c_sig, track.deg, GRID_SIZE_2 - 14);
+        c_sig.rotation = 90 + track._tmp.deg;
+        p = geometry.perpendicular(c_sig, track._tmp.deg, GRID_SIZE_2 - 14);
     }
     c_sig.x = p.x;
     c_sig.y = p.y;
@@ -656,9 +640,9 @@ function deleteTrack(track, trackShape) {
         if (i != -1) signal_container.removeChildAt(i);
     });
 
-    track.switches.forEach((s) => {
-        let i = s.track.switches.findIndex((sw) => sw.track === track);
-        if (i >= 0) s.track.switches.splice(i, 1);
+    track._tmp.switches.forEach((s) => {
+        let i = s.track._tmp.switches.findIndex((sw) => sw.track === track);
+        if (i >= 0) s.track._tmp.switches.splice(i, 1);
     });
 }
 
@@ -676,13 +660,23 @@ function checkAndCreateTrack(start, end) {
     const slope = geometry.slope(start, end);
 
     //sucht alle tracks, deren start oder ende innerhalb der neue Track liegt und den gleichen Slope haben
-    const filteredTracks = tracks.filter((track) => geometry.slope(track.start, track.end) == slope && (geometry.within(start, end, track.start) || geometry.within(start, end, track.end)));
+    const filteredTracks = tracks.filter((track) => track._tmp.slope == slope && (geometry.within(start, end, track.start) || geometry.within(start, end, track.end)));
     if (filteredTracks.length == 0) createTrack(start, end);
     else {
-        filteredTracks.forEach((track) => {
-            if (geometry.within(start, end, track.start)) track.setNewStart(start);
-            if (geometry.within(start, end, track.end)) track.setNewEnd(end);
+        let track = filteredTracks[0];
+        filteredTracks.forEach((t) => {
+            if (t.start.x < start.x) start = t.start;
         });
+        track.setNewStart(start);
+
+        filteredTracks.forEach((t) => {
+            if (t.end.x > end.x) end = t.end;
+        });
+        track.setNewEnd(end);
+
+        for (let i = 1; i < filteredTracks.length; i++) {
+            deleteTrack(filteredTracks[i]);
+        }
     }
 }
 
@@ -694,7 +688,7 @@ function detectSwitch(t1, t2, recursion = false) {
         switch_type = SWITCH_TYPE.NONE,
         switch_location;
 
-    if (t1.deg + t2.deg != 0) {
+    if (t1._tmp.deg + t2._tmp.deg != 0) {
         if (deepEqual(t1.start, t2.end)) {
             switch_location = t1.start;
             switch_type = SWITCH_TYPE.ARCH;
@@ -714,7 +708,7 @@ function detectSwitch(t1, t2, recursion = false) {
     if (switch_type == SWITCH_TYPE.NONE) {
         switch_location = geometry.getIntersectionPoint(t1, t2);
         if (switch_location && !(deepEqual(switch_location, t2.start) || deepEqual(switch_location, t2.end) || deepEqual(switch_location, t1.start) || deepEqual(switch_location, t1.end))) {
-            switch_type = t2.deg + t1.deg == 0 ? SWITCH_TYPE.CROSSING : SWITCH_TYPE.DKW;
+            switch_type = t2._tmp.deg + t1._tmp.deg == 0 ? SWITCH_TYPE.CROSSING : SWITCH_TYPE.DKW;
         }
     }
 
@@ -762,20 +756,20 @@ function detectSwitch(t1, t2, recursion = false) {
 }
 
 function connectTracks() {
-    tracks.forEach((track) => (track.switches = []));
+    tracks.forEach((track) => (track._tmp.switches = []));
     switches = [];
     for (let i = 0; i < tracks.length; i++) {
         const t1 = tracks[i];
         for (let j = i + 1; j < tracks.length; j++) {
             const t2 = tracks[j];
-            if (t1.deg != t2.deg) detectSwitch(t1, t2);
+            if (t1._tmp.deg != t2._tmp.deg) detectSwitch(t1, t2);
         }
     }
 }
 
 function createTrack(p1, p2) {
     let track = new trackShape(p1, p2);
-    renderer.renderTrack(track_container,track);
+    renderer.renderTrack(track_container, track);
     tracks.push(track);
 }
 
@@ -853,7 +847,8 @@ function newItemButton(template) {
             };
 
             //mouseup beim document anmelden, weil mouseup im stage nicht ausgelöst wird, wenn mousedown nicht auch auf der stage war
-            document.addEventListener("mouseup", handleStageMouseUp, {
+            //little hack, weil handleStageMouseUp ein event von createjs erwartet
+            document.addEventListener("mouseup", (e) => handleStageMouseUp({ nativeEvent: e }), {
                 once: true,
             });
 

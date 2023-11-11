@@ -64,11 +64,11 @@ class trackRendering_textured {
 
         //const kleinEisenImg = loadQueue.getResult("kleineisen");
 
-        track.switches //alle weichen am Ende eines Gleises, die eine Kurve sind (damit jede Kurve nur 1x gezeichnet wird)
-            .filter((p) => p.km == track.length && p.type === SWITCH_TYPE.ARCH)
-            .forEach((p) => this.drawCurvedTrack(track, texture_container, p, p.km, track.deg, p.track.deg, this.schwellenImg));
+        track._tmp.switches //alle weichen am Ende eines Gleises, die eine Kurve sind (damit jede Kurve nur 1x gezeichnet wird)
+            .filter((p) => p.km == track._tmp.length && p.type === SWITCH_TYPE.ARCH)
+            .forEach((p) => this.drawCurvedTrack(track, texture_container, p, p.km, track._tmp.deg, p.track._tmp.deg, this.schwellenImg));
 
-        track.switches.filter((sw) => sw.km != 0 && sw.km != track.length).forEach((sw) => this.drawSwitch(track,texture_container, sw));
+        track._tmp.switches.filter((sw) => sw.km != 0 && sw.km != track._tmp.length).forEach((sw) => this.drawSwitch(track,texture_container, sw));
 
         let counter = 0,
             weiche = null,
@@ -77,26 +77,26 @@ class trackRendering_textured {
             startpoint = { x: 0, y: 0 },
             km = 0;
         do {
-            if (track.switches.length > counter) {
-                weiche = track.switches[counter];
+            if (track._tmp.switches.length > counter) {
+                weiche = track._tmp.switches[counter];
                 switch_values = this.calcValuesForCurvedRail(track,weiche);
 
                 if (weiche.km > km) {
                     //weiche nach mir
                     if (weiche.type === SWITCH_TYPE.DKW) {
-                        if (track.rad == 0) endpoint = switch_values.p3;
+                        if (track._tmp.rad == 0) endpoint = switch_values.p3;
                         else endpoint = switch_values.p2;
                     } else if (switch_values.type == SWITCH_TYPE.TO_LEFT || switch_values.type == SWITCH_TYPE.TO_RIGHT) endpoint = switch_values.p1;
                     else {
-                        if (weiche.km == track.length) endpoint = switch_values.p2;
+                        if (weiche.km == track._tmp.length) endpoint = switch_values.p2;
                         else endpoint = switch_values.p3;
                     }
                 } else endpoint = null;
                 km = weiche?.km;
             } else {
                 weiche = null;
-                endpoint = track.getPointfromKm(track.length);
-                km = track.length;
+                endpoint = track.getPointfromKm(track._tmp.length);
+                km = track._tmp.length;
             }
 
             if (endpoint) {
@@ -107,7 +107,7 @@ class trackRendering_textured {
             if (weiche) {
                 counter++;
                 if (weiche.type === SWITCH_TYPE.DKW) {
-                    if (track.rad == 0) startpoint = switch_values.p1;
+                    if (track._tmp.rad == 0) startpoint = switch_values.p1;
                     else startpoint = switch_values.p4;
                 } else if (switch_values.type == SWITCH_TYPE.FROM_LEFT || switch_values.type == SWITCH_TYPE.FROM_RIGHT) startpoint = switch_values.p1;
                 else {
@@ -115,7 +115,7 @@ class trackRendering_textured {
                     else startpoint = switch_values.p3;
                 }
             }
-        } while (km < track.length);
+        } while (km < track._tmp.length);
 
         texture_container.addChild(rail_shape);
 
@@ -127,8 +127,8 @@ class trackRendering_textured {
     }
 
     drawSchwellen(track,startPoint, endPoint, texture_container) {
-        const cos = Math.cos(track.rad),
-            sin = Math.sin(track.rad);
+        const cos = Math.cos(track._tmp.rad),
+            sin = Math.sin(track._tmp.rad);
 
         //kleine verschieben, damit man mit einer lücke anfängt - Zentrierung der schwelle
         let x = startPoint.x + sin * (this.schwellenHöhe / 2) + cos * (this.schwellenGap / 2);
@@ -147,7 +147,7 @@ class trackRendering_textured {
                     x: x,
                     sourceRect: new createjs.Rectangle((random * this.schwellenImg.width) / trackRendering_textured.SCHWELLEN_VARIANTEN, 0, this.schwellenImg.width / trackRendering_textured.SCHWELLEN_VARIANTEN, this.schwellenImg.height),
                     scale: trackRendering_textured.TRACK_SCALE,
-                    rotation: track.deg,
+                    rotation: track._tmp.deg,
                 })
             );
             y += sin * (this.schwellenBreite + custom_gap);
@@ -198,13 +198,13 @@ class trackRendering_textured {
         const switchpoint = track.getPointfromKm(sw.km);
         let type = sw.type;
 
-        let angleDeg = track.deg == 0 ? sw.track.deg : track.deg;
+        let angleDeg = track._tmp.deg == 0 ? sw.track._tmp.deg : track._tmp.deg;
         if (sw.type == SWITCH_TYPE.ARCH) {
-            if (track.deg != 0) {
-                angleDeg = track.deg;
-                if (sw.km == track.length) angleDeg += 180;
+            if (track._tmp.deg != 0) {
+                angleDeg = track._tmp.deg;
+                if (sw.km == track._tmp.length) angleDeg += 180;
             } else {
-                angleDeg = sw.track.deg;
+                angleDeg = sw.track._tmp.deg;
                 if (sw.km == 0) angleDeg += 180;
             }
 
@@ -271,7 +271,7 @@ class trackRendering_textured {
                 break;
         }
 
-        let angle = sw.km.is(0, track.length) ? sw.track.deg : track.deg;
+        let angle = sw.km.is(0, track._tmp.length) ? sw.track._tmp.deg : track._tmp.deg;
         if (sw.type != SWITCH_TYPE.ARCH && angle != 0) {
             if (angle == 45) {
                 if (type == SWITCH_TYPE.TO_LEFT) {
@@ -345,7 +345,7 @@ class trackRendering_textured {
     }
 
     drawSwitch(track, container, sw) {
-        if (sw.type == SWITCH_TYPE.DKW && track.rad != 0) return;
+        if (sw.type == SWITCH_TYPE.DKW && track._tmp.rad != 0) return;
         const switch_values = this.calcValuesForCurvedRail(track, sw);
 
         if (sw.type == SWITCH_TYPE.DKW) {
@@ -353,10 +353,10 @@ class trackRendering_textured {
             container.addChild(
                 new createjs.Bitmap(img).set({
                     y: switch_values.p3.y,
-                    x: switch_values.p3.x - 1.8 + (sw.track.deg == 45 ? 0 : img.width * trackRendering_textured.TRACK_SCALE),
+                    x: switch_values.p3.x - 1.8 + (sw.track._tmp.deg == 45 ? 0 : img.width * trackRendering_textured.TRACK_SCALE),
                     regY: img.height / 2,
                     scale: trackRendering_textured.TRACK_SCALE,
-                    scaleX: sw.track.deg == 45 ? trackRendering_textured.TRACK_SCALE : -trackRendering_textured.TRACK_SCALE,
+                    scaleX: sw.track._tmp.deg == 45 ? trackRendering_textured.TRACK_SCALE : -trackRendering_textured.TRACK_SCALE,
                     rotation: 0,
                 })
             );
@@ -374,19 +374,19 @@ class trackRendering_textured {
         const schwelle = pl.getImage("schwellen");
         let random;
         let dir = sw.type.is(SWITCH_TYPE.FROM_RIGHT, SWITCH_TYPE.FROM_LEFT) ? -1 : 1;
-        const schwellen = track.rad == 0 ? [0, 0, 0, 1, 2, 3, 4, 5, 6, 7, 8.2, 7] : [0, 0, 0, 1, 2, 3, 4, 5, 6, 7, 8.3, 7.5, 4.5, 0];
-        const custom_gap = track.rad == 0 ? 2.599999999 : 2.54975; //werte festgelegt, müssten bei Grid size änderung neu berechnet werden
+        const schwellen = track._tmp.rad == 0 ? [0, 0, 0, 1, 2, 3, 4, 5, 6, 7, 8.2, 7] : [0, 0, 0, 1, 2, 3, 4, 5, 6, 7, 8.3, 7.5, 4.5, 0];
+        const custom_gap = track._tmp.rad == 0 ? 2.599999999 : 2.54975; //werte festgelegt, müssten bei Grid size änderung neu berechnet werden
         schwellen.forEach((y, i) => {
             random = Math.randomInt(trackRendering_textured.SCHWELLEN_VARIANTEN - 1);
             let yy = switch_values.p1.y;
-            yy += Math.sin(track.rad) * ((this.schwellenBreite + custom_gap) * (i * dir) + (this.schwellenGap / 2) * dir);
+            yy += Math.sin(track._tmp.rad) * ((this.schwellenBreite + custom_gap) * (i * dir) + (this.schwellenGap / 2) * dir);
             yy +=
-                Math.sin(track.rad + π / 2) * (sw.type.is(SWITCH_TYPE.FROM_RIGHT, SWITCH_TYPE.TO_RIGHT) ? -this.schwellenHöhe / 2 : this.schwellenHöhe / 2 - schwelle.height * (trackRendering_textured.TRACK_SCALE + y / 100));
+                Math.sin(track._tmp.rad + π / 2) * (sw.type.is(SWITCH_TYPE.FROM_RIGHT, SWITCH_TYPE.TO_RIGHT) ? -this.schwellenHöhe / 2 : this.schwellenHöhe / 2 - schwelle.height * (trackRendering_textured.TRACK_SCALE + y / 100));
 
             let xx = switch_values.p1.x;
-            xx += Math.cos(track.rad) * ((this.schwellenBreite + custom_gap) * (i * dir) + (this.schwellenGap / 2) * dir);
+            xx += Math.cos(track._tmp.rad) * ((this.schwellenBreite + custom_gap) * (i * dir) + (this.schwellenGap / 2) * dir);
             xx +=
-                Math.cos(track.rad + π / 2) * (sw.type.is(SWITCH_TYPE.FROM_RIGHT, SWITCH_TYPE.TO_RIGHT) ? -this.schwellenHöhe / 2 : this.schwellenHöhe / 2 - schwelle.height * (trackRendering_textured.TRACK_SCALE + y / 100));
+                Math.cos(track._tmp.rad + π / 2) * (sw.type.is(SWITCH_TYPE.FROM_RIGHT, SWITCH_TYPE.TO_RIGHT) ? -this.schwellenHöhe / 2 : this.schwellenHöhe / 2 - schwelle.height * (trackRendering_textured.TRACK_SCALE + y / 100));
 
             container.addChild(
                 new createjs.Bitmap(schwelle).set({
@@ -396,7 +396,7 @@ class trackRendering_textured {
                     scale: trackRendering_textured.TRACK_SCALE,
                     scaleY: trackRendering_textured.TRACK_SCALE + y / 100,
                     sourceRect: new createjs.Rectangle((random * schwelle.width) / trackRendering_textured.SCHWELLEN_VARIANTEN, 0, schwelle.width / trackRendering_textured.SCHWELLEN_VARIANTEN, schwelle.height),
-                    rotation: track.deg,
+                    rotation: track._tmp.deg,
                 })
             );
         });
