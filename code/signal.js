@@ -4,14 +4,17 @@ class signalShape {
     static FromObject(o) {
         let s = new signalShape(signalTemplates[o._template]);
         s._signalStellung = o._signalStellung;
-        s.options.map = o.options.map;
+        s.features.map = o.features.map;
         return s;
     }
 
     _template = null;
     _signalStellung = {};
 
-    options = {
+    //features saves how a signal is used (Asig,Esig etc) and if it supports things like Vorsignal or Verkürzte Bremswege
+    //there are two types of features: single worded like "vr" or "verk"
+    //and features which work es a group and are build out of 2 Words like "mastschild.wgwgw"
+    features = {
         map: new Map(),
         set: function (o, value) {
             const splitted = o.split(".");
@@ -21,10 +24,10 @@ class signalShape {
             } else if (splitted.length == 2) this.map.set(splitted[0], splitted[1]);
             else throw new Error();
         },
-        match: function (options) {
-            if (options == null || options.length == 0) return true; // wenn das visualElement keine Options fordert, ist es immer ein match
-            const match_single = function (singleOptions) {
-                const splitted = singleOptions.split(".");
+        match: function (condition) {
+            if (condition == null || condition.length == 0) return true; // wenn das visualElement keine conditions fordert, ist es immer ein match
+            const match_single = function (singleCondition) {
+                const splitted = singleCondition.split(".");
                 const antiMatch = splitted[0][0] == "!";
                 let retValue;
                 if (antiMatch) splitted[0] = splitted[0].substring(1);
@@ -34,9 +37,9 @@ class signalShape {
 
                 return antiMatch ? !retValue : retValue;
             }.bind(this);
-            if (Array.isArray(options)) {
-                return options.find(match_single) != null;
-            } else return match_single(options);
+            if (Array.isArray(condition)) {
+                return condition.find(match_single) != null;
+            } else return match_single(condition);
         },
         stringify: function () {
             return JSON.stringify(Array.from(this.map.entries()));
@@ -47,8 +50,8 @@ class signalShape {
         this._template = template;
 
         if (template.startOptions)
-            if (Array.isArray(template.startOptions)) template.startOptions.forEach((i) => this.options.set(i));
-            else this.options.set(template.startOptions);
+            if (Array.isArray(template.startOptions)) template.startOptions.forEach((i) => this.features.set(i));
+            else this.features.set(template.startOptions);
 
         if (template.start)
             if (Array.isArray(template.start)) template.start.forEach((i) => this.set(i));
@@ -90,7 +93,7 @@ class signalShape {
             js_text.lineHeight = 20;
             this._rendering.container.addChild(js_text);
         } else if (ve instanceof VisualElement) {
-            if (this.options.match(ve.options) && this._template.VisualElementIsAllowed(ve, this) && ve.isEnabled(this))
+            if (this.features.match(ve.conditions) && this._template.VisualElementIsAllowed(ve, this) && ve.isEnabled(this))
                 if (ve.image) {
                     if (Array.isArray(ve.image)) ve.image.forEach((i) => this.addImage(i, { blinkt: ve.blinkt, pos: ve.pos }));
                     else
@@ -127,19 +130,20 @@ class signalShape {
     getHTML() {
         const ul = $("<ul>", { class: "list-group list-group-flush" });
 
-        const filterTree = function (array) {
+        //recursive function to retrieve alle switchable visual elements from the template
+        const getSwitchableElements = function (array) {
             let a = [];
-            array.forEach((item) => {
-                if (this.options.match(item.options)) {
-                    if (item.switchable) a.push(item);
-                    if (item.childs) a = a.concat(filterTree(item.childs));
+            array.forEach((visualElemets) => {
+                if (this.features.match(visualElemets.conditions)) {
+                    if (visualElemets.switchable) a.push(visualElemets);
+                    if (visualElemets.childs) a = a.concat(getSwitchableElements(visualElemets.childs));
                 }
             });
 
             return a;
         }.bind(this);
 
-        const switchable_visuell_elements = filterTree(this._template.elements);
+        const switchable_visuell_elements = getSwitchableElements(this._template.elements);
 
         const groups = new Map();
 

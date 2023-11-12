@@ -152,7 +152,7 @@ const ui = {
                 .attr("data_signal", stellung)
                 .on("input", (e) => {
                     signal.set(stellung, e.target.value);
-                    reDrawEverything();
+                    renderer.reDrawEverything();
                     save();
                 }),
             $("<label>", { for: id, text: text }),
@@ -224,11 +224,11 @@ const ui = {
                     a.append($("<ul>", { class: "dropdown-menu dropdown-menu-end" }).append(createDropDownItems(item.childs, dd)));
                 } else {
                     a.attr("data-signal-option", item.option);
-                    a.toggleClass("active", signal.options.match(item.option));
+                    a.toggleClass("active", signal.features.match(item.option));
                     a.click(() => {
-                        signal.options?.set(item.option, !a.hasClass("active"));
+                        signal.features?.set(item.option, !a.hasClass("active"));
                         dd.hide();
-                        reDrawEverything();
+                        renderer.reDrawEverything();
                         save();
                     });
                 }

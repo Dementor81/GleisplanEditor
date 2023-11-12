@@ -820,7 +820,7 @@ function receiver(key, value) {
         return value.map((item) => {
             return trackShape.FromObject(item);
         });
-    if (key == "options") return { map: new Map(JSON.parse(value)) };
+    if (key == "features") return { map: new Map(JSON.parse(value)) };
 
     return value;
 }

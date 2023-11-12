@@ -1,21 +1,21 @@
-'use strict';
+"use strict";
 
 class VisualElement {
     #_blinkt = null;
     #_image = null;
     #_pos = 0;
     #_btn_text = "";
-    #_options = null;
+    #_conditions = null;
     #_enabled = null;
     #_stellung = [];
     #_childs = null;
 
-    constructor(image, { btn_text = null, blinkt = false, pos = null, enabled = null, options = [], stellung = null, childs = null } = {}) {
+    constructor(image, { btn_text = null, blinkt = false, pos = null, enabled = null, conditions: conditions = [], stellung = null, childs = null } = {}) {
         this.#_blinkt = blinkt;
         this.#_btn_text = btn_text;
         this.#_pos = pos;
         this.#_image = image;
-        this.#_options = options;
+        this.#_conditions = conditions;
         this.#_enabled = enabled;
         this.#_stellung = stellung;
         this.#_childs = childs;
@@ -25,25 +25,46 @@ class VisualElement {
         return this.#_btn_text != null;
     }
 
-    get blinkt() { return this.#_blinkt; }
-    set blinkt(v) { this.#_blinkt = v; }
+    get blinkt() {
+        return this.#_blinkt;
+    }
+    set blinkt(v) {
+        this.#_blinkt = v;
+    }
 
-    get image() { return this.#_image; }
-    set image(v) { this.#_image = v; }
+    get image() {
+        return this.#_image;
+    }
+    set image(v) {
+        this.#_image = v;
+    }
 
-    get btn_text() { return this.#_btn_text; }
-    get options() { return this.#_options; }
-    get stellung() { return this.#_stellung; }
-    get childs() { return this.#_childs; }
+    get btn_text() {
+        return this.#_btn_text;
+    }
+    get conditions() {
+        return this.#_conditions;
+    }
+    get stellung() {
+        return this.#_stellung;
+    }
+    get childs() {
+        return this.#_childs;
+    }
 
-    get pos() { return this.#_pos; }
-    set pos(v) { this.#_pos = v; }
+    get pos() {
+        return this.#_pos;
+    }
+    set pos(v) {
+        this.#_pos = v;
+    }
 
+    //visual elements are eabled if both conditions are met:
+    //if existing the ebabled function must return true and
+    //if existing the signalstellung must be set on the signal
+    //if both are not set, its always ebabled
     isEnabled(signal) {
-        /* if (this.#_enabled) return this.#_enabled(signal);
-        if (!this.switchable) return true; */
-
-        return (this.#_enabled == null || this.#_enabled(signal)) && signal.check(this.#_stellung);
+         return (this.#_enabled == null || this.#_enabled(signal)) && signal.check(this.#_stellung);
     }
 
     /*     disableAllOther = (s, gruppe) => s._template.elements.forEach((e) => { if (e.gruppe === gruppe) e.disable(s) });
@@ -60,7 +81,7 @@ class VisualElement {
         }
     
         isAllowed(signal) {
-            if (!signal.options.match(this.#_options)) return false;
+            if (!signal.conditions.match(this.#_options)) return false;
     
             if (typeof this.#_allowed == "function")
                 return this.#_allowed(signal);
@@ -90,21 +111,23 @@ class VisualElement {
 }
 
 class TextElement extends VisualElement {
-
     #_format = "";
     #_color = "#000";
 
     constructor({ format = "bold 20px Arial", color = "#333" } = {}) {
         super(null, arguments[0]);
-        this.#_format = format
+        this.#_format = format;
         this.#_color = color;
     }
 
-    get format() { return this.#_format; }
-    get color() { return this.#_color; }
+    get format() {
+        return this.#_format;
+    }
+    get color() {
+        return this.#_color;
+    }
 
-
-    getText = s => s._signalStellung[this.stellung];
+    getText = (s) => s._signalStellung[this.stellung];
     //setText = (s, text) => s._signalStellung[this.id] = text;
 }
 
@@ -119,12 +142,24 @@ class SignalTemplate {
     visualElements = [];
     rules = new Map();
 
-    get id() { return this.#_id; }
-    get title() { return this.#_title; }
-    get start() { return this.#_start; }
-    get json_file() { return this.#_json_file; }
-    get scale() { return this.#_scale; }
-    set scale(v) { this.#_scale = v; }
+    get id() {
+        return this.#_id;
+    }
+    get title() {
+        return this.#_title;
+    }
+    get start() {
+        return this.#_start;
+    }
+    get json_file() {
+        return this.#_json_file;
+    }
+    get scale() {
+        return this.#_scale;
+    }
+    set scale(v) {
+        this.#_scale = v;
+    }
 
     constructor(id, title, json_file, startElements, start) {
         this.#_id = id;
@@ -134,20 +169,17 @@ class SignalTemplate {
 
         this.elements = [];
 
-        const intStartElements = element => {
-            if (typeof element == "string")
-                this.add(new VisualElement(element));
-            else
-                this.add(element);
-        }
+        const intStartElements = (element) => {
+            if (typeof element == "string") this.add(new VisualElement(element));
+            else this.add(element);
+        };
 
         if (startElements) {
             if (Array.isArray(startElements))
-                startElements.forEach(element => {
+                startElements.forEach((element) => {
                     intStartElements(element);
                 });
-            else
-                intStartElements(startElements);
+            else intStartElements(startElements);
         }
 
         pl.addSpriteSheet(this.#_id, json_file);
@@ -167,173 +199,200 @@ class SignalTemplate {
 
     StellungIsAllowed(stellung, signal) {
         const rule = this.rules.get(stellung);
-        if (rule)
-            return rule(signal);
-        else return true
+        if (rule) return rule(signal);
+        else return true;
     }
 
     stringify() {
         return this.id;
     }
-
 }
 
 function initSignals() {
-
     const menu = {
         Verwendung: {
-            text: "Verwendung", childs: [
+            text: "Verwendung",
+            childs: [
                 { text: "Esig", option: "verwendung.esig" },
                 { text: "Asig", option: "verwendung.asig" },
                 { text: "Zsig", option: "verwendung.zsig" },
                 { text: "Bksig", option: "verwendung.bksig" },
                 { text: "Sbk", option: "verwendung.sbk" },
-            ]
+            ],
         },
         Vorsignal: { text: "Vorsignalfunktion", option: "vr" },
         verkürzt: { text: "verkürzt", option: "verk" },
         wiederholer: { text: "Wiederholer", option: "wdh" },
         Mastschild: {
-            text: "Mastschild", childs: [
+            text: "Mastschild",
+            childs: [
                 { text: "weiß-rot-weiß", option: "mastschild.wrw" },
                 { text: "weiß-gelb-weiß-gelb-weiß", option: "mastschild.wgwgw" },
-
-            ]
-        }
-    }
+            ],
+        },
+    };
 
     const verw_strecke = ["verwendung.bksig", "verwendung.sbk", "verwendung.esig"];
     const verw_bahnhof = ["verwendung.asig", "verwendung.zsig"];
 
-    let t = new SignalTemplate("hv_hp", "Hv Hauptsignal", "hv", [
-        "basis",
-        "hp",
-        "zs1_schirm",
-        "schild",
-        new VisualElement("vr", { options: "vr" }),
-        new VisualElement("wrw", { options: "mastschild.wrw" }),
-        new VisualElement("wgwgw", { options: "mastschild.wgwgw" }),
-        new VisualElement("asig", { options: verw_bahnhof }),
-        new VisualElement("sh1_aus", { options: verw_bahnhof }),
-        new VisualElement("esig", { options: verw_strecke.without("verwendung.sbk") }),
-        new VisualElement("sbk", { options: verw_strecke }),
-        new VisualElement(null, {
-            btn_text: "Hp 0", stellung: "hp=0", childs: [
-                new VisualElement("asig_hp0", { options: verw_bahnhof }),
-                new VisualElement("hp0", { options: verw_strecke })
-            ]
-        }),
-        new VisualElement("hp00", { options: verw_bahnhof, enabled: s => s.get("ersatz") != "sh1" && s.get("hp") <= 0 }),
-        new VisualElement(null, {
-            btn_text: "Hp 1", stellung: "hp=1", childs: [
-                new VisualElement("asig_hp1", { options: verw_bahnhof }),
-                new VisualElement("esig_hp1", { options: verw_strecke.without("verwendung.sbk") }),
-                new VisualElement("sbk_hp1", { options: "verwendung.sbk" })
-            ]
-        }),
-        new VisualElement(null, {
-            btn_text: "Hp 2", stellung: "hp=2", childs: [
-                new VisualElement(["asig_hp1", "asig_hp2"], { options: verw_bahnhof }),
-                new VisualElement(["esig_hp1", "esig_hp2"], { options: verw_strecke.without("verwendung.sbk") })
-            ]
-        }),
-        new VisualElement(null, {
-            childs: [
-                new VisualElement("vr0", { btn_text: "Vr 0", stellung: "vr=0" }),
-                new VisualElement("vr1", { btn_text: "Vr 1", stellung: "vr=1" }),
-                new VisualElement("vr2", { btn_text: "Vr 2", stellung: "vr=2" })
-            ], options: "vr"
-            , enabled: s => s.get("hp") > 0
-        }),
-        new VisualElement("verk", { options: "verk" }),
-        new VisualElement("verk_licht", { btn_text: "Verkürzt", options: "verk", stellung: "verk=1", enabled: (s) => s.get("hp") > 0 }),
-        new VisualElement(null, {
-            childs: [
-                new VisualElement("zs1", { btn_text: "Zs 1", stellung: "ersatz=zs1" }),
-                new VisualElement("sh1", { btn_text: "Sh 1", options: verw_bahnhof, stellung: "ersatz=sh1" })
-            ]
-            , enabled: s => s.get("hp") == 0 || s.get("hp") == null
-        })
-    ], ["hp=0", "vr=0"]);
+    let t = new SignalTemplate(
+        "hv_hp",
+        "Hv Hauptsignal",
+        "hv",
+        [
+            "basis",
+            "hp",
+            "zs1_schirm",
+            "schild",
+            new VisualElement("vr", { conditions: "vr" }),
+            new VisualElement("wrw", { conditions: "mastschild.wrw" }),
+            new VisualElement("wgwgw", { conditions: "mastschild.wgwgw" }),
+            new VisualElement("asig", { conditions: verw_bahnhof }),
+            new VisualElement("sh1_aus", { conditions: verw_bahnhof }),
+            new VisualElement("esig", { conditions: verw_strecke.without("verwendung.sbk") }),
+            new VisualElement("sbk", { conditions: verw_strecke }),
+            new VisualElement(null, {
+                btn_text: "Hp 0",
+                stellung: "hp=0",
+                childs: [new VisualElement("asig_hp0", { conditions: verw_bahnhof }), new VisualElement("hp0", { conditions: verw_strecke })],
+            }),
+            new VisualElement("hp00", { conditions: verw_bahnhof, enabled: (s) => s.get("ersatz") != "sh1" && s.get("hp") <= 0 }),
+            new VisualElement(null, {
+                btn_text: "Hp 1",
+                stellung: "hp=1",
+                childs: [
+                    new VisualElement("asig_hp1", { conditions: verw_bahnhof }),
+                    new VisualElement("esig_hp1", { conditions: verw_strecke.without("verwendung.sbk") }),
+                    new VisualElement("sbk_hp1", { conditions: "verwendung.sbk" }),
+                ],
+            }),
+            new VisualElement(null, {
+                btn_text: "Hp 2",
+                stellung: "hp=2",
+                childs: [
+                    new VisualElement(["asig_hp1", "asig_hp2"], { conditions: verw_bahnhof }),
+                    new VisualElement(["esig_hp1", "esig_hp2"], { conditions: verw_strecke.without("verwendung.sbk") }),
+                ],
+            }),
+            new VisualElement(null, {
+                childs: [
+                    new VisualElement("vr0", { btn_text: "Vr 0", stellung: "vr=0" }),
+                    new VisualElement("vr1", { btn_text: "Vr 1", stellung: "vr=1" }),
+                    new VisualElement("vr2", { btn_text: "Vr 2", stellung: "vr=2" }),
+                ],
+                conditions: "vr",
+                enabled: (s) => s.get("hp") > 0,
+            }),
+            new VisualElement("verk", { conditions: "verk" }),
+            new VisualElement("verk_licht", { btn_text: "Verkürzt", conditions: "verk", stellung: "verk=1", enabled: (s) => s.get("hp") > 0 }),
+            new VisualElement(null, {
+                childs: [new VisualElement("zs1", { btn_text: "Zs 1", stellung: "ersatz=zs1" }), new VisualElement("sh1", { btn_text: "Sh 1", conditions: verw_bahnhof, stellung: "ersatz=sh1" })],
+                enabled: (s) => s.get("hp") == 0 || s.get("hp") == null,
+            }),
+        ],
+        ["hp=0", "vr=0"]
+    );
     t.scale = 0.05;
     t.startOptions = ["verwendung.asig", "mastschild.wrw"];
     t.contextMenu = [].concat(menu.Verwendung, menu.Mastschild, menu.Vorsignal, menu.verkürzt);
     signalTemplates.hv_hp = t;
 
     //HV Vorsignal
-    t = new SignalTemplate("hv_vr", "Hv Vorsignal", "hv", [
-        "basis", "vr",
-        new VisualElement("ne2", { options: "!wdh" }),
-        new VisualElement(null, {
-            childs: [
-                new VisualElement("vr0", { btn_text: "Vr 0", stellung: "vr=0" }),
-                new VisualElement("vr1", { btn_text: "Vr 1", stellung: "vr=1" }),
-                new VisualElement("vr2", { btn_text: "Vr 2", stellung: "vr=2" })
-            ]
-        }),
-        new VisualElement("verk", { options: "verk" }),
-        new VisualElement("verk_licht", { btn_text: "Verkürzt", options: "verk", stellung: "verk=1" }),
-
-    ], "vr=0");
+    t = new SignalTemplate(
+        "hv_vr",
+        "Hv Vorsignal",
+        "hv",
+        [
+            "basis",
+            "vr",
+            new VisualElement("ne2", { conditions: "!wdh" }),
+            new VisualElement(null, {
+                childs: [
+                    new VisualElement("vr0", { btn_text: "Vr 0", stellung: "vr=0" }),
+                    new VisualElement("vr1", { btn_text: "Vr 1", stellung: "vr=1" }),
+                    new VisualElement("vr2", { btn_text: "Vr 2", stellung: "vr=2" }),
+                ],
+            }),
+            new VisualElement("verk", { conditions: "verk" }),
+            new VisualElement("verk_licht", { btn_text: "Verkürzt", conditions: "verk", stellung: "verk=1" }),
+        ],
+        "vr=0"
+    );
     t.scale = 0.05;
 
     t.contextMenu = [].concat(menu.verkürzt, menu.wiederholer);
     signalTemplates.hv_vr = t;
 
     //KS Hauptsignal
-    t = new SignalTemplate("ks_hp", "Ks Hauptsignal", "ks", ["basis", "aus_hp", "wrw",
-        new VisualElement("aus_ks1ks2", { options: "vr" }),
-        new VisualElement("wrw_gelb", { options: "vr" }),
-        new VisualElement("hp0", { btn_text: "Hp 0", stellung: "hp=0" }),
-        new VisualElement(null, {
-            btn_text: "Ks 1", stellung: "hp=1", childs: [
-                new VisualElement("ks1", { pos: [6, 55], options: "vr" }),
-                new VisualElement("ks1", { options: "!vr" })
-            ]
-        }),
-        new VisualElement("ks2", { btn_text: "Ks 2", options: "vr", stellung: "hp=2" }),
-        new VisualElement("zs1", { btn_text: "Zs 1", stellung: "ersatz=zs1", options: verw_bahnhof, enabled: s => s.get("hp") == 0 || s.get("hp") == null, blinkt: true }),
-        new VisualElement("sh1", { btn_text: "Sh 1", stellung: "ersatz=sh1", enabled: s => s.get("hp") == 0 || s.get("hp") == null }),
-        new VisualElement("verk", { btn_text: "Verkürzt", options: "verk", stellung: "verk=1", enabled: (s) => s.get("hp") == 2 }),
-    ], "hp=0");
+    t = new SignalTemplate(
+        "ks_hp",
+        "Ks Hauptsignal",
+        "ks",
+        [
+            "basis",
+            "aus_hp",
+            "wrw",
+            new VisualElement("aus_ks1ks2", { conditions: "vr" }),
+            new VisualElement("wrw_gelb", { conditions: "vr" }),
+            new VisualElement("hp0", { btn_text: "Hp 0", stellung: "hp=0" }),
+            new VisualElement(null, {
+                btn_text: "Ks 1",
+                stellung: "hp=1",
+                childs: [new VisualElement("ks1", { pos: [6, 55], conditions: "vr" }), new VisualElement("ks1", { conditions: "!vr" })],
+            }),
+            new VisualElement("ks2", { btn_text: "Ks 2", conditions: "vr", stellung: "hp=2" }),
+            new VisualElement("zs1", { btn_text: "Zs 1", stellung: "ersatz=zs1", conditions: verw_bahnhof, enabled: (s) => s.get("hp") == 0 || s.get("hp") == null, blinkt: true }),
+            new VisualElement("sh1", { btn_text: "Sh 1", stellung: "ersatz=sh1", enabled: (s) => s.get("hp") == 0 || s.get("hp") == null }),
+            new VisualElement("verk", { btn_text: "Verkürzt", conditions: "verk", stellung: "verk=1", enabled: (s) => s.get("hp") == 2 }),
+        ],
+        "hp=0"
+    );
 
     t.startOptions = ["verwendung.asig"];
     t.contextMenu = [].concat(menu.Verwendung, menu.Vorsignal, menu.verkürzt);
     signalTemplates.ks_hp = t;
 
     //Ks Vorsignal
-    signalTemplates.ks_vr = new SignalTemplate("ks_vr", "Ks Vorsignal", "ks", ["basis",
-        new VisualElement("ne2", { options: "!wdh" }),
-        new VisualElement("ks1", { btn_text: "Ks 1", pos: [6, 60], stellung: "hp=1" }),
-        new VisualElement("ks2", { btn_text: "Ks 2", pos: [21, 60], stellung: "hp=2" }),
-        new VisualElement("verk", { btn_text: "Verkürzt", options: "!wdh", pos: [7, 48], stellung: "verk=1", enabled: (s) => s.get("hp") == 2 }),
-        new VisualElement("verk", { pos: [7, 85], options: "wdh", enabled: (s) => s.check("hp=2")})
-    ], "hp=2");
+    signalTemplates.ks_vr = new SignalTemplate(
+        "ks_vr",
+        "Ks Vorsignal",
+        "ks",
+        [
+            "basis",
+            new VisualElement("ne2", { conditions: "!wdh" }),
+            new VisualElement("ks1", { btn_text: "Ks 1", pos: [6, 60], stellung: "hp=1" }),
+            new VisualElement("ks2", { btn_text: "Ks 2", pos: [21, 60], stellung: "hp=2" }),
+            new VisualElement("verk", { btn_text: "Verkürzt", conditions: "!wdh", pos: [7, 48], stellung: "verk=1", enabled: (s) => s.get("hp") == 2 }),
+            new VisualElement("verk", { pos: [7, 85], conditions: "wdh", enabled: (s) => s.check("hp=2") }),
+        ],
+        "hp=2"
+    );
     signalTemplates.ks_vr.contextMenu = [].concat(menu.wiederholer);
-    
 
     //ne4
-    signalTemplates.ne4 = new SignalTemplate("ne4", "Ne 4", "basic", [
-        new VisualElement("ne4_g", { options: "bauart.groß" }),
-        new VisualElement("ne4_k", { options: "bauart.klein" })]);
-    signalTemplates.ne4.contextMenu = [{
-        text: "Bauart", childs: [
-            { text: "Groß", option: "bauart.groß" },
-            { text: "klein", option: "bauart.klein" }
-        ]
-    }];
+    signalTemplates.ne4 = new SignalTemplate("ne4", "Ne 4", "basic", [new VisualElement("ne4_g", { conditions: "bauart.groß" }), new VisualElement("ne4_k", { conditions: "bauart.klein" })]);
+    signalTemplates.ne4.contextMenu = [
+        {
+            text: "Bauart",
+            childs: [
+                { text: "Groß", option: "bauart.groß" },
+                { text: "klein", option: "bauart.klein" },
+            ],
+        },
+    ];
     signalTemplates.ne4.startOptions = ["bauart.groß"];
 
     signalTemplates.ne1 = new SignalTemplate("ne1", "Ne 1", "basic", "ne1");
 
-    signalTemplates.lf6 = new SignalTemplate("lf6", "Lf 6", "basic", ["lf6",
-     new TextElement({ pos: [30, 8], format: "bold 30px Arial", btn_text:"Kennziffer", stellung:"geschw" })], "geschw=9");
+    signalTemplates.lf6 = new SignalTemplate("lf6", "Lf 6", "basic", ["lf6", new TextElement({ pos: [30, 8], format: "bold 30px Arial", btn_text: "Kennziffer", stellung: "geschw" })], "geschw=9");
 
-    signalTemplates.lf7 = new SignalTemplate("lf7", "Lf 7", "basic", ["lf7", new TextElement({ pos: [20, 10], format: "bold 40px Arial", btn_text:"Kennziffer", stellung:"geschw"  })], "geschw=6");
+    signalTemplates.lf7 = new SignalTemplate("lf7", "Lf 7", "basic", ["lf7", new TextElement({ pos: [20, 10], format: "bold 40px Arial", btn_text: "Kennziffer", stellung: "geschw" })], "geschw=6");
 
-    signalTemplates.zs3 = new SignalTemplate("zs3", "Zs 3 (alleinst.)", "basic", ["Zs3_Form", new TextElement({ pos: [30, 25], format: "bold 25px Arial", color: "#eee", btn_text:"Kennziffer", stellung:"geschw"  })], "geschw=8");
-
-
+    signalTemplates.zs3 = new SignalTemplate(
+        "zs3",
+        "Zs 3 (alleinst.)",
+        "basic",
+        ["Zs3_Form", new TextElement({ pos: [30, 25], format: "bold 25px Arial", color: "#eee", btn_text: "Kennziffer", stellung: "geschw" })],
+        "geschw=8"
+    );
 }
-
-

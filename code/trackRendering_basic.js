@@ -2,7 +2,7 @@
 
 class trackRendering_basic {
     static TRACK_COLOR = "#000000";
-    static STROKE = 2;
+    static STROKE = 4;
 
     reDrawEverything() {
         clearCanvas();
@@ -103,7 +103,7 @@ class trackRendering_basic {
         ui_shape.sw = sw;
         ui_container.addChild(ui_shape);
 
-        ui_shape.graphics.setStrokeStyle(0.8, "round").beginStroke("gray");
+        ui_shape.graphics.setStrokeStyle(trackRendering_basic.STROKE/2, "round").beginStroke("gray");
 
         let l = sw.type == SWITCH_TYPE.FROM_LEFT || sw.type == SWITCH_TYPE.FROM_RIGHT ? -10 : 10;
 
@@ -121,7 +121,7 @@ class trackRendering_basic {
             ui_shape.graphics.moveTo(sw.location.x, sw.location.y).lineTo(p1.x, p1.y);
         }
 
-        ui_shape.graphics.setStrokeStyle(0.8, "round").beginStroke("white");
+        ui_shape.graphics.setStrokeStyle(trackRendering_basic.STROKE/2, "round").beginStroke("white");
         if (!sw.type.is(SWITCH_TYPE.DKW)) {
             p1 = geometry.add(sw.location, geometry.multiply(sw.t1._tmp.unit, -l));
         } else p1 = geometry.add(sw.location, geometry.multiply(sw.from._tmp.unit, -l));
