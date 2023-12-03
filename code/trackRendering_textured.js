@@ -6,6 +6,8 @@ class trackRendering_textured {
     static signale_scale = 0.1;
     static SCHWELLEN_VARIANTEN = 24;
 
+    
+
     static RAIL = [
         [1.4, "#222"],
         [1.2, "#999999"],
@@ -13,9 +15,13 @@ class trackRendering_textured {
     ];
 
     constructor() {
+        //cause the class is been loaded before start.js, we have to hack and calculate this constant here
         trackRendering_textured.CURVE_RADIUS = GRID_SIZE * 1.2;
         
+        this.SIGNAL_DISTANCE_FROM_TRACK = 30;
     }
+
+    
 
     reDrawEverything() {
         if (!pl.loaded)
@@ -40,6 +46,8 @@ class trackRendering_textured {
         this.schwellenBreite = (this.schwellenImg.width / trackRendering_textured.SCHWELLEN_VARIANTEN) * trackRendering_textured.TRACK_SCALE;
         this.schwellenGap = this.schwellenBreite * 1;
         this.rail_offset = this.schwellenHöhe / 5;
+
+        
     }
 
     
@@ -48,9 +56,9 @@ class trackRendering_textured {
         tracks.forEach((t) => {
             let shape = this.renderTrack(track_container, t);
             if (selectedTrack == t) selectTrack(shape);
-            t.signals.forEach((p) => {
-                let c = signal_container.addChild(createSignalContainer(p.signal));
-                alignSignalWithTrack(c, t, p);
+            t.signals.forEach((signal) => {
+                let c = signal_container.addChild(createSignalContainer(signal));
+                alignSignalWithTrack(c);
             });
         });
     }
@@ -61,6 +69,16 @@ class trackRendering_textured {
         texture_container.track = track;
         texture_container.mouseChildren = false;
         let rail_shape = new createjs.Shape();
+
+        let hit = new createjs.Shape();
+
+        let p1 = geometry.perpendicular(track.start, track._tmp.deg, -this.schwellenHöhe/2);
+        let p2 = geometry.perpendicular(track.start, track._tmp.deg, this.schwellenHöhe/2);
+        let p3 = geometry.perpendicular(track.end, track._tmp.deg, this.schwellenHöhe/2);
+        const p4 = geometry.perpendicular(track.end, track._tmp.deg, -this.schwellenHöhe/2);
+
+        hit.graphics.beginFill("#000").mt(p1.x, p1.y).lt(p2.x, p2.y).lt(p3.x, p3.y).lt(p4.x, p4.y).lt(p1.x, p1.y);
+        rail_shape.hitArea = hit;
 
         //const kleinEisenImg = loadQueue.getResult("kleineisen");
 
@@ -313,9 +331,9 @@ class trackRendering_textured {
             this.drawPoint(geometry.add(track.start, p4), "p4");
         }
 
-        this.drawPoint(geometry.add(track.start, p1), "p1");
+        /* this.drawPoint(geometry.add(track.start, p1), "p1");
         this.drawPoint(geometry.add(track.start, p2), "p2");
-        this.drawPoint(geometry.add(track.start, p3), "p3");
+        this.drawPoint(geometry.add(track.start, p3), "p3"); */
         //this.drawPoint(geometry.add(track.start, centerpoint), "c");
 
         return {

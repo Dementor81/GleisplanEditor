@@ -1,0 +1,38 @@
+Bugs:
+    ✔ Signalmenü verdeckt das Signal @done(23-11-21 13:57)
+    ☐ entfernen von Gleisen entfernt die Weiche nicht
+    ☐ Drag'n Drop der signale, vor allem am Gleisende buggy
+
+Detailing:
+    ☐ Weichen Schaltung schöner darstellen
+
+
+Features:
+    ☐ Signale verketten/automatische vorsignalisierung @started(23-11-21 12:15)
+    ☐ Errror Handling mit schönem Output Boostrap toast oder so
+    ☐ visualisieren, wo genau ein Signal am Gleis angeheftet ist (vllt mit kleiner roten Linie)
+    ☐ Sachen markieren und bemalen können
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    It adds 6 shortcuts when editing a Todo file:
+
+        'Cmd/Ctrl+Enter' // Triggers `Todo: Toggle Box`
+        'Alt+Enter' // Triggers `Todo: Toggle Box`
+        'Alt+D' // Triggers `Todo: Toggle Done`
+        'Alt+C' // Triggers `Todo: Toggle Cancelled`
+        'Alt+S' // Triggers `Todo: Toggle Start`
+        'Cmd/Ctrl+Shift+A' // Triggers  `Todo: Archive`

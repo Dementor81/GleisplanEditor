@@ -30,6 +30,65 @@ Array.prototype.remove = function (item) {
     }
 };
 
+function type(value) {
+    if (value === null) {
+        return "null";
+    }
+    const baseType = typeof value;
+    // Primitive types
+    if (!["object", "function"].includes(baseType)) {
+        return baseType;
+    }
+
+    // Symbol.toStringTag often specifies the "display name" of the
+    // object's class. It's used in Object.prototype.toString().
+    const tag = value[Symbol.toStringTag];
+    if (typeof tag === "string") {
+        return tag;
+    }
+
+    // If it's a function whose source code starts with the "class" keyword
+    if (baseType === "function" && Function.prototype.toString.call(value).startsWith("class")) {
+        return "class";
+    }
+
+    // The name of the constructor; for example `Array`, `GeneratorFunction`,
+    // `Number`, `String`, `Boolean` or `MyCustomClass`
+    const className = value.constructor.name;
+    if (typeof className === "string" && className !== "") {
+        return className;
+    }
+
+    // At this point there's no robust way to get the type of value,
+    // so we use the base implementation.
+    return baseType;
+}
+
+function swap(current, value1, value2) {
+    return current === value1 ? value2 : value1;
+}
+
+var groupBy = function (data, propertyPath) {
+    // `data` is an array of objects, `key` is the key (or property accessor) to group by
+    // reduce runs this anonymous function on each element of `data` (the `item` parameter,
+    // returning the `storage` parameter at the end
+
+    return data.reduce(function (storage, item) {
+        let property = propertyPath.split(".").reduce((acc, key) => acc[key], item);
+        // get the first instance of the key by which we're grouping
+        var group = property;
+
+        // set `storage` for this instance of group to the outer scope (if not empty) or initialize it
+        storage[group] = storage[group] || [];
+
+        // add this item to its group within `storage`
+        storage[group].push(item);
+
+        // return the updated storage to the reduce function, which will then loop through the next
+        return storage;
+    }, {}); // {} is the initial value of the storage
+};
+
 //returns a copy where the given item is missing
 Array.prototype.without = function (item) {
     return this.filter((i) => i != item);
@@ -84,17 +143,52 @@ function uuidv4() {
     return ([1e7] + -1e3 + -4e3 + -8e3 + -1e11).replace(/[018]/g, (c) => (c ^ (crypto.getRandomValues(new Uint8Array(1))[0] & (15 >> (c / 4)))).toString(16));
 }
 
+function isPointInsideBox(point, box, rotationAngle) {
+    const { topLeft, topRight, bottomRight, bottomLeft } = box;
+
+    // Translate the point to align with the box's axes based on the given rotation angle
+    const translatedPoint = {
+        x: (point.x - topLeft.x) * Math.cos(-rotationAngle) - (point.y - topLeft.y) * Math.sin(-rotationAngle),
+        y: (point.x - topLeft.x) * Math.sin(-rotationAngle) + (point.y - topLeft.y) * Math.cos(-rotationAngle),
+    };
+
+    // Check if the translated point is inside the aligned box
+    const isInsideX = translatedPoint.x > 0 && translatedPoint.x < Math.hypot(topRight.x - topLeft.x, topRight.y - topLeft.y);
+    const isInsideY = translatedPoint.y > 0 && translatedPoint.y < Math.hypot(bottomLeft.x - topLeft.x, bottomLeft.y - topLeft.y);
+
+    return isInsideX && isInsideY;
+}
+
+function createBoxFromLine(startPoint, endPoint, unit, size) {
+    // Calculate the perpendicular vector (swapping x and y components and negating one of them)
+    const perpendicularX = -unit.y * size;
+    const perpendicularY = unit.x * size;
+    return {
+        bottomLeft: {
+            x: startPoint.x + perpendicularX,
+            y: startPoint.y + perpendicularY,
+        },
+        bottomRight: {
+            x: endPoint.x + perpendicularX,
+            y: endPoint.y + perpendicularY,
+        },
+        topRight: {
+            x: endPoint.x - perpendicularX,
+            y: endPoint.y - perpendicularY,
+        },
+        topLeft: {
+            x: startPoint.x - perpendicularX,
+            y: startPoint.y - perpendicularY,
+        },
+    };
+}
+
 function LineIsInCircle(line, circle) {
     // Find the distance between the line start and end points
     const lineDeltaX = line.end.x - line.start.x;
     const lineDeltaY = line.end.y - line.start.y;
-    const lineLength = Math.sqrt(lineDeltaX * lineDeltaX + lineDeltaY * lineDeltaY);
-
-    // Find the unit vector of the line
-    const lineUnitVector = {
-        x: lineDeltaX / lineLength,
-        y: lineDeltaY / lineLength,
-    };
+    const lineLength = line._tmp.length;
+    const lineUnitVector = line._tmp.unit;
 
     // Find the closest point on the line to the circle
     const u = ((circle.x - line.start.x) * lineUnitVector.x + (circle.y - line.start.y) * lineUnitVector.y) / lineLength;
@@ -116,8 +210,6 @@ function LineIsInCircle(line, circle) {
     if (distanceToCircle <= circle.radius)
         return {
             point: closestPointOnLine,
-            track: line,
-            above: closestPointOnLine.y > circle.y,
             km: u * lineLength,
         };
     return null;
@@ -179,7 +271,7 @@ const ui = {
             html: true,
             trigger: "manual",
             title: title,
-            placement: "right",
+            placement: "bottom",
             sanitize: false,
             content: content,
         });
@@ -273,7 +365,7 @@ const geometry = {
 
     //checks if point c is between a and b
     within: function (pA, pB, pC, exclude) {
-        if(exclude && (deepEqual(pA, pC)||deepEqual(pB, pC))) return false;
+        if (exclude && (deepEqual(pA, pC) || deepEqual(pB, pC))) return false;
         if (pC.x.outoff(pA.x, pB.x) || pC.y.outoff(pA.y, pB.y)) return false;
         return (pB.x - pA.x) * (pC.y - pA.y) == (pC.x - pA.x) * (pB.y - pA.y);
     },
@@ -299,12 +391,38 @@ const geometry = {
 
         return { x: intersectionX, y: intersectionY };
     },
+    getIntersectionPointX: function (line1, line2) {
+        if (deepEqual(line1.start, line2.start) || deepEqual(line1.end, line2.end) || deepEqual(line1.end, line2.start) || deepEqual(line1.start, line2.end)) return null;
+        const intersection = geometry.getIntersectionPoint(line1, line2);
+        if (deepEqual(line1.start, intersection) || deepEqual(line1.end, intersection) || deepEqual(intersection, line2.start) || deepEqual(intersection, line2.end)) return null;
+        return intersection;
+    },
+    pointOnLine: function (point1, point2, targetPoint) {
+        // Extract coordinates from the objects
+        let x1 = point1.x,
+            y1 = point1.y;
+        let x2 = point2.x,
+            y2 = point2.y;
+        let px = targetPoint.x,
+            py = targetPoint.y;
+
+        // Calculate parameters for the parametric equations
+        let tX = px == x1 && x1 == x2 ? 0 : (px - x1) / (x2 - x1);
+        let tY = py == y1 && y1 == y2 ? 0 : (py - y1) / (y2 - y1);
+
+        // Check if the point is on the line (within the segment boundaries)
+        if (tX >= 0 && tX <= 1 && tY >= 0 && tY <= 1) {
+            return true; // Point lies on the line segment
+        } else {
+            return false; // Point is outside the line segment
+        }
+    },
 
     //calculates a point which is perpendicular to the given vector
     perpendicular: function (p, deg, distance) {
         return {
-            y: p.y + Math.sin(deg2rad(deg+90)) * distance,
-            x: p.x + Math.cos(deg2rad(deg+90)) * distance,
+            y: p.y + Math.sin(deg2rad(deg + 90)) * distance,
+            x: p.x + Math.cos(deg2rad(deg + 90)) * distance,
         };
     },
 
@@ -332,6 +450,10 @@ const geometry = {
         return { x: v1.x + v2.x, y: v1.y + v2.y };
     },
 
+    sub: function (v1, v2) {
+        return { x: v1.x - v2.x, y: v1.y - v2.y };
+    },
+
     flipY: (v) => ({ x: v.x, y: v.y * -1 }),
 
     round: (v) => ({ x: Math.round(v.x), y: Math.round(v.y) }),
@@ -340,8 +462,8 @@ const geometry = {
 //sw=switch location
 //rad= angle of track_1 in rad
 //c= end of the track_2 to find angle
-function findAngle(sw, c, rad=0) {
-    let atan = Math.atan2((c.y - sw.y) , c.x - sw.x) - rad;
+function findAngle(sw, c, rad = 0) {
+    let atan = Math.atan2(c.y - sw.y, c.x - sw.x) - rad;
     if (atan < 0) atan += 2 * π; //macht aus neg Winkeln durch addition von 360° positive winkel
 
     let val = (atan * 180) / π;
@@ -356,4 +478,44 @@ function rotatePointAroundPivot(angle, pivot, point) {
     var x = dx * cos - dy * sin + pivot.x;
     var y = dy * cos + dx * sin + pivot.y;
     return { x: x, y: y };
+}
+
+class V2 {
+    #_length = null;
+
+    get length() {
+        if (this.#_length == null) this.#_length = geometry.length(this);
+        return this.#_length;
+    }
+
+    get x() {
+        return this._p.x;
+    }
+
+    get y() {
+        return this._p.y;
+    }
+
+    constructor(p) {
+        this._p = p;
+    }
+
+    add(v) {
+        return new V2(geometry.add(this, v));
+    }
+
+    sub(v) {
+        return new V2(geometry.sub(this, v));
+    }
+}
+
+class Point {
+    constructor(x, y) {
+        this.x = x;
+        this.y = y;
+    }
+
+    equals(p) {
+        return p.x == this.x && p.y == this.y;
+    }
 }

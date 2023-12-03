@@ -28,7 +28,7 @@ const SWITCH_TYPE = {
     CROSSING: 10,
 };
 
-var stage, main_container, overlay_container, ui_container, signal_container, track_container, grid;
+var stage, debug_container, main_container, overlay_container, ui_container, signal_container, track_container, grid;
 
 var TEXTURE_MODE = false;
 var startpoint;
@@ -86,6 +86,7 @@ function init() {
     };
 
     stage.addChild((main_container = create_container("main")));
+    stage.addChild((debug_container = create_container("debug")));
     main_container.addChild((track_container = create_container("tracks")));
     main_container.addChild((signal_container = create_container("signals")));
     stage.addChild((ui_container = create_container("ui")));
@@ -105,7 +106,7 @@ function init() {
 
         stage.scale -= event.deltaY / (1000 / stage.scale);
 
-        stage.scale = Math.min(Math.max(0.2, stage.scale), 6);       
+        stage.scale = Math.min(Math.max(0.2, stage.scale), 6);
 
         // Find where the original point is now
         let globalPoint = stage.localToGlobal(localPoint.x, localPoint.y);
@@ -195,6 +196,7 @@ function init() {
         if (e.code == "Delete" && selectedTrack != null) {
             deleteTrack(selectedTrack, null);
             selectedTrack = null;
+            connectTracks2();
             save();
             renderer.reDrawEverything();
         }
@@ -226,6 +228,7 @@ function selectRenderer(textured) {
 }
 
 function clearCanvas() {
+    debug_container.removeAllChildren();
     track_container.removeAllChildren();
     signal_container.removeAllChildren();
     overlay_container.removeAllChildren();
@@ -298,13 +301,13 @@ function handleStageMouseDown(event) {
     mouseAction = {
         action: MOUSE_ACTION.NONE,
         container: hittest,
-        startPoint: { x: event.stageX, y: event.stageY },
-        offset: hittest?.globalToLocal(stage.mouseX, stage.mouseY),
+        startPoint: new Point(event.stageX, event.stageY),
+        offset: hittest?.globalToLocal(stage.mouseX, stage.mouseY), //Koordinate auf dem angeklickten Object (zb Signal), damit der Container am Mauszeiger "klebt"
         distance: function (x, y) {
             return geometry.distance(this.startPoint, { x: x, y: y });
         },
     };
-
+    //console.log(mouseAction);
     stage.addEventListener("stagemousemove", handleMouseMove);
 }
 
@@ -314,27 +317,43 @@ function getHitTest() {
     return main_container.getObjectUnderPoint(local_point.x, local_point.y, 1);
 }
 
-function findTrack(use_offset) {
+function getHitTrackInfo(use_offset) {
     let local_point = stage.globalToLocal(stage.mouseX, stage.mouseY);
     if (mouseAction.offset && use_offset) {
         let p = mouseAction.container.localToLocal(mouseAction.offset.x, mouseAction.offset.y, stage);
         local_point.x -= p.x - mouseAction.container.x;
         local_point.y -= p.y - mouseAction.container.y;
     }
-    /*  let circleShape = overlay_container.getChildByName("circle");
-     if (circleShape == null) {
-         circleShape = new createjs.Shape();
-         circleShape.name = "circle";
-         circleShape.graphics.setStrokeStyle(1).beginStroke("#e00").drawCircle(0, 0, GRID_SIZE / 2);
-         overlay_container.addChild(circleShape);
-     }
-     circleShape.x = local_point.x
-     circleShape.y = local_point.y */
+    let circleShape = overlay_container.getChildByName("circle");
+    if (circleShape == null) {
+        circleShape = new createjs.Shape();
+        circleShape.name = "circle";
+        circleShape.graphics
+            .setStrokeStyle(1)
+            .beginStroke("#e00")
+            .drawCircle(0, 0, GRID_SIZE / 2);
+        overlay_container.addChild(circleShape);
+    }
+    circleShape.x = local_point.x;
+    circleShape.y = local_point.y;
     let circle = { x: local_point.x, y: local_point.y, radius: GRID_SIZE / 2 };
-    let r;
+    let result;
+    let track, box;
     for (let index = 0; index < tracks.length; index++) {
-        const track = tracks[index];
-        if ((r = LineIsInCircle(track, circle))) return r;
+        track = tracks[index];
+        box = createBoxFromLine(track.start, track.end, track._tmp.unit, GRID_SIZE_2);
+        debug_container.removeAllChildren();
+        /* drawPoint(box.topLeft, "topLeft", "#000", 3);
+        drawPoint(box.topRight, "topRight", "#000", 3);
+        drawPoint(box.bottomRight, "bottomRight", "#000", 3);
+        drawPoint(box.bottomLeft, "bottomLeft", "#000", 3);  */
+
+        if (isPointInsideBox(local_point, box, track._tmp.rad))
+            if ((result = LineIsInCircle(track, circle))) {
+                result.track = track;
+                result.above = result.point.y > circle.y;
+                return result;
+            }
     }
 }
 
@@ -360,22 +379,27 @@ function createSignalContainer(signal) {
     return c;
 }
 
-function alignSignalWithTrack(c_sig, track, pos) {
+function alignSignalWithTrack(signal_shape, pos) {
+    if (!pos) pos = signal_shape.signal._positioning;
+
     //koordinaten anhand des Strecken KM suchen
-    c_sig.x = Math.cos(track._tmp.rad) * pos.km + track.start.x;
-    c_sig.y = Math.sin(track._tmp.rad) * pos.km + track.start.y;
+    let coordinates;
+    if (pos.point) coordinates = pos.point;
+    else coordinates = geometry.add(pos.track.getPointfromKm(pos.km), pos.track.start);
+
     let p;
     if (pos.above) {
-        c_sig.rotation = 270 + track._tmp.deg;
-        p = geometry.perpendicular(c_sig, track._tmp.deg, -(GRID_SIZE_2 - 14));
+        signal_shape.rotation = 270 + pos.track._tmp.deg;
+        p = geometry.perpendicular(coordinates, pos.track._tmp.deg, -renderer.SIGNAL_DISTANCE_FROM_TRACK);
     } else {
-        c_sig.rotation = 90 + track._tmp.deg;
-        p = geometry.perpendicular(c_sig, track._tmp.deg, GRID_SIZE_2 - 14);
+        signal_shape.rotation = 90 + pos.track._tmp.deg;
+        p = geometry.perpendicular(coordinates, pos.track._tmp.deg, renderer.SIGNAL_DISTANCE_FROM_TRACK);
     }
-    c_sig.x = p.x;
-    c_sig.y = p.y;
+
+    signal_shape.x = p.x;
+    signal_shape.y = p.y;
     if (pos.flipped) {
-        c_sig.rotation += 180;
+        signal_shape.rotation += 180;
     }
 }
 
@@ -383,7 +407,7 @@ function startDragAndDropSignal(mouseX, mouseY) {
     if (mouseAction.container) {
         mouseAction.container.parent.removeChild(mouseAction.container);
     } else {
-        let signal = new signalShape(mouseAction.template);
+        let signal = new Signal(mouseAction.template);
         mouseAction.container = createSignalContainer(signal);
         mouseAction.container.x = mouseX;
         mouseAction.container.y = mouseY;
@@ -399,7 +423,6 @@ function startDragAndDropSignal(mouseX, mouseY) {
 
 function handleMouseMove(event) {
     //console.log("handleMouseMove", event);
-
     if (!event.primary) {
         return;
     }
@@ -409,31 +432,22 @@ function handleMouseMove(event) {
     if (event.nativeEvent.buttons == 0) return handleStageMouseUp(event);
 
     let local_point = stage.globalToLocal(stage.mouseX, stage.mouseY);
-    //console.log(local_point,stage.mouseX, stage.mouseY);
+    //console.log(local_point, { x: stage.mouseX, y: stage.mouseY });
 
     if (mouseAction.action === MOUSE_ACTION.NONE) {
         //wie weit wurde die maus seit mousedown bewegt
         if (mouseAction.distance(stage.mouseX, stage.mouseY) > 4) {
             if (event.nativeEvent.which == 1 && mode === MODE_EDIT && mouseAction.container?.name == "signal") {
-                //strecke suchen, an der das Signal klemmt
-                let track = trackShape.findTrackbySignal(mouseAction.container.signal);
-                //das Signal dort entfernen
-                if (track) track.removeSignal(mouseAction.container.signal);
                 mouseAction.action = MOUSE_ACTION.DND_SIGNAL;
-                //versatz zwischen Maus- und Container-Koordninate, damit der Container am Mauszeiger "klebt"
-                //wird noch nicht ausgewertet
+
+                mouseAction.container.signal._positioning.track.removeSignal(mouseAction.container.signal);
 
                 startDragAndDropSignal();
             } else if (event.nativeEvent.which == 1 && mode === MODE_EDIT && mouseAction.container?.name != "signal") {
                 //stage.addEventListener("stagemousemove", handleMouseMove);
                 mouseAction.lineShape = new createjs.Shape();
                 overlay_container.addChild(mouseAction.lineShape);
-                mouseAction.ankerPoints = [
-                    {
-                        x: Math.round(local_point.x / GRID_SIZE) * GRID_SIZE,
-                        y: Math.round(local_point.y / GRID_SIZE) * GRID_SIZE,
-                    },
-                ];
+                mouseAction.ankerPoints = [new Point(Math.round(local_point.x / GRID_SIZE) * GRID_SIZE, Math.round(local_point.y / GRID_SIZE) * GRID_SIZE)];
                 mouseAction.action = MOUSE_ACTION.BUILD_TRACK;
             } else if (event.nativeEvent.which == 3) {
                 //stage.addEventListener("stagemousemove", handleMouseMove);
@@ -443,27 +457,27 @@ function handleMouseMove(event) {
     }
 
     if (mouseAction.action === MOUSE_ACTION.DND_SIGNAL) {
-        let temp_hit = findTrack(false);
-        if (temp_hit) {
-            alignSignalWithTrack(mouseAction.container, temp_hit.track, {
-                km: temp_hit.km,
-                signal: mouseAction.container.signal,
-                above: temp_hit.above,
-                flipped: event.nativeEvent.altKey,
-            });
-            mouseAction.hit_track = findTrack(true);
-            if (mouseAction.hit_track) {
-                mouseAction.pos = {
-                    km: mouseAction.hit_track.km,
-                    signal: mouseAction.container.signal,
-                    above: mouseAction.hit_track.above,
+        //searches for a hit in 2 steps:
+        //1st: at the mouse position and if it finds a track there
+        //it 2nd searches for the track the signals base
+        let hitInformation = getHitTrackInfo(false);
+        if (hitInformation) {
+            hitInformation.flipped = event.nativeEvent.altKey;
+
+            alignSignalWithTrack(mouseAction.container, hitInformation);
+            mouseAction.hit_track = hitInformation = getHitTrackInfo(true);
+            if (hitInformation) {
+                mouseAction.container.signal._positioning = {
+                    track: hitInformation.track,
+                    km: hitInformation.km,
+                    above: hitInformation.above,
                     flipped: event.nativeEvent.altKey,
                 };
-                alignSignalWithTrack(mouseAction.container, mouseAction.hit_track.track, mouseAction.pos);
+                alignSignalWithTrack(mouseAction.container);
             }
         }
 
-        if (temp_hit == null || mouseAction.hit_track == null) {
+        if (hitInformation == null || mouseAction.hit_track == null) {
             mouseAction.hit_track = null;
             mouseAction.container.rotation = 0;
             if (mouseAction.offset) {
@@ -495,10 +509,7 @@ function setTrackAnchorPoints() {
 
     const p1 = mouseAction.ankerPoints[mouseAction.ankerPoints.length - 1];
     const p0 = mouseAction.ankerPoints.length > 1 ? mouseAction.ankerPoints[mouseAction.ankerPoints.length - 2] : p1;
-    const pc = {
-        x: Math.round(local_point.x / GRID_SIZE) * GRID_SIZE,
-        y: Math.round(local_point.y / GRID_SIZE) * GRID_SIZE,
-    };
+    const pc = new Point(Math.round(local_point.x / GRID_SIZE) * GRID_SIZE, Math.round(local_point.y / GRID_SIZE) * GRID_SIZE);
 
     //der letzte und aktuelle Punkt sind unterschiedlich und die Pause ist nahe am pc
     if (!deepEqual(p1, pc)) {
@@ -557,7 +568,7 @@ function handleStageMouseUp(e) {
 
             if (mouseAction.hit_track) {
                 signal_container.addChild(mouseAction.container);
-                mouseAction.hit_track.track.AddSignal(mouseAction.pos);
+                mouseAction.hit_track.track.AddSignal(mouseAction.container.signal);
             }
             save();
             overlay_container.removeAllChildren();
@@ -575,7 +586,7 @@ function handleStageMouseUp(e) {
                         tmpPoint = p1;
                     }
                 }
-                connectTracks();
+                connectTracks2();
                 renderer.reDrawEverything();
 
                 save();
@@ -593,15 +604,12 @@ function handleStageMouseUp(e) {
 
 function switch_A_Switch(sw, mouseAction) {
     if (!sw.type.is(SWITCH_TYPE.DKW)) {
-        if (sw.branch == sw.t1) sw.branch = sw.t2;
-        else sw.branch = sw.t1;
+        sw.branch = swap(sw.branch, sw.t2, sw.t3);
     } else {
         if (mouseAction.offset.x < sw.location.x) {
-            if (sw.from == sw.t1) sw.from = sw.t2;
-            else sw.from = sw.t1;
+            sw.branch = swap(sw.branch, sw.t2, sw.t3);
         } else {
-            if (sw.branch == sw.t1) sw.branch = sw.t2;
-            else sw.branch = sw.t1;
+            sw.from = swap(sw.from, sw.t1, sw.t4);            
         }
     }
 
@@ -627,22 +635,33 @@ function selectTrack(container) {
     }
 }
 
-function deleteTrack(track, trackShape) {
-    if (!track) track = trackShape.track;
-    else trackShape = track_container.children.find((c) => c.track === track);
+function deleteTrack(track, Track_shape, remove_signals = true) {
+    if (!track) track = Track_shape.track;
+    else Track_shape = track_container.children.find((c) => c.track === track);
 
-    track_container.removeChild(trackShape);
+    track_container.removeChild(Track_shape);
 
     tracks.remove(track);
 
-    track.signals.forEach((s) => {
-        let i = signal_container.children.findIndex((c) => c.signal === s.signal);
-        if (i != -1) signal_container.removeChildAt(i);
-    });
+    if (remove_signals)
+        track.signals.forEach((s) => {
+            let i = signal_container.children.findIndex((c) => c.signal === s.signal);
+            if (i != -1) signal_container.removeChildAt(i);
+        });
 
-    track._tmp.switches.forEach((s) => {
-        let i = s.track._tmp.switches.findIndex((sw) => sw.track === track);
-        if (i >= 0) s.track._tmp.switches.splice(i, 1);
+    track._tmp.switches.forEach((sw) => {
+        if (sw) {
+            if (type(sw) == "Track") {
+                sw._tmp.switches.remove(track);
+            } else {
+                if (track != sw.t1) sw.t1._tmp.switches.remove(sw);
+                if (track != sw.t2) sw.t2._tmp.switches.remove(sw);
+                if (sw.t3 && track != sw.t3) sw.t3._tmp.switches.remove(sw);
+                if (sw.t4 && track != sw.t4) sw.t4._tmp.switches.remove(sw);
+
+                switches.remove(sw);
+            }
+        }
     });
 }
 
@@ -659,11 +678,13 @@ function checkAndCreateTrack(start, end) {
 
     const slope = geometry.slope(start, end);
 
+    createTrack(start, end);
     //sucht alle tracks, deren start oder ende innerhalb der neue Track liegt und den gleichen Slope haben
-    const filteredTracks = tracks.filter((track) => track._tmp.slope == slope && (geometry.within(start, end, track.start) || geometry.within(start, end, track.end)));
+    /*const filteredTracks = tracks.filter((track) => track._tmp.slope == slope && (geometry.within(start, end, track.start) || geometry.within(start, end, track.end)));
     if (filteredTracks.length == 0) createTrack(start, end);
-    else {
-        let track = filteredTracks[0];
+    else
+     {
+         let track = filteredTracks[0];
         filteredTracks.forEach((t) => {
             if (t.start.x < start.x) start = t.start;
         });
@@ -677,100 +698,96 @@ function checkAndCreateTrack(start, end) {
         for (let i = 1; i < filteredTracks.length; i++) {
             deleteTrack(filteredTracks[i]);
         }
-    }
-}
-
-function detectSwitch(t1, t2, recursion = false) {
-    if (deepEqual(t1.start, t2.start) || deepEqual(t1.end, t2.end)) return;
-
-    let km_t1 = 0,
-        km_t2 = 0,
-        switch_type = SWITCH_TYPE.NONE,
-        switch_location;
-
-    if (t1._tmp.deg + t2._tmp.deg != 0) {
-        if (deepEqual(t1.start, t2.end)) {
-            switch_location = t1.start;
-            switch_type = SWITCH_TYPE.ARCH;
-        } else if (geometry.within(t1.start, t1.end, t2.start, true)) {
-            switch_location = t2.start;
-            switch_type = ((findAngle(switch_location, t2.end, t1.rad) / 45) % 8) + 1;
-        } else if (geometry.within(t1.start, t1.end, t2.end, true)) {
-            switch_location = t2.end;
-            switch_type = ((findAngle(switch_location, t2.start, t1.rad) / 45) % 8) + 1;
-        }
-
-        if (switch_type == SWITCH_TYPE.NONE && !recursion) {
-            if (detectSwitch(t2, t1, true)) return true;
-        }
-    }
-
-    if (switch_type == SWITCH_TYPE.NONE) {
-        switch_location = geometry.getIntersectionPoint(t1, t2);
-        if (switch_location && !(deepEqual(switch_location, t2.start) || deepEqual(switch_location, t2.end) || deepEqual(switch_location, t1.start) || deepEqual(switch_location, t1.end))) {
-            switch_type = t2._tmp.deg + t1._tmp.deg == 0 ? SWITCH_TYPE.CROSSING : SWITCH_TYPE.DKW;
-        }
-    }
-
-    if (switch_type != SWITCH_TYPE.NONE) {
-        km_t1 = geometry.distance(t1.start, switch_location);
-        km_t2 = geometry.distance(t2.start, switch_location);
-
-        const sw = {
-            type: switch_type,
-            location: switch_location,
-        };
-
-        //stellt sicher, das immer das durchgehende hauptgleis t1 ist
-        if (deepEqual(switch_location, t1.start, t1.end)) {
-            sw.t1 = t2;
-            sw.t2 = t1;
-        } else {
-            sw.t1 = t1;
-            sw.t2 = t2;
-        }
-
-        //stellt die Weiche standardmäßig ins Hauptgelis
-        sw.branch = sw.t1;
-
-        if (switch_type == SWITCH_TYPE.DKW) sw.from = sw.t1;
-
-        switches.push(sw);
-
-        t1.AddSwitch({
-            km: km_t1,
-            track: t2,
-            type: switch_type,
-            sw: sw,
-        });
-        t2.AddSwitch({
-            km: km_t2,
-            track: t1,
-            type: switch_type,
-            sw: sw,
-        });
-
-        return true;
-    }
-    return false;
-}
-
-function connectTracks() {
-    tracks.forEach((track) => (track._tmp.switches = []));
-    switches = [];
-    for (let i = 0; i < tracks.length; i++) {
-        const t1 = tracks[i];
-        for (let j = i + 1; j < tracks.length; j++) {
-            const t2 = tracks[j];
-            if (t1._tmp.deg != t2._tmp.deg) detectSwitch(t1, t2);
-        }
-    }
+    } */
 }
 
 function createTrack(p1, p2) {
-    let track = new trackShape(p1, p2);
-    renderer.renderTrack(track_container, track);
-    tracks.push(track);
+    const line = { start: p1, end: p2 };
+    const slope = geometry.slope(p1, p2);
+    let intersection = null;
+    let found = false;
+    tracks.forEach((t) => {
+        if (slope != t._tmp.slope && slope + t._tmp.slope != 0 && (intersection = geometry.getIntersectionPoint(line, t))) {
+            if (!t.start.equals(intersection) && !t.end.equals(intersection)) {
+                tracks = tracks.concat(Track.splitTrack(t, intersection));
+                deleteTrack(t, false);
+            }
+            //t splitten
+            //und neue track splitten und createTrack für jede teilstrecke erneut aufrufen
+            if (!(deepEqual(p1, intersection) || deepEqual(p2, intersection))) {
+                found = true;
+                createTrack(p1, intersection);
+                createTrack(intersection, p2);
+            }
+        }
+    });
+    if (!found) {
+        let track = new Track(p1, p2);
+        renderer.renderTrack(track_container, track);
+        tracks.push(track);
+    }
+}
+
+function createSwitch(location, tracks) {
+    const sw = {
+        location: location,
+    };
+
+    const groupedByRad = Object.values(groupBy(tracks, "_tmp.rad"));
+    groupedByRad.forEach((a) => a.sort((t1, t2) => t1.start.x - t2.start.x));
+    groupedByRad.sort((a,b)=>b.length-a.length);
+
+    sw.t3 = groupedByRad[1][0];
+
+    sw.type = ((findAngle(location, sw.t3.end.equals(location) ? sw.t3.start : sw.t3.end, groupedByRad[0][0].rad) / 45) % 8) + 1;
+
+    if ((sw.type == SWITCH_TYPE.FROM_LEFT || sw.type == SWITCH_TYPE.FROM_RIGHT)) {
+        sw.t1 = groupedByRad[0][1];
+        sw.t2 = groupedByRad[0][0];
+    } else {
+        sw.t1 = groupedByRad[0][0];
+        sw.t2 = groupedByRad[0][1];
+    }
+    //stellt die Weiche standardmäßig ins Hauptgleis
+    sw.branch = sw.t2;
+
+    if (tracks.length == 4) {
+        sw.type = SWITCH_TYPE.DKW;
+        sw.from = sw.t1;
+        sw.t4 = groupedByRad[1][1];
+    }
+
+    sw.t1.addSwitch(sw);
+    sw.t2.addSwitch(sw);
+    if (sw.t3) sw.t3.addSwitch(sw);
+    if (sw.t4) sw.t4.addSwitch(sw);
+
+    return sw;
+}
+
+function connectTracks2() {
+    tracks.forEach((track) => (track._tmp.switches = [])); //delets all swichtes
+    switches = [];
+    const end_points = [];
+    //iterate over all tracks
+    for (let i = 0; i < tracks.length; i++) {
+        const track = tracks[i];
+        const location = track.end; //gets its endpoint
+        if (!end_points.some((p) => p.equals(location))) {
+            //checks if the point was already handled
+            end_points.push(location);
+            //searches for every track wich starts or end at that point, filters tracks wich would combine to a 90° angle
+            const connected_tracks = tracks.filter((t) => t != track && (t.start.equals(location) || t.end.equals(location)) && (t._tmp.deg == 0 || t._tmp.deg + track._tmp.deg != 0));
+
+            if (connected_tracks.length == 1) {
+                track._tmp.switches[1] = connected_tracks[0];
+                connected_tracks[0]._tmp.switches[0] = track;
+            } else if (connected_tracks.length.between(2, 3)) {
+                connected_tracks.push(track);
+                switches.push(createSwitch(location, connected_tracks));
+            }
+        }
+    }
 }
 
 function replacer(key, value) {
@@ -795,7 +812,7 @@ function getSaveString() {
 }
 
 function save() {
-    localStorage.setItem("bahnhof_last1", `0.16;${getSaveString()}`);
+    localStorage.setItem("bahnhof_last1", `0.17;${getSaveString()}`);
 }
 
 function loadRecent() {
@@ -805,7 +822,7 @@ function loadRecent() {
             const indexOfFirst = x.indexOf(";");
             if (indexOfFirst > -1) {
                 const loaded_version = parseFloat(x.substring(0, indexOfFirst));
-                if (loaded_version >= 0.16) loadFromJson(x.slice(indexOfFirst + 1));
+                if (loaded_version >= 0.17) loadFromJson(x.slice(indexOfFirst + 1));
                 else console.error(`stored version ${loaded_version} to old`);
             }
         }
@@ -815,14 +832,10 @@ function loadRecent() {
 }
 
 function receiver(key, value) {
-    if (key == "signal") return signalShape.FromObject(value);
-    if (key == "tracks")
-        return value.map((item) => {
-            return trackShape.FromObject(item);
-        });
-    if (key == "features") return { map: new Map(JSON.parse(value)) };
-
-    return value;
+    if (value?._class) {
+        const myClass = eval(value._class + ".FromObject")(value);
+        return myClass;
+    } else return value;
 }
 
 function loadFromJson(json) {
@@ -831,7 +844,7 @@ function loadFromJson(json) {
     stage.y = loaded.scrollY;
     stage.scale = loaded.zoom;
     tracks = loaded.tracks;
-    connectTracks();
+    connectTracks2();
     drawGrid();
     renderer.reDrawEverything();
 }
@@ -859,7 +872,7 @@ function newItemButton(template) {
 }
 
 function GetDataURL_FromTemplate(template) {
-    let signal = new signalShape(template);
+    let signal = new Signal(template);
 
     let c = $("<canvas>").attr({ width: 100, height: 100 });
     $(document.body).append(c);
@@ -872,4 +885,21 @@ function GetDataURL_FromTemplate(template) {
     let data_url = s.bitmapCache.getCacheDataURL();
     c.remove();
     return data_url;
+}
+
+function drawPoint(point, label = "", color = "#000", size = 1) {
+    const s = new createjs.Shape();
+    s.graphics.setStrokeStyle(1).beginStroke(color).beginFill(color).drawCircle(0, 0, size);
+    s.x = point.x; //+ track.start.x;
+    s.y = point.y; //+ track.start.y;
+
+    debug_container.addChild(s);
+
+    if (label) {
+        const text = new createjs.Text(label, "Italic 10px Arial", color);
+        text.x = s.x;
+        text.y = s.y - 5;
+        text.textBaseline = "alphabetic";
+        debug_container.addChild(text);
+    }
 }

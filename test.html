@@ -52,37 +52,42 @@
             <body>
                 <canvas id="myCanvas" width="1000" height="1000"></canvas>
                 <script>
-                    function perpendicular(p1, p2, h) {
-                        // Step 1: Calculate the slope of the line
-                        const slope = geometry.slope(p1, p2);
+                    function createBoxFromLine(startPoint, endPoint, size) {
+                        // Calculate the direction vector of the line segment
+                        const directionX = endPoint.x - startPoint.x;
+                        const directionY = endPoint.y - startPoint.y;
 
-                        // Step 2: Calculate the negative reciprocal of the slope for the perpendicular line
-                        const perpendicularSlope = -1 / slope;
+                        // Calculate the length of the direction vector
+                        const length = Math.sqrt(directionX * directionX + directionY * directionY);
 
-                        // Step 3: Calculate the midpoint of the line segment
-                        const midpoint = {
-                            x: (point1.x + point2.x) / 2,
-                            y: (point1.y + point2.y) / 2,
+                        // Normalize the direction vector
+                        const normalizedDirectionX = directionX / length;
+                        const normalizedDirectionY = directionY / length;
+
+                        // Calculate the perpendicular vector (swapping x and y components and negating one of them)
+                        const perpendicularX = -normalizedDirectionY * size;
+                        const perpendicularY = normalizedDirectionX * size;
+                        return {
+                            bottomLeft: {
+                                x: startPoint.x + perpendicularX,
+                                y: startPoint.y + perpendicularY,
+                            },
+                            bottomRight: {
+                                x: endPoint.x + perpendicularX,
+                                y: endPoint.y + perpendicularY,
+                            },
+                            topRight: {
+                                x: endPoint.x - perpendicularX,
+                                y: endPoint.y - perpendicularY,
+                            },
+                            topLeft: {
+                                x: startPoint.x - perpendicularX,
+                                y: startPoint.y - perpendicularY,
+                            },
                         };
-
-                        // Step 4: Calculate the equation of the perpendicular line (y = mx + b)
-                        const perpendicularIntercept = midpoint.y - perpendicularSlope * midpoint.x;
-
-                        // Step 5: Calculate the coordinates of the point where the perpendicular line intersects the original line
-
-                        // Calculate the change in x and y based on the desired height
-                        const dx = Math.sqrt(h ** 2 / (1 + perpendicularSlope ** 2));
-                        const dy = perpendicularSlope * dx;
-
-                        // Calculate the coordinates of the point above the midpoint
-                        const perpendicularPointX = midpoint.x + dx;
-                        const perpendicularPointY = midpoint.y + dy;
-
-                        return { x: perpendicularPointX, y: perpendicularPointY };
                     }
 
-                    function drawLine(ctx,p1, p2,color = "#000",size=1) {
-                       
+                    function drawLine(ctx, p1, p2, color = "#000", size = 1) {
                         ctx.strokeStyle = color;
                         ctx.lineWidth = size;
 
@@ -133,48 +138,14 @@
 
                     drawPoint(context, point1, "p1", "#000", 3);
                     drawPoint(context, point2, "p2", "#000", 3);
-                    drawLine(context,point1,point2);
+                    drawLine(context, point1, point2);
 
-                    // Define the desired angle in radians
-                    var desiredAngle = deg2rad(45);
+                    const box = createBoxFromLine(point1, point2, 55);
 
-                    // Calculate the midpoint between the two points
-                    var midpoint = {
-                        x: (point1.x + point2.x) / 2,
-                        y: (point1.y + point2.y) / 2,
-                    };
-
-                    drawPoint(context, midpoint, "pm", "#000", 3);
-
-                    
-
-                    // Calculate the distance between the two points
-                    var distance = geometry.distance(point1, point2);
-
-                    // Calculate the radius of the circle
-                    var radius = distance / 2 / Math.sin(desiredAngle / 2);
-
-                    let h = Math.sqrt(Math.pow(radius, 2) - Math.pow(distance / 2, 2));
-
-                    let pointC = perpendicular(point1, point2, h);
-                    drawPoint(context, pointC, "pC", "#000", 3);
-
-                    drawLine(context,midpoint,pointC);
-
-                    // Calculate the angle between the x-axis and the line connecting the two points
-                    var lineAngle = Math.atan2(point2.y - point1.y, point2.x - point1.x);
-
-                    // Calculate the starting and ending angles for drawing the circular curve
-                    var startAngle = lineAngle - desiredAngle / 2 + Math.PI/2;
-                    var endAngle = lineAngle + desiredAngle / 2+ Math.PI/2;
-
-                    // Draw the circular curve
-                    context.beginPath();
-
-                    context.arc(pointC.x, pointC.y, radius, startAngle, endAngle);
-                    context.strokeStyle = "blue";
-                    context.lineWidth = 2;
-                    context.stroke();
+                    drawPoint(context, box.topLeft, "topLeft", "#000", 3);
+                    drawPoint(context, box.topRight, "topRight", "#000", 3);
+                    drawPoint(context, box.bottomRight, "bottomRight", "#000", 3);
+                    drawPoint(context, box.bottomLeft, "bottomLeft", "#000", 3);
                 </script>
             </body>
         </html>

@@ -39,7 +39,18 @@
                 init();
             });
 
-            function init() {}
+            function init() {
+                let arrayOfObjects = [
+                    { id: 2, s:{x: "anotherValue"} },
+                    { id: 1, s:{x:  "commonValue"} },
+                    { id: 3, s:{x:  "commonValue"} },
+                ];
+
+                
+                
+                let result = findObjectsWithCommonValue(arrayOfObjects,"s.x");
+                console.log(result);
+            }
         </script>
     </head>
 
@@ -51,104 +62,7 @@
             </head>
             <body>
                 <canvas id="myCanvas" width="1000" height="1000"></canvas>
-                <script>
-                    function perpendicular(p1, p2, h) {
-                        // Step 1: Calculate the slope of the line
-                        const slope = geometry.slope(p1, p2);
-
-                        // Step 2: Calculate the negative reciprocal of the slope for the perpendicular line
-                        const perpendicularSlope = -1 / slope;
-
-                        // Step 3: Calculate the midpoint of the line segment
-                        const midpoint = {
-                            x: (point1.x + point2.x) / 2,
-                            y: (point1.y + point2.y) / 2,
-                        };
-
-                        // Step 4: Calculate the equation of the perpendicular line (y = mx + b)
-                        const perpendicularIntercept = midpoint.y - perpendicularSlope * midpoint.x;
-
-                        // Step 5: Calculate the coordinates of the point where the perpendicular line intersects the original line
-
-                        // Calculate the change in x and y based on the desired height
-                        const dx = Math.sqrt(h ** 2 / (1 + perpendicularSlope ** 2));
-                        const dy = perpendicularSlope * dx;
-
-                        // Calculate the coordinates of the point above the midpoint
-                        const perpendicularPointX = midpoint.x + dx;
-                        const perpendicularPointY = midpoint.y + dy;
-
-                        return { x: perpendicularPointX, y: perpendicularPointY };
-                    }
-
-                    function drawLine(ctx, p1, p2, color = "#000", size = 1) {
-                        ctx.strokeStyle = color;
-                        ctx.lineWidth = size;
-
-                        // draw a red line
-                        ctx.beginPath();
-                        ctx.moveTo(p1.x, p1.y);
-                        ctx.lineTo(p2.x, p2.y);
-                        ctx.stroke();
-                    }
-
-                    function drawPoint(context, point, label, color, size) {
-                        if (color == null) {
-                            color = "#000";
-                        }
-                        if (size == null) {
-                            size = 5;
-                        }
-
-                        const radius = 0.5 * size;
-
-                        // to increase smoothing for numbers with decimal part
-                        const pointX = Math.round(point.x - radius);
-                        const pointY = Math.round(point.y - radius);
-
-                        context.beginPath();
-                        context.fillStyle = color;
-                        context.fillRect(pointX, pointY, size, size);
-                        context.fill();
-
-                        if (label) {
-                            var textX = Math.round(point.x);
-                            var textY = Math.round(pointY - 5);
-
-                            context.font = "Italic 14px Arial";
-                            context.fillStyle = color;
-                            context.textAlign = "center";
-                            context.fillText(label, textX, textY);
-                        }
-                    }
-
-                    // Get the canvas element and its context
-                    var canvas = document.getElementById("myCanvas");
-                    var context = canvas.getContext("2d");
-
-                    const switchpoint = { x: 300, y: 300 };
-                    const radius = 200;
-
-                    const cord_2 = Math.sin(deg2rad(45 / 2)) * radius;
-
-                    let x = cord_2 / Math.cos(deg2rad(22, 5));
-                    const p1 = { x: switchpoint.x - x, y: switchpoint.y };
-                    x = x * Math.sin(deg2rad(45));
-                    const p2 = { x: switchpoint.x + x, y: switchpoint.y - x };
-
-                    drawPoint(context, switchpoint, "sc");
-                    drawPoint(context, p1, "p1");
-                    drawPoint(context, p2, "p2");
-
-                    const centerpoint = { x: p1.x, y: p1.y - radius };
-
-                    context.beginPath();
-
-                    context.arc(centerpoint.x, centerpoint.y, radius, Math.PI/4, Math.PI/2,0);
-                    context.strokeStyle = "blue";
-                    context.lineWidth = 2;
-                    context.stroke();
-                </script>
+                <script></script>
             </body>
         </html>
     </body>

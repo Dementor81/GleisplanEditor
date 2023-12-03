@@ -1,15 +1,38 @@
 "use strict";
 
-class signalShape {
+class Signal {
     static FromObject(o) {
-        let s = new signalShape(signalTemplates[o._template]);
+        let s = new Signal();
+        
+        s._template = signalTemplates[o._template];
         s._signalStellung = o._signalStellung;
-        s.features.map = o.features.map;
+        s._positioning = o._positioning;
+        s.features.map = new Map(JSON.parse(o.features));
         return s;
     }
 
     _template = null;
     _signalStellung = {};
+    _positioning = {
+        track: null,
+        km: 0,
+        above: false,
+        flipped: false,
+    };
+
+    stringify() {
+        return {
+            _class: "Signal",
+            _template: this._template.id,
+            _signalStellung: this._signalStellung,
+            _positioning: {
+                km: this._positioning.km,
+                above: this._positioning.above,
+                flipped: this._positioning.flipped,
+            },
+            features: this.features,
+        };
+    }
 
     //features saves how a signal is used (Asig,Esig etc) and if it supports things like Vorsignal or Verkürzte Bremswege
     //there are two types of features: single worded like "vr" or "verk"
@@ -47,15 +70,17 @@ class signalShape {
     };
 
     constructor(template) {
-        this._template = template;
+        if (template) {
+            this._template = template;
 
-        if (template.startOptions)
-            if (Array.isArray(template.startOptions)) template.startOptions.forEach((i) => this.features.set(i));
-            else this.features.set(template.startOptions);
+            if (template.startOptions)
+                if (Array.isArray(template.startOptions)) template.startOptions.forEach((i) => this.features.set(i));
+                else this.features.set(template.startOptions);
 
-        if (template.start)
-            if (Array.isArray(template.start)) template.start.forEach((i) => this.set(i));
-            else this.set(template.start);
+            if (template.start)
+                if (Array.isArray(template.start)) template.start.forEach((i) => this.set(i));
+                else this.set(template.start);
+        }
     }
 
     set(stellung, value) {
@@ -197,5 +222,21 @@ class signalShape {
 
     getContectMenu() {
         return this._template.contextMenu;
+    }
+
+    search4NextSignal() {
+        let index = this._positioning.track.signals.indexOf(this);
+        if(index < this._positioning.track.signals.length-1){
+            //check signal
+        }
+        else{
+            //check next track
+        }
+        
+        while (hp) {
+        }
+
+
+
     }
 }
