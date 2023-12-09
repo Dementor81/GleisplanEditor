@@ -65,7 +65,7 @@ class trackRendering_basic {
         }
 
         const text = new createjs.Text(track.id, "Italic 10px Arial", "black");
-        const p = geometry.perpendicular(track.along(track.start,track.length/2),track.deg,15);
+        const p = geometry.perpendicular(track.along(track.start, track.length / 2), track.deg, 15);
 
         text.x = p.x + track.start.x;
         text.y = p.y + track.start.y;
@@ -77,6 +77,10 @@ class trackRendering_basic {
 
     renderAllSwitches() {
         switches.forEach((sw) => {
+            if (!sw.t1 || !sw.t2 || !sw.t3 || (sw.type == SWITCH_TYPE.DKW && !sw.t4)) {
+                console.log(sw);
+                throw new Error("switch is falty");
+            }
             let switch_shape = new createjs.Shape();
             switch_shape.name = "switch";
             switch_shape.sw = sw;

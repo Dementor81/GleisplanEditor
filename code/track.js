@@ -16,19 +16,36 @@ class Track {
         const t2 = new Track(point, track.end);
 
         //wahrscheinlich unnötig, da nach einem splitt die tracks eh neu verbunden werden
-        t1._tmp.switches[0] = track._tmp.switches[0];
+        /* t1._tmp.switches[0] = track._tmp.switches[0];
         t2._tmp.switches[1] = track._tmp.switches[1];
         t1._tmp.switches[1] = t2;
-        t2._tmp.switches[0] = t1;
+        t2._tmp.switches[0] = t1; */
 
-        let km = track.getKmfromPoint(point);
+        let cut_km = track.getKmfromPoint(point);
 
         track.signals.forEach((s) => {
-            if (s.km < km) t1.AddSignal(s);
-            else t2.AddSignal(s);
+            if (s.km < cut_km) {
+                s._positioning.track = t1;
+                t1.AddSignal(s);
+            } else {
+                s._positioning.track = t2;
+                s._positioning.km -= cut_km;
+                t2.AddSignal(s);
+            }
         });
 
-        return [t1,t2];
+        return [t1, t2];
+    }
+
+    static joinTrack(track1, track2) {
+        let cut_km = track1.length;
+        track1.setNewEnd(track2.end);
+
+        track2.signals.forEach((s) => {
+            s._positioning.track = track1;
+            s._positioning.km += cut_km;
+            track1.AddSignal(s);
+        });
     }
 
     static FromObject(o) {
@@ -55,7 +72,7 @@ class Track {
         unit: null,
         sin: 0,
         cos: 0,
-        id:0
+        id: 0,
     };
 
     get id() {
@@ -148,8 +165,8 @@ class Track {
         this.calcTempValues();
     }
 
-    along(point, x){
-        return geometry.multiply(this._tmp.unit, x * (point.x == this.start.x?1:-1))
+    along(point, x) {
+        return geometry.multiply(this._tmp.unit, x * (point.x == this.start.x ? 1 : -1));
     }
 
     AddSignal(signal) {
@@ -164,8 +181,8 @@ class Track {
         }
     }
 
-    addSwitch(sw){
-        this._tmp.switches[this.end.equals(sw.location)?1:0] = sw
+    addSwitch(sw) {
+        this._tmp.switches[this.end.equals(sw.location) ? 1 : 0] = sw;
     }
 
     stringify() {

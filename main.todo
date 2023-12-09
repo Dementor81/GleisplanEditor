@@ -2,6 +2,8 @@ Bugs:
     ✔ Signalmenü verdeckt das Signal @done(23-11-21 13:57)
     ☐ entfernen von Gleisen entfernt die Weiche nicht
     ☐ Drag'n Drop der signale, vor allem am Gleisende buggy
+    ☐ Textured Renderer aktualisieren, geht aktuell nicht
+    ☐ es lass sich 90° kurven zeichnen
 
 Detailing:
     ☐ Weichen Schaltung schöner darstellen
@@ -12,6 +14,7 @@ Features:
     ☐ Errror Handling mit schönem Output Boostrap toast oder so
     ☐ visualisieren, wo genau ein Signal am Gleis angeheftet ist (vllt mit kleiner roten Linie)
     ☐ Sachen markieren und bemalen können
+    ☐ vorgefertigte Gleispläne erstellen und laden
 
 
 

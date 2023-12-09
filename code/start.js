@@ -196,6 +196,7 @@ function init() {
         if (e.code == "Delete" && selectedTrack != null) {
             deleteTrack(selectedTrack, null);
             selectedTrack = null;
+            cleanupTracks();
             connectTracks2();
             save();
             renderer.reDrawEverything();
@@ -493,7 +494,7 @@ function handleMouseMove(event) {
         }
     } else if (mouseAction.action === MOUSE_ACTION.BUILD_TRACK) {
         setTrackAnchorPoints();
-        mouseAction.lineShape.graphics.c().setStrokeStyle(trackRendering_basic.STROKE).beginStroke(trackRendering_basic.TRACK_COLOR).moveTo(mouseAction.ankerPoints[0].x, mouseAction.ankerPoints[0].y);
+        mouseAction.lineShape.graphics.c().setStrokeStyle(trackRendering_basic.STROKE).beginStroke("blue").moveTo(mouseAction.ankerPoints[0].x, mouseAction.ankerPoints[0].y);
         for (let index = 1; index < mouseAction.ankerPoints.length; index++) {
             const co = mouseAction.ankerPoints[index];
             mouseAction.lineShape.graphics.lt(co.x, co.y);
@@ -589,6 +590,7 @@ function handleStageMouseUp(e) {
                         tmpPoint = p1;
                     }
                 }
+                cleanupTracks();
                 connectTracks2();
                 renderer.reDrawEverything();
 
@@ -668,56 +670,53 @@ function deleteTrack(track, Track_shape, remove_signals = true) {
     });
 }
 
-function checkAndCreateTrack(start, end) {
-    //liegt die track vollständig in einer anderen Track?
-    if (tracks.some((track) => geometry.within(track.start, track.end, start) && geometry.within(track.start, track.end, end))) return;
+function checkAndCreateTrack(p1, p2) {
+    if (deepEqual(p1, p2)) return;
 
-    //sicherstellen, das Tracks immer von links nach rechts verlaufen
-    if (start.x > end.x) {
-        const hlp = start;
-        start = end;
-        end = hlp;
+    if (p1.x > p2.x) {
+        const hlp = p1;
+        p1 = p2;
+        p2 = hlp;
     }
-
-    const slope = geometry.slope(start, end);
-    createTracks(start, end);
-    /* const new_tracks = createTracks(start, end);
-    new_tracks.forEach(t=>{
-        renderer.renderTrack(track_container, t);
-        tracks.push(t);
-    }) */
-    //sucht alle tracks, deren start oder ende innerhalb der neue Track liegt und den gleichen Slope haben
-    /*const filteredTracks = tracks.filter((track) => track._tmp.slope == slope && (geometry.within(start, end, track.start) || geometry.within(start, end, track.end)));
-    if (filteredTracks.length == 0) createTrack(start, end);
-    else
-     {
-         let track = filteredTracks[0];
-        filteredTracks.forEach((t) => {
-            if (t.start.x < start.x) start = t.start;
-        });
-        track.setNewStart(start);
-
-        filteredTracks.forEach((t) => {
-            if (t.end.x > end.x) end = t.end;
-        });
-        track.setNewEnd(end);
-
-        for (let i = 1; i < filteredTracks.length; i++) {
-            deleteTrack(filteredTracks[i]);
-        }
-    } */
-}
-
-function createTracks(p1, p2) {
-    const line = { start: p1, end: p2 };
     const slope = geometry.slope(p1, p2);
 
-    const cutting_tracks = tracks
+    //if (tracks.some((track) => geometry.within(track.start, track.end, p1) && geometry.within(track.start, track.end, p2))) return;
+
+    const tracksWithSameSlope = tracks.filter((track) => track._tmp.slope == slope);
+    let track;
+    tracksWithSameSlope
+        .filter((t) => geometry.within(t.start, t.end, p1))
+        .forEach((t) => {
+            if (t.end.x > p1.x) p1 = t.end;
+        });
+
+    tracksWithSameSlope
+        .filter((t) => geometry.within(t.start, t.end, p2))
+        .forEach((t) => {
+            if (t.start.x < p2.x) p2 = t.start;
+        });
+
+    if ((track = tracksWithSameSlope.find((t) => geometry.within(t.start, t.end, p2)))) {
+        p2 = track.start;
+    }
+
+    console.log(p1, p2);
+    if (p1.x > p2.x) return;
+
+    if ((track = tracksWithSameSlope.find((t) => geometry.within(p1, p2, t.start) && geometry.within(p1, p2, t.end)))) {
+        checkAndCreateTrack(p1, track.start);
+        checkAndCreateTrack(track.end, p2);
+        return;
+    }
+
+    const line = { start: p1, end: p2 };
+    const intersecting_tracks = tracks
         .filter((t) => slope != t._tmp.slope && slope + t._tmp.slope != 0) //filter all track with same slope or 90° angles
         .map((t) => [t, geometry.getIntersectionPoint(line, t)]) //get all intersection points
         .filter((item) => item[1] != null) //removes items with no intersection
         .sort((a, b) => a[1].x - b[1].x); // sort by x
-    cutting_tracks.forEach((item) => {
+    intersecting_tracks.forEach((item) => {
+        // split tracks
         let t = item[0];
         let intersection = item[1];
         if (!t.start.equals(intersection) && !t.end.equals(intersection)) {
@@ -726,17 +725,51 @@ function createTracks(p1, p2) {
         }
     });
 
-    if (cutting_tracks?.length > 0) {
+    if (intersecting_tracks?.length > 0) {
         let intersection;
-        cutting_tracks.forEach((item) => {
+        intersecting_tracks.forEach((item) => {
             if (item) {
                 intersection = item[1];
-                if (!intersection.equals(p1)) tracks.push(new Track(p1, intersection));
+                if (!intersection.equals(p1)) createTrack(p1, intersection);
                 p1 = intersection;
             }
         });
-        if (!intersection.equals(p2)) tracks.push(new Track(p1, p2));
-    } else tracks.push(new Track(p1, p2));
+        if (!intersection.equals(p2)) createTrack(p1, p2); //last bit, from the last intersection to the end
+    } else createTrack(p1, p2);
+}
+
+function createTrack(start, end) {
+    /* const slope = geometry.slope(start, end);
+    
+    let filteredTracks = tracks.filter((track) => geometry.within(start, end, track.start));
+    if (filteredTracks.length == 1 && filteredTracks[0]._tmp.slope == slope) {
+        filteredTracks[0].setNewStart(start);
+        return;
+    } 
+    
+    filteredTracks = tracks.filter((track) => geometry.within(start, end, track.end));
+    if (filteredTracks.length == 1 && filteredTracks[0]._tmp.slope == slope) {
+        filteredTracks[0].setNewEnd(end);
+        return;
+    }  */
+
+    if (deepEqual(start, end)) debugger;
+    else tracks.push(new Track(start, end));
+}
+
+function cleanupTracks() {
+    let i = 0;
+    while (i < tracks.length) {
+        const track = tracks[i];
+
+        //searches for every track wich starts or end at that point, filters tracks wich would combine to a 90° angle
+        const connected_tracks = tracks.filter((t) => t != track && (t.start.equals(track.end) || t.end.equals(track.end)));
+
+        if (connected_tracks.length == 1 && connected_tracks[0].rad == track.rad) {
+            Track.joinTrack(track, connected_tracks[0]);
+            deleteTrack(connected_tracks[0], false);
+        } else i++;
+    }
 }
 
 function createSwitch(location, tracks) {
@@ -745,6 +778,8 @@ function createSwitch(location, tracks) {
     };
 
     const groupedByRad = Object.values(groupBy(tracks, "_tmp.rad"));
+    if (groupedByRad.length != 2) return; // throw new Error("Wrong switsch connection! found " + groupedByRad.length + " different slopes");
+
     groupedByRad.forEach((a) => a.sort((t1, t2) => t1.start.x - t2.start.x));
     groupedByRad.sort((a, b) => b.length - a.length);
 
@@ -779,6 +814,7 @@ function createSwitch(location, tracks) {
 function connectTracks2() {
     tracks.forEach((track) => (track._tmp.switches = [])); //delets all swichtes
     switches = [];
+    let sw;
     const end_points = [];
     //iterate over all tracks
     for (let i = 0; i < tracks.length; i++) {
@@ -795,7 +831,7 @@ function connectTracks2() {
                 connected_tracks[0]._tmp.switches[0] = track;
             } else if (connected_tracks.length.between(2, 3)) {
                 connected_tracks.push(track);
-                switches.push(createSwitch(location, connected_tracks));
+                if ((sw = createSwitch(location, connected_tracks))) switches.push(sw);
             }
         }
     }
