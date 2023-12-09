@@ -389,13 +389,7 @@ const geometry = {
         const intersectionX = line1.start.x + ua * (line1.end.x - line1.start.x);
         const intersectionY = line1.start.y + ua * (line1.end.y - line1.start.y);
 
-        return { x: intersectionX, y: intersectionY };
-    },
-    getIntersectionPointX: function (line1, line2) {
-        if (deepEqual(line1.start, line2.start) || deepEqual(line1.end, line2.end) || deepEqual(line1.end, line2.start) || deepEqual(line1.start, line2.end)) return null;
-        const intersection = geometry.getIntersectionPoint(line1, line2);
-        if (deepEqual(line1.start, intersection) || deepEqual(line1.end, intersection) || deepEqual(intersection, line2.start) || deepEqual(intersection, line2.end)) return null;
-        return intersection;
+        return new Point(intersectionX, intersectionY);
     },
     pointOnLine: function (point1, point2, targetPoint) {
         // Extract coordinates from the objects

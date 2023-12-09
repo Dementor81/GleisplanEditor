@@ -429,7 +429,10 @@ function handleMouseMove(event) {
     if (mouseAction == null) return;
     //falls mouseMove noch läuft, obwohl der User keinen button mehr drückt
     //tritt vor allem beim debugging auf
-    if (event.nativeEvent.buttons == 0) return handleStageMouseUp(event);
+    if (event.nativeEvent.buttons == 0) {
+        console.log("debug mouse error");
+        return handleStageMouseUp(event);
+    }
 
     let local_point = stage.globalToLocal(stage.mouseX, stage.mouseY);
     //console.log(local_point, { x: stage.mouseX, y: stage.mouseY });
@@ -533,7 +536,7 @@ function setTrackAnchorPoints() {
 }
 
 function handleStageMouseUp(e) {
-    //console.log("handleStageMouseUp", e);
+    console.log("handleStageMouseUp", e);
 
     let p2 = stage.globalToLocal(stage.mouseX, stage.mouseY);
     if (mouseAction == null) return;
@@ -609,7 +612,7 @@ function switch_A_Switch(sw, mouseAction) {
         if (mouseAction.offset.x < sw.location.x) {
             sw.branch = swap(sw.branch, sw.t2, sw.t3);
         } else {
-            sw.from = swap(sw.from, sw.t1, sw.t4);            
+            sw.from = swap(sw.from, sw.t1, sw.t4);
         }
     }
 
@@ -677,8 +680,12 @@ function checkAndCreateTrack(start, end) {
     }
 
     const slope = geometry.slope(start, end);
-
-    createTrack(start, end);
+    createTracks(start, end);
+    /* const new_tracks = createTracks(start, end);
+    new_tracks.forEach(t=>{
+        renderer.renderTrack(track_container, t);
+        tracks.push(t);
+    }) */
     //sucht alle tracks, deren start oder ende innerhalb der neue Track liegt und den gleichen Slope haben
     /*const filteredTracks = tracks.filter((track) => track._tmp.slope == slope && (geometry.within(start, end, track.start) || geometry.within(start, end, track.end)));
     if (filteredTracks.length == 0) createTrack(start, end);
@@ -701,31 +708,35 @@ function checkAndCreateTrack(start, end) {
     } */
 }
 
-function createTrack(p1, p2) {
+function createTracks(p1, p2) {
     const line = { start: p1, end: p2 };
     const slope = geometry.slope(p1, p2);
-    let intersection = null;
-    let found = false;
-    tracks.forEach((t) => {
-        if (slope != t._tmp.slope && slope + t._tmp.slope != 0 && (intersection = geometry.getIntersectionPoint(line, t))) {
-            if (!t.start.equals(intersection) && !t.end.equals(intersection)) {
-                tracks = tracks.concat(Track.splitTrack(t, intersection));
-                deleteTrack(t, false);
-            }
-            //t splitten
-            //und neue track splitten und createTrack für jede teilstrecke erneut aufrufen
-            if (!(deepEqual(p1, intersection) || deepEqual(p2, intersection))) {
-                found = true;
-                createTrack(p1, intersection);
-                createTrack(intersection, p2);
-            }
+
+    const cutting_tracks = tracks
+        .filter((t) => slope != t._tmp.slope && slope + t._tmp.slope != 0) //filter all track with same slope or 90° angles
+        .map((t) => [t, geometry.getIntersectionPoint(line, t)]) //get all intersection points
+        .filter((item) => item[1] != null) //removes items with no intersection
+        .sort((a, b) => a[1].x - b[1].x); // sort by x
+    cutting_tracks.forEach((item) => {
+        let t = item[0];
+        let intersection = item[1];
+        if (!t.start.equals(intersection) && !t.end.equals(intersection)) {
+            tracks = tracks.concat(Track.splitTrack(t, intersection));
+            deleteTrack(t, false);
         }
     });
-    if (!found) {
-        let track = new Track(p1, p2);
-        renderer.renderTrack(track_container, track);
-        tracks.push(track);
-    }
+
+    if (cutting_tracks?.length > 0) {
+        let intersection;
+        cutting_tracks.forEach((item) => {
+            if (item) {
+                intersection = item[1];
+                if (!intersection.equals(p1)) tracks.push(new Track(p1, intersection));
+                p1 = intersection;
+            }
+        });
+        if (!intersection.equals(p2)) tracks.push(new Track(p1, p2));
+    } else tracks.push(new Track(p1, p2));
 }
 
 function createSwitch(location, tracks) {
@@ -735,13 +746,13 @@ function createSwitch(location, tracks) {
 
     const groupedByRad = Object.values(groupBy(tracks, "_tmp.rad"));
     groupedByRad.forEach((a) => a.sort((t1, t2) => t1.start.x - t2.start.x));
-    groupedByRad.sort((a,b)=>b.length-a.length);
+    groupedByRad.sort((a, b) => b.length - a.length);
 
     sw.t3 = groupedByRad[1][0];
 
     sw.type = ((findAngle(location, sw.t3.end.equals(location) ? sw.t3.start : sw.t3.end, groupedByRad[0][0].rad) / 45) % 8) + 1;
 
-    if ((sw.type == SWITCH_TYPE.FROM_LEFT || sw.type == SWITCH_TYPE.FROM_RIGHT)) {
+    if (sw.type == SWITCH_TYPE.FROM_LEFT || sw.type == SWITCH_TYPE.FROM_RIGHT) {
         sw.t1 = groupedByRad[0][1];
         sw.t2 = groupedByRad[0][0];
     } else {
