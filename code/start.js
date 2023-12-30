@@ -9,6 +9,12 @@ const MODE_EDIT = 2;
 const GRID_SIZE = 70;
 const GRID_SIZE_2 = GRID_SIZE / 2;
 
+const DIRECTION = {
+    LEFT_2_RIGTH: 1,
+    RIGHT_2_LEFT: -1,
+
+}
+
 const MOUSE_ACTION = {
     NONE: 0,
     SCROLL: 1,
@@ -553,7 +559,7 @@ function handleStageMouseUp(e) {
                     });
                 } else if (mode === MODE_EDIT) {
                     if (!$("#generated_menu").length) {
-                        let context_menu = ui.showContextMenu({ x: e.rawX, y: e.rawY }, $(myCanvas), mouseAction.container.signal.getContectMenu(), mouseAction.container.signal);
+                        let context_menu = ui.showContextMenu({ x: e.rawX, y: e.rawY }, $(myCanvas), mouseAction.container.signal.getContextMenu(), mouseAction.container.signal);
                     }
                 }
             } else if (mouseAction.container?.name == "track") {

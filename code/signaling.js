@@ -64,7 +64,7 @@ class VisualElement {
     //if existing the signalstellung must be set on the signal
     //if both are not set, its always ebabled
     isEnabled(signal) {
-         return (this.#_enabled == null || this.#_enabled(signal)) && signal.check(this.#_stellung);
+        return (this.#_enabled == null || this.#_enabled(signal)) && signal.check(this.#_stellung);
     }
 
     /*     disableAllOther = (s, gruppe) => s._template.elements.forEach((e) => { if (e.gruppe === gruppe) e.disable(s) });
@@ -148,7 +148,7 @@ class SignalTemplate {
     get title() {
         return this.#_title;
     }
-    get start() {
+    get initialSignalStellung() {
         return this.#_start;
     }
     get json_file() {
@@ -161,10 +161,10 @@ class SignalTemplate {
         this.#_scale = v;
     }
 
-    constructor(id, title, json_file, startElements, start) {
+    constructor(id, title, json_file, startElements, initialSignalStellung) {
         this.#_id = id;
         this.#_title = title;
-        this.#_start = start;
+        this.#_start = initialSignalStellung;
         this.#_json_file = json_file;
 
         this.elements = [];
@@ -235,6 +235,36 @@ function initSignals() {
     const verw_strecke = ["verwendung.bksig", "verwendung.sbk", "verwendung.esig"];
     const verw_bahnhof = ["verwendung.asig", "verwendung.zsig"];
 
+    const checkSignalDependencyFunction4HV = function (signal, hp) {
+        if (signal.get("vr") != -2) {
+            //-2 heißt, die Vorsignalfunktion ist vom User ausgeschaltet
+            if (!signal.features.match("hp") || signal.get("hp") != 0) { //Das Hauptsignal leuchtet oder es ist ein alleinstehndes Vorsignal
+                switch (hp._template.id) {
+                    case "Hv77":
+                    case "hv_hp":
+                        {
+                            signal.set("vr", hp.get("hp") >= 0 ? hp.get("hp") : 0);
+                        }
+                        break;
+                    case "Hl":
+                    case "ks_hp":
+                        {
+                            signal.set("vr",hp.get("hp") <= 0 ? 0 : 1);
+                        }
+                        break;
+
+                    default:
+                        throw hp._template.id + " unbekannt";
+                }
+
+                /* if (hp._signalStellung.zs3.v == 40) {
+                this._signalStellung.zs3v.v = 0;
+                if (this._signalStellung.vr > 0) this._signalStellung.vr = 2;
+            } else this._signalStellung.zs3v.v = hp._signalStellung.zs3.v; */
+            }
+        }
+    };
+
     let t = new SignalTemplate(
         "hv_hp",
         "Hv Hauptsignal",
@@ -293,7 +323,8 @@ function initSignals() {
         ["hp=0", "vr=0"]
     );
     t.scale = 0.05;
-    t.startOptions = ["verwendung.asig", "mastschild.wrw"];
+    t.checkSignalDependency = checkSignalDependencyFunction4HV;
+    t.initialFeatures = ["hp", "verwendung.asig", "mastschild.wrw"];
     t.contextMenu = [].concat(menu.Verwendung, menu.Mastschild, menu.Vorsignal, menu.verkürzt);
     signalTemplates.hv_hp = t;
 
@@ -319,7 +350,8 @@ function initSignals() {
         "vr=0"
     );
     t.scale = 0.05;
-
+    t.checkSignalDependency = checkSignalDependencyFunction4HV;
+    t.initialFeatures = ["vr"];
     t.contextMenu = [].concat(menu.verkürzt, menu.wiederholer);
     signalTemplates.hv_vr = t;
 
@@ -348,7 +380,7 @@ function initSignals() {
         "hp=0"
     );
 
-    t.startOptions = ["verwendung.asig"];
+    t.initialFeatures = ["verwendung.asig"];
     t.contextMenu = [].concat(menu.Verwendung, menu.Vorsignal, menu.verkürzt);
     signalTemplates.ks_hp = t;
 
@@ -380,7 +412,7 @@ function initSignals() {
             ],
         },
     ];
-    signalTemplates.ne4.startOptions = ["bauart.groß"];
+    signalTemplates.ne4.initialFeatures = ["bauart.groß"];
 
     signalTemplates.ne1 = new SignalTemplate("ne1", "Ne 1", "basic", "ne1");
 

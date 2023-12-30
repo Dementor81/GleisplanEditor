@@ -170,8 +170,9 @@ class Track {
     }
 
     AddSignal(signal) {
-        let i = this.signals.findIndex((s) => signal._positioning.km > s._positioning.km);
-        this.signals.splice(i + 1, 0, signal);
+        let i = this.signals.findIndex((s) => signal._positioning.km < s._positioning.km);
+        if (i != -1) this.signals.splice(i, 0, signal);
+        else this.signals.push(signal);
     }
 
     removeSignal(s) {

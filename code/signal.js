@@ -3,7 +3,7 @@
 class Signal {
     static FromObject(o) {
         let s = new Signal();
-        
+
         s._template = signalTemplates[o._template];
         s._signalStellung = o._signalStellung;
         s._positioning = o._positioning;
@@ -73,21 +73,48 @@ class Signal {
         if (template) {
             this._template = template;
 
-            if (template.startOptions)
-                if (Array.isArray(template.startOptions)) template.startOptions.forEach((i) => this.features.set(i));
-                else this.features.set(template.startOptions);
+            if (template.initialFeatures)
+                if (Array.isArray(template.initialFeatures)) template.initialFeatures.forEach((i) => this.features.set(i, true));
+                else this.features.set(template.initialFeatures);
 
-            if (template.start)
-                if (Array.isArray(template.start)) template.start.forEach((i) => this.set(i));
-                else this.set(template.start);
+            if (template.initialSignalStellung)
+                if (Array.isArray(template.initialSignalStellung)) template.initialSignalStellung.forEach((i) => this.set(i));
+                else this.set(template.initialSignalStellung);
         }
     }
 
+    //Setzt die Signalstellung, 2 Möglichkeiten:
+    //set("hp",0)
+    //oder
+    //set("hp=0")
     set(stellung, value) {
-        const splitted = stellung.split("=");
-        if (splitted.length == 1) this._signalStellung[splitted[0]] = value;
-        else if (this.check(stellung)) delete this._signalStellung[splitted[0]];
-        else this._signalStellung[splitted[0]] = splitted[1];
+        let changed = false;
+        /* const splitted = stellung.split("=");
+        if (splitted.length == 2) {
+            value = splitted[1];
+            stellung = splitted[0];
+        } */
+        if (value == undefined) [stellung, value] = stellung.split("=");
+
+        if (this.get(stellung) != value) {
+            /* if (this.check(stellung)) delete this._signalStellung[stellung];
+            else this._signalStellung[stellung] = value; */
+            this._signalStellung[stellung] = value;
+            changed = true;
+        }
+
+        //Signal is actual positioned at a track (e.g. When Signal is created, there isnt a track yet)
+        //and the signal indication actualy changed
+        if (this._positioning.track && changed) {
+            if (this.features.match("hp")) {
+                const prevSignal = this.search4Signal(DIRECTION.RIGHT_2_LEFT,"vr");
+                if (prevSignal && prevSignal._template.checkSignalDependency) prevSignal._template.checkSignalDependency(prevSignal, this);
+            }
+            if (this.features.match("vr")) {
+                const nextSignal = this.search4Signal(DIRECTION.LEFT_2_RIGTH,"hp");
+                if (nextSignal && nextSignal.features.match("hp") && this._template.checkSignalDependency) this._template.checkSignalDependency(this, nextSignal);
+            }
+        }
     }
 
     get(stellung) {
@@ -105,7 +132,7 @@ class Signal {
 
         this._template.elements.forEach((ve) => this.drawVisualElement(ve));
 
-        this._rendering = null;
+        delete this._rendering;
     }
 
     drawVisualElement(ve) {
@@ -220,23 +247,30 @@ class Signal {
         }); */
     }
 
-    getContectMenu() {
+    getContextMenu() {
         return this._template.contextMenu;
     }
 
-    search4NextSignal() {
-        let index = this._positioning.track.signals.indexOf(this);
-        if(index < this._positioning.track.signals.length-1){
-            //check signal
-        }
-        else{
-            //check next track
-        }
+    search4Signal(dir, feature) {
         
-        while (hp) {
+        let track = this._positioning.track;
+        let index = track.signals.indexOf(this) + dir;
+        let sw = null;
+
+        while (track) {
+            while (dir == 1 ? index < track.signals.length : index >= 0) {
+                let nextSignal = track.signals[index];
+                if (nextSignal.features.match(feature)) {
+                    return nextSignal; //hauptsignal gefunden
+                } else index = index + dir;
+            }
+
+            if ((sw = track._tmp.switches[dir == 1 ? 1 : 0])) {
+                if (type(sw) == "Track") track = sw;
+                else track = sw.branch; //TODO: hier muss noch mehr logik rein!
+
+                index = track.signals.length - 1;
+            } else track = null;
         }
-
-
-
     }
 }
