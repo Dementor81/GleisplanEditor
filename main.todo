@@ -11,7 +11,7 @@ Detailing:
 
 
 Features:
-    ☐ Signale verketten/automatische vorsignalisierung @started(23-11-21 12:15)
+    ✔ Signale verketten/automatische vorsignalisierung @started(23-11-21 12:15) @done(24-01-08 11:46) @lasted(6w5d23h31m36s)
     ☐ Zs3/Zs3v
     ☐ Errror Handling mit schönem Output Boostrap toast oder so
     ☐ visualisieren, wo genau ein Signal am Gleis angeheftet ist (vllt mit kleiner roten Linie)
@@ -34,7 +34,7 @@ Features:
 
 
 
-    It adds 6 shortcuts when editing a Todo file:
+    'It adds 6 shortcuts when editing a Todo file:'
 
         'Cmd/Ctrl+Enter' // Triggers `Todo: Toggle Box`
         'Alt+Enter' // Triggers `Todo: Toggle Box`

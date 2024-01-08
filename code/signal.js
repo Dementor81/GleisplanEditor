@@ -107,12 +107,12 @@ class Signal {
         //and the signal indication actualy changed
         if (this._positioning.track && changed) {
             if (this.features.match("hp")) {
-                const prevSignal = this.search4Signal(DIRECTION.RIGHT_2_LEFT,"vr");
+                const prevSignal = this.search4Signal(DIRECTION.RIGHT_2_LEFT, "vr");
                 if (prevSignal && prevSignal._template.checkSignalDependency) prevSignal._template.checkSignalDependency(prevSignal, this);
             }
-            if (this.features.match("vr")) {
-                const nextSignal = this.search4Signal(DIRECTION.LEFT_2_RIGTH,"hp");
-                if (nextSignal && nextSignal.features.match("hp") && this._template.checkSignalDependency) this._template.checkSignalDependency(this, nextSignal);
+            if (this.features.match("vr") && this._template.checkSignalDependency) {
+                const nextSignal = this.search4Signal(DIRECTION.LEFT_2_RIGTH, "hp");
+                if (nextSignal) this._template.checkSignalDependency(this, nextSignal);
             }
         }
     }
@@ -252,24 +252,56 @@ class Signal {
     }
 
     search4Signal(dir, feature) {
-        
+        if (this._positioning.above != this._positioning.flipped) dir *= -1;
+
         let track = this._positioning.track;
         let index = track.signals.indexOf(this) + dir;
         let sw = null;
 
+        //function checks, if this signal and the given signal belong together
+        /* above flipped above flipped result
+        0   	0	    0   	0   	1
+        0	    1	    0   	0   	0
+        0   	0   	0   	1   	0
+        0   	1	    0   	1	    1
+        1   	0   	0   	0   	0
+        0   	0   	1   	0   	0
+        1   	0   	1   	0   	1
+        0   	0   	1	    1   	1
+        1   	1   	0	    0	    1
+        0   	1   	1	    0   	1
+        1   	0   	0   	1	    1
+        1   	1   	1   	0   	0
+        0   	1	    1   	1	    0
+        1   	1	    1   	1	    1 
+        the hack is, that wehen all above and flipped are added, the number is even if they belong together*/
+        const check = function (pos) {
+            return (Number(this._positioning.above) + Number(this._positioning.flipped) + Number(pos.flipped) + Number(pos.above)) % 2 == 0;
+        }.bind(this);
+
+        const getTrackAtBranch = function (sw, track) {
+            if (track == sw.from) return sw.branch;
+            if (track == sw.branch) return sw.from;
+
+            return null;
+        };
+
         while (track) {
-            while (dir == 1 ? index < track.signals.length : index >= 0) {
+            while (dir == 1 ? index >= 0 && index < track.signals.length : index >= 0) {
                 let nextSignal = track.signals[index];
-                if (nextSignal.features.match(feature)) {
+                if (nextSignal.features.match(feature) && check(nextSignal._positioning)) {
                     return nextSignal; //hauptsignal gefunden
                 } else index = index + dir;
             }
 
             if ((sw = track._tmp.switches[dir == 1 ? 1 : 0])) {
                 if (type(sw) == "Track") track = sw;
-                else track = sw.branch; //TODO: hier muss noch mehr logik rein!
+                else track = getTrackAtBranch(sw, track); //TODO: hier muss noch mehr logik rein!
 
-                index = track.signals.length - 1;
+                if (track) {
+                    index = track.signals.length - 1;
+                    if (dir == DIRECTION.LEFT_2_RIGTH) index = Math.min(0,index);                    
+                }
             } else track = null;
         }
     }

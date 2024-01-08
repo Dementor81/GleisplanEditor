@@ -781,16 +781,26 @@ function cleanupTracks() {
 function createSwitch(location, tracks) {
     const sw = {
         location: location,
+        t1: null,
+        t2: null,
+        t3: null,
+        //t4: null //only available if its a dkw
+        type: 0,
+        branch: null, // one of thr tracks
+        //from: null  //only available if its a dkw
     };
 
     const groupedByRad = Object.values(groupBy(tracks, "_tmp.rad"));
-    if (groupedByRad.length != 2) return; // throw new Error("Wrong switsch connection! found " + groupedByRad.length + " different slopes");
+    if (groupedByRad.length != 2) return; // throw new Error("Wrong switch connection! found " + groupedByRad.length + " different slopes");
 
+    //sort each group by its x coordinate
     groupedByRad.forEach((a) => a.sort((t1, t2) => t1.start.x - t2.start.x));
+    //sort the groups by the number of tracks in it. this way, he branch is always the 2nd group.
     groupedByRad.sort((a, b) => b.length - a.length);
 
+    //cause we have sorted by the number of tracks, t3 is always the branch
     sw.t3 = groupedByRad[1][0];
-
+    
     sw.type = ((findAngle(location, sw.t3.end.equals(location) ? sw.t3.start : sw.t3.end, groupedByRad[0][0].rad) / 45) % 8) + 1;
 
     if (sw.type == SWITCH_TYPE.FROM_LEFT || sw.type == SWITCH_TYPE.FROM_RIGHT) {
@@ -802,10 +812,10 @@ function createSwitch(location, tracks) {
     }
     //stellt die Weiche standardmäßig ins Hauptgleis
     sw.branch = sw.t2;
+    sw.from = sw.t1;
 
     if (tracks.length == 4) {
-        sw.type = SWITCH_TYPE.DKW;
-        sw.from = sw.t1;
+        sw.type = SWITCH_TYPE.DKW;        
         sw.t4 = groupedByRad[1][1];
     }
 
