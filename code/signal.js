@@ -87,7 +87,7 @@ class Signal {
     //set("hp",0)
     //oder
     //set("hp=0")
-    set(stellung, value) {
+    set(stellung, value, chain=true) {
         let changed = false;
         /* const splitted = stellung.split("=");
         if (splitted.length == 2) {
@@ -99,20 +99,32 @@ class Signal {
         if (this.get(stellung) != value) {
             /* if (this.check(stellung)) delete this._signalStellung[stellung];
             else this._signalStellung[stellung] = value; */
-            this._signalStellung[stellung] = value;
+            this._signalStellung[stellung] = Number(value);
             changed = true;
         }
 
         //Signal is actual positioned at a track (e.g. When Signal is created, there isnt a track yet)
         //and the signal indication actualy changed
-        if (this._positioning.track && changed) {
-            if (this.features.match("hp")) {
-                const prevSignal = this.search4Signal(DIRECTION.RIGHT_2_LEFT, "vr");
-                if (prevSignal && prevSignal._template.checkSignalDependency) prevSignal._template.checkSignalDependency(prevSignal, this);
+        if (this._positioning.track && changed && chain) {
+            let stop = false
+            if (this.features.match(["hp", "master"])) {
+                let prevSignal = this;
+                do {
+                    prevSignal = this.search4Signal(prevSignal,DIRECTION.RIGHT_2_LEFT);
+                    if (prevSignal && prevSignal._template.checkSignalDependency)
+                        stop = prevSignal._template.checkSignalDependency(prevSignal, this,["vr", "slave"]);
+
+                } while (!stop && prevSignal);
             }
-            if (this.features.match("vr") && this._template.checkSignalDependency) {
-                const nextSignal = this.search4Signal(DIRECTION.LEFT_2_RIGTH, "hp");
-                if (nextSignal) this._template.checkSignalDependency(this, nextSignal);
+            if (this.features.match(["vr", "slave"]) && this._template.checkSignalDependency) {
+                let nextSignal = this;
+                do {
+                    nextSignal = this.search4Signal(nextSignal,DIRECTION.LEFT_2_RIGTH);
+                    if (nextSignal && nextSignal._template.checkSignalDependency)
+                        stop = nextSignal._template.checkSignalDependency(this,nextSignal,["hp", "master"]);
+
+                } while (!stop && nextSignal);
+                
             }
         }
     }
@@ -251,11 +263,11 @@ class Signal {
         return this._template.contextMenu;
     }
 
-    search4Signal(dir, feature) {
-        if (this._positioning.above != this._positioning.flipped) dir *= -1;
+    search4Signal(signal, dir, feature) {
+        if (signal._positioning.above != signal._positioning.flipped) dir *= -1;
 
-        let track = this._positioning.track;
-        let index = track.signals.indexOf(this) + dir;
+        let track = signal._positioning.track;
+        let index = track.signals.indexOf(signal) + dir;
         let sw = null;
 
         //function checks, if this signal and the given signal belong together
@@ -276,8 +288,8 @@ class Signal {
         1   	1	    1   	1	    1 
         the hack is, that wehen all above and flipped are added, the number is even if they belong together*/
         const check = function (pos) {
-            return (Number(this._positioning.above) + Number(this._positioning.flipped) + Number(pos.flipped) + Number(pos.above)) % 2 == 0;
-        }.bind(this);
+            return (Number(signal._positioning.above) + Number(signal._positioning.flipped) + Number(pos.flipped) + Number(pos.above)) % 2 == 0;
+        };
 
         const getTrackAtBranch = function (sw, track) {
             if (track == sw.from) return sw.branch;
@@ -300,9 +312,9 @@ class Signal {
 
                 if (track) {
                     index = track.signals.length - 1;
-                    if (dir == DIRECTION.LEFT_2_RIGTH) index = Math.min(0,index);                    
+                    if (dir == DIRECTION.LEFT_2_RIGTH) index = Math.min(0, index);
                 }
             } else track = null;
         }
-    }
+    }    
 }

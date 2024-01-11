@@ -236,20 +236,25 @@ function initSignals() {
     const verw_bahnhof = ["verwendung.asig", "verwendung.zsig"];
 
     const checkSignalDependencyFunction4HV = function (signal, hp) {
-        if (signal.get("vr") != -2) {
-            //-2 heißt, die Vorsignalfunktion ist vom User ausgeschaltet
+        if (signal.get("vr") != -2) { //-2 heißt, die Vorsignalfunktion ist vom User ausgeschaltet            
             if (!signal.features.match("hp") || signal.get("hp") != 0) { //Das Hauptsignal leuchtet oder es ist ein alleinstehndes Vorsignal
                 switch (hp._template.id) {
                     case "Hv77":
                     case "hv_hp":
+                    case "hv_vr":
                         {
-                            signal.set("vr", hp.get("hp") >= 0 ? hp.get("hp") : 0);
+                            signal.set("vr", hp.get("hp") >= 0 ? hp.get("hp") : 0,false);
+                            if (!signal.features.match("wdh"))
+                                return true;
                         }
                         break;
                     case "Hl":
                     case "ks_hp":
+                    case "ks_vr":
                         {
-                            signal.set("vr",hp.get("hp") <= 0 ? 0 : 1);
+                            signal.set("vr", hp.get("hp") <= 0 ? 0 : 1,false);
+                            if (!signal.features.match("wdh"))
+                                return true;
                         }
                         break;
 
@@ -263,6 +268,8 @@ function initSignals() {
             } else this._signalStellung.zs3v.v = hp._signalStellung.zs3.v; */
             }
         }
+
+        return false;
     };
 
     let t = new SignalTemplate(
@@ -344,8 +351,9 @@ function initSignals() {
                     new VisualElement("vr2", { btn_text: "Vr 2", stellung: "vr=2" }),
                 ],
             }),
-            new VisualElement("verk", { conditions: "verk" }),
+            new VisualElement("verk", { conditions: ["verk","wdh"] }),
             new VisualElement("verk_licht", { btn_text: "Verkürzt", conditions: "verk", stellung: "verk=1" }),
+            new VisualElement("verk_licht", { conditions: "wdh"}),
         ],
         "vr=0"
     );
@@ -417,8 +425,10 @@ function initSignals() {
     signalTemplates.ne1 = new SignalTemplate("ne1", "Ne 1", "basic", "ne1");
 
     signalTemplates.lf6 = new SignalTemplate("lf6", "Lf 6", "basic", ["lf6", new TextElement({ pos: [30, 8], format: "bold 30px Arial", btn_text: "Kennziffer", stellung: "geschw" })], "geschw=9");
+    signalTemplates.lf6.initialFeatures = ["slave"];
 
     signalTemplates.lf7 = new SignalTemplate("lf7", "Lf 7", "basic", ["lf7", new TextElement({ pos: [20, 10], format: "bold 40px Arial", btn_text: "Kennziffer", stellung: "geschw" })], "geschw=6");
+    signalTemplates.lf7.initialFeatures = ["master"];
 
     signalTemplates.zs3 = new SignalTemplate(
         "zs3",

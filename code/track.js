@@ -24,7 +24,7 @@ class Track {
         let cut_km = track.getKmfromPoint(point);
 
         track.signals.forEach((s) => {
-            if (s.km < cut_km) {
+            if (s._positioning.km < cut_km) {
                 s._positioning.track = t1;
                 t1.AddSignal(s);
             } else {
