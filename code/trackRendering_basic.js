@@ -67,8 +67,8 @@ class trackRendering_basic {
         const text = new createjs.Text(track.id, "Italic 10px Arial", "black");
         const p = geometry.perpendicular(track.along(track.start, track.length / 2), track.deg, 15);
 
-        text.x = p.x + track.start.x;
-        text.y = p.y + track.start.y;
+        text.x = p.x;
+        text.y = p.y;
         text.textBaseline = "alphabetic";
         ui_container.addChild(text);
 
@@ -88,13 +88,13 @@ class trackRendering_basic {
 
             let p1, p2;
 
-            p1 = geometry.add(sw.location, sw.t2.along(sw.location, trackRendering_basic.SWITCH_SIZE));
-            p2 = geometry.add(sw.location, sw.t3.along(sw.location, trackRendering_basic.SWITCH_SIZE));
+            p1 = sw.t2.along(sw.location, trackRendering_basic.SWITCH_SIZE);
+            p2 = sw.t3.along(sw.location, trackRendering_basic.SWITCH_SIZE);
             this.drawTriangle(switch_shape, "black", sw.location, p1, p2);
 
             if (sw.type == SWITCH_TYPE.DKW) {
-                p1 = geometry.add(sw.location, sw.t1.along(sw.location, trackRendering_basic.SWITCH_SIZE));
-                p2 = geometry.add(sw.location, sw.t4.along(sw.location, trackRendering_basic.SWITCH_SIZE));
+                p1 = sw.t1.along(sw.location, trackRendering_basic.SWITCH_SIZE);
+                p2 = sw.t4.along(sw.location, trackRendering_basic.SWITCH_SIZE);
 
                 this.drawTriangle(switch_shape, "black", sw.location, p1, p2);
             }
@@ -119,8 +119,8 @@ class trackRendering_basic {
                 ui_shape.graphics.setStrokeStyle(trackRendering_basic.STROKE / 2, "round").beginStroke("gray");
 
                 const triangle = function (t) {
-                    let p1 = geometry.add(sw.location, t.along(sw.location, 10));
-                    let p0 = geometry.add(sw.location, t.along(sw.location, 3));
+                    let p1 = t.along(sw.location, 10);
+                    let p0 = t.along(sw.location, 3);
                     ui_shape.graphics.moveTo(p0.x, p0.y).lineTo(p1.x, p1.y);
                 };
 

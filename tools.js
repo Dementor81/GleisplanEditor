@@ -501,6 +501,10 @@ class V2 {
     sub(v) {
         return new V2(geometry.sub(this, v));
     }
+
+    multiply(s) {
+        return new V2(geometry.multiply(this, s));
+    }
 }
 
 class Point {

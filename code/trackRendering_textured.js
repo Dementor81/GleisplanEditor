@@ -6,8 +6,6 @@ class trackRendering_textured {
     static signale_scale = 0.1;
     static SCHWELLEN_VARIANTEN = 24;
 
-    
-
     static RAIL = [
         [1.4, "#222"],
         [1.2, "#999999"],
@@ -17,11 +15,9 @@ class trackRendering_textured {
     constructor() {
         //cause the class is been loaded before start.js, we have to hack and calculate this constant here
         trackRendering_textured.CURVE_RADIUS = GRID_SIZE * 1.2;
-        
+
         this.SIGNAL_DISTANCE_FROM_TRACK = 30;
     }
-
-    
 
     reDrawEverything() {
         if (!pl.loaded)
@@ -47,10 +43,9 @@ class trackRendering_textured {
         this.schwellenGap = this.schwellenBreite * 1;
         this.rail_offset = this.schwellenHöhe / 5;
 
-        
+        this.main_x = (Math.sin(π / 8) * trackRendering_textured.CURVE_RADIUS) / Math.cos(π / 8);
+        this.main_x2 = this.main_x * Math.sin(π / 4);
     }
-
-    
 
     renderAllTracks() {
         tracks.forEach((t) => {
@@ -63,7 +58,55 @@ class trackRendering_textured {
         });
     }
 
+    createHitArea(startpoint, endpoint, deg) {
+        const hit = new createjs.Shape();
+        const sw2 = this.schwellenHöhe / 2;
+        const p1 = geometry.perpendicular(startpoint, deg, -sw2);
+        const p2 = geometry.perpendicular(startpoint, deg, sw2);
+        const p3 = geometry.perpendicular(endpoint, deg, sw2);
+        const p4 = geometry.perpendicular(endpoint, deg, -sw2);
+
+        hit.graphics.beginFill("#000").mt(p1.x, p1.y).lt(p2.x, p2.y).lt(p3.x, p3.y).lt(p4.x, p4.y).lt(p1.x, p1.y);
+
+        return hit;
+    }
+
     renderTrack(container, track) {
+        const texture_container = new createjs.Container();
+        texture_container.name = "track";
+        texture_container.track = track;
+        texture_container.mouseChildren = false;
+        const rail_shape = new createjs.Shape();
+
+        let weiche = null,
+            switch_values = null,
+            endpoint = geometry.sub(track.end, track.start),
+            startpoint = new Point(0, 0);
+
+        if (track._tmp.switches[0]) {
+            //there is a switch at the start
+            startpoint = track.unit.multiply(track.deg == 0 ? this.main_x : this.main_x2);
+        }
+
+        if (track._tmp.switches[1]) {
+            //there is a switch at the end
+            endpoint = geometry.add(endpoint, track.unit.multiply(track.deg == 0 ? -this.main_x2 : -this.main_x));
+        }
+
+        this.drawSchwellen(track, startpoint, endpoint, texture_container, this.schwellenImg);
+        this.drawStraightDoubleRail(rail_shape, startpoint, endpoint);
+
+        texture_container.addChild(rail_shape);
+        rail_shape.hitArea = this.createHitArea(startpoint, endpoint, track.deg);
+
+        texture_container.x = track.start.x;
+        texture_container.y = track.start.y;
+
+        container.addChild(texture_container);
+        return texture_container;
+    }
+
+    renderTrack_old(container, track) {
         const texture_container = new createjs.Container();
         texture_container.name = "track";
         texture_container.track = track;
@@ -72,10 +115,10 @@ class trackRendering_textured {
 
         let hit = new createjs.Shape();
 
-        let p1 = geometry.perpendicular(track.start, track._tmp.deg, -this.schwellenHöhe/2);
-        let p2 = geometry.perpendicular(track.start, track._tmp.deg, this.schwellenHöhe/2);
-        let p3 = geometry.perpendicular(track.end, track._tmp.deg, this.schwellenHöhe/2);
-        const p4 = geometry.perpendicular(track.end, track._tmp.deg, -this.schwellenHöhe/2);
+        let p1 = geometry.perpendicular(track.start, track._tmp.deg, -this.schwellenHöhe / 2);
+        let p2 = geometry.perpendicular(track.start, track._tmp.deg, this.schwellenHöhe / 2);
+        let p3 = geometry.perpendicular(track.end, track._tmp.deg, this.schwellenHöhe / 2);
+        const p4 = geometry.perpendicular(track.end, track._tmp.deg, -this.schwellenHöhe / 2);
 
         hit.graphics.beginFill("#000").mt(p1.x, p1.y).lt(p2.x, p2.y).lt(p3.x, p3.y).lt(p4.x, p4.y).lt(p1.x, p1.y);
         rail_shape.hitArea = hit;
@@ -86,7 +129,9 @@ class trackRendering_textured {
             .filter((p) => p.km == track._tmp.length && p.type === SWITCH_TYPE.ARCH)
             .forEach((p) => this.drawCurvedTrack(track, texture_container, p, p.km, track._tmp.deg, p.track._tmp.deg, this.schwellenImg));
 
-        track._tmp.switches.filter((sw) => sw.km != 0 && sw.km != track._tmp.length).forEach((sw) => this.drawSwitch(track,texture_container, sw));
+        if (track._tmp.switches[1]) this.drawCurvedTrack(texture_container, track, track._tmp.switches[1]);
+
+        track._tmp.switches.filter((sw) => sw.km != 0 && sw.km != track._tmp.length).forEach((sw) => this.drawSwitch(track, texture_container, sw));
 
         let counter = 0,
             weiche = null,
@@ -97,7 +142,7 @@ class trackRendering_textured {
         do {
             if (track._tmp.switches.length > counter) {
                 weiche = track._tmp.switches[counter];
-                switch_values = this.calcValuesForCurvedRail(track,weiche);
+                switch_values = this.calcValuesForCurvedRail(track, weiche);
 
                 if (weiche.km > km) {
                     //weiche nach mir
@@ -118,7 +163,7 @@ class trackRendering_textured {
             }
 
             if (endpoint) {
-                this.drawSchwellen(track,startpoint, endpoint, texture_container, this.schwellenImg);
+                this.drawSchwellen(track, startpoint, endpoint, texture_container, this.schwellenImg);
                 this.drawStraightDoubleRail(rail_shape, startpoint, endpoint);
             }
 
@@ -144,7 +189,7 @@ class trackRendering_textured {
         return texture_container;
     }
 
-    drawSchwellen(track,startPoint, endPoint, texture_container) {
+    drawSchwellen(track, startPoint, endPoint, texture_container) {
         const cos = Math.cos(track._tmp.rad),
             sin = Math.sin(track._tmp.rad);
 
@@ -155,7 +200,6 @@ class trackRendering_textured {
         let tmp = l / (this.schwellenBreite + this.schwellenGap);
         let anzSchwellen = Math.floor(tmp);
         let custom_gap = ((tmp - anzSchwellen) * (this.schwellenBreite + this.schwellenGap)) / anzSchwellen + this.schwellenGap;
-        
 
         for (let i = 0; i < anzSchwellen; i++) {
             let random = Math.randomInt(trackRendering_textured.SCHWELLEN_VARIANTEN - 1);
@@ -163,7 +207,12 @@ class trackRendering_textured {
                 new createjs.Bitmap(this.schwellenImg).set({
                     y: y,
                     x: x,
-                    sourceRect: new createjs.Rectangle((random * this.schwellenImg.width) / trackRendering_textured.SCHWELLEN_VARIANTEN, 0, this.schwellenImg.width / trackRendering_textured.SCHWELLEN_VARIANTEN, this.schwellenImg.height),
+                    sourceRect: new createjs.Rectangle(
+                        (random * this.schwellenImg.width) / trackRendering_textured.SCHWELLEN_VARIANTEN,
+                        0,
+                        this.schwellenImg.width / trackRendering_textured.SCHWELLEN_VARIANTEN,
+                        this.schwellenImg.height
+                    ),
                     scale: trackRendering_textured.TRACK_SCALE,
                     rotation: track._tmp.deg,
                 })
@@ -206,13 +255,13 @@ class trackRendering_textured {
             y1 = startPoint.y + sin * y,
             y2 = endPoint.y + sin * y;
 
-            trackRendering_textured.RAIL.forEach((r) => {
+        trackRendering_textured.RAIL.forEach((r) => {
             rail_shape.graphics.setStrokeStyle(r[0]).beginStroke(r[1]);
             rail_shape.graphics.moveTo(x1, y1).lineTo(x2, y2);
         });
     }
 
-    calcValuesForCurvedRail(track,sw) {
+    calcValuesForCurvedRail(track, sw) {
         const switchpoint = track.getPointfromKm(sw.km);
         let type = sw.type;
 
@@ -236,10 +285,6 @@ class trackRendering_textured {
             else type = SWITCH_TYPE.FROM_RIGHT;
         }
 
-        const cord_2 = Math.sin(π / 8) * trackRendering_textured.CURVE_RADIUS;
-
-        let x = cord_2 / Math.cos(π / 8);
-        let x2 = x * Math.sin(π / 4);
         let p1 = null,
             p2 = null,
             p3 = null,
@@ -347,7 +392,7 @@ class trackRendering_textured {
         };
     }
 
-    drawCurvedTrack(track, container, sw, km, startDeg, endDeg, img) {
+    drawCurvedTrack(container, track, nextTrack) {
         const values = this.calcValuesForCurvedRail(track, sw, km, startDeg, endDeg);
 
         this.DrawImagesInCircle(container, values.centerpoint, trackRendering_textured.CURVE_RADIUS, values.deg, img, this.schwellenHöhe / 2);
@@ -399,12 +444,14 @@ class trackRendering_textured {
             let yy = switch_values.p1.y;
             yy += Math.sin(track._tmp.rad) * ((this.schwellenBreite + custom_gap) * (i * dir) + (this.schwellenGap / 2) * dir);
             yy +=
-                Math.sin(track._tmp.rad + π / 2) * (sw.type.is(SWITCH_TYPE.FROM_RIGHT, SWITCH_TYPE.TO_RIGHT) ? -this.schwellenHöhe / 2 : this.schwellenHöhe / 2 - schwelle.height * (trackRendering_textured.TRACK_SCALE + y / 100));
+                Math.sin(track._tmp.rad + π / 2) *
+                (sw.type.is(SWITCH_TYPE.FROM_RIGHT, SWITCH_TYPE.TO_RIGHT) ? -this.schwellenHöhe / 2 : this.schwellenHöhe / 2 - schwelle.height * (trackRendering_textured.TRACK_SCALE + y / 100));
 
             let xx = switch_values.p1.x;
             xx += Math.cos(track._tmp.rad) * ((this.schwellenBreite + custom_gap) * (i * dir) + (this.schwellenGap / 2) * dir);
             xx +=
-                Math.cos(track._tmp.rad + π / 2) * (sw.type.is(SWITCH_TYPE.FROM_RIGHT, SWITCH_TYPE.TO_RIGHT) ? -this.schwellenHöhe / 2 : this.schwellenHöhe / 2 - schwelle.height * (trackRendering_textured.TRACK_SCALE + y / 100));
+                Math.cos(track._tmp.rad + π / 2) *
+                (sw.type.is(SWITCH_TYPE.FROM_RIGHT, SWITCH_TYPE.TO_RIGHT) ? -this.schwellenHöhe / 2 : this.schwellenHöhe / 2 - schwelle.height * (trackRendering_textured.TRACK_SCALE + y / 100));
 
             container.addChild(
                 new createjs.Bitmap(schwelle).set({
@@ -413,7 +460,12 @@ class trackRendering_textured {
                     regX: dir == -1 ? schwelle.width / trackRendering_textured.SCHWELLEN_VARIANTEN : 0, //die schwellen, die Rückwärtslaufen gezeichnet werden, an der anderen Seite ausrichten
                     scale: trackRendering_textured.TRACK_SCALE,
                     scaleY: trackRendering_textured.TRACK_SCALE + y / 100,
-                    sourceRect: new createjs.Rectangle((random * schwelle.width) / trackRendering_textured.SCHWELLEN_VARIANTEN, 0, schwelle.width / trackRendering_textured.SCHWELLEN_VARIANTEN, schwelle.height),
+                    sourceRect: new createjs.Rectangle(
+                        (random * schwelle.width) / trackRendering_textured.SCHWELLEN_VARIANTEN,
+                        0,
+                        schwelle.width / trackRendering_textured.SCHWELLEN_VARIANTEN,
+                        schwelle.height
+                    ),
                     rotation: track._tmp.deg,
                 })
             );

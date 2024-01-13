@@ -95,6 +95,10 @@ class Track {
         return this._tmp.length;
     }
 
+    get unit() {
+        return this._tmp.unit;
+    }
+
     constructor(start, end) {
         if (type(start) == "Point") this.start = start;
         else this.start = new Point(start.x, start.y);
@@ -114,7 +118,7 @@ class Track {
         this._tmp.deg = this._tmp.rad * (180 / Math.PI);
 
         this._tmp.length = geometry.length(this._tmp.vector);
-        this._tmp.unit = geometry.unit(this._tmp.vector, this._tmp.length);
+        this._tmp.unit = new V2(geometry.unit(this._tmp.vector, this._tmp.length));
 
         this._tmp.slope = geometry.slope(this.start, this.end);
 
@@ -123,6 +127,7 @@ class Track {
         this._tmp.id = Track._getID();
     }
 
+    //returns the Point
     getPointfromKm(km) {
         return { x: (Math.cos(this._tmp.rad) * km).round(0), y: (Math.sin(this._tmp.rad) * km).round(0) };
     }
@@ -165,8 +170,9 @@ class Track {
         this.calcTempValues();
     }
 
+    //returns the point, if u go x km from point along the track, so point is mostly track.start oder track.end
     along(point, x) {
-        return geometry.multiply(this._tmp.unit, x * (point.x == this.start.x ? 1 : -1));
+        return geometry.add(point,geometry.multiply(this._tmp.unit, x * (point.x == this.start.x ? 1 : -1)));
     }
 
     AddSignal(signal) {

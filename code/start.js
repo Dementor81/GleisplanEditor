@@ -795,7 +795,7 @@ function createSwitch(location, tracks) {
 
     //sort each group by its x coordinate
     groupedByRad.forEach((a) => a.sort((t1, t2) => t1.start.x - t2.start.x));
-    //sort the groups by the number of tracks in it. this way, he branch is always the 2nd group.
+    //sort the groups by the number of tracks in it. this way, the branch is always in the 2nd group.
     groupedByRad.sort((a, b) => b.length - a.length);
 
     //cause we have sorted by the number of tracks, t3 is always the branch
