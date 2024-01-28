@@ -43,8 +43,7 @@ class trackRendering_textured {
         this.schwellenGap = this.schwellenBreite * 1;
         this.rail_offset = this.schwellenHöhe / 5;
 
-        this.main_x = (Math.sin(π / 8) * trackRendering_textured.CURVE_RADIUS) / Math.cos(π / 8);
-        this.main_x2 = this.main_x * Math.sin(π / 4);
+        this.main_x1 = (Math.sin(π / 8) * trackRendering_textured.CURVE_RADIUS) / Math.cos(π / 8);
     }
 
     renderAllTracks() {
@@ -76,28 +75,10 @@ class trackRendering_textured {
         texture_container.name = "track";
         texture_container.track = track;
         texture_container.mouseChildren = false;
-        const rail_shape = new createjs.Shape();
 
-        let weiche = null,
-            switch_values = null,
-            endpoint = geometry.sub(track.end, track.start),
-            startpoint = new Point(0, 0);
+        this.drawStraightTrack(texture_container, track);
 
-        if (track._tmp.switches[0]) {
-            //there is a switch at the start
-            startpoint = track.unit.multiply(track.deg == 0 ? this.main_x : this.main_x2);
-        }
-
-        if (track._tmp.switches[1]) {
-            //there is a switch at the end
-            endpoint = geometry.add(endpoint, track.unit.multiply(track.deg == 0 ? -this.main_x2 : -this.main_x));
-        }
-
-        this.drawSchwellen(track, startpoint, endpoint, texture_container, this.schwellenImg);
-        this.drawStraightDoubleRail(rail_shape, startpoint, endpoint);
-
-        texture_container.addChild(rail_shape);
-        rail_shape.hitArea = this.createHitArea(startpoint, endpoint, track.deg);
+        if (type(track.switchAtTheEnd) == "Track") this.drawCurvedTrack(texture_container, track, track.switchAtTheEnd);
 
         texture_container.x = track.start.x;
         texture_container.y = track.start.y;
@@ -392,7 +373,54 @@ class trackRendering_textured {
         };
     }
 
+    drawStraightTrack(container, track) {
+        let endpoint = geometry.sub(track.end, track.start),
+            startpoint = new Point(0, 0);
+
+        const rail_shape = new createjs.Shape();
+
+        if (track._tmp.switches[0]) startpoint = track.unit.multiply(this.main_x1);
+        if (track._tmp.switches[1]) endpoint = geometry.add(endpoint, track.unit.multiply(-this.main_x1));
+
+        rail_shape.hitArea = this.createHitArea(startpoint, endpoint, track.deg);
+
+        this.drawSchwellen(track, startpoint, endpoint, container, this.schwellenImg);
+        container.addChild(rail_shape);
+        this.drawStraightDoubleRail(rail_shape, startpoint, endpoint);
+    }
+
+    calcValuesForCurvedTrack(track1, track2) {
+        //get the horizontal and the diagonal track
+        const horizontalTrack = track1.deg == 0 ? track1 : track2;
+        const diagonalTrack = track1.deg == 0 ? track2 : track1;
+        //calculate the point on the horizontal Track, where the curve ends
+        //the centerpoint is always above or below the horizontal track
+        const p1 = horizontalTrack.along(track1.end, this.main_x1);
+
+        //centerpoint is above or below the P1 point
+        const centerpoint = { x: p1.x, y: p1.y - trackRendering_textured.CURVE_RADIUS * Math.sign(track1.deg - track2.deg) };
+
+        //get the angle of diagonal track
+        let deg = findAngle(track1.end, diagonalTrack.start.equals(track1.end) ? diagonalTrack.end : diagonalTrack.start);
+
+        //some magic to get the angle for drawArc
+        deg += track1.deg + track2.deg > 0 ? 225 : 90;
+
+        //change the reference Point (we draw in local system but calculated in globalsystem)
+        return { centerpoint: geometry.sub(centerpoint, track1.start), deg: deg };
+    }
+
     drawCurvedTrack(container, track, nextTrack) {
+        const values = this.calcValuesForCurvedTrack(track, nextTrack);
+        this.DrawSleepersInCircle(container, values.centerpoint, values.deg);
+
+        const shape = new createjs.Shape();
+        container.addChild(shape);
+        this.drawCurvedRail(shape, values.centerpoint, values.deg, trackRendering_textured.CURVE_RADIUS - this.schwellenHöhe / 2 + this.rail_offset);
+        this.drawCurvedRail(shape, values.centerpoint, values.deg, trackRendering_textured.CURVE_RADIUS + this.schwellenHöhe / 2 - this.rail_offset);
+    }
+
+    drawCurvedTrack_old(container, track) {
         const values = this.calcValuesForCurvedRail(track, sw, km, startDeg, endDeg);
 
         this.DrawImagesInCircle(container, values.centerpoint, trackRendering_textured.CURVE_RADIUS, values.deg, img, this.schwellenHöhe / 2);
@@ -483,7 +511,8 @@ class trackRendering_textured {
             .arc(centerpoint.x, centerpoint.y, radius, deg2rad(start_deg), deg2rad(start_deg + 45));
     }
 
-    DrawImagesInCircle(container, centerpoint, radius, deg, img, offset = 0) {
+    DrawSleepersInCircle(container, centerpoint, deg) {
+        const radius = trackRendering_textured.CURVE_RADIUS;
         const l = (π / 4) * radius;
         let tmp = l / (this.schwellenBreite + this.schwellenGap);
         let anzSchwellen = Math.floor(tmp);
@@ -499,11 +528,16 @@ class trackRendering_textured {
             random = Math.randomInt(trackRendering_textured.SCHWELLEN_VARIANTEN - 1);
 
             container.addChild(
-                new createjs.Bitmap(img).set({
-                    x: centerpoint.x + Math.cos(rad) * (radius + offset),
-                    y: centerpoint.y + Math.sin(rad) * (radius + offset),
+                new createjs.Bitmap(this.schwellenImg).set({
+                    x: centerpoint.x + Math.cos(rad) * (radius + this.schwellenHöhe / 2),
+                    y: centerpoint.y + Math.sin(rad) * (radius + this.schwellenHöhe / 2),
                     scale: trackRendering_textured.TRACK_SCALE,
-                    sourceRect: new createjs.Rectangle((random * img.width) / trackRendering_textured.SCHWELLEN_VARIANTEN, 0, img.width / trackRendering_textured.SCHWELLEN_VARIANTEN, img.height),
+                    sourceRect: new createjs.Rectangle(
+                        (random * this.schwellenImg.width) / trackRendering_textured.SCHWELLEN_VARIANTEN,
+                        0,
+                        this.schwellenImg.width / trackRendering_textured.SCHWELLEN_VARIANTEN,
+                        this.schwellenImg.height
+                    ),
                     rotation: (rad * 180) / Math.PI + 90,
                 })
             );
@@ -514,8 +548,49 @@ class trackRendering_textured {
 
     renderAllSwitches() {
         switches.forEach((sw) => {
+            this.renderSwitch(track_container, sw);
             if (sw.type.is(SWITCH_TYPE.ARCH, SWITCH_TYPE.CROSSING)) return;
         });
+    }
+
+    calcSwitchValues(sw) {
+        const p1 = sw.t1.along(sw.location, this.main_x1);
+
+        return { p1: p1, flip_hor: p1.x > sw.location.x, flip_vert: sw.type.is(SWITCH_TYPE.FROM_RIGHT, SWITCH_TYPE.TO_RIGHT) };
+    }
+
+    renderSwitch(container, sw) {
+        const switch_values = this.calcSwitchValues(sw);
+        let img;
+
+        if (sw.type != SWITCH_TYPE.DKW) {
+            img = pl.getImage("weiche");
+
+            container.addChild(
+                new createjs.Bitmap(img).set({
+                    y: switch_values.p1.y,
+                    x: switch_values.p1.x,
+                    regY: img.height - this.schwellenHöhe / trackRendering_textured.TRACK_SCALE / 2,
+                    scaleX: switch_values.flip_hor ? -trackRendering_textured.TRACK_SCALE : trackRendering_textured.TRACK_SCALE,
+                    scaleY: switch_values.flip_vert ? -trackRendering_textured.TRACK_SCALE : trackRendering_textured.TRACK_SCALE,
+                    rotation: sw.t1.deg,
+                })
+            );
+            return;
+        } else {
+            let img = pl.getImage("dkw");
+            container.addChild(
+                new createjs.Bitmap(img).set({
+                    y: switch_values.p1.y,
+                    x: switch_values.p1.x - 1.8 + (sw.t1.deg == 45 ? 0 : img.width * trackRendering_textured.TRACK_SCALE),
+                    regY: img.height / 2,
+                    scale: trackRendering_textured.TRACK_SCALE,
+                    scaleX: sw.t1.deg == 45 ? trackRendering_textured.TRACK_SCALE : -trackRendering_textured.TRACK_SCALE,
+                    rotation: 0,
+                })
+            );
+            return;
+        }
     }
 
     reRenderSwitch(sw) {

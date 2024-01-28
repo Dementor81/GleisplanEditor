@@ -83,6 +83,14 @@ class Track {
         return this._tmp.switches;
     }
 
+    get switchAtTheEnd() {
+        return this._tmp.switches[1];
+    }
+
+    get switchAtTheStart() {
+        return this._tmp.switches[0];
+    }
+
     get rad() {
         return this._tmp.rad;
     }
@@ -170,9 +178,10 @@ class Track {
         this.calcTempValues();
     }
 
-    //returns the point, if u go x km from point along the track, so point is mostly track.start oder track.end
+    //returns the point, if u go x km from point along the track, so point must be track.start or track.end
+    //the direction is automaticly optained 
     along(point, x) {
-        return geometry.add(point,geometry.multiply(this._tmp.unit, x * (point.x == this.start.x ? 1 : -1)));
+        return geometry.add(point,geometry.multiply(this.unit, x * (point.x == this.start.x ? 1 : -1)));
     }
 
     AddSignal(signal) {
