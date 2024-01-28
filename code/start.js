@@ -6,7 +6,7 @@ const EXCLUDE_JSON = [];
 const MODE_PLAY = 1;
 const MODE_EDIT = 2;
 
-const GRID_SIZE = 70;
+const GRID_SIZE = 100;
 const GRID_SIZE_2 = GRID_SIZE / 2;
 
 const DIRECTION = {
@@ -63,6 +63,7 @@ function init() {
 
     pl.addImage("schwellen.png", "schwellen");
     pl.addImage("dkw.png", "dkw");
+    pl.addImage("weiche.png", "weiche");
 
     pl.start().then(() => {
         $("#collapseOne .accordion-body").append(newItemButton(signalTemplates.hv_hp));
@@ -786,8 +787,8 @@ function createSwitch(location, tracks) {
         t3: null,
         //t4: null //only available if its a dkw
         type: 0,
-        branch: null, // one of thr tracks
-        //from: null  //only available if its a dkw
+        branch: null, // one of the tracks
+        from: null  //normal switch: always t1, on dkw switchable
     };
 
     const groupedByRad = Object.values(groupBy(tracks, "_tmp.rad"));
