@@ -87,89 +87,6 @@ class trackRendering_textured {
         return texture_container;
     }
 
-    renderTrack_old(container, track) {
-        const texture_container = new createjs.Container();
-        texture_container.name = "track";
-        texture_container.track = track;
-        texture_container.mouseChildren = false;
-        let rail_shape = new createjs.Shape();
-
-        let hit = new createjs.Shape();
-
-        let p1 = geometry.perpendicular(track.start, track._tmp.deg, -this.schwellenHöhe / 2);
-        let p2 = geometry.perpendicular(track.start, track._tmp.deg, this.schwellenHöhe / 2);
-        let p3 = geometry.perpendicular(track.end, track._tmp.deg, this.schwellenHöhe / 2);
-        const p4 = geometry.perpendicular(track.end, track._tmp.deg, -this.schwellenHöhe / 2);
-
-        hit.graphics.beginFill("#000").mt(p1.x, p1.y).lt(p2.x, p2.y).lt(p3.x, p3.y).lt(p4.x, p4.y).lt(p1.x, p1.y);
-        rail_shape.hitArea = hit;
-
-        //const kleinEisenImg = loadQueue.getResult("kleineisen");
-
-        track._tmp.switches //alle weichen am Ende eines Gleises, die eine Kurve sind (damit jede Kurve nur 1x gezeichnet wird)
-            .filter((p) => p.km == track._tmp.length && p.type === SWITCH_TYPE.ARCH)
-            .forEach((p) => this.drawCurvedTrack(track, texture_container, p, p.km, track._tmp.deg, p.track._tmp.deg, this.schwellenImg));
-
-        if (track._tmp.switches[1]) this.drawCurvedTrack(texture_container, track, track._tmp.switches[1]);
-
-        track._tmp.switches.filter((sw) => sw.km != 0 && sw.km != track._tmp.length).forEach((sw) => this.drawSwitch(track, texture_container, sw));
-
-        let counter = 0,
-            weiche = null,
-            switch_values = null,
-            endpoint = null,
-            startpoint = { x: 0, y: 0 },
-            km = 0;
-        do {
-            if (track._tmp.switches.length > counter) {
-                weiche = track._tmp.switches[counter];
-                switch_values = this.calcValuesForCurvedRail(track, weiche);
-
-                if (weiche.km > km) {
-                    //weiche nach mir
-                    if (weiche.type === SWITCH_TYPE.DKW) {
-                        if (track._tmp.rad == 0) endpoint = switch_values.p3;
-                        else endpoint = switch_values.p2;
-                    } else if (switch_values.type == SWITCH_TYPE.TO_LEFT || switch_values.type == SWITCH_TYPE.TO_RIGHT) endpoint = switch_values.p1;
-                    else {
-                        if (weiche.km == track._tmp.length) endpoint = switch_values.p2;
-                        else endpoint = switch_values.p3;
-                    }
-                } else endpoint = null;
-                km = weiche?.km;
-            } else {
-                weiche = null;
-                endpoint = track.getPointfromKm(track._tmp.length);
-                km = track._tmp.length;
-            }
-
-            if (endpoint) {
-                this.drawSchwellen(track, startpoint, endpoint, texture_container, this.schwellenImg);
-                this.drawStraightDoubleRail(rail_shape, startpoint, endpoint);
-            }
-
-            if (weiche) {
-                counter++;
-                if (weiche.type === SWITCH_TYPE.DKW) {
-                    if (track._tmp.rad == 0) startpoint = switch_values.p1;
-                    else startpoint = switch_values.p4;
-                } else if (switch_values.type == SWITCH_TYPE.FROM_LEFT || switch_values.type == SWITCH_TYPE.FROM_RIGHT) startpoint = switch_values.p1;
-                else {
-                    if (weiche.km == 0) startpoint = switch_values.p2;
-                    else startpoint = switch_values.p3;
-                }
-            }
-        } while (km < track._tmp.length);
-
-        texture_container.addChild(rail_shape);
-
-        texture_container.x = track.start.x;
-        texture_container.y = track.start.y;
-
-        container.addChild(texture_container);
-        return texture_container;
-    }
-
     drawSchwellen(track, startPoint, endPoint, texture_container) {
         const cos = Math.cos(track._tmp.rad),
             sin = Math.sin(track._tmp.rad);
@@ -242,137 +159,6 @@ class trackRendering_textured {
         });
     }
 
-    calcValuesForCurvedRail(track, sw) {
-        const switchpoint = track.getPointfromKm(sw.km);
-        let type = sw.type;
-
-        let angleDeg = track._tmp.deg == 0 ? sw.track._tmp.deg : track._tmp.deg;
-        if (sw.type == SWITCH_TYPE.ARCH) {
-            if (track._tmp.deg != 0) {
-                angleDeg = track._tmp.deg;
-                if (sw.km == track._tmp.length) angleDeg += 180;
-            } else {
-                angleDeg = sw.track._tmp.deg;
-                if (sw.km == 0) angleDeg += 180;
-            }
-
-            if (angleDeg < 0) angleDeg += 360;
-
-            type = ((angleDeg / 45) % 8) + 1;
-        }
-
-        if (sw.type == SWITCH_TYPE.DKW) {
-            if (angleDeg > 0) type = SWITCH_TYPE.FROM_LEFT;
-            else type = SWITCH_TYPE.FROM_RIGHT;
-        }
-
-        let p1 = null,
-            p2 = null,
-            p3 = null,
-            p4 = null,
-            centerpoint = null,
-            deg = 0;
-
-        switch (type) {
-            case SWITCH_TYPE.TO_RIGHT:
-                {
-                    p1 = { x: switchpoint.x - x, y: switchpoint.y };
-                    p2 = { x: switchpoint.x + x2, y: switchpoint.y + x2 };
-                    p3 = { x: switchpoint.x + x2, y: switchpoint.y };
-                    centerpoint = { x: p1.x, y: p1.y + trackRendering_textured.CURVE_RADIUS };
-                    deg = 270;
-                }
-                break;
-            case SWITCH_TYPE.TO_LEFT:
-                {
-                    p1 = { x: switchpoint.x - x, y: switchpoint.y };
-                    p2 = { x: switchpoint.x + x2, y: switchpoint.y - x2 };
-                    p3 = { x: switchpoint.x + x2, y: switchpoint.y };
-                    centerpoint = { x: p1.x, y: p1.y - trackRendering_textured.CURVE_RADIUS };
-                    deg = 45;
-                }
-                break;
-            case SWITCH_TYPE.FROM_RIGHT:
-                {
-                    p1 = { x: switchpoint.x + x, y: switchpoint.y };
-                    p2 = { x: switchpoint.x - x2, y: switchpoint.y + x2 };
-                    p3 = { x: switchpoint.x - x2, y: switchpoint.y };
-                    centerpoint = { x: p1.x, y: p1.y + trackRendering_textured.CURVE_RADIUS };
-                    deg = 225;
-                }
-                break;
-            case SWITCH_TYPE.FROM_LEFT:
-                {
-                    p1 = { x: switchpoint.x + x, y: switchpoint.y };
-                    p2 = { x: switchpoint.x - x2, y: switchpoint.y - x2 };
-                    p3 = { x: switchpoint.x - x2, y: switchpoint.y };
-                    centerpoint = { x: p1.x, y: p1.y - trackRendering_textured.CURVE_RADIUS };
-                    deg = 90;
-                }
-                break;
-
-            default:
-                break;
-        }
-
-        let angle = sw.km.is(0, track._tmp.length) ? sw.track._tmp.deg : track._tmp.deg;
-        if (sw.type != SWITCH_TYPE.ARCH && angle != 0) {
-            if (angle == 45) {
-                if (type == SWITCH_TYPE.TO_LEFT) {
-                    p2 = { x: switchpoint.x + x, y: switchpoint.y };
-                    p1 = { x: switchpoint.x - x2, y: switchpoint.y - x2 };
-                    p3 = { x: switchpoint.x + x2, y: switchpoint.y + x2 };
-                    centerpoint = { x: p2.x, y: p2.y - trackRendering_textured.CURVE_RADIUS };
-                    deg = 90;
-                } else if (type == SWITCH_TYPE.FROM_RIGHT) {
-                    p2 = { x: switchpoint.x - x, y: switchpoint.y };
-                    p1 = { x: switchpoint.x + x2, y: switchpoint.y + x2 };
-                    p3 = { x: switchpoint.x - x2, y: switchpoint.y - x2 };
-                    centerpoint = { x: p2.x, y: p2.y + trackRendering_textured.CURVE_RADIUS };
-                    deg = 270;
-                }
-            }
-            if (angle == -45) {
-                if (type == SWITCH_TYPE.TO_RIGHT) {
-                    p2 = { x: switchpoint.x + x, y: switchpoint.y };
-                    p1 = { x: switchpoint.x - x2, y: switchpoint.y + x2 };
-                    p3 = { x: switchpoint.x + x2, y: switchpoint.y - x2 };
-                    centerpoint = { x: p2.x, y: p2.y + trackRendering_textured.CURVE_RADIUS };
-                    deg = 225;
-                } else if (type == SWITCH_TYPE.FROM_LEFT) {
-                    p2 = { x: switchpoint.x - x, y: switchpoint.y };
-                    p1 = { x: switchpoint.x + x2, y: switchpoint.y - x2 };
-                    p3 = { x: switchpoint.x - x2, y: switchpoint.y + x2 };
-                    centerpoint = { x: p2.x, y: p2.y - trackRendering_textured.CURVE_RADIUS };
-                    deg = 45;
-                }
-            }
-        }
-
-        if (sw.type === SWITCH_TYPE.DKW) {
-            p1 = { x: switchpoint.x + x, y: switchpoint.y };
-            p3 = { x: switchpoint.x - x, y: switchpoint.y };
-            if (angleDeg > 0) p4 = { x: switchpoint.x + x2, y: switchpoint.y + x2 };
-            else p4 = { x: switchpoint.x + x2, y: switchpoint.y - x2 };
-            this.drawPoint(geometry.add(track.start, p4), "p4");
-        }
-
-        /* this.drawPoint(geometry.add(track.start, p1), "p1");
-        this.drawPoint(geometry.add(track.start, p2), "p2");
-        this.drawPoint(geometry.add(track.start, p3), "p3"); */
-        //this.drawPoint(geometry.add(track.start, centerpoint), "c");
-
-        return {
-            p1: p1,
-            p2: p2,
-            p3: p3,
-            p4: p4,
-            centerpoint: centerpoint,
-            type: type,
-            deg: deg,
-        };
-    }
-
     drawStraightTrack(container, track) {
         let endpoint = geometry.sub(track.end, track.start),
             startpoint = new Point(0, 0);
@@ -420,89 +206,9 @@ class trackRendering_textured {
         this.drawCurvedRail(shape, values.centerpoint, values.deg, trackRendering_textured.CURVE_RADIUS + this.schwellenHöhe / 2 - this.rail_offset);
     }
 
-    drawCurvedTrack_old(container, track) {
-        const values = this.calcValuesForCurvedRail(track, sw, km, startDeg, endDeg);
-
-        this.DrawImagesInCircle(container, values.centerpoint, trackRendering_textured.CURVE_RADIUS, values.deg, img, this.schwellenHöhe / 2);
-
-        const shape = new createjs.Shape();
-        container.addChild(shape);
-        this.drawCurvedRail(shape, values.centerpoint, values.deg, trackRendering_textured.CURVE_RADIUS - this.schwellenHöhe / 2 + this.rail_offset);
-        this.drawCurvedRail(shape, values.centerpoint, values.deg, trackRendering_textured.CURVE_RADIUS + this.schwellenHöhe / 2 - this.rail_offset);
-    }
-
     drawCurvedRail(rail_shape, centerpoint, start_deg, radius) {
         trackRendering_textured.RAIL.forEach((r) => this.drawArc(rail_shape, centerpoint, radius, start_deg, r[1], r[0]));
-    }
-
-    drawSwitch(track, container, sw) {
-        if (sw.type == SWITCH_TYPE.DKW && track._tmp.rad != 0) return;
-        const switch_values = this.calcValuesForCurvedRail(track, sw);
-
-        if (sw.type == SWITCH_TYPE.DKW) {
-            let img = pl.getImage("dkw");
-            container.addChild(
-                new createjs.Bitmap(img).set({
-                    y: switch_values.p3.y,
-                    x: switch_values.p3.x - 1.8 + (sw.track._tmp.deg == 45 ? 0 : img.width * trackRendering_textured.TRACK_SCALE),
-                    regY: img.height / 2,
-                    scale: trackRendering_textured.TRACK_SCALE,
-                    scaleX: sw.track._tmp.deg == 45 ? trackRendering_textured.TRACK_SCALE : -trackRendering_textured.TRACK_SCALE,
-                    rotation: 0,
-                })
-            );
-            return;
-        }
-
-        const s = new createjs.Shape();
-
-        this.drawStraightDoubleRail(s, switch_values.p1, switch_values.p3);
-
-        if (sw.type == SWITCH_TYPE.DKW) {
-            this.drawStraightDoubleRail(s, switch_values.p2, switch_values.p4);
-        }
-
-        const schwelle = pl.getImage("schwellen");
-        let random;
-        let dir = sw.type.is(SWITCH_TYPE.FROM_RIGHT, SWITCH_TYPE.FROM_LEFT) ? -1 : 1;
-        const schwellen = track._tmp.rad == 0 ? [0, 0, 0, 1, 2, 3, 4, 5, 6, 7, 8.2, 7] : [0, 0, 0, 1, 2, 3, 4, 5, 6, 7, 8.3, 7.5, 4.5, 0];
-        const custom_gap = track._tmp.rad == 0 ? 2.599999999 : 2.54975; //werte festgelegt, müssten bei Grid size änderung neu berechnet werden
-        schwellen.forEach((y, i) => {
-            random = Math.randomInt(trackRendering_textured.SCHWELLEN_VARIANTEN - 1);
-            let yy = switch_values.p1.y;
-            yy += Math.sin(track._tmp.rad) * ((this.schwellenBreite + custom_gap) * (i * dir) + (this.schwellenGap / 2) * dir);
-            yy +=
-                Math.sin(track._tmp.rad + π / 2) *
-                (sw.type.is(SWITCH_TYPE.FROM_RIGHT, SWITCH_TYPE.TO_RIGHT) ? -this.schwellenHöhe / 2 : this.schwellenHöhe / 2 - schwelle.height * (trackRendering_textured.TRACK_SCALE + y / 100));
-
-            let xx = switch_values.p1.x;
-            xx += Math.cos(track._tmp.rad) * ((this.schwellenBreite + custom_gap) * (i * dir) + (this.schwellenGap / 2) * dir);
-            xx +=
-                Math.cos(track._tmp.rad + π / 2) *
-                (sw.type.is(SWITCH_TYPE.FROM_RIGHT, SWITCH_TYPE.TO_RIGHT) ? -this.schwellenHöhe / 2 : this.schwellenHöhe / 2 - schwelle.height * (trackRendering_textured.TRACK_SCALE + y / 100));
-
-            container.addChild(
-                new createjs.Bitmap(schwelle).set({
-                    x: xx,
-                    y: yy,
-                    regX: dir == -1 ? schwelle.width / trackRendering_textured.SCHWELLEN_VARIANTEN : 0, //die schwellen, die Rückwärtslaufen gezeichnet werden, an der anderen Seite ausrichten
-                    scale: trackRendering_textured.TRACK_SCALE,
-                    scaleY: trackRendering_textured.TRACK_SCALE + y / 100,
-                    sourceRect: new createjs.Rectangle(
-                        (random * schwelle.width) / trackRendering_textured.SCHWELLEN_VARIANTEN,
-                        0,
-                        schwelle.width / trackRendering_textured.SCHWELLEN_VARIANTEN,
-                        schwelle.height
-                    ),
-                    rotation: track._tmp.deg,
-                })
-            );
-        });
-
-        this.drawCurvedRail(s, switch_values.centerpoint, switch_values.deg, trackRendering_textured.CURVE_RADIUS - this.schwellenHöhe / 2 + this.rail_offset);
-        this.drawCurvedRail(s, switch_values.centerpoint, switch_values.deg, trackRendering_textured.CURVE_RADIUS + this.schwellenHöhe / 2 - this.rail_offset);
-        container.addChild(s);
-    }
+    }    
 
     drawArc(rail_shape, centerpoint, radius, start_deg, color, thickness) {
         rail_shape.graphics
@@ -549,7 +255,7 @@ class trackRendering_textured {
     renderAllSwitches() {
         switches.forEach((sw) => {
             this.renderSwitch(track_container, sw);
-            if (sw.type.is(SWITCH_TYPE.ARCH, SWITCH_TYPE.CROSSING)) return;
+            if (sw.type.is(SWITCH_TYPE.CROSSING)) return;
         });
     }
 
@@ -560,11 +266,10 @@ class trackRendering_textured {
     }
 
     renderSwitch(container, sw) {
-        const switch_values = this.calcSwitchValues(sw);
-        let img;
-
+        let img;        
         if (sw.type != SWITCH_TYPE.DKW) {
             img = pl.getImage("weiche");
+            const switch_values = this.calcSwitchValues(sw);
 
             container.addChild(
                 new createjs.Bitmap(img).set({
@@ -576,20 +281,19 @@ class trackRendering_textured {
                     rotation: sw.t1.deg,
                 })
             );
-            return;
         } else {
-            let img = pl.getImage("dkw");
+            img = pl.getImage("dkw");
             container.addChild(
                 new createjs.Bitmap(img).set({
-                    y: switch_values.p1.y,
-                    x: switch_values.p1.x - 1.8 + (sw.t1.deg == 45 ? 0 : img.width * trackRendering_textured.TRACK_SCALE),
+                    y: sw.location.y,
+                    x: sw.location.x ,
                     regY: img.height / 2,
-                    scale: trackRendering_textured.TRACK_SCALE,
-                    scaleX: sw.t1.deg == 45 ? trackRendering_textured.TRACK_SCALE : -trackRendering_textured.TRACK_SCALE,
-                    rotation: 0,
+                    regX: img.width / 2,
+                    scale: trackRendering_textured.TRACK_SCALE,                    
+                    scaleX: sw.t3.deg == 45 ? trackRendering_textured.TRACK_SCALE : -trackRendering_textured.TRACK_SCALE,
+                    
                 })
             );
-            return;
         }
     }
 

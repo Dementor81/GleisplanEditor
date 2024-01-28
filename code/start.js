@@ -25,7 +25,6 @@ const MOUSE_ACTION = {
 
 const SWITCH_TYPE = {
     NONE: 0,
-    ARCH: 1,
     TO_RIGHT: 2, //45°
     FROM_RIGHT: 4, //135°
     FROM_LEFT: 6, //225°
