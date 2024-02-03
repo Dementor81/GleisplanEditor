@@ -88,7 +88,7 @@ class Signal {
     //oder
     //set("hp=0")
     //set("ersatz=zs7")
-    set_stellung(stellung, subkey, value, chain = true) {
+    set_stellung(stellung, subkey, value = true, chain = true) {
         let changed = false;
         /* const splitted = stellung.split("=");
         if (splitted.length == 2) {

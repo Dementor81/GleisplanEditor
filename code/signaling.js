@@ -195,15 +195,13 @@ class SignalTemplate {
         this.rules.set(key, rule);
     }
 
-    
-
     StellungIsAllowed(stellung, signal) {
         /* const rule = this.rules.get(stellung);
         if (rule) return rule(signal);
         else return true; */
         return true;
     }
- 
+
     VisualElementIsAllowed(element, signal) {
         //return element.stellung == null || this.StellungIsAllowed(element.stellung[0], signal);
         return true;
@@ -250,7 +248,7 @@ function initSignals() {
                     case "hv_hp":
                     case "hv_vr":
                         {
-                            signal.set("vr", hp.get("hp") >= 0 ? hp.get("hp") : 0, false);
+                            signal.set_stellung("vr", hp.get("hp") >= 0 ? hp.get("hp") : 0, true, false);
                             if (!signal.features.match("wdh")) return true;
                         }
                         break;
@@ -258,7 +256,7 @@ function initSignals() {
                     case "ks_hp":
                     case "ks_vr":
                         {
-                            signal.set("vr", hp.get("hp") <= 0 ? 0 : 1, false);
+                            signal.set_stellung("vr", hp.get("hp") <= 0 ? 0 : 1, false);
                             if (!signal.features.match("wdh")) return true;
                         }
                         break;
@@ -291,6 +289,7 @@ function initSignals() {
             new VisualElement("wgwgw", { conditions: "mastschild.wgwgw" }),
             new VisualElement("asig", { conditions: verw_bahnhof }),
             new VisualElement("sh1_aus", { conditions: verw_bahnhof }),
+            new VisualElement("kennlicht_aus", { conditions: verw_bahnhof }),
             new VisualElement("esig", { conditions: verw_strecke.without("verwendung.sbk") }),
             new VisualElement("sbk", { conditions: verw_strecke }),
             new VisualElement(null, {
@@ -329,8 +328,9 @@ function initSignals() {
             new VisualElement("verk_licht", { btn_text: "Verkürzt", conditions: "verk", stellung: "verk=1", enabled: (s) => s.get("hp") > 0 }),
             new VisualElement(null, {
                 childs: [
-                    new VisualElement("zs1", { btn_text: "Zs 1", stellung: "ersatz=zs1" })
-                    , new VisualElement("sh1", { btn_text: "Sh 1", conditions: verw_bahnhof, stellung: "ersatz=sh1" })
+                    new VisualElement("zs1", { btn_text: "Zs 1", stellung: "ersatz=zs1" }),
+                    new VisualElement("sh1", { btn_text: "Sh 1", conditions: verw_bahnhof, stellung: "ersatz=sh1" }),
+                    new VisualElement("kennlicht", { btn_text: "Kennlicht", conditions: verw_bahnhof, stellung: "ersatz=kennlicht", enabled: (s) => s.get("hp") == null }),
                 ],
                 enabled: (s) => s.get("hp") == 0 || s.get("hp") == null,
             }),
