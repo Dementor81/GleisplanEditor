@@ -3,8 +3,14 @@
 class trackRendering_textured {
     static TRACK_SCALE = 0.1;
 
-    static signale_scale = 0.1;
+    static signale_scale = 0.1; //0.2
     static SCHWELLEN_VARIANTEN = 24;
+
+   /*  static RAIL = [
+        [2.5, "#222"],
+        [2, "#999999"],
+        [1, "#eeeeee"],
+    ]; */
 
     static RAIL = [
         [1.4, "#222"],
@@ -16,7 +22,7 @@ class trackRendering_textured {
         //cause the class is been loaded before start.js, we have to hack and calculate this constant here
         trackRendering_textured.CURVE_RADIUS = GRID_SIZE * 1.2;
 
-        this.SIGNAL_DISTANCE_FROM_TRACK = 30;
+        this.SIGNAL_DISTANCE_FROM_TRACK = 40;
     }
 
     reDrawEverything() {
@@ -41,7 +47,7 @@ class trackRendering_textured {
         this.schwellenHöhe = this.schwellenImg.height * trackRendering_textured.TRACK_SCALE;
         this.schwellenBreite = (this.schwellenImg.width / trackRendering_textured.SCHWELLEN_VARIANTEN) * trackRendering_textured.TRACK_SCALE;
         this.schwellenGap = this.schwellenBreite * 1;
-        this.rail_offset = this.schwellenHöhe / 5;
+        this.rail_offset = this.schwellenHöhe / 4.7;
 
         this.main_x1 = (Math.sin(π / 8) * trackRendering_textured.CURVE_RADIUS) / Math.cos(π / 8);
     }

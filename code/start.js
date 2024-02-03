@@ -61,8 +61,8 @@ function init() {
     initSignals();
 
     pl.addImage("schwellen.png", "schwellen");
-    pl.addImage("dkw.png", "dkw");
-    pl.addImage("weiche.png", "weiche");
+    pl.addImage("dkw.svg", "dkw");
+    pl.addImage("weiche.svg", "weiche");
 
     pl.start().then(() => {
         $("#collapseOne .accordion-body").append(newItemButton(signalTemplates.hv_hp));
@@ -112,7 +112,7 @@ function init() {
 
         stage.scale -= event.deltaY / (1000 / stage.scale);
 
-        stage.scale = Math.min(Math.max(0.2, stage.scale), 6);
+        stage.scale = Math.min(Math.max(0.2, stage.scale), 20);
 
         // Find where the original point is now
         let globalPoint = stage.localToGlobal(localPoint.x, localPoint.y);

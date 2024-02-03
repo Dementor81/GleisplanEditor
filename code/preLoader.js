@@ -1,4 +1,4 @@
-'use strict';
+"use strict";
 
 class preLoader {
     constructor(basefolder) {
@@ -7,17 +7,18 @@ class preLoader {
         if (basefolder.length > 0) this._basefolder += "/";
         //this._loaderDic = new Map();
         this._loadedItems = 0;
-        this.onProgress = (progress) => { };
-        this._loadQueue = new createjs.LoadQueue(false);
+        this.onProgress = (progress) => {};
+        this._loadQueue = new createjs.LoadQueue(true, basefolder, true);
         this._loadQueue.setMaxConnections(99);
-        this._loadQueue.on("fileload", (e) => { this._loadedItems++; this.onProgress(this._loadedItems / this._totalItems) });
-
+        this._loadQueue.on("fileload", (e) => {
+            this._loadedItems++;
+            this.onProgress(this._loadedItems / this._totalItems);
+        });
     }
 
     get loaded() {
         return this._loadQueue.loaded;
     }
-
 
     addSpriteSheet(signal, json_file) {
         let p = new Promise((resolve, reject) => {
@@ -40,20 +41,23 @@ class preLoader {
         return p;
     }
 
-    addImage(src, id){
-        this._loadQueue.loadFile({id:id, src:src},false,this._basefolder);
+    addImage(src, id) {
+        this._loadQueue.loadFile({ id: id, src: src, type: createjs.LoadQueue.IMAGE }, false, this._basefolder);
     }
 
-    
     start() {
         return new Promise((resolve, reject) => {
             Promise.all(this._promises).then(() => {
-                this._loadQueue.addEventListener("error", (e) => { console.log(e.title + ":" + e.data.id); });
+                this._loadQueue.addEventListener("error", (e) => {
+                    console.log(e.title + ":" + e.data.id);
+                });
                 //this._loadQueue.addEventListener("fileload", () => {  });
-                this._loadQueue.addEventListener("complete", () => { resolve(); });
+                this._loadQueue.addEventListener("complete", () => {
+                    resolve();
+                });
 
                 this._loadQueue.setPaused(false);
-            })
+            });
         });
     }
 
@@ -67,16 +71,15 @@ class preLoader {
             let bmp = new createjs.Bitmap(img).set({
                 y: item.pos.top,
                 x: item.pos.left,
-                sourceRect: new createjs.Rectangle(item.sourceRect.x, item.sourceRect.y, item.sourceRect.width, item.sourceRect.height)
+                sourceRect: new createjs.Rectangle(item.sourceRect.x, item.sourceRect.y, item.sourceRect.width, item.sourceRect.height),
             });
             return bmp;
-        } else
-            console.log(id + " nicht gefunden, nicht vom preLoader geladen")
+        } else console.log(id + " nicht gefunden, nicht vom preLoader geladen");
 
         return null;
     }
 
-    getImage(id){
+    getImage(id) {
         return this._loadQueue.getResult(id);
     }
 
@@ -85,8 +88,6 @@ class preLoader {
             $.getJSON(file, (data) => resolve(data));
         });
     }
-
-
 
     getPreload(configFile) {
         let x = this._loaderDic.get(configFile.toLowerCase());
