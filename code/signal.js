@@ -78,61 +78,72 @@ class Signal {
                 else this.features.set(template.initialFeatures);
 
             if (template.initialSignalStellung)
-                if (Array.isArray(template.initialSignalStellung)) template.initialSignalStellung.forEach((i) => this.set(i));
-                else this.set(template.initialSignalStellung);
+                if (Array.isArray(template.initialSignalStellung)) template.initialSignalStellung.forEach((i) => this.set_stellung(i));
+                else this.set_stellung(template.initialSignalStellung);
         }
     }
 
     //Setzt die Signalstellung, 2 Möglichkeiten:
-    //set("hp",0)
+    //set("zs3",60)
     //oder
     //set("hp=0")
-    set(stellung, value, chain=true) {
+    //set("ersatz=zs7")
+    set_stellung(stellung, subkey, value, chain = true) {
         let changed = false;
         /* const splitted = stellung.split("=");
         if (splitted.length == 2) {
             value = splitted[1];
             stellung = splitted[0];
         } */
-        if (value == undefined) [stellung, value] = stellung.split("=");
-
-        if (this.get(stellung) != value) {
-            /* if (this.check(stellung)) delete this._signalStellung[stellung];
+        if (subkey == undefined) [stellung, subkey] = stellung.split("=");
+        if (value) {
+            if (this.get(stellung) != subkey) {
+                /* if (this.check(stellung)) delete this._signalStellung[stellung];
             else this._signalStellung[stellung] = value; */
-            this._signalStellung[stellung] = Number(value);
+
+                if (!isNaN(subkey)) {
+                    this._signalStellung[stellung] = Number(subkey);
+                } else {
+                    this._signalStellung[stellung] = subkey;
+                }
+
+                changed = true;
+            }
+        } else if (this._signalStellung[stellung] != null) {
+            delete this._signalStellung[stellung];
             changed = true;
         }
 
         //Signal is actual positioned at a track (e.g. When Signal is created, there isnt a track yet)
         //and the signal indication actualy changed
         if (this._positioning.track && changed && chain) {
-            let stop = false
+            let stop = false;
             if (this.features.match(["hp", "master"])) {
                 let prevSignal = this;
                 do {
-                    prevSignal = this.search4Signal(prevSignal,DIRECTION.RIGHT_2_LEFT);
-                    if (prevSignal && prevSignal._template.checkSignalDependency)
-                        stop = prevSignal._template.checkSignalDependency(prevSignal, this,["vr", "slave"]);
-
+                    prevSignal = this.search4Signal(prevSignal, DIRECTION.RIGHT_2_LEFT);
+                    if (prevSignal && prevSignal._template.checkSignalDependency) stop = prevSignal._template.checkSignalDependency(prevSignal, this, ["vr", "slave"]);
                 } while (!stop && prevSignal);
             }
             if (this.features.match(["vr", "slave"]) && this._template.checkSignalDependency) {
                 let nextSignal = this;
                 do {
-                    nextSignal = this.search4Signal(nextSignal,DIRECTION.LEFT_2_RIGTH);
-                    if (nextSignal && nextSignal._template.checkSignalDependency)
-                        stop = nextSignal._template.checkSignalDependency(this,nextSignal,["hp", "master"]);
-
+                    nextSignal = this.search4Signal(nextSignal, DIRECTION.LEFT_2_RIGTH);
+                    if (nextSignal && nextSignal._template.checkSignalDependency) stop = nextSignal._template.checkSignalDependency(this, nextSignal, ["hp", "master"]);
                 } while (!stop && nextSignal);
-                
             }
         }
     }
 
+    //get value for a specific Stellung
+    //e.g. get("hp") returns 0 for Hp 0
+    //can be used like this: get("hp") > 0
     get(stellung) {
         return this._signalStellung[stellung];
     }
 
+    //checks if a specific Stellung is set
+    //e.g. get("hp=0") returns true for Hp 0
     check(stellung) {
         if (stellung == null) return true;
         const splitted = stellung.split("=");
@@ -316,5 +327,5 @@ class Signal {
                 }
             } else track = null;
         }
-    }    
+    }
 }

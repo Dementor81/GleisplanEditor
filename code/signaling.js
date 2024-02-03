@@ -1,5 +1,9 @@
 "use strict";
 
+//Signals are build of Visual elements. Some elements are always been drawn, like the "Mast", others have a varianty of
+//conditions.
+//1st: a VE has conditions, these must match with the Signals features. e.g.: sh1 are only on Zsig and Asig
+//2nd: the visual elemnt must be enabled.
 class VisualElement {
     #_blinkt = null;
     #_image = null;
@@ -59,10 +63,8 @@ class VisualElement {
         this.#_pos = v;
     }
 
-    //visual elements are eabled if both conditions are met:
-    //if existing the ebabled function must return true and
-    //if existing the signalstellung must be set on the signal
-    //if both are not set, its always ebabled
+    //visual elements are enabled if the enabled function returns true and the signalstellung is set on the signal
+    //if both are not set, its always enabled
     isEnabled(signal) {
         return (this.#_enabled == null || this.#_enabled(signal)) && signal.check(this.#_stellung);
     }
@@ -140,7 +142,7 @@ class SignalTemplate {
 
     contextMenu = [];
     visualElements = [];
-    rules = new Map();
+    //rules = new Map();
 
     get id() {
         return this.#_id;
@@ -193,16 +195,19 @@ class SignalTemplate {
         this.rules.set(key, rule);
     }
 
-    VisualElementIsAllowed(element, signal) {
-        return element.stellung == null || this.StellungIsAllowed(element.stellung[0], signal);
-    }
+    
 
     StellungIsAllowed(stellung, signal) {
-        const rule = this.rules.get(stellung);
+        /* const rule = this.rules.get(stellung);
         if (rule) return rule(signal);
-        else return true;
+        else return true; */
+        return true;
     }
-
+ 
+    VisualElementIsAllowed(element, signal) {
+        //return element.stellung == null || this.StellungIsAllowed(element.stellung[0], signal);
+        return true;
+    }
     stringify() {
         return this.id;
     }
@@ -236,25 +241,25 @@ function initSignals() {
     const verw_bahnhof = ["verwendung.asig", "verwendung.zsig"];
 
     const checkSignalDependencyFunction4HV = function (signal, hp) {
-        if (signal.get("vr") != -2) { //-2 heißt, die Vorsignalfunktion ist vom User ausgeschaltet            
-            if (!signal.features.match("hp") || signal.get("hp") != 0) { //Das Hauptsignal leuchtet oder es ist ein alleinstehndes Vorsignal
+        if (signal.get("vr") != -2) {
+            //-2 heißt, die Vorsignalfunktion ist vom User ausgeschaltet
+            if (!signal.features.match("hp") || signal.get("hp") != 0) {
+                //Das Hauptsignal leuchtet oder es ist ein alleinstehndes Vorsignal
                 switch (hp._template.id) {
                     case "Hv77":
                     case "hv_hp":
                     case "hv_vr":
                         {
-                            signal.set("vr", hp.get("hp") >= 0 ? hp.get("hp") : 0,false);
-                            if (!signal.features.match("wdh"))
-                                return true;
+                            signal.set("vr", hp.get("hp") >= 0 ? hp.get("hp") : 0, false);
+                            if (!signal.features.match("wdh")) return true;
                         }
                         break;
                     case "Hl":
                     case "ks_hp":
                     case "ks_vr":
                         {
-                            signal.set("vr", hp.get("hp") <= 0 ? 0 : 1,false);
-                            if (!signal.features.match("wdh"))
-                                return true;
+                            signal.set("vr", hp.get("hp") <= 0 ? 0 : 1, false);
+                            if (!signal.features.match("wdh")) return true;
                         }
                         break;
 
@@ -323,7 +328,10 @@ function initSignals() {
             new VisualElement("verk", { conditions: "verk" }),
             new VisualElement("verk_licht", { btn_text: "Verkürzt", conditions: "verk", stellung: "verk=1", enabled: (s) => s.get("hp") > 0 }),
             new VisualElement(null, {
-                childs: [new VisualElement("zs1", { btn_text: "Zs 1", stellung: "ersatz=zs1" }), new VisualElement("sh1", { btn_text: "Sh 1", conditions: verw_bahnhof, stellung: "ersatz=sh1" })],
+                childs: [
+                    new VisualElement("zs1", { btn_text: "Zs 1", stellung: "ersatz=zs1" })
+                    , new VisualElement("sh1", { btn_text: "Sh 1", conditions: verw_bahnhof, stellung: "ersatz=sh1" })
+                ],
                 enabled: (s) => s.get("hp") == 0 || s.get("hp") == null,
             }),
         ],
@@ -351,9 +359,9 @@ function initSignals() {
                     new VisualElement("vr2", { btn_text: "Vr 2", stellung: "vr=2" }),
                 ],
             }),
-            new VisualElement("verk", { conditions: ["verk","wdh"] }),
+            new VisualElement("verk", { conditions: ["verk", "wdh"] }),
             new VisualElement("verk_licht", { btn_text: "Verkürzt", conditions: "verk", stellung: "verk=1" }),
-            new VisualElement("verk_licht", { conditions: "wdh"}),
+            new VisualElement("verk_licht", { conditions: "wdh" }),
         ],
         "vr=0"
     );

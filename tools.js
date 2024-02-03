@@ -228,8 +228,8 @@ const ui = {
         })
             .attr("data_signal", stellung)
             .html(text)
-            .click(() => {
-                signal.set(stellung);
+            .click((e) => {
+                signal.set_stellung(stellung,null,!$(e.target).hasClass("active"));
             });
     },
     create_Input: function (text, stellung, signal) {
@@ -243,7 +243,7 @@ const ui = {
             })
                 .attr("data_signal", stellung)
                 .on("input", (e) => {
-                    signal.set(stellung, e.target.value);
+                    signal.set_stellung(stellung, e.target.value);
                     renderer.reDrawEverything();
                     save();
                 }),
