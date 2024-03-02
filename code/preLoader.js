@@ -27,7 +27,7 @@ class preLoader {
                 let img;
                 while (i < imgCatalog.length) {
                     img = imgCatalog[i];
-                    img.src += ".png" + "?" + VERSION;
+                    img.src = json_file + ".png" + "?" + VERSION;
                     img.id = json_file + img.signal;
                     i++;
                     //this._loaderDic.set(img.id, img);

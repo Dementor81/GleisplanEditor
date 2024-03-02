@@ -223,13 +223,13 @@ const ui = {
     create_toggleButton: function (text, id, stellung, signal) {
         return $("<button>", {
             type: "button",
-            id: "btn_" + id,
+            id: "btn_" + (id != null ? id : text),
             class: "btn btn-primary btn-sm",
         })
             .attr("data_signal", stellung)
             .html(text)
             .click((e) => {
-                signal.set_stellung(stellung,null,!$(e.target).hasClass("active"));
+                signal.set_stellung(stellung, null, !$(e.target).hasClass("active"));
             });
     },
     create_Input: function (text, stellung, signal) {

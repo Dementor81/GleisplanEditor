@@ -12,9 +12,10 @@ class VisualElement {
     #_conditions = null;
     #_enabled = null;
     #_stellung = [];
+    #_off = [];
     #_childs = null;
 
-    constructor(image, { btn_text = null, blinkt = false, pos = null, enabled = null, conditions: conditions = [], stellung = null, childs = null } = {}) {
+    constructor(image, { btn_text = null, blinkt = false, pos = null, enabled = null, conditions: conditions = [], stellung = null, off = null, childs = null } = {}) {
         this.#_blinkt = blinkt;
         this.#_btn_text = btn_text;
         this.#_pos = pos;
@@ -22,6 +23,7 @@ class VisualElement {
         this.#_conditions = conditions;
         this.#_enabled = enabled;
         this.#_stellung = stellung;
+        this.#_off = off;
         this.#_childs = childs;
     }
 
@@ -51,6 +53,9 @@ class VisualElement {
     }
     get stellung() {
         return this.#_stellung;
+    }
+    get off() {
+        return this.#_off;
     }
     get childs() {
         return this.#_childs;
@@ -172,8 +177,9 @@ class SignalTemplate {
         this.elements = [];
 
         const intStartElements = (element) => {
-            if (typeof element == "string") this.add(new VisualElement(element));
-            else this.add(element);
+            this.add(element);
+            /* if (typeof element == "string") this.add(new VisualElement(element));
+            else this.add(element); */
         };
 
         if (startElements) {
@@ -212,7 +218,7 @@ class SignalTemplate {
 }
 
 function initSignals() {
-    const menu = {
+    const settingsMenu = {
         Verwendung: {
             text: "Verwendung",
             childs: [
@@ -234,6 +240,19 @@ function initSignals() {
             ],
         },
     };
+
+    const lightMenu = [
+        [
+            { text: "Hp 0", setting: "hp=0" },
+            { text: "Hp 1", setting: "hp=1" },
+            { text: "Hp 2", setting: "hp=2" },
+        ],
+        [
+            { text: "Zs 1", setting: "ersatz=zs1" },
+            { text: "Sh 1", setting: "ersatz=sh1" },
+            { text: "Kennlicht", setting: "ersatz=kennlicht" },
+        ],
+    ];
 
     const verw_strecke = ["verwendung.bksig", "verwendung.sbk", "verwendung.esig"];
     const verw_bahnhof = ["verwendung.asig", "verwendung.zsig"];
@@ -280,42 +299,25 @@ function initSignals() {
         "Hv Hauptsignal",
         "hv",
         [
-            "basis",
-            "hp",
-            "zs1_schirm",
-            "schild",
-            new VisualElement("vr", { conditions: "vr" }),
+            "mast,schild,hp_schirm",
+            new VisualElement("vr_schirm", { conditions: "vr" }),
             new VisualElement("wrw", { conditions: "mastschild.wrw" }),
-            new VisualElement("wgwgw", { conditions: "mastschild.wgwgw" }),
-            new VisualElement("asig", { conditions: verw_bahnhof }),
-            new VisualElement("sh1_aus", { conditions: verw_bahnhof }),
-            new VisualElement("kennlicht_aus", { conditions: verw_bahnhof }),
-            new VisualElement("esig", { conditions: verw_strecke.without("verwendung.sbk") }),
-            new VisualElement("sbk", { conditions: verw_strecke }),
-            new VisualElement(null, {
-                btn_text: "Hp 0",
-                stellung: "hp=0",
-                childs: [new VisualElement("asig_hp0", { conditions: verw_bahnhof }), new VisualElement("hp0", { conditions: verw_strecke })],
-            }),
-            new VisualElement("hp00", { conditions: verw_bahnhof, enabled: (s) => s.get("ersatz") != "sh1" && s.get("hp") <= 0 }),
-            new VisualElement(null, {
-                btn_text: "Hp 1",
-                stellung: "hp=1",
-                childs: [
-                    new VisualElement("asig_hp1", { conditions: verw_bahnhof }),
-                    new VisualElement("esig_hp1", { conditions: verw_strecke.without("verwendung.sbk") }),
-                    new VisualElement("sbk_hp1", { conditions: "verwendung.sbk" }),
-                ],
-            }),
-            new VisualElement(null, {
-                btn_text: "Hp 2",
-                stellung: "hp=2",
-                childs: [
-                    new VisualElement(["asig_hp1", "asig_hp2"], { conditions: verw_bahnhof }),
-                    new VisualElement(["esig_hp1", "esig_hp2"], { conditions: verw_strecke.without("verwendung.sbk") }),
-                ],
-            }),
-            new VisualElement(null, {
+            ,
+            //new VisualElement("wgwgw", { conditions: "mastschild.wgwgw" }),
+
+            new VisualElement("asig_hp0,asig_hp00", { stellung: "hp=0", conditions: verw_bahnhof, enabled: (s) => s.get("ersatz") != "sh1", off: "hp00_aus" }),
+            new VisualElement("asig_hp0", { stellung: "hp=0", conditions: verw_bahnhof, off: "asig_hp0_aus" }),
+            new VisualElement("sbk_hp0", { stellung: "hp=0", conditions: "verwendung.sbk", off: new VisualElement("sbk_aus", { enabled: (s) => s.get("hp") != "1" }) }),
+            new VisualElement("sbk_hp0", { stellung: "hp=0", conditions: verw_strecke, off: new VisualElement("sbk_aus", { enabled: (s) => s.get("hp") != "2" }) }),
+
+            new VisualElement("asig_hp1", { stellung: "hp=1", conditions: verw_bahnhof, off: "asig_hp1_aus" }),
+            new VisualElement("sbk_hp1", { stellung: "hp=1", conditions: "verwendung.sbk" }),
+            new VisualElement("bk_hp1", { stellung: "hp=1", conditions: verw_strecke.without("verwendung.sbk"), off: "bk_aus" }),
+
+            new VisualElement("asig_hp1,asig_hp2", { stellung: "hp=2", conditions: verw_bahnhof }),
+            new VisualElement("bk_hp1,bk_hp2", { stellung: "hp=2", conditions: verw_strecke.without("verwendung.sbk") }),
+
+            /*new VisualElement(null, {
                 childs: [
                     new VisualElement("vr0", { btn_text: "Vr 0", stellung: "vr=0" }),
                     new VisualElement("vr1", { btn_text: "Vr 1", stellung: "vr=1" }),
@@ -325,26 +327,30 @@ function initSignals() {
                 enabled: (s) => s.get("hp") > 0,
             }),
             new VisualElement("verk", { conditions: "verk" }),
-            new VisualElement("verk_licht", { btn_text: "Verkürzt", conditions: "verk", stellung: "verk=1", enabled: (s) => s.get("hp") > 0 }),
-            new VisualElement(null, {
-                childs: [
-                    new VisualElement("zs1", { btn_text: "Zs 1", stellung: "ersatz=zs1" }),
-                    new VisualElement("sh1", { btn_text: "Sh 1", conditions: verw_bahnhof, stellung: "ersatz=sh1" }),
-                    new VisualElement("kennlicht", { btn_text: "Kennlicht", conditions: verw_bahnhof, stellung: "ersatz=kennlicht", enabled: (s) => s.get("hp") == null }),
-                ],
-                enabled: (s) => s.get("hp") == 0 || s.get("hp") == null,
+            new VisualElement("verk_licht", { btn_text: "Verkürzt", conditions: "verk", stellung: "verk=1", enabled: (s) => s.get("hp") > 0 }),*/
+
+            new VisualElement("zs1", { stellung: "ersatz=zs1", enabled: (s) => s.get("hp") == 0 || s.get("hp") == null, conditions: ["verwendung.asig"], off: "zs1_aus" }),
+            new VisualElement("sh1", { enabled: (s) => s.get("hp") == 0 || s.get("hp") == null, conditions: verw_bahnhof, stellung: "ersatz=sh1", off: "sh1_aus" }),
+            new VisualElement("kennlicht", {
+                btn_text: "Kennlicht",
+                conditions: verw_bahnhof,
+                stellung: "ersatz=kennlicht",
+                enabled: (s) => s.get("hp") == null,
+                off: "kennlicht_aus",
             }),
+            
         ],
         ["hp=0", "vr=0"]
     );
     t.scale = 0.05;
     t.checkSignalDependency = checkSignalDependencyFunction4HV;
     t.initialFeatures = ["hp", "verwendung.asig", "mastschild.wrw"];
-    t.contextMenu = [].concat(menu.Verwendung, menu.Mastschild, menu.Vorsignal, menu.verkürzt);
+    t.contextMenu = [].concat(settingsMenu.Verwendung, settingsMenu.Mastschild, settingsMenu.Vorsignal, settingsMenu.verkürzt);
+    t.signalMenu = lightMenu;
     signalTemplates.hv_hp = t;
 
     //HV Vorsignal
-    t = new SignalTemplate(
+    /* t = new SignalTemplate(
         "hv_vr",
         "Hv Vorsignal",
         "hv",
@@ -415,7 +421,7 @@ function initSignals() {
         ],
         "hp=2"
     );
-    signalTemplates.ks_vr.contextMenu = [].concat(menu.wiederholer);
+    signalTemplates.ks_vr.contextMenu = [].concat(menu.wiederholer); */
 
     //ne4
     signalTemplates.ne4 = new SignalTemplate("ne4", "Ne 4", "basic", [new VisualElement("ne4_g", { conditions: "bauart.groß" }), new VisualElement("ne4_k", { conditions: "bauart.klein" })]);

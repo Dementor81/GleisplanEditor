@@ -159,7 +159,12 @@ class Signal {
     }
 
     drawVisualElement(ve) {
-        if (ve instanceof TextElement) {
+        if(Array.isArray(ve))
+            return ve.reduce((e,value) => value || this.drawVisualElement(e));
+        else if (typeof ve == "string") {
+            this.addImageElement(ve);
+            return true;
+        } else if (ve instanceof TextElement) {
             var js_text = new createjs.Text(ve.getText(this), ve.format, ve.color);
             js_text.x = ve.pos[0];
             js_text.y = ve.pos[1];
@@ -167,42 +172,46 @@ class Signal {
             js_text.textBaseline = "top";
             js_text.lineHeight = 20;
             this._rendering.container.addChild(js_text);
+            return true;
         } else if (ve instanceof VisualElement) {
-            if (this.features.match(ve.conditions) && this._template.VisualElementIsAllowed(ve, this) && ve.isEnabled(this))
-                if (ve.image) {
-                    if (Array.isArray(ve.image)) ve.image.forEach((i) => this.addImage(i, { blinkt: ve.blinkt, pos: ve.pos }));
-                    else
-                        this.addImage(ve.image, {
-                            blinkt: ve.blinkt,
-                            pos: ve.pos,
-                        });
-                } else if (ve.childs) {
-                    ve.childs.forEach((c) => this.drawVisualElement(c));
+            if (this.features.match(ve.conditions))
+                if (this._template.VisualElementIsAllowed(ve, this) && ve.isEnabled(this)) {
+                    if (ve.image) {
+                        this.addImageElement(ve, ve.blinkt);
+                        return true;
+                    } else if (ve.childs) {
+                        for (let index = 0; index < ve.childs.length; index++) {
+                            const c = ve.childs[index];
+                            if (this.drawVisualElement(c)) return;
+                        }
+                    }
+                } else if (ve.off)
+                    this.drawVisualElement(ve.off);
+        } else console.log("unknown type of VisualElement: " + ve);
+        return false;
+    }
+
+    addImageElement(ve, blinkt = false) {
+        const textureName = typeof ve == "string" ? ve : ve.image;
+
+        if (textureName == null || textureName == "") return;
+
+        if (textureName.includes(",", 1)) textureName.split(",").forEach((x) => this.addImageElement(x));
+        else {
+            let bmp = pl.getSprite(this._template.json_file, textureName);
+            if (bmp != null) {
+                this._rendering.container.addChild(bmp);
+
+                if (blinkt) {
+                    createjs.Tween.get(bmp, { loop: true }).wait(1000).to({ alpha: 0 }, 200).wait(800).to({ alpha: 1 }, 50);
                 }
-        } else console.log(ve);
+
+                return bmp;
+            } else console.log(textureName + " nicht gezeichnet");
+        }
     }
 
-    addImage(texture_name, { pos = null, blinkt = false } = {}) {
-        if (texture_name == null || texture_name == "") return;
-
-        let bmp = pl.getSprite(this._template.json_file, texture_name);
-        if (bmp != null) {
-            if (pos) {
-                bmp.x = pos[0];
-                bmp.y = pos[1];
-            }
-
-            this._rendering.container.addChild(bmp);
-
-            if (blinkt) {
-                createjs.Tween.get(bmp, { loop: true }).wait(1000).to({ alpha: 0 }, 200).wait(800).to({ alpha: 1 }, 50);
-            }
-
-            return bmp;
-        } else console.log(texture_name + " nicht gezeichnet");
-    }
-
-    getHTML() {
+    getHTML_old() {
         const ul = $("<ul>", { class: "list-group list-group-flush" });
 
         //recursive function to retrieve alle switchable visual elements from the template
@@ -223,15 +232,30 @@ class Signal {
         const groups = new Map();
 
         switchable_visuell_elements.forEach((e) => {
-            const s = e.stellung.split("=")[0];
+            const s = (e.stellung ? e.stellung : e.childs[0].stellung).split("=")[0];
             if (!groups.has(s)) groups.set(s, [e]);
             else groups.get(s).push(e);
         });
 
         groups.forEach((group) => {
             if (!(group[0] instanceof TextElement))
-                ul.append($("<li>", { class: "list-group-item" }).append(ui.create_buttonGroup(group.map((e) => ui.create_toggleButton(e.btn_text, "", e.stellung, this)))));
+                ul.append(
+                    $("<li>", { class: "list-group-item" }).append(
+                        ui.create_buttonGroup(group.map((e) => ui.create_toggleButton(e.btn_text, "", e.stellung ? e.stellung : e.childs[0].stellung, this)))
+                    )
+                );
             else ul.append($("<li>", { class: "list-group-item" }).append(ui.create_Input(group[0].btn_text, group[0].stellung, this)));
+        });
+
+        this.syncHTML(ul);
+        return ul;
+    }
+
+    getHTML() {
+        const ul = $("<ul>", { class: "list-group list-group-flush" });
+
+        this._template.signalMenu.forEach((group) => {
+            ul.append($("<li>", { class: "list-group-item" }).append(ui.create_buttonGroup(group.map((item) => ui.create_toggleButton(item.text, null, item.setting, this)))));
         });
 
         this.syncHTML(ul);

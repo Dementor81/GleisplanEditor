@@ -1,117 +1,153 @@
 [ 
-{"signal":"basis","src":"hv","sourceRect":{"x":1,"y":1,"width":164,"height":1204},"pos":
-        {"left":113,"top":1058}
+{"signal":"mast","sourceRect":{"x":2,"y":2,"width":24,"height":751},"pos":
+        {"left":104,"top":742}
     },
 
-{"signal":"hp","src":"hv","sourceRect":{"x":167,"y":1,"width":192,"height":749},"pos":
-        {"left":99,"top":311}
+{"signal":"hp_schirm","sourceRect":{"x":30,"y":2,"width":151,"height":585},"pos":
+        {"left":41,"top":158}
     },
 
-{"signal":"asig","src":"hv","sourceRect":{"x":167,"y":752,"width":165,"height":376},"pos":
-        {"left":115,"top":350}
+{"signal":"asig_hp1","sourceRect":{"x":185,"y":2,"width":128,"height":295},"pos":
+        {"left":54,"top":187}
     },
 
-{"signal":"wrw","src":"hv","sourceRect":{"x":361,"y":1,"width":28,"height":351},"pos":
-        {"left":181,"top":1581}
+{"signal":"asig_aus","sourceRect":{"x":185,"y":301,"width":128,"height":295},"pos":
+        {"left":54,"top":187}
     },
 
-{"signal":"wgwgw","src":"hv","sourceRect":{"x":361,"y":354,"width":28,"height":351},"pos":
-        {"left":181,"top":1581}
+{"signal":"bk_hp0","sourceRect":{"x":317,"y":2,"width":121,"height":292},"pos":
+        {"left":56,"top":185}
     },
 
-{"signal":"vr","src":"hv","sourceRect":{"x":391,"y":1,"width":297,"height":299},"pos":
-        {"left":46,"top":909}
+{"signal":"bk_hp1","sourceRect":{"x":317,"y":298,"width":121,"height":292},"pos":
+        {"left":56,"top":185}
     },
 
-{"signal":"vr2","src":"hv","sourceRect":{"x":391,"y":302,"width":259,"height":217},"pos":
-        {"left":64,"top":947}
+{"signal":"wrw","sourceRect":{"x":442,"y":2,"width":21,"height":274},"pos":
+        {"left":106,"top":1150}
     },
 
-{"signal":"vr1","src":"hv","sourceRect":{"x":391,"y":521,"width":259,"height":217},"pos":
-        {"left":64,"top":947}
+{"signal":"vr_schirm","sourceRect":{"x":467,"y":2,"width":232,"height":233},"pos":
+        {"left":0,"top":625}
     },
 
-{"signal":"vr0","src":"hv","sourceRect":{"x":361,"y":740,"width":259,"height":217},"pos":
-        {"left":64,"top":947}
+{"signal":"vr2","sourceRect":{"x":467,"y":239,"width":211,"height":179},"pos":
+        {"left":0,"top":658}
     },
 
-{"signal":"ne2","src":"hv","sourceRect":{"x":334,"y":959,"width":139,"height":206},"pos":
-        {"left":123,"top":1700}
+{"signal":"vr1","sourceRect":{"x":442,"y":422,"width":211,"height":179},"pos":
+        {"left":0,"top":658}
     },
 
-{"signal":"esig","src":"hv","sourceRect":{"x":475,"y":959,"width":139,"height":76},"pos":
-        {"left":122,"top":360}
+{"signal":"vr0","sourceRect":{"x":703,"y":2,"width":211,"height":179},"pos":
+        {"left":0,"top":658}
     },
 
-{"signal":"esig_hp1","src":"hv","sourceRect":{"x":167,"y":1130,"width":139,"height":60},"pos":
-        {"left":122,"top":360}
+{"signal":"zs3_licht","sourceRect":{"x":703,"y":185,"width":174,"height":177},"pos":
+        {"left":29,"top":0}
     },
 
-{"signal":"esig_hp2","src":"hv","sourceRect":{"x":475,"y":1037,"width":139,"height":61},"pos":
-        {"left":122,"top":645}
+{"signal":"zs3v_licht","sourceRect":{"x":30,"y":605,"width":172,"height":148},"pos":
+        {"left":30,"top":866}
     },
 
-{"signal":"sbk","src":"hv","sourceRect":{"x":475,"y":1100,"width":139,"height":77},"pos":
-        {"left":122,"top":645}
+{"signal":"zs3_blech","sourceRect":{"x":206,"y":605,"width":164,"height":144},"pos":
+        {"left":35,"top":16}
     },
 
-{"signal":"hp0","src":"hv","sourceRect":{"x":690,"y":1,"width":139,"height":61},"pos":
-        {"left":122,"top":645}
+{"signal":"zs3v","sourceRect":{"x":374,"y":605,"width":164,"height":144},"pos":
+        {"left":34,"top":869}
     },
 
-{"signal":"sbk_hp1","src":"hv","sourceRect":{"x":690,"y":64,"width":139,"height":61},"pos":
-        {"left":122,"top":645}
+{"signal":"ne2","sourceRect":{"x":682,"y":366,"width":107,"height":162},"pos":
+        {"left":63,"top":1243}
     },
 
-{"signal":"sh1_aus","src":"hv","sourceRect":{"x":690,"y":127,"width":131,"height":125},"pos":
-        {"left":132,"top":513}
+{"signal":"sbk_hp1","sourceRect":{"x":793,"y":366,"width":121,"height":61},"pos":
+        {"left":56,"top":416}
     },
 
-{"signal":"sh1","src":"hv","sourceRect":{"x":690,"y":254,"width":129,"height":117},"pos":
-        {"left":133,"top":513}
+{"signal":"sbk_hp0","sourceRect":{"x":793,"y":431,"width":121,"height":61},"pos":
+        {"left":56,"top":416}
     },
 
-{"signal":"zs1_schirm","src":"hv","sourceRect":{"x":652,"y":373,"width":108,"height":103},"pos":
-        {"left":141,"top":754}
+{"signal":"bk_aus","sourceRect":{"x":793,"y":496,"width":121,"height":62},"pos":
+        {"left":56,"top":185}
     },
 
-{"signal":"zs1","src":"hv","sourceRect":{"x":652,"y":478,"width":92,"height":86},"pos":
-        {"left":150,"top":762}
+{"signal":"bk_hp2","sourceRect":{"x":657,"y":532,"width":121,"height":61},"pos":
+        {"left":56,"top":416}
     },
 
-{"signal":"schild","src":"hv","sourceRect":{"x":746,"y":478,"width":78,"height":82},"pos":
-        {"left":156,"top":1474}
+{"signal":"sbk_aus","sourceRect":{"x":782,"y":562,"width":121,"height":61},"pos":
+        {"left":56,"top":416}
     },
 
-{"signal":"verk","src":"hv","sourceRect":{"x":746,"y":562,"width":80,"height":80},"pos":
-        {"left":68,"top":945}
+{"signal":"sh1_aus","sourceRect":{"x":657,"y":597,"width":99,"height":90},"pos":
+        {"left":68,"top":308}
     },
 
-{"signal":"asig_hp1","src":"hv","sourceRect":{"x":652,"y":566,"width":70,"height":62},"pos":
-        {"left":119,"top":350}
+{"signal":"sh1","sourceRect":{"x":542,"y":605,"width":99,"height":90},"pos":
+        {"left":68,"top":308}
     },
 
-{"signal":"asig_hp0","src":"hv","sourceRect":{"x":652,"y":630,"width":69,"height":62},"pos":
-        {"left":119,"top":426}
+{"signal":"zs7","sourceRect":{"x":760,"y":627,"width":73,"height":71},"pos":
+        {"left":80,"top":511}
     },
 
-{"signal":"hp00","src":"hv","sourceRect":{"x":723,"y":644,"width":69,"height":62},"pos":
-        {"left":210,"top":426}
+{"signal":"asig_hp0_aus","sourceRect":{"x":837,"y":627,"width":57,"height":73},"pos":
+        {"left":54,"top":242}
     },
 
-{"signal":"asig_hp2","src":"hv","sourceRect":{"x":652,"y":694,"width":69,"height":62},"pos":
-        {"left":119,"top":642}
+{"signal":"zs7_aus","sourceRect":{"x":2,"y":757,"width":73,"height":71},"pos":
+        {"left":80,"top":511}
     },
 
-{"signal":"kennlicht_aus","src":"hv","sourceRect":{"x":762,"y":373,"width":37,"height":43},"pos":
-        {"left":132,"top":515}
+{"signal":"zs1","sourceRect":{"x":79,"y":757,"width":72,"height":69},"pos":
+        {"left":81,"top":510}
     },
 
-{"signal":"verk_licht","src":"hv","sourceRect":{"x":652,"y":302,"width":36,"height":36},"pos":
-        {"left":80,"top":953}
+{"signal":"zs1_aus","sourceRect":{"x":155,"y":757,"width":72,"height":69},"pos":
+        {"left":81,"top":510}
     },
 
-{"signal":"kennlicht","src":"hv","sourceRect":{"x":308,"y":1167,"width":36,"height":36},"pos":
-        {"left":133,"top":515}
+{"signal":"asig_hp0","sourceRect":{"x":231,"y":753,"width":57,"height":69},"pos":
+        {"left":54,"top":246}
+    },
+
+{"signal":"hp00_aus","sourceRect":{"x":292,"y":753,"width":57,"height":67},"pos":
+        {"left":125,"top":248}
+    },
+
+{"signal":"asig_hp2","sourceRect":{"x":353,"y":753,"width":57,"height":67},"pos":
+        {"left":55,"top":415}
+    },
+
+{"signal":"asig_hp00","sourceRect":{"x":414,"y":753,"width":57,"height":67},"pos":
+        {"left":125,"top":248}
+    },
+
+{"signal":"vr_zusatz_schirm","sourceRect":{"x":475,"y":753,"width":65,"height":64},"pos":
+        {"left":14,"top":644}
+    },
+
+{"signal":"schild","sourceRect":{"x":645,"y":691,"width":52,"height":63},"pos":
+        {"left":90,"top":1032}
+    },
+
+{"signal":"vr_zusatz_an","sourceRect":{"x":881,"y":185,"width":28,"height":29},"pos":
+        {"left":25,"top":654}
+    },
+
+{"signal":"vr_zusatz_aus","sourceRect":{"x":881,"y":218,"width":28,"height":29},"pos":
+        {"left":25,"top":654}
+    },
+
+{"signal":"kennlicht","sourceRect":{"x":881,"y":251,"width":28,"height":29},"pos":
+        {"left":68,"top":308}
+    },
+
+{"signal":"kennlicht_aus","sourceRect":{"x":881,"y":284,"width":28,"height":29},"pos":
+        {"left":68,"top":308}
     }
 ]
