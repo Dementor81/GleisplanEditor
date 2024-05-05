@@ -12,7 +12,7 @@ class VisualElement {
     #_conditions = null;
     #_enabled = null;
     #_stellung = [];
-    #_off = [];
+    #_off = null;
     #_childs = null;
 
     constructor(image, { btn_text = null, blinkt = false, pos = null, enabled = null, conditions: conditions = [], stellung = null, off = null, childs = null } = {}) {
@@ -25,6 +25,10 @@ class VisualElement {
         this.#_stellung = stellung;
         this.#_off = off;
         this.#_childs = childs;
+    }
+
+    get [Symbol.toStringTag]() {
+        return this.#_image;
     }
 
     get switchable() {
@@ -72,6 +76,10 @@ class VisualElement {
     //if both are not set, its always enabled
     isEnabled(signal) {
         return (this.#_enabled == null || this.#_enabled(signal)) && signal.check(this.#_stellung);
+    }
+
+    isAllowed(signal) {
+        return this.off == null || !signal.check(this.off);
     }
 
     /*     disableAllOther = (s, gruppe) => s._template.elements.forEach((e) => { if (e.gruppe === gruppe) e.disable(s) });
@@ -248,6 +256,11 @@ function initSignals() {
             { text: "Hp 2", setting: "hp=2" },
         ],
         [
+            { text: "Vr 0", setting: "vr=0" },
+            { text: "Vr 1", setting: "vr=1" },
+            { text: "Vr 2", setting: "vr=2" },
+        ],
+        [
             { text: "Zs 1", setting: "ersatz=zs1" },
             { text: "Sh 1", setting: "ersatz=sh1" },
             { text: "Kennlicht", setting: "ersatz=kennlicht" },
@@ -300,45 +313,80 @@ function initSignals() {
         "hv",
         [
             "mast,schild,hp_schirm",
-            new VisualElement("vr_schirm", { conditions: "vr" }),
             new VisualElement("wrw", { conditions: "mastschild.wrw" }),
-            ,
+
+            new VisualElement("hp_asig_lichtp", { conditions: verw_bahnhof }),
+            new VisualElement("hp_bk_lichtp_unten", { conditions: verw_strecke }),
+            new VisualElement("hp_bk_lichtp_oben", { conditions: verw_strecke.without("verwendung.sbk") }),
+
             //new VisualElement("wgwgw", { conditions: "mastschild.wgwgw" }),
 
-            new VisualElement("asig_hp0,asig_hp00", { stellung: "hp=0", conditions: verw_bahnhof, enabled: (s) => s.get("ersatz") != "sh1", off: "hp00_aus" }),
-            new VisualElement("asig_hp0", { stellung: "hp=0", conditions: verw_bahnhof, off: "asig_hp0_aus" }),
-            new VisualElement("sbk_hp0", { stellung: "hp=0", conditions: "verwendung.sbk", off: new VisualElement("sbk_aus", { enabled: (s) => s.get("hp") != "1" }) }),
-            new VisualElement("sbk_hp0", { stellung: "hp=0", conditions: verw_strecke, off: new VisualElement("sbk_aus", { enabled: (s) => s.get("hp") != "2" }) }),
-
-            new VisualElement("asig_hp1", { stellung: "hp=1", conditions: verw_bahnhof, off: "asig_hp1_aus" }),
-            new VisualElement("sbk_hp1", { stellung: "hp=1", conditions: "verwendung.sbk" }),
-            new VisualElement("bk_hp1", { stellung: "hp=1", conditions: verw_strecke.without("verwendung.sbk"), off: "bk_aus" }),
-
-            new VisualElement("asig_hp1,asig_hp2", { stellung: "hp=2", conditions: verw_bahnhof }),
-            new VisualElement("bk_hp1,bk_hp2", { stellung: "hp=2", conditions: verw_strecke.without("verwendung.sbk") }),
-
-            /*new VisualElement(null, {
+            new VisualElement(null, {
+                stellung: "hp=0",
                 childs: [
-                    new VisualElement("vr0", { btn_text: "Vr 0", stellung: "vr=0" }),
-                    new VisualElement("vr1", { btn_text: "Vr 1", stellung: "vr=1" }),
-                    new VisualElement("vr2", { btn_text: "Vr 2", stellung: "vr=2" }),
+                    new VisualElement("hp_asig_rot_re", { conditions: verw_bahnhof, off: "ersatz=sh1" }),
+                    new VisualElement("hp_asig_rot_li", { conditions: verw_bahnhof }),
+                    new VisualElement("hp_bk_rot_unten_li", { conditions: verw_strecke }),
+                ],
+            }),
+            new VisualElement(null, {
+                stellung: "hp=1",
+                childs: [
+                    new VisualElement("hp_asig_gr", { conditions: verw_bahnhof }),
+                    new VisualElement("hp_bk_gr_unten_re", { conditions: "verwendung.sbk" }),
+                    new VisualElement("hp_bk_gr_oben_re", { conditions: verw_strecke.without("verwendung.sbk") }),
+                ],
+            }),
+            new VisualElement(null, {
+                stellung: "hp=2",
+                childs: [
+                    new VisualElement("hp_asig_gelb,hp_asig_gr", { conditions: verw_bahnhof }),
+                    new VisualElement("hp_bk_gelb_unten_re,hp_bk_gr_oben_re", { conditions: verw_strecke.without("verwendung.sbk") }),
+                ],
+            }),
+            new VisualElement("hp_asig_schuten", { conditions: verw_bahnhof }),
+            new VisualElement("hp_bk_schute_unten", { conditions: verw_strecke }),
+            new VisualElement("hp_bk_schute_oben", { conditions: verw_strecke.without("verwendung.sbk") }),
+
+            new VisualElement(null, {
+                childs: [
+                    "vr_schirm",
+                    "vr_lichtp",
+                    new VisualElement("vr_zusatz_schirm,vr_zusatz_lichtp", { conditions: "verk" }),
+                    new VisualElement("vr_zusatz_licht", { btn_text: "Verkürzt", conditions: "verk", stellung: "hp>0" }),
+                    new VisualElement(null, {
+                        childs: [
+                            new VisualElement("vr_gelb_oben,vr_gelb_unten", { btn_text: "Vr 0", stellung: "vr=0" }),
+                            new VisualElement("vr_grün_oben,vr_grün_unten", { btn_text: "Vr 1", stellung: "vr=1" }),
+                            new VisualElement("vr_gelb_unten,vr_grün_oben", { btn_text: "Vr 2", stellung: "vr=2" }),
+                        ],
+                        off: "hp<=0",
+                    }),
+                    "vr_schuten",
+                    new VisualElement("vr_zusatz_schute", { conditions: "verk" }),
                 ],
                 conditions: "vr",
-                enabled: (s) => s.get("hp") > 0,
             }),
-            new VisualElement("verk", { conditions: "verk" }),
-            new VisualElement("verk_licht", { btn_text: "Verkürzt", conditions: "verk", stellung: "verk=1", enabled: (s) => s.get("hp") > 0 }),*/
 
-            new VisualElement("zs1", { stellung: "ersatz=zs1", enabled: (s) => s.get("hp") == 0 || s.get("hp") == null, conditions: ["verwendung.asig"], off: "zs1_aus" }),
-            new VisualElement("sh1", { enabled: (s) => s.get("hp") == 0 || s.get("hp") == null, conditions: verw_bahnhof, stellung: "ersatz=sh1", off: "sh1_aus" }),
-            new VisualElement("kennlicht", {
-                btn_text: "Kennlicht",
+            new VisualElement(null, {
+                childs: ["hp_asig_kennlicht_lichtp", new VisualElement("hp_asig_kennlicht_licht", { btn_text: "Kennlicht", stellung: "ersatz=kennlicht", off: "hp>=0" }), "hp_asig_kennlicht_schute"],
                 conditions: verw_bahnhof,
-                stellung: "ersatz=kennlicht",
-                enabled: (s) => s.get("hp") == null,
-                off: "kennlicht_aus",
             }),
-            
+
+            new VisualElement(null, {
+                childs: ["hp_asig_sh1_lichtp", new VisualElement("hp_asig_sh1_licht", { btn_text: "Sh 1", stellung: "ersatz=sh1", off: "hp>0" }), "hp_asig_sh1_schute"],
+                conditions: verw_bahnhof,
+            }),
+
+            new VisualElement(null, {
+                childs: ["hp_zs1_lichtp", new VisualElement("hp_zs1_licht", { btn_text: "Zs 1", stellung: "ersatz=zs1", off: "hp>0" }), "hp_zs1_schuten"],
+                conditions: ["verwendung.asig", "verwendung.sbk"],
+            }),
+
+            new VisualElement(null, {
+                childs: ["hp_zs7_lichtp", new VisualElement("hp_zs7_licht", { btn_text: "Zs 7", stellung: "ersatz=zs7", off: "hp>0" }), "hp_zs7_schuten"],
+                conditions: ["verwendung.esig", "verwendung.zsig"],
+            }),
         ],
         ["hp=0", "vr=0"]
     );

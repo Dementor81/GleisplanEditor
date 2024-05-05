@@ -110,7 +110,8 @@ class Signal {
                 changed = true;
             }
         } else if (this._signalStellung[stellung] != null) {
-            delete this._signalStellung[stellung];
+            //delete this._signalStellung[stellung];
+            this._signalStellung[stellung] = -1;
             changed = true;
         }
 
@@ -139,15 +140,29 @@ class Signal {
     //e.g. get("hp") returns 0 for Hp 0
     //can be used like this: get("hp") > 0
     get(stellung) {
-        return this._signalStellung[stellung];
+        let value = this._signalStellung[stellung]
+        if(value != undefined)
+            return value
+        else
+            return -1;
     }
 
     //checks if a specific Stellung is set
     //e.g. get("hp=0") returns true for Hp 0
     check(stellung) {
         if (stellung == null) return true;
-        const splitted = stellung.split("=");
-        return splitted.length == 1 || this._signalStellung[splitted[0]] == splitted[1];
+
+        const equation = splitEquation(stellung);
+        let data = this.get(equation.left);
+
+        if (equation.operator == "=") return data == equation.right;
+        else {
+            equation.right = Number.parseInt(equation.right)
+            if (equation.operator == "<") return data < equation.right;
+            else if (equation.operator == "<=") return data <= equation.right;
+            else if (equation.operator == ">=") return data >= equation.right;
+            else if (equation.operator == ">") return data > equation.right;
+        }
     }
 
     draw(c) {
@@ -159,11 +174,9 @@ class Signal {
     }
 
     drawVisualElement(ve) {
-        if(Array.isArray(ve))
-            return ve.reduce((e,value) => value || this.drawVisualElement(e));
+        if (Array.isArray(ve)) ve.forEach((e) => this.drawVisualElement(e));
         else if (typeof ve == "string") {
             this.addImageElement(ve);
-            return true;
         } else if (ve instanceof TextElement) {
             var js_text = new createjs.Text(ve.getText(this), ve.format, ve.color);
             js_text.x = ve.pos[0];
@@ -172,21 +185,18 @@ class Signal {
             js_text.textBaseline = "top";
             js_text.lineHeight = 20;
             this._rendering.container.addChild(js_text);
-            return true;
         } else if (ve instanceof VisualElement) {
             if (this.features.match(ve.conditions))
-                if (this._template.VisualElementIsAllowed(ve, this) && ve.isEnabled(this)) {
+                if (ve.isAllowed(this) && ve.isEnabled(this)) {
                     if (ve.image) {
                         this.addImageElement(ve, ve.blinkt);
-                        return true;
                     } else if (ve.childs) {
                         for (let index = 0; index < ve.childs.length; index++) {
                             const c = ve.childs[index];
-                            if (this.drawVisualElement(c)) return;
+                            this.drawVisualElement(c);
                         }
                     }
-                } else if (ve.off)
-                    this.drawVisualElement(ve.off);
+                }
         } else console.log("unknown type of VisualElement: " + ve);
         return false;
     }

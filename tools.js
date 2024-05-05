@@ -143,6 +143,19 @@ function uuidv4() {
     return ([1e7] + -1e3 + -4e3 + -8e3 + -1e11).replace(/[018]/g, (c) => (c ^ (crypto.getRandomValues(new Uint8Array(1))[0] & (15 >> (c / 4)))).toString(16));
 }
 
+function splitEquation(equation) {
+    const operators = /[=<>]+/; // Regular expression to match any of the operators
+            const parts = equation.split(operators);
+            const leftOperand = parts[0]; // "a"
+            const rightOperand = parts[1]; // "6"
+            const operator = equation.match(operators)[0];
+    return {
+        left: leftOperand,
+        right: rightOperand,
+        operator: operator
+    }
+}
+
 function isPointInsideBox(point, box, rotationAngle) {
     const { topLeft, topRight, bottomRight, bottomLeft } = box;
 
