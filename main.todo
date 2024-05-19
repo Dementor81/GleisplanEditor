@@ -4,7 +4,7 @@ Bugs:
     ✔ Drag'n Drop der signale, vor allem am Gleisende buggy @done(23-12-13 11:14)
     ✔ Textured Renderer aktualisieren, geht aktuell nicht @done(24-02-03 17:35)
     ☐ es lass sich 90° kurven zeichnen
-    ☐ man kann im Kreis bauen
+    ☐ man kann Gleise im Kreis bauen
     ✔ Zs1, Sh 1 funktioiren nicht @started(24-02-03 17:39) @done(24-02-03 19:43) @lasted(2h4m31s)
     ☐ Signalstellung abschalten, wenn sie nicht mehr erlaubt sind
 
@@ -15,9 +15,11 @@ Detailing:
 
 Features:
     ✔ Signale verketten/automatische vorsignalisierung @started(23-11-21 12:15) @done(24-01-08 11:46) @lasted(6w5d23h31m36s)
-    ☐ Zs 8 @started(24-05-19 09:27)
-    ☐ Zs3/Zs3v
+    ✔ Zs 8 @started(24-05-19 09:27) @done(24-05-19 09:51) @lasted(24m1s)
+    ✔ Zs3/Zs3v @started(24-05-19 09:51) @done(24-05-19 11:41) @lasted(1h50m13s)
     ☐ abgleich der erlaubten Signalstellung in eigener Funktion, nicht erlaubte signale werden abgeschaltet und nicht nur nicht gezeichnet
+    ☐ Erstellung des Signalmenüs überarbeiten
+    ☐ KS Signale
     ☐ Errror Handling mit schönem Output Boostrap toast oder so
     ☐ visualisieren, wo genau ein Signal am Gleis angeheftet ist (vllt mit kleiner roten Linie)
     ☐ Sachen markieren und bemalen können

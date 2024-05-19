@@ -176,6 +176,7 @@ class Signal {
         else if (typeof ve == "string") {
             this.addImageElement(ve);
         } else if (ve instanceof TextElement) {
+            if(!ve.pos) throw new Error("TextElement doesnt have a pos");
             var js_text = new createjs.Text(ve.getText(this), ve.format, ve.color);
             js_text.x = ve.pos[0];
             js_text.y = ve.pos[1];

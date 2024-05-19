@@ -126,13 +126,13 @@ class VisualElement {
 }
 
 class TextElement extends VisualElement {
-    #_format = "";
-    #_color = "#000";
+    #_format;
+    #_color;
 
-    constructor({ format = "bold 20px Arial", color = "#333" } = {}) {
-        super(null, arguments[0]);
-        this.#_format = format;
-        this.#_color = color;
+    constructor({ format , color } ) {
+        super(arguments[0], arguments[1]);
+        this.#_format =  arguments[1].format ?? "bold 25px Arial";
+        this.#_color =  arguments[1].color ?? "#eee";
     }
 
     get format() {
@@ -391,11 +391,18 @@ function initSignals() {
             }),
 
             new VisualElement(null, {
-                childs: ["hp_zs7_lichtp", new VisualElement("hp_zs7_licht", { btn_text: "Zs 7", stellung: "ersatz=zs7", off: "hp>0" }), "hp_zs7_schuten"],
-                conditions: ["verwendung.esig", "verwendung.zsig"],
+                childs: ["zs3_blech", new TextElement("zs3", { pos: [115, 80] ,  format: "bold 80px Arial", color: "#eee", btn_text: "Kennziffer", stellung: "zs3"})],
+                off: "zs3=0"
             }),
+
+            new VisualElement(null, {
+                childs: ["zs3v", new TextElement("zs3v", { pos: [115, 890] ,  format: "bold 80px Arial", color: "#ffde36", btn_text: "Kennziffer", stellung: "zs3v"})],
+                off: "zs3v=0"
+            }),
+
+
         ],
-        ["hp=0", "vr=0"]
+        ["hp=0", "vr=0", "zs3=6", "zs3v=5"]
     );
     t.scale = 0.05;
     t.checkSignalDependency = checkSignalDependencyFunction4HV;
@@ -493,17 +500,17 @@ function initSignals() {
 
     signalTemplates.ne1 = new SignalTemplate("ne1", "Ne 1", "basic", "ne1");
 
-    signalTemplates.lf6 = new SignalTemplate("lf6", "Lf 6", "basic", ["lf6", new TextElement({ pos: [30, 8], format: "bold 30px Arial", btn_text: "Kennziffer", stellung: "geschw" })], "geschw=9");
+    signalTemplates.lf6 = new SignalTemplate("lf6", "Lf 6", "basic", ["lf6", new TextElement("lf6",{ pos: [30, 8], format: "bold 30px Arial", color:"#333", btn_text: "Kennziffer", stellung: "geschw" })], "geschw=9");
     signalTemplates.lf6.initialFeatures = ["slave"];
 
-    signalTemplates.lf7 = new SignalTemplate("lf7", "Lf 7", "basic", ["lf7", new TextElement({ pos: [20, 10], format: "bold 40px Arial", btn_text: "Kennziffer", stellung: "geschw" })], "geschw=6");
+    signalTemplates.lf7 = new SignalTemplate("lf7", "Lf 7", "basic", ["lf7", new TextElement("lf7",{ pos: [20, 10], format: "bold 40px Arial", color:"#333", btn_text: "Kennziffer", stellung: "geschw" })], "geschw=6");
     signalTemplates.lf7.initialFeatures = ["master"];
 
     signalTemplates.zs3 = new SignalTemplate(
         "zs3",
         "Zs 3 (alleinst.)",
         "basic",
-        ["Zs3_Form", new TextElement({ pos: [30, 25], format: "bold 25px Arial", color: "#eee", btn_text: "Kennziffer", stellung: "geschw" })],
+        ["Zs3_Form", new TextElement("zs3",{ pos: [30, 25], format: "bold 25px Arial",  btn_text: "Kennziffer", stellung: "geschw" })],
         "geschw=8"
     );
 }
