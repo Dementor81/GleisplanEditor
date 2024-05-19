@@ -262,6 +262,8 @@ function initSignals() {
         ],
         [
             { text: "Zs 1", setting: "ersatz=zs1" },
+            { text: "Zs 7", setting: "ersatz=zs7" },
+            { text: "Zs 8", setting: "ersatz=zs8" },
             { text: "Sh 1", setting: "ersatz=sh1" },
             { text: "Kennlicht", setting: "ersatz=kennlicht" },
         ],
@@ -381,6 +383,11 @@ function initSignals() {
             new VisualElement(null, {
                 childs: ["hp_zs1_lichtp", new VisualElement("hp_zs1_licht", { btn_text: "Zs 1", stellung: "ersatz=zs1", off: "hp>0" }), "hp_zs1_schuten"],
                 conditions: ["verwendung.asig", "verwendung.sbk"],
+            }),
+
+            new VisualElement(null, {
+                childs: ["hp_zs1_lichtp", new VisualElement("hp_zs1_licht", { btn_text: "Zs 8", stellung: "ersatz=zs8", off: "hp>0" , blinkt:true }), "hp_zs1_schuten"],
+                conditions: ["verwendung.asig", "verwendung.bksig"],
             }),
 
             new VisualElement(null, {

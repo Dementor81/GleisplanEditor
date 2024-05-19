@@ -69,6 +69,7 @@ class preLoader {
         if (img != null) {
             let item = this._loadQueue._loadItemsById[id];
             let bmp = new createjs.Bitmap(img).set({
+                name:texture_name,
                 y: item.pos.top,
                 x: item.pos.left,
                 sourceRect: new createjs.Rectangle(item.sourceRect.x, item.sourceRect.y, item.sourceRect.width, item.sourceRect.height),

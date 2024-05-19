@@ -10,11 +10,14 @@ Bugs:
 
 Detailing:
     ✔ Weichen Schaltung schöner darstellen @done(23-12-13 11:13)
+    ☐ Skalierung überarbeiten, Gleise dichter zusammen, dafür Weichen überarbeiten
 
 
 Features:
     ✔ Signale verketten/automatische vorsignalisierung @started(23-11-21 12:15) @done(24-01-08 11:46) @lasted(6w5d23h31m36s)
+    ☐ Zs 8 @started(24-05-19 09:27)
     ☐ Zs3/Zs3v
+    ☐ abgleich der erlaubten Signalstellung in eigener Funktion, nicht erlaubte signale werden abgeschaltet und nicht nur nicht gezeichnet
     ☐ Errror Handling mit schönem Output Boostrap toast oder so
     ☐ visualisieren, wo genau ein Signal am Gleis angeheftet ist (vllt mit kleiner roten Linie)
     ☐ Sachen markieren und bemalen können

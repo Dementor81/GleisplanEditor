@@ -140,11 +140,9 @@ class Signal {
     //e.g. get("hp") returns 0 for Hp 0
     //can be used like this: get("hp") > 0
     get(stellung) {
-        let value = this._signalStellung[stellung]
-        if(value != undefined)
-            return value
-        else
-            return -1;
+        let value = this._signalStellung[stellung];
+        if (value != undefined) return value;
+        else return -1;
     }
 
     //checks if a specific Stellung is set
@@ -157,7 +155,7 @@ class Signal {
 
         if (equation.operator == "=") return data == equation.right;
         else {
-            equation.right = Number.parseInt(equation.right)
+            equation.right = Number.parseInt(equation.right);
             if (equation.operator == "<") return data < equation.right;
             else if (equation.operator == "<=") return data <= equation.right;
             else if (equation.operator == ">=") return data >= equation.right;
@@ -208,16 +206,18 @@ class Signal {
 
         if (textureName.includes(",", 1)) textureName.split(",").forEach((x) => this.addImageElement(x));
         else {
-            let bmp = pl.getSprite(this._template.json_file, textureName);
-            if (bmp != null) {
-                this._rendering.container.addChild(bmp);
+            if (!this._rendering.container.getChildByName(textureName)) { //check if this texture was already drawn. Some texture are the same for different signals like Zs1 and Zs8
+                let bmp = pl.getSprite(this._template.json_file, textureName);
+                if (bmp != null) {
+                    this._rendering.container.addChild(bmp);
 
-                if (blinkt) {
-                    createjs.Tween.get(bmp, { loop: true }).wait(1000).to({ alpha: 0 }, 200).wait(800).to({ alpha: 1 }, 50);
-                }
+                    if (blinkt) {
+                        createjs.Tween.get(bmp, { loop: true }).wait(1000).to({ alpha: 0 }, 200).wait(800).to({ alpha: 1 }, 50);
+                    }
 
-                return bmp;
-            } else console.log(textureName + " nicht gezeichnet");
+                    return bmp;
+                } else console.log(textureName + " nicht gezeichnet, da sprite für " + textureName + " nicht erstellt wurde");
+            }
         }
     }
 
