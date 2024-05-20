@@ -134,6 +134,15 @@ class Signal {
                 } while (!stop && nextSignal);
             }
         }
+
+        if (changed)
+            this._template.rules.forEach(
+                function (rule) {
+                    let trigger = rule[0];
+                    let signal_aspect = rule[1];
+                    if (this.check(trigger)) this.set_stellung(signal_aspect);
+                }.bind(this)
+            );
     }
 
     //get value for a specific Stellung
@@ -151,15 +160,18 @@ class Signal {
         if (stellung == null) return true;
 
         const equation = splitEquation(stellung);
-        let data = this.get(equation.left);
 
-        if (equation.operator == "=") return data == equation.right;
+        if (equation.operator == "&&") return this.check(equation.left) && this.check(equation.right);
         else {
-            equation.right = Number.parseInt(equation.right);
-            if (equation.operator == "<") return data < equation.right;
-            else if (equation.operator == "<=") return data <= equation.right;
-            else if (equation.operator == ">=") return data >= equation.right;
-            else if (equation.operator == ">") return data > equation.right;
+            let data = this.get(equation.left);
+            if (equation.operator == "=") return data == equation.right;
+            else {
+                equation.right = Number.parseInt(equation.right);
+                if (equation.operator == "<") return data < equation.right;
+                else if (equation.operator == "<=") return data <= equation.right;
+                else if (equation.operator == ">=") return data >= equation.right;
+                else if (equation.operator == ">") return data > equation.right;
+            }
         }
     }
 
@@ -176,7 +188,7 @@ class Signal {
         else if (typeof ve == "string") {
             this.addImageElement(ve);
         } else if (ve instanceof TextElement) {
-            if(!ve.pos) throw new Error("TextElement doesnt have a pos");
+            if (!ve.pos) throw new Error("TextElement doesnt have a pos");
             var js_text = new createjs.Text(ve.getText(this), ve.format, ve.color);
             js_text.x = ve.pos[0];
             js_text.y = ve.pos[1];
@@ -187,13 +199,14 @@ class Signal {
         } else if (ve instanceof VisualElement) {
             if (this.features.match(ve.conditions))
                 if (ve.isAllowed(this) && ve.isEnabled(this)) {
-                    if (ve.image) {
-                        this.addImageElement(ve, ve.blinkt);
-                    } else if (ve.childs) {
+                    if (ve.childs) {
                         for (let index = 0; index < ve.childs.length; index++) {
                             const c = ve.childs[index];
                             this.drawVisualElement(c);
                         }
+                    }
+                    if (ve.image) {
+                        this.addImageElement(ve, ve.blinkt);
                     }
                 }
         } else console.log("unknown type of VisualElement: " + ve);
@@ -207,7 +220,8 @@ class Signal {
 
         if (textureName.includes(",", 1)) textureName.split(",").forEach((x) => this.addImageElement(x));
         else {
-            if (!this._rendering.container.getChildByName(textureName)) { //check if this texture was already drawn. Some texture are the same for different signals like Zs1 and Zs8
+            if (!this._rendering.container.getChildByName(textureName)) {
+                //check if this texture was already drawn. Some texture are the same for different signals like Zs1 and Zs8
                 let bmp = pl.getSprite(this._template.json_file, textureName);
                 if (bmp != null) {
                     this._rendering.container.addChild(bmp);
@@ -222,7 +236,7 @@ class Signal {
         }
     }
 
-    getHTML_old() {
+    getHTML() {
         const ul = $("<ul>", { class: "list-group list-group-flush" });
 
         //recursive function to retrieve alle switchable visual elements from the template
@@ -262,7 +276,7 @@ class Signal {
         return ul;
     }
 
-    getHTML() {
+    getHTML2() {
         const ul = $("<ul>", { class: "list-group list-group-flush" });
 
         this._template.signalMenu.forEach((group) => {

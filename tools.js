@@ -144,16 +144,25 @@ function uuidv4() {
 }
 
 function splitEquation(equation) {
-    const operators = /[=<>]+/; // Regular expression to match any of the operators
-            const parts = equation.split(operators);
-            const leftOperand = parts[0]; // "a"
-            const rightOperand = parts[1]; // "6"
-            const operator = equation.match(operators)[0];
+    let leftOperand, rightOperand, operator;
+    const index = equation.indexOf("&&");
+    if (index !== -1) {
+        leftOperand = equation.substring(0, index).trim();
+        rightOperand = equation.substring(index + 2).trim();
+        operator = "&&";
+    } else {
+        const math_operators = /[=<>]+/; // Regular expression to match any of the operators
+
+        const parts = equation.split(math_operators, 2);
+        leftOperand = parts[0].trim(); // "a"
+        rightOperand = parts[1].trim(); // "6"
+        operator = equation.match(math_operators)[0];
+    }
     return {
         left: leftOperand,
         right: rightOperand,
-        operator: operator
-    }
+        operator: operator,
+    };
 }
 
 function isPointInsideBox(point, box, rotationAngle) {

@@ -155,7 +155,7 @@ class SignalTemplate {
 
     contextMenu = [];
     visualElements = [];
-    //rules = new Map();
+    rules = [];
 
     get id() {
         return this.#_id;
@@ -205,19 +205,15 @@ class SignalTemplate {
         this.elements.push(element);
     }
 
-    addRule(key, rule) {
-        this.rules.set(key, rule);
+    addRule(trigger, setting) {
+        this.rules.push([trigger,setting]);
     }
 
-    StellungIsAllowed(stellung, signal) {
-        /* const rule = this.rules.get(stellung);
-        if (rule) return rule(signal);
-        else return true; */
+    StellungIsAllowed(stellung, signal) {        
         return true;
     }
 
     VisualElementIsAllowed(element, signal) {
-        //return element.stellung == null || this.StellungIsAllowed(element.stellung[0], signal);
         return true;
     }
     stringify() {
@@ -325,6 +321,7 @@ function initSignals() {
 
             new VisualElement(null, {
                 stellung: "hp=0",
+                btn_text: "Hp 0",
                 childs: [
                     new VisualElement("hp_asig_rot_re", { conditions: verw_bahnhof, off: "ersatz=sh1" }),
                     new VisualElement("hp_asig_rot_li", { conditions: verw_bahnhof }),
@@ -333,6 +330,7 @@ function initSignals() {
             }),
             new VisualElement(null, {
                 stellung: "hp=1",
+                btn_text: "Hp 1",
                 childs: [
                     new VisualElement("hp_asig_gr", { conditions: verw_bahnhof }),
                     new VisualElement("hp_bk_gr_unten_re", { conditions: "verwendung.sbk" }),
@@ -341,6 +339,7 @@ function initSignals() {
             }),
             new VisualElement(null, {
                 stellung: "hp=2",
+                btn_text: "Hp 2",
                 childs: [
                     new VisualElement("hp_asig_gelb,hp_asig_gr", { conditions: verw_bahnhof }),
                     new VisualElement("hp_bk_gelb_unten_re,hp_bk_gr_oben_re", { conditions: verw_strecke.without("verwendung.sbk") }),
@@ -355,14 +354,14 @@ function initSignals() {
                     "vr_schirm",
                     "vr_lichtp",
                     new VisualElement("vr_zusatz_schirm,vr_zusatz_lichtp", { conditions: "verk" }),
-                    new VisualElement("vr_zusatz_licht", { btn_text: "Verkürzt", conditions: "verk", stellung: "hp>0" }),
+                    new VisualElement("vr_zusatz_licht", { btn_text: "Verkürzt", conditions: "verk", stellung: "verk=1",off:"hp=0" }),
                     new VisualElement(null, {
                         childs: [
                             new VisualElement("vr_gelb_oben,vr_gelb_unten", { btn_text: "Vr 0", stellung: "vr=0" }),
                             new VisualElement("vr_grün_oben,vr_grün_unten", { btn_text: "Vr 1", stellung: "vr=1" }),
                             new VisualElement("vr_gelb_unten,vr_grün_oben", { btn_text: "Vr 2", stellung: "vr=2" }),
                         ],
-                        off: "hp<=0",
+                        off: "hp=0",
                     }),
                     "vr_schuten",
                     new VisualElement("vr_zusatz_schute", { conditions: "verk" }),
@@ -406,6 +405,8 @@ function initSignals() {
     );
     t.scale = 0.05;
     t.checkSignalDependency = checkSignalDependencyFunction4HV;
+    t.addRule("hp>0 && zs3>6","hp=1")
+    t.addRule("hp>0 && zs3<=6 && zs3>0","hp=2")
     t.initialFeatures = ["hp", "verwendung.asig", "mastschild.wrw"];
     t.contextMenu = [].concat(settingsMenu.Verwendung, settingsMenu.Mastschild, settingsMenu.Vorsignal, settingsMenu.verkürzt);
     t.signalMenu = lightMenu;
