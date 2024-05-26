@@ -129,10 +129,10 @@ class TextElement extends VisualElement {
     #_format;
     #_color;
 
-    constructor({ format , color } ) {
+    constructor({ format, color }) {
         super(arguments[0], arguments[1]);
-        this.#_format =  arguments[1].format ?? "bold 25px Arial";
-        this.#_color =  arguments[1].color ?? "#eee";
+        this.#_format = arguments[1].format ?? "bold 25px Arial";
+        this.#_color = arguments[1].color ?? "#eee";
     }
 
     get format() {
@@ -152,9 +152,10 @@ class SignalTemplate {
     #_start = null;
     #_json_file = null;
     #_scale = 0.4;
+    #_signalMenu = null;
 
     contextMenu = [];
-    visualElements = [];
+    elements = [];
     rules = [];
 
     get id() {
@@ -176,26 +177,35 @@ class SignalTemplate {
         this.#_scale = v;
     }
 
+    set signalMenu(m) {
+        this.#_signalMenu = m;
+
+        let queue = [...m];
+
+        while (queue.length > 0) {
+            let current = queue.shift();
+
+            if (Array.isArray(current)) queue.push(...current);
+            else {
+                if (current.items) queue.push(...[].concat(current.items));
+                if (current.setting) current.ve = this.getVisualElementByStellung(current.setting);
+            }
+        }
+    }
+
+    get signalMenu() {
+        return this.#_signalMenu;
+    }
+
     constructor(id, title, json_file, startElements, initialSignalStellung) {
         this.#_id = id;
         this.#_title = title;
         this.#_start = initialSignalStellung;
         this.#_json_file = json_file;
 
-        this.elements = [];
-
-        const intStartElements = (element) => {
-            this.add(element);
-            /* if (typeof element == "string") this.add(new VisualElement(element));
-            else this.add(element); */
-        };
-
         if (startElements) {
-            if (Array.isArray(startElements))
-                startElements.forEach((element) => {
-                    intStartElements(element);
-                });
-            else intStartElements(startElements);
+            if (Array.isArray(startElements)) this.elements = startElements;
+            else this.elements = [startElements];
         }
 
         pl.addSpriteSheet(this.#_id, json_file);
@@ -205,17 +215,39 @@ class SignalTemplate {
         this.elements.push(element);
     }
 
+    getVisualElementByStellung(signal_aspect) {
+        let results = [];
+        const iterateItems = function (current) {
+            if (Array.isArray(current)) return current.some((item) => iterateItems(item));
+            if (current instanceof VisualElement) {
+                if (current.childs !== null && current.childs.some((item) => iterateItems(item))) {
+                    results.push(current);
+                    return true;
+                }
+
+                if (current.stellung === signal_aspect) {
+                    results.push(current);
+                    return true;
+                }
+            }
+            return false;
+        };
+
+        this.elements.forEach((e) => iterateItems(e));
+
+        return results;
+    }
+
+    getAllMenuItems;
+
     addRule(trigger, setting) {
-        this.rules.push([trigger,setting]);
+        this.rules.push([trigger, setting]);
     }
 
-    StellungIsAllowed(stellung, signal) {        
+    StellungIsAllowed(stellung, signal) {
         return true;
     }
 
-    VisualElementIsAllowed(element, signal) {
-        return true;
-    }
     stringify() {
         return this.id;
     }
@@ -247,21 +279,40 @@ function initSignals() {
 
     const lightMenu = [
         [
-            { text: "Hp 0", setting: "hp=0" },
-            { text: "Hp 1", setting: "hp=1" },
-            { text: "Hp 2", setting: "hp=2" },
+            {
+                btnGroup: 1,
+                items: [
+                    { btn: 1, text: "Hp 0", setting: "hp=0" },
+                    { btn: 1, text: "Hp 1", setting: "hp=1" },
+                    { btn: 1, text: "Hp 2", setting: "hp=2" },
+                ],
+            },
+            { input: 1, text: "Zs 3 Geschwindigkeit", setting: "zs3" },
+        ],
+
+        [
+            {
+                btnGroup: 1,
+                items: [
+                    { btn: 1, text: "Vr 0", setting: "vr=0" },
+                    { btn: 1, text: "Vr 1", setting: "vr=1" },
+                    { btn: 1, text: "Vr 2", setting: "vr=2" },
+                    { btn: 1, text: "verkürzt", setting: "verk=1" },
+                ],
+            },
+            { input: 1, text: "Zs 3v Geschwindigkeit", setting: "zs3v" },
         ],
         [
-            { text: "Vr 0", setting: "vr=0" },
-            { text: "Vr 1", setting: "vr=1" },
-            { text: "Vr 2", setting: "vr=2" },
-        ],
-        [
-            { text: "Zs 1", setting: "ersatz=zs1" },
-            { text: "Zs 7", setting: "ersatz=zs7" },
-            { text: "Zs 8", setting: "ersatz=zs8" },
-            { text: "Sh 1", setting: "ersatz=sh1" },
-            { text: "Kennlicht", setting: "ersatz=kennlicht" },
+            {
+                btnGroup: 1,
+                items: [
+                    { btn: 1, text: "Zs 1", setting: "ersatz=zs1" },
+                    { btn: 1, text: "Zs 7", setting: "ersatz=zs7" },
+                    { btn: 1, text: "Zs 8", setting: "ersatz=zs8" },
+                    { btn: 1, text: "Sh 1", setting: "ersatz=sh1" },
+                    { btn: 1, text: "Kennlicht", setting: "ersatz=kennlicht" },
+                ],
+            },
         ],
     ];
 
@@ -336,6 +387,7 @@ function initSignals() {
                     new VisualElement("hp_bk_gr_unten_re", { conditions: "verwendung.sbk" }),
                     new VisualElement("hp_bk_gr_oben_re", { conditions: verw_strecke.without("verwendung.sbk") }),
                 ],
+                off: "zs3<=6 && zs3>0"
             }),
             new VisualElement(null, {
                 stellung: "hp=2",
@@ -344,6 +396,7 @@ function initSignals() {
                     new VisualElement("hp_asig_gelb,hp_asig_gr", { conditions: verw_bahnhof }),
                     new VisualElement("hp_bk_gelb_unten_re,hp_bk_gr_oben_re", { conditions: verw_strecke.without("verwendung.sbk") }),
                 ],
+                off: "zs3>6"
             }),
             new VisualElement("hp_asig_schuten", { conditions: verw_bahnhof }),
             new VisualElement("hp_bk_schute_unten", { conditions: verw_strecke }),
@@ -354,7 +407,7 @@ function initSignals() {
                     "vr_schirm",
                     "vr_lichtp",
                     new VisualElement("vr_zusatz_schirm,vr_zusatz_lichtp", { conditions: "verk" }),
-                    new VisualElement("vr_zusatz_licht", { btn_text: "Verkürzt", conditions: "verk", stellung: "verk=1",off:"hp=0" }),
+                    new VisualElement("vr_zusatz_licht", { btn_text: "Verkürzt", conditions: "verk", stellung: "verk=1", off: "hp=0" }),
                     new VisualElement(null, {
                         childs: [
                             new VisualElement("vr_gelb_oben,vr_gelb_unten", { btn_text: "Vr 0", stellung: "vr=0" }),
@@ -370,43 +423,41 @@ function initSignals() {
             }),
 
             new VisualElement(null, {
-                childs: ["hp_asig_kennlicht_lichtp", new VisualElement("hp_asig_kennlicht_licht", { btn_text: "Kennlicht", stellung: "ersatz=kennlicht", off: "hp>=0" }), "hp_asig_kennlicht_schute"],
+                childs: ["hp_asig_kennlicht_lichtp", new VisualElement("hp_asig_kennlicht_licht", { stellung: "ersatz=kennlicht", off: "hp>=0" }), "hp_asig_kennlicht_schute"],
                 conditions: verw_bahnhof,
             }),
 
             new VisualElement(null, {
-                childs: ["hp_asig_sh1_lichtp", new VisualElement("hp_asig_sh1_licht", { btn_text: "Sh 1", stellung: "ersatz=sh1", off: "hp>0" }), "hp_asig_sh1_schute"],
+                childs: ["hp_asig_sh1_lichtp", new VisualElement("hp_asig_sh1_licht", {  stellung: "ersatz=sh1", off: "hp>0" }), "hp_asig_sh1_schute"],
                 conditions: verw_bahnhof,
             }),
 
             new VisualElement(null, {
-                childs: ["hp_zs1_lichtp", new VisualElement("hp_zs1_licht", { btn_text: "Zs 1", stellung: "ersatz=zs1", off: "hp>0" }), "hp_zs1_schuten"],
+                childs: ["hp_zs1_lichtp", new VisualElement("hp_zs1_licht", {  stellung: "ersatz=zs1", off: "hp>0" }), "hp_zs1_schuten"],
                 conditions: ["verwendung.asig", "verwendung.sbk"],
             }),
 
             new VisualElement(null, {
-                childs: ["hp_zs1_lichtp", new VisualElement("hp_zs1_licht", { btn_text: "Zs 8", stellung: "ersatz=zs8", off: "hp>0" , blinkt:true }), "hp_zs1_schuten"],
+                childs: ["hp_zs1_lichtp", new VisualElement("hp_zs1_licht", {  stellung: "ersatz=zs8", off: "hp>0", blinkt: true }), "hp_zs1_schuten"],
                 conditions: ["verwendung.asig", "verwendung.bksig"],
             }),
 
             new VisualElement(null, {
-                childs: ["zs3_blech", new TextElement("zs3", { pos: [115, 80] ,  format: "bold 80px Arial", color: "#eee", btn_text: "Kennziffer", stellung: "zs3"})],
-                off: "zs3=0"
+                childs: ["zs3_blech", new TextElement("zs3", { pos: [115, 80], format: "bold 80px Arial", color: "#eee", btn_text: "Zs 3 Geschwindigkeit", stellung: "zs3" })],
+                off: "zs3=0",
             }),
 
             new VisualElement(null, {
-                childs: ["zs3v", new TextElement("zs3v", { pos: [115, 890] ,  format: "bold 80px Arial", color: "#ffde36", btn_text: "Kennziffer", stellung: "zs3v"})],
-                off: "zs3v=0"
+                childs: ["zs3v", new TextElement("zs3v", { pos: [115, 890], format: "bold 80px Arial", color: "#ffde36", btn_text: "Zs 3v Geschwindigkeit", stellung: "zs3v" })],
+                off: "zs3v=0",
             }),
-
-
         ],
-        ["hp=0", "vr=0", "zs3=6", "zs3v=5"]
+        ["hp=0", "vr=0"]
     );
     t.scale = 0.05;
     t.checkSignalDependency = checkSignalDependencyFunction4HV;
-    t.addRule("hp>0 && zs3>6","hp=1")
-    t.addRule("hp>0 && zs3<=6 && zs3>0","hp=2")
+    t.addRule("hp>0 && zs3>6", "hp=1");
+    t.addRule("hp>0 && zs3<=6 && zs3>0", "hp=2");
     t.initialFeatures = ["hp", "verwendung.asig", "mastschild.wrw"];
     t.contextMenu = [].concat(settingsMenu.Verwendung, settingsMenu.Mastschild, settingsMenu.Vorsignal, settingsMenu.verkürzt);
     t.signalMenu = lightMenu;
@@ -501,17 +552,29 @@ function initSignals() {
 
     signalTemplates.ne1 = new SignalTemplate("ne1", "Ne 1", "basic", "ne1");
 
-    signalTemplates.lf6 = new SignalTemplate("lf6", "Lf 6", "basic", ["lf6", new TextElement("lf6",{ pos: [30, 8], format: "bold 30px Arial", color:"#333", btn_text: "Kennziffer", stellung: "geschw" })], "geschw=9");
+    signalTemplates.lf6 = new SignalTemplate(
+        "lf6",
+        "Lf 6",
+        "basic",
+        ["lf6", new TextElement("lf6", { pos: [30, 8], format: "bold 30px Arial", color: "#333", btn_text: "Kennziffer", stellung: "geschw" })],
+        "geschw=9"
+    );
     signalTemplates.lf6.initialFeatures = ["slave"];
 
-    signalTemplates.lf7 = new SignalTemplate("lf7", "Lf 7", "basic", ["lf7", new TextElement("lf7",{ pos: [20, 10], format: "bold 40px Arial", color:"#333", btn_text: "Kennziffer", stellung: "geschw" })], "geschw=6");
+    signalTemplates.lf7 = new SignalTemplate(
+        "lf7",
+        "Lf 7",
+        "basic",
+        ["lf7", new TextElement("lf7", { pos: [20, 10], format: "bold 40px Arial", color: "#333", btn_text: "Kennziffer", stellung: "geschw" })],
+        "geschw=6"
+    );
     signalTemplates.lf7.initialFeatures = ["master"];
 
     signalTemplates.zs3 = new SignalTemplate(
         "zs3",
         "Zs 3 (alleinst.)",
         "basic",
-        ["Zs3_Form", new TextElement("zs3",{ pos: [30, 25], format: "bold 25px Arial",  btn_text: "Kennziffer", stellung: "geschw" })],
+        ["Zs3_Form", new TextElement("zs3", { pos: [30, 25], format: "bold 25px Arial", btn_text: "Kennziffer", stellung: "geschw" })],
         "geschw=8"
     );
 }

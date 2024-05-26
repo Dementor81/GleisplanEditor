@@ -12,8 +12,7 @@ const GRID_SIZE_2 = GRID_SIZE / 2;
 const DIRECTION = {
     LEFT_2_RIGTH: 1,
     RIGHT_2_LEFT: -1,
-
-}
+};
 
 const MOUSE_ACTION = {
     NONE: 0,
@@ -542,6 +541,23 @@ function setTrackAnchorPoints() {
     }
 }
 
+function getGlobalBounds(container) {
+    let tl = container.localToGlobal(0, 0);
+    let bounds = container.getBounds();
+    let tr = container.localToGlobal(bounds.width, 0);
+    let br = container.localToGlobal(bounds.width, bounds.height);
+    let bl = container.localToGlobal(0, bounds.height);
+
+    let minX = Math.min(tl.x, tr.x, br.x, bl.x);
+    let minY = Math.min(tl.y, tr.y, br.y, bl.y);
+    let w = Math.max(tl.x, tr.x, br.x, bl.x) - minX;
+    let h = Math.max(tl.y, tr.y, br.y, bl.y) - minY;    
+
+    if (container.rotation.is(90,270)) {
+        return new createjs.Rectangle(minX, minY, h, w);
+    } else return new createjs.Rectangle(minX, minY, w, h);
+}
+
 function handleStageMouseUp(e) {
     console.log("handleStageMouseUp", e);
 
@@ -551,8 +567,29 @@ function handleStageMouseUp(e) {
         if (mouseAction.action === MOUSE_ACTION.NONE && mouseAction.distance(stage.mouseX, stage.mouseY) < 4) {
             if (mouseAction.container?.name == "signal") {
                 if (mode === MODE_PLAY) {
-                    let popup = ui.showPopup({ x: e.rawX, y: e.rawY, widht: 10, height: 10 }, mouseAction.container.signal._template.title, mouseAction.container.signal.getHTML(), $(myCanvas));
+                    let bounds = getGlobalBounds(mouseAction.container);
+                    
+                    let p = stage.localToGlobal(
+                        mouseAction.container.x, // - bounds.height,
+                        mouseAction.container.y
+                    );
+                    p.y -= bounds.width/2;
+                    if(mouseAction.container.rotation == 270)
+                        p.x -= bounds.height;
+
+                    let popup = ui.showPopup(
+                        { x: p.x, y: p.y, width: bounds.height, height: bounds.width },
+                        mouseAction.container.signal._template.title,
+                        mouseAction.container.signal.getHTML(),
+                        $(myCanvas)
+                    );
                     $(".popover-body button").click(mouseAction.container.signal, (e) => {
+                        e.data.syncHTML(popup.tip);
+                        renderer.reDrawEverything();
+                        save();
+                    });
+
+                    $(".popover-body input").on("input", mouseAction.container.signal, (e) => {
                         e.data.syncHTML(popup.tip);
                         renderer.reDrawEverything();
                         save();
@@ -787,7 +824,7 @@ function createSwitch(location, tracks) {
         //t4: null //only available if its a dkw
         type: 0,
         branch: null, // one of the tracks
-        from: null  //normal switch: always t1, on dkw switchable
+        from: null, //normal switch: always t1, on dkw switchable
     };
 
     const groupedByRad = Object.values(groupBy(tracks, "_tmp.rad"));
@@ -800,7 +837,7 @@ function createSwitch(location, tracks) {
 
     //cause we have sorted by the number of tracks, t3 is always the branch
     sw.t3 = groupedByRad[1][0];
-    
+
     sw.type = ((findAngle(location, sw.t3.end.equals(location) ? sw.t3.start : sw.t3.end, groupedByRad[0][0].rad) / 45) % 8) + 1;
 
     if (sw.type == SWITCH_TYPE.FROM_LEFT || sw.type == SWITCH_TYPE.FROM_RIGHT) {
@@ -815,7 +852,7 @@ function createSwitch(location, tracks) {
     sw.from = sw.t1;
 
     if (tracks.length == 4) {
-        sw.type = SWITCH_TYPE.DKW;        
+        sw.type = SWITCH_TYPE.DKW;
         sw.t4 = groupedByRad[1][1];
     }
 

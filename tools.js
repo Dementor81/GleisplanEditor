@@ -242,17 +242,18 @@ function deg2rad(deg) {
 }
 
 const ui = {
-    create_toggleButton: function (text, id, stellung, signal) {
-        return $("<button>", {
-            type: "button",
-            id: "btn_" + (id != null ? id : text),
-            class: "btn btn-primary btn-sm",
-        })
-            .attr("data_signal", stellung)
-            .html(text)
-            .click((e) => {
-                signal.set_stellung(stellung, null, !$(e.target).hasClass("active"));
-            });
+    create_toggleButton: function (menu_item, signal) {
+        if (menu_item.ve != null && menu_item.ve.length > 0 && menu_item.ve.every((ve) => signal.features.match(ve.conditions)))
+            return $("<button>", {
+                type: "button",
+                id: "btn_" + menu_item.text.replace(" ","_"),
+                class: "btn btn-primary btn-sm",
+            })
+                .attr("data_signal", menu_item.setting)
+                .html(menu_item.text)
+                .click((e) => {
+                    signal.set_stellung(menu_item.setting, null, !$(e.target).hasClass("active"));
+                });
     },
     create_Input: function (text, stellung, signal) {
         const id = uuidv4();
@@ -266,8 +267,6 @@ const ui = {
                 .attr("data_signal", stellung)
                 .on("input", (e) => {
                     signal.set_stellung(stellung, e.target.value);
-                    renderer.reDrawEverything();
-                    save();
                 }),
             $("<label>", { for: id, text: text }),
         ]);
@@ -279,10 +278,10 @@ const ui = {
         let $dummy = $("#dummy");
         let rect = parent[0].getBoundingClientRect();
         if ($dummy.length == 0) {
-            $dummy = $("<div>", { id: "dummy", width: r.width, height: r.height });
+            $dummy = $("<div>", { id: "dummy" });
             $(document.body).append($dummy);
         }
-        $dummy.css({ position: "absolute", left: r.x + rect.x, top: r.y + rect.y });
+        $dummy.css({ position: "absolute", left: r.x + rect.x, top: r.y + rect.y, width: r.width, height: r.height });
         let popup = bootstrap.Popover.getOrCreateInstance($dummy);
         if (popup) {
             $(document).off("mousedown");

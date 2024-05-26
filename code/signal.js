@@ -140,7 +140,7 @@ class Signal {
                 function (rule) {
                     let trigger = rule[0];
                     let signal_aspect = rule[1];
-                    if (this.check(trigger)) this.set_stellung(signal_aspect);
+                    if (!this.check(signal_aspect) && this.check(trigger)) this.set_stellung(signal_aspect);
                 }.bind(this)
             );
     }
@@ -239,63 +239,59 @@ class Signal {
     getHTML() {
         const ul = $("<ul>", { class: "list-group list-group-flush" });
 
-        //recursive function to retrieve alle switchable visual elements from the template
-        const getSwitchableElements = function (array) {
-            let a = [];
-            array.forEach((visualElemets) => {
-                if (this.features.match(visualElemets.conditions)) {
-                    if (visualElemets.switchable) a.push(visualElemets);
-                    if (visualElemets.childs) a = a.concat(getSwitchableElements(visualElemets.childs));
-                }
-            });
-
-            return a;
-        }.bind(this);
-
-        const switchable_visuell_elements = getSwitchableElements(this._template.elements);
-
-        const groups = new Map();
-
-        switchable_visuell_elements.forEach((e) => {
-            const s = (e.stellung ? e.stellung : e.childs[0].stellung).split("=")[0];
-            if (!groups.has(s)) groups.set(s, [e]);
-            else groups.get(s).push(e);
-        });
-
-        groups.forEach((group) => {
-            if (!(group[0] instanceof TextElement))
-                ul.append(
-                    $("<li>", { class: "list-group-item" }).append(
-                        ui.create_buttonGroup(group.map((e) => ui.create_toggleButton(e.btn_text, "", e.stellung ? e.stellung : e.childs[0].stellung, this)))
-                    )
-                );
-            else ul.append($("<li>", { class: "list-group-item" }).append(ui.create_Input(group[0].btn_text, group[0].stellung, this)));
-        });
+        ul.append(this._template.signalMenu.map((data) => this.createBootstrapMenu(data)));
 
         this.syncHTML(ul);
+
         return ul;
     }
 
-    getHTML2() {
-        const ul = $("<ul>", { class: "list-group list-group-flush" });
+    createBootstrapMenu(data) {
+        if (data) {
+            if (Array.isArray(data)) {
+                let items = data.map((item) => this.createBootstrapMenu(item));
+                if (items) {
+                    let menu = $("<li>", { class: "list-group-item" }).append(items);
+                    return menu;
+                } else return null;
+            } else if (data.btnGroup) {
+                let buttons = data.items.map((item) => ui.create_toggleButton(item, this));
+                return ui.create_buttonGroup(buttons);
+            } else if (data.input) {
+                return ui.create_Input(data.text, data.setting, this);
+            }
+        }
+    }
 
-        this._template.signalMenu.forEach((group) => {
-            ul.append($("<li>", { class: "list-group-item" }).append(ui.create_buttonGroup(group.map((item) => ui.create_toggleButton(item.text, null, item.setting, this)))));
-        });
-
-        this.syncHTML(ul);
-        return ul;
+    checkBootstrapMenu(data, popup) {
+        if (data) {
+            if (Array.isArray(data)) {
+                data.forEach((item) => this.checkBootstrapMenu(item, popup));
+            } else if (data.btnGroup) {
+                data.items.forEach((item) => {
+                    let button = $("#btn_" + item.text.replace(" ", "_"), popup);
+                    if (button.length == 1) {
+                        button.toggleClass("active", this.check(item.setting));
+                        if (item.ve.every(ve=>ve.isAllowed(this))) button.removeAttr("disabled");
+                        else button.attr("disabled", "disabled");
+                    }
+                });
+            } else if (data.input) {
+                //return ui.create_Input(data.text, data.setting, this);
+            }
+        }
     }
 
     syncHTML(popup) {
-        let buttons = $("button", popup);
+        this.checkBootstrapMenu(this._template.signalMenu, popup);
+        /* let buttons = $("button", popup);
         buttons.each((i, e) => {
             const stellung = e.attributes["data_signal"].value;
             $(e).toggleClass("active", this.check(stellung));
 
             if (this._template.StellungIsAllowed(stellung[0], this)) $(e).removeAttr("disabled");
             else $(e).attr("disabled", "disabled");
-        });
+        }); */
 
         /* let switchable_visuell_elements = this._template.elements.filter((e) => e.switchable && this.options.match(e.options));
         switchable_visuell_elements.forEach(element => {
