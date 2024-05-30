@@ -10,7 +10,8 @@ Bugs:
 
 Detailing:
     ✔ Weichen Schaltung schöner darstellen @done(23-12-13 11:13)
-    ☐ Skalierung überarbeiten, Gleise dichter zusammen, dafür Weichen überarbeiten
+    ☐ Signalmenü schön machen
+    ☐ Skalierung überarbeiten, Gleise dichter zusammen, dafür Weichen überarbeiten @started(24-05-30 08:52)
 
 
 Features:
@@ -18,7 +19,7 @@ Features:
     ✔ Zs 8 @started(24-05-19 09:27) @done(24-05-19 09:51) @lasted(24m1s)
     ✔ Zs3/Zs3v @started(24-05-19 09:51) @done(24-05-19 11:41) @lasted(1h50m13s)
     ☐ abgleich der erlaubten Signalstellung in eigener Funktion, nicht erlaubte signale werden abgeschaltet und nicht nur nicht gezeichnet
-    ☐ Erstellung des Signalmenüs überarbeiten @critical
+    ✔ Erstellung des Signalmenüs überarbeiten @done(24-05-30 08:51)
     ☐ KS Signale
     ☐ Errror Handling mit schönem Output Boostrap toast oder so
     ☐ visualisieren, wo genau ein Signal am Gleis angeheftet ist (vllt mit kleiner roten Linie)
