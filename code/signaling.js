@@ -372,7 +372,7 @@ function initSignals() {
 
             new VisualElement(null, {
                 stellung: "hp=0",
-                btn_text: "Hp 0",
+                
                 childs: [
                     new VisualElement("hp_asig_rot_re", { conditions: verw_bahnhof, off: "ersatz=sh1" }),
                     new VisualElement("hp_asig_rot_li", { conditions: verw_bahnhof }),
@@ -381,7 +381,7 @@ function initSignals() {
             }),
             new VisualElement(null, {
                 stellung: "hp=1",
-                btn_text: "Hp 1",
+                
                 childs: [
                     new VisualElement("hp_asig_gr", { conditions: verw_bahnhof }),
                     new VisualElement("hp_bk_gr_unten_re", { conditions: "verwendung.sbk" }),
@@ -391,7 +391,7 @@ function initSignals() {
             }),
             new VisualElement(null, {
                 stellung: "hp=2",
-                btn_text: "Hp 2",
+                
                 childs: [
                     new VisualElement("hp_asig_gelb,hp_asig_gr", { conditions: verw_bahnhof }),
                     new VisualElement("hp_bk_gelb_unten_re,hp_bk_gr_oben_re", { conditions: verw_strecke.without("verwendung.sbk") }),
@@ -407,12 +407,12 @@ function initSignals() {
                     "vr_schirm",
                     "vr_lichtp",
                     new VisualElement("vr_zusatz_schirm,vr_zusatz_lichtp", { conditions: "verk" }),
-                    new VisualElement("vr_zusatz_licht", { btn_text: "Verkürzt", conditions: "verk", stellung: "verk=1", off: "hp=0" }),
+                    new VisualElement("vr_zusatz_licht", { conditions: "verk", stellung: "verk=1", off: "hp=0" }),
                     new VisualElement(null, {
                         childs: [
-                            new VisualElement("vr_gelb_oben,vr_gelb_unten", { btn_text: "Vr 0", stellung: "vr=0" }),
-                            new VisualElement("vr_grün_oben,vr_grün_unten", { btn_text: "Vr 1", stellung: "vr=1" }),
-                            new VisualElement("vr_gelb_unten,vr_grün_oben", { btn_text: "Vr 2", stellung: "vr=2" }),
+                            new VisualElement("vr_gelb_oben,vr_gelb_unten", {  stellung: "vr=0" }),
+                            new VisualElement("vr_grün_oben,vr_grün_unten", {  stellung: "vr=1" }),
+                            new VisualElement("vr_gelb_unten,vr_grün_oben", {  stellung: "vr=2" }),
                         ],
                         off: "hp=0",
                     }),
@@ -444,17 +444,17 @@ function initSignals() {
 
             new VisualElement(null, {
                 childs: ["zs3_blech", new TextElement("zs3", { pos: [115, 80], format: "bold 80px Arial", color: "#eee", btn_text: "Zs 3 Geschwindigkeit", stellung: "zs3" })],
-                off: "zs3=0",
+                off: "zs3<=0",
             }),
 
             new VisualElement(null, {
                 childs: ["zs3v", new TextElement("zs3v", { pos: [115, 890], format: "bold 80px Arial", color: "#ffde36", btn_text: "Zs 3v Geschwindigkeit", stellung: "zs3v" })],
-                off: "zs3v=0",
+                off: "zs3v<=0",
             }),
         ],
         ["hp=0", "vr=0"]
     );
-    t.scale = 0.05;
+    t.scale = 0.15;
     t.checkSignalDependency = checkSignalDependencyFunction4HV;
     t.addRule("hp>0 && zs3>6", "hp=1");
     t.addRule("hp>0 && zs3<=6 && zs3>0", "hp=2");

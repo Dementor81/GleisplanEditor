@@ -1,28 +1,30 @@
 "use strict";
 
 class trackRendering_textured {
-    static TRACK_SCALE = 0.1;
+    static TRACK_SCALE = 0.2;
 
-    static signale_scale = 0.1; //0.2
+    static signale_scale = 0.5; //0.2
     static SCHWELLEN_VARIANTEN = 24;
 
-   /*  static RAIL = [
+    /*  static RAIL = [
         [2.5, "#222"],
         [2, "#999999"],
         [1, "#eeeeee"],
     ]; */
 
     static RAIL = [
-        [1.4, "#222"],
-        [1.2, "#999999"],
-        [0.6, "#eeeeee"],
+        [2.8, "#222"],
+        [2.4, "#999"],
+        [1.2, "#eee"],
     ];
 
     constructor() {
         //cause the class is been loaded before start.js, we have to hack and calculate this constant here
-        trackRendering_textured.CURVE_RADIUS = GRID_SIZE * 1.2;
+        trackRendering_textured.CURVE_RADIUS = GRID_SIZE * 1.21;
 
-        this.SIGNAL_DISTANCE_FROM_TRACK = 40;
+        this.SIGNAL_DISTANCE_FROM_TRACK = 35;
+
+        this.LOD = 1.2;
     }
 
     reDrawEverything() {
@@ -106,21 +108,27 @@ class trackRendering_textured {
         let custom_gap = ((tmp - anzSchwellen) * (this.schwellenBreite + this.schwellenGap)) / anzSchwellen + this.schwellenGap;
 
         for (let i = 0; i < anzSchwellen; i++) {
-            let random = Math.randomInt(trackRendering_textured.SCHWELLEN_VARIANTEN - 1);
-            texture_container.addChild(
-                new createjs.Bitmap(this.schwellenImg).set({
-                    y: y,
-                    x: x,
-                    sourceRect: new createjs.Rectangle(
-                        (random * this.schwellenImg.width) / trackRendering_textured.SCHWELLEN_VARIANTEN,
-                        0,
-                        this.schwellenImg.width / trackRendering_textured.SCHWELLEN_VARIANTEN,
-                        this.schwellenImg.height
-                    ),
-                    scale: trackRendering_textured.TRACK_SCALE,
-                    rotation: track._tmp.deg,
-                })
-            );
+            if (stage.scale < this.LOD) {
+                var sleeper = texture_container.addChild(new createjs.Shape()).set({ x: x, y: y, rotation: track._tmp.deg });
+
+                sleeper.graphics.setStrokeStyle(0.2, "round").beginStroke("black").beginFill("#99735b").r(0, 0, this.schwellenBreite, this.schwellenHöhe).ef();
+            } else {
+                let random = Math.randomInt(trackRendering_textured.SCHWELLEN_VARIANTEN - 1);
+                texture_container.addChild(
+                    new createjs.Bitmap(this.schwellenImg).set({
+                        y: y,
+                        x: x,
+                        sourceRect: new createjs.Rectangle(
+                            (random * this.schwellenImg.width) / trackRendering_textured.SCHWELLEN_VARIANTEN,
+                            0,
+                            this.schwellenImg.width / trackRendering_textured.SCHWELLEN_VARIANTEN,
+                            this.schwellenImg.height
+                        ),
+                        scale: trackRendering_textured.TRACK_SCALE,
+                        rotation: track._tmp.deg,
+                    })
+                );
+            }
             y += sin * (this.schwellenBreite + custom_gap);
             x += cos * (this.schwellenBreite + custom_gap);
         }
@@ -173,12 +181,13 @@ class trackRendering_textured {
 
         if (track._tmp.switches[0]) startpoint = track.unit.multiply(this.main_x1);
         if (track._tmp.switches[1]) endpoint = geometry.add(endpoint, track.unit.multiply(-this.main_x1));
+        if (geometry.distance(startpoint, endpoint) > 1) {
+            rail_shape.hitArea = this.createHitArea(startpoint, endpoint, track.deg);
 
-        rail_shape.hitArea = this.createHitArea(startpoint, endpoint, track.deg);
-
-        this.drawSchwellen(track, startpoint, endpoint, container, this.schwellenImg);
-        container.addChild(rail_shape);
-        this.drawStraightDoubleRail(rail_shape, startpoint, endpoint);
+            this.drawSchwellen(track, startpoint, endpoint, container, this.schwellenImg);
+            container.addChild(rail_shape);
+            this.drawStraightDoubleRail(rail_shape, startpoint, endpoint);
+        }
     }
 
     calcValuesForCurvedTrack(track1, track2) {
@@ -214,7 +223,7 @@ class trackRendering_textured {
 
     drawCurvedRail(rail_shape, centerpoint, start_deg, radius) {
         trackRendering_textured.RAIL.forEach((r) => this.drawArc(rail_shape, centerpoint, radius, start_deg, r[1], r[0]));
-    }    
+    }
 
     drawArc(rail_shape, centerpoint, radius, start_deg, color, thickness) {
         rail_shape.graphics
@@ -272,7 +281,7 @@ class trackRendering_textured {
     }
 
     renderSwitch(container, sw) {
-        let img;        
+        let img;
         if (sw.type != SWITCH_TYPE.DKW) {
             img = pl.getImage("weiche");
             const switch_values = this.calcSwitchValues(sw);
@@ -292,12 +301,11 @@ class trackRendering_textured {
             container.addChild(
                 new createjs.Bitmap(img).set({
                     y: sw.location.y,
-                    x: sw.location.x ,
+                    x: sw.location.x,
                     regY: img.height / 2,
                     regX: img.width / 2,
-                    scale: trackRendering_textured.TRACK_SCALE,                    
+                    scale: trackRendering_textured.TRACK_SCALE,
                     scaleX: sw.t3.deg == 45 ? trackRendering_textured.TRACK_SCALE : -trackRendering_textured.TRACK_SCALE,
-                    
                 })
             );
         }

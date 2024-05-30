@@ -50,6 +50,7 @@ var tracks = [];
 var switches = [];
 
 var signalTemplates = {};
+var prevent_input = false;
 
 $(() => {
     init();
@@ -61,7 +62,7 @@ function init() {
 
     pl.addImage("schwellen.png", "schwellen");
     pl.addImage("dkw.svg", "dkw");
-    pl.addImage("weiche.svg", "weiche");
+    pl.addImage("weiche2.svg", "weiche");
 
     pl.start().then(() => {
         $("#collapseOne .accordion-body").append(newItemButton(signalTemplates.hv_hp));
@@ -105,23 +106,34 @@ function init() {
     myCanvas.oncontextmenu = () => false;
     myCanvas.addEventListener("wheel", (event) => {
         event.preventDefault();
+        if (!prevent_input) {
+            prevent_input = true;
+            let point = new createjs.Point(stage.mouseX, stage.mouseY);
+            let localPoint = stage.globalToLocal(point.x, point.y);
 
-        let point = new createjs.Point(stage.mouseX, stage.mouseY);
-        let localPoint = stage.globalToLocal(point.x, point.y);
+            let old = stage.scale;
+            let step = event.deltaY / (1000 / stage.scale);
 
-        stage.scale -= event.deltaY / (1000 / stage.scale);
+            stage.scale -= step;
 
-        stage.scale = Math.min(Math.max(0.2, stage.scale), 20);
+            stage.scale = Math.min(Math.max(0.2, stage.scale), 20);
 
-        // Find where the original point is now
-        let globalPoint = stage.localToGlobal(localPoint.x, localPoint.y);
-        // Move the map by the difference
-        stage.x -= globalPoint.x - point.x;
-        stage.y -= globalPoint.y - point.y;
+            // Find where the original point is now
+            let globalPoint = stage.localToGlobal(localPoint.x, localPoint.y);
+            // Move the map by the difference
+            stage.x -= globalPoint.x - point.x;
+            stage.y -= globalPoint.y - point.y;
 
-        drawGrid();
-        stage.update();
-        save();
+            drawGrid();
+
+            if (renderer.LOD && Math.abs(stage.scale - renderer.LOD) < Math.abs(step)) {
+                renderer.reDrawEverything();
+            }
+
+            stage.update();
+            save();
+            prevent_input = false;
+        }
     });
     if (createjs.Touch.isSupported()) {
         myCanvas.addEventListener("touchstart", (event) => {
@@ -551,9 +563,9 @@ function getGlobalBounds(container) {
     let minX = Math.min(tl.x, tr.x, br.x, bl.x);
     let minY = Math.min(tl.y, tr.y, br.y, bl.y);
     let w = Math.max(tl.x, tr.x, br.x, bl.x) - minX;
-    let h = Math.max(tl.y, tr.y, br.y, bl.y) - minY;    
+    let h = Math.max(tl.y, tr.y, br.y, bl.y) - minY;
 
-    if (container.rotation.is(90,270)) {
+    if (container.rotation.is(90, 270)) {
         return new createjs.Rectangle(minX, minY, h, w);
     } else return new createjs.Rectangle(minX, minY, w, h);
 }
@@ -568,14 +580,13 @@ function handleStageMouseUp(e) {
             if (mouseAction.container?.name == "signal") {
                 if (mode === MODE_PLAY) {
                     let bounds = getGlobalBounds(mouseAction.container);
-                    
+
                     let p = stage.localToGlobal(
                         mouseAction.container.x, // - bounds.height,
                         mouseAction.container.y
                     );
-                    p.y -= bounds.width/2;
-                    if(mouseAction.container.rotation == 270)
-                        p.x -= bounds.height;
+                    p.y -= bounds.width / 2;
+                    if (mouseAction.container.rotation == 270) p.x -= bounds.height;
 
                     let popup = ui.showPopup(
                         { x: p.x, y: p.y, width: bounds.height, height: bounds.width },
