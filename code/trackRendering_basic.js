@@ -1,14 +1,14 @@
 "use strict";
 
 class trackRendering_basic {
-    static TRACK_COLOR = "#000000";
+    static TRACK_COLOR = "#111111";
     static STROKE = 4;
     static HIT_TEST_DISTANCE = 10;
     static BUMPER_SIZE = 6;
     static SWITCH_SIZE = 10;
 
     constructor() {
-        this.SIGNAL_DISTANCE_FROM_TRACK = 10;
+        this.SIGNAL_DISTANCE_FROM_TRACK = 18;
     }
 
     reDrawEverything() {
@@ -71,6 +71,8 @@ class trackRendering_basic {
         text.y = p.y;
         text.textBaseline = "alphabetic";
         ui_container.addChild(text);
+
+        shape.setBounds(track.start.x, track.start.y, track.end.x-track.start.x, track.end.y-track.start.y);
 
         return shape;
     }

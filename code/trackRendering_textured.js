@@ -90,7 +90,7 @@ class trackRendering_textured {
 
         texture_container.x = track.start.x;
         texture_container.y = track.start.y;
-
+        texture_container.setBounds(0,0 - this.schwellenHöhe/2, track.end.x - track.start.x, track.end.y - track.start.y + this.schwellenHöhe);
         container.addChild(texture_container);
         return texture_container;
     }

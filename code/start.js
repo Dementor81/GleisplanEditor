@@ -116,22 +116,24 @@ function init() {
 
             stage.scale -= step;
 
-            stage.scale = Math.min(Math.max(0.2, stage.scale), 20);
+            stage.scale = Math.min(Math.max(0.2, stage.scale), 5);
 
-            // Find where the original point is now
-            let globalPoint = stage.localToGlobal(localPoint.x, localPoint.y);
-            // Move the map by the difference
-            stage.x -= globalPoint.x - point.x;
-            stage.y -= globalPoint.y - point.y;
+            if (stage.scale != old) {
+                // Find where the original point is now
+                let globalPoint = stage.localToGlobal(localPoint.x, localPoint.y);
+                // Move the map by the difference
+                stage.x -= globalPoint.x - point.x;
+                stage.y -= globalPoint.y - point.y;
 
-            drawGrid();
+                drawGrid();
 
-            if (renderer.LOD && Math.abs(stage.scale - renderer.LOD) < Math.abs(step)) {
-                renderer.reDrawEverything();
+                if (renderer.LOD && Math.abs(stage.scale - renderer.LOD) < Math.abs(step)) {
+                    renderer.reDrawEverything();
+                }
+
+                stage.update();
+                save();
             }
-
-            stage.update();
-            save();
             prevent_input = false;
         }
     });
@@ -197,16 +199,38 @@ function init() {
     });
 
     $("#btnImage").click((e) => {
-        /* let bounds =   main_container.getBounds()
-        main_container.cache(bounds.x, bounds.y, bounds.width, bounds.height);
-        let img = main_container.bitmapCache.getCacheDataURL(); */
-        grid.visible = false;
-        stage.update();
-        let img = stage.toDataURL("#00000000", "image/png");
-        grid.visible = showGrid;
-        stage.update();
-        let a = $("<a>", { download: "gleisplan.png", href: img });
-        a[0].click();
+        let backup = { x: stage.x, y: stage.y };
+
+        try {
+            let bounds = main_container.getBounds();
+
+            const anotherCanvas = $("<canvas>", { id: "test" }).attr("width", bounds.width).attr("height", bounds.height);
+            stage.enableDOMEvents(false);
+            stage.canvas = anotherCanvas[0];
+
+            stage.x = bounds.x * -1;
+            stage.y = bounds.y * -1;
+
+            renderer.reDrawEverything();
+            grid.visible = false;
+            stage.update();
+
+            let img_data = stage.toDataURL("#00000000", "image/png");
+            const img = $("<img>", { src: img_data, width: "100%" }).css("object-fit", "scale-down").css("max-height", "50vh");
+            ui.showModalDialog(img, (e) => {
+                const a = $("<a>", { download: "gleisplan.png", href: img_data });
+                a[0].click();
+            });
+        } catch (error) {
+            console.log(error);
+        } finally {
+            stage.x = backup.x;
+            stage.y = backup.y;
+            stage.canvas = myCanvas;
+            grid.visible = showGrid;
+            renderer.reDrawEverything();
+            stage.enableDOMEvents(true);
+        }
     });
 
     document.addEventListener("keydown", (e) => {
@@ -273,7 +297,7 @@ function drawGrid(repaint = true) {
         grid = new createjs.Shape();
         grid.name = "grid";
         grid.mouseEnabled = false;
-        main_container.addChildAt(grid, 0);
+        stage.addChildAt(grid, 0);
         grid.graphics.setStrokeStyle(1, "round");
     }
     grid.visible = showGrid;

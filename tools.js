@@ -246,7 +246,7 @@ const ui = {
         if (menu_item.ve != null && menu_item.ve.length > 0 && menu_item.ve.every((ve) => signal.features.match(ve.conditions)))
             return $("<button>", {
                 type: "button",
-                id: "btn_" + menu_item.text.replace(" ","_"),
+                id: "btn_" + menu_item.text.replace(" ", "_"),
                 class: "btn btn-primary btn-sm",
             })
                 .attr("data_signal", menu_item.setting)
@@ -369,6 +369,46 @@ const ui = {
     },
     div: function (c) {
         return $("<div>", { class: c });
+    },
+
+    showModalDialog: function (content,ok_function) {
+        // Create modal div
+        let modal_div = $("<div/>", {
+            id: "myModal",
+            class: "modal fade",
+            role: "dialog",
+        }).append(
+            ui.div("modal-dialog  modal-xl modal-dialog-centered").append(
+                ui.div("modal-content").append([
+                    ui.div("modal-header").append([
+                        $("<h4/>", {
+                            class: "modal-title",
+                            text: "Als Bild speichern",
+                        }),
+                        $("<button/>", {
+                            type: "button",
+                            class: "btn-close",
+                            "data-bs-dismiss": "modal",
+                        }),
+                    ]),
+                    ui.div("modal-body").append(content),
+                    ui.div("modal-footer").append(
+                        $("<button/>", {
+                            type: "button",
+                            class: "btn btn-default",
+                            "data-dismiss": "modal",
+                            text: "Herunterladen",
+                            click: ok_function
+                        })
+                    ),
+                ])
+            )
+        );
+        modal_div.appendTo("body");
+
+        let modal = new bootstrap.Modal(modal_div[0]);
+        modal.show();
+        return modal;
     },
 };
 
