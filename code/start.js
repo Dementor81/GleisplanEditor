@@ -9,6 +9,8 @@ const MODE_EDIT = 2;
 const GRID_SIZE = 100;
 const GRID_SIZE_2 = GRID_SIZE / 2;
 
+const SNAP_2_GRID = 30;
+
 const DIRECTION = {
     LEFT_2_RIGTH: 1,
     RIGHT_2_LEFT: -1,
@@ -338,7 +340,7 @@ function handleStageMouseDown(event) {
     let hittest = getHitTest();
     //console.log(hittest);
 
-    console.log(hittest ? hittest : "nothing hit");
+    //console.log(hittest ? hittest : "nothing hit");
 
     mouseAction = {
         action: MOUSE_ACTION.NONE,
@@ -492,7 +494,7 @@ function handleMouseMove(event) {
                 //stage.addEventListener("stagemousemove", handleMouseMove);
                 mouseAction.lineShape = new createjs.Shape();
                 overlay_container.addChild(mouseAction.lineShape);
-                mouseAction.ankerPoints = [new Point(Math.round(local_point.x / GRID_SIZE) * GRID_SIZE, Math.round(local_point.y / GRID_SIZE) * GRID_SIZE)];
+                setTrackAnchorPoints();
                 mouseAction.action = MOUSE_ACTION.BUILD_TRACK;
             } else if (event.nativeEvent.which == 3) {
                 //stage.addEventListener("stagemousemove", handleMouseMove);
@@ -535,11 +537,7 @@ function handleMouseMove(event) {
         }
     } else if (mouseAction.action === MOUSE_ACTION.BUILD_TRACK) {
         setTrackAnchorPoints();
-        mouseAction.lineShape.graphics.c().setStrokeStyle(trackRendering_basic.STROKE).beginStroke("blue").moveTo(mouseAction.ankerPoints[0].x, mouseAction.ankerPoints[0].y);
-        for (let index = 1; index < mouseAction.ankerPoints.length; index++) {
-            const co = mouseAction.ankerPoints[index];
-            mouseAction.lineShape.graphics.lt(co.x, co.y);
-        }
+        drawBluePrintTrack();
     } else if (mouseAction.action === MOUSE_ACTION.SCROLL) {
         stage.x += event.nativeEvent.movementX;
         stage.y += event.nativeEvent.movementY;
@@ -549,31 +547,57 @@ function handleMouseMove(event) {
     stage.update();
 }
 
+function drawBluePrintTrack() {
+    if (mouseAction.ankerPoints == null || mouseAction.ankerPoints.length == 0) return;
+    mouseAction.lineShape.graphics.c().setStrokeStyle(trackRendering_basic.STROKE).beginStroke("blue").moveTo(mouseAction.ankerPoints[0].x, mouseAction.ankerPoints[0].y);
+    for (let index = 1; index < mouseAction.ankerPoints.length; index++) {
+        const co = mouseAction.ankerPoints[index];
+        mouseAction.lineShape.graphics.lt(co.x, co.y);
+    }
+
+    /* debug_container.removeAllChildren();
+    for (let index = 1; index < mouseAction.ankerPoints.length; index++) {
+        const co = mouseAction.ankerPoints[index];
+        drawPoint(co, index);
+    } */
+}
+
 function setTrackAnchorPoints() {
     let local_point = stage.globalToLocal(stage.mouseX, stage.mouseY);
 
-    const p1 = mouseAction.ankerPoints[mouseAction.ankerPoints.length - 1];
-    const p0 = mouseAction.ankerPoints.length > 1 ? mouseAction.ankerPoints[mouseAction.ankerPoints.length - 2] : p1;
-    const pc = new Point(Math.round(local_point.x / GRID_SIZE) * GRID_SIZE, Math.round(local_point.y / GRID_SIZE) * GRID_SIZE);
+    const ankerPoints = mouseAction.ankerPoints;
 
-    //der letzte und aktuelle Punkt sind unterschiedlich und die Pause ist nahe am pc
-    if (!deepEqual(p1, pc)) {
-        const i = mouseAction.ankerPoints.findIndex((p) => pc.x === p.x && pc.y === p.y);
-        if (i > 0) {
-            mouseAction.ankerPoints.splice(i);
-            setTrackAnchorPoints();
-        } else {
-            if (Math.abs(p0.x - pc.x) < GRID_SIZE * 1.5 && mouseAction.ankerPoints.length > 1) {
-                const slope = geometry.slope(p0, pc);
+    const current = new Point(Math.round(local_point.x / GRID_SIZE) * GRID_SIZE, Math.round(local_point.y / GRID_SIZE) * GRID_SIZE);
 
-                if (slope.is(1, 0, -1) && geometry.distance(local_point, pc) < 10) mouseAction.ankerPoints[mouseAction.ankerPoints.length - 1] = pc;
+    if (ankerPoints == null || ankerPoints.length == 0) {
+        mouseAction.ankerPoints = [current];
+    } else {
+        const last = ankerPoints.lastItem();       
+        //if (!local_point.x.closeToBy(GRID_SIZE, SNAP_2_GRID) || !local_point.y.closeToBy(GRID_SIZE, SNAP_2_GRID)) return;
+        if (!last.equals(current)) {
+            const slope = geometry.slope(last, current);                    
+            if (ankerPoints.length == 1) {
+                if (slope.is(1, 0, -1)) ankerPoints.push(current);
             } else {
-                const slope = geometry.slope(p1, pc);
-                if (slope.is(1, 0, -1)) {
-                    mouseAction.ankerPoints.push(pc);
+                let direction = Math.sign(ankerPoints[1].x - ankerPoints[0].x);
+                //haben wir den Punkt schon eingetragen?
+                const y = current.x - GRID_SIZE * direction;
+                const i = ankerPoints.findIndex((p) => Math.sign(p.x - y) == direction);
+
+                if (i >= 0) {
+                    //bis zu diesem Punkt alle vorhandenen Punkte löschen und den aktuellen Punkt versuchen neu einzutragen
+                    ankerPoints.splice(i);
+                    setTrackAnchorPoints();
+                } else {
+                   
+                    //checks for the right slope
+                    //no other straight or 45° and the previous slope and current slope musst not create a 90° angle
+                    if (slope.is(1, 0, -1) && (slope == 0 || slope + geometry.slope(last, ankerPoints[ankerPoints.length - 2]) != 0)) {
+                        ankerPoints.push(current);
+                    }
                 }
             }
-        }
+        } 
     }
 }
 
@@ -595,7 +619,7 @@ function getGlobalBounds(container) {
 }
 
 function handleStageMouseUp(e) {
-    console.log("handleStageMouseUp", e);
+    //console.log("handleStageMouseUp", e);
 
     let p2 = stage.globalToLocal(stage.mouseX, stage.mouseY);
     if (mouseAction == null) return;
@@ -778,7 +802,6 @@ function checkAndCreateTrack(p1, p2) {
         p2 = track.start;
     }
 
-    console.log(p1, p2);
     if (p1.x > p2.x) return;
 
     if ((track = tracksWithSameSlope.find((t) => geometry.within(p1, p2, t.start) && geometry.within(p1, p2, t.end)))) {

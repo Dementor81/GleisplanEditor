@@ -3,10 +3,10 @@ Bugs:
     ✔ entfernen von Gleisen entfernt die Weiche nicht @done(23-12-13 11:14)
     ✔ Drag'n Drop der signale, vor allem am Gleisende buggy @done(23-12-13 11:14)
     ✔ Textured Renderer aktualisieren, geht aktuell nicht @done(24-02-03 17:35)
-    ☐ es lass sich 90° kurven zeichnen
-    ☐ man kann Gleise im Kreis bauen
+    ✔ es lass sich 90° kurven zeichnen @done(24-06-01 15:18)
+    ✔ man kann Gleise im Kreis bauen @done(24-06-01 15:18)
     ✔ Zs1, Sh 1 funktioiren nicht @started(24-02-03 17:39) @done(24-02-03 19:43) @lasted(2h4m31s)
-    ☐ Signalstellung abschalten, wenn sie nicht mehr erlaubt sind
+    ✔ Signalstellung abschalten, wenn sie nicht mehr erlaubt sind @done(24-06-01 11:04)
 
 Detailing:
     ✔ Weichen Schaltung schöner darstellen @done(23-12-13 11:13)

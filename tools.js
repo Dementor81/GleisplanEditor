@@ -23,11 +23,28 @@ Number.prototype.round = function (places) {
     return Math.round(this * x) / x;
 };
 
+Number.prototype.closeToBy= function (y, z) {
+    const mod = this % y;
+    return Math.min(mod, y - mod) < z;
+}
+
 Array.prototype.remove = function (item) {
     const index = this.indexOf(item);
     if (index > -1) {
         this.splice(index, 1);
     }
+};
+
+Array.prototype.lastItem = function () {
+    if (this.length > 0) {
+        return this[this.length - 1];
+    } else return null;
+};
+
+Array.prototype.first = function () {
+    if (this.length > 0) {
+        return this[0];
+    } else return null;
 };
 
 function type(value) {
@@ -371,7 +388,7 @@ const ui = {
         return $("<div>", { class: c });
     },
 
-    showModalDialog: function (content,ok_function) {
+    showModalDialog: function (content, ok_function) {
         // Create modal div
         let modal_div = $("<div/>", {
             id: "myModal",
@@ -398,7 +415,7 @@ const ui = {
                             class: "btn btn-default",
                             "data-dismiss": "modal",
                             text: "Herunterladen",
-                            click: ok_function
+                            click: ok_function,
                         })
                     ),
                 ])
