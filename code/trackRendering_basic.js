@@ -72,7 +72,12 @@ class trackRendering_basic {
         text.textBaseline = "alphabetic";
         ui_container.addChild(text);
 
-        shape.setBounds(track.start.x, track.start.y, track.end.x-track.start.x, track.end.y-track.start.y);
+        shape.setBounds(
+            track.start.x - trackRendering_basic.HIT_TEST_DISTANCE,
+            track.start.y - trackRendering_basic.HIT_TEST_DISTANCE,
+            track.end.x - track.start.x + trackRendering_basic.HIT_TEST_DISTANCE * 2,
+            track.end.y - track.start.y + trackRendering_basic.HIT_TEST_DISTANCE * 2
+        );
 
         return shape;
     }

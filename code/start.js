@@ -201,17 +201,20 @@ function init() {
     });
 
     $("#btnImage").click((e) => {
-        let backup = { x: stage.x, y: stage.y };
+        let backup = { x: stage.x, y: stage.y, scale: stage.scale };
 
         try {
+            const custom_scale = 2;
             let bounds = main_container.getBounds();
-            g=5
-            const anotherCanvas = $("<canvas>", { id: "test" }).attr("width", bounds.width).attr("height", bounds.height);
+            const anotherCanvas = $("<canvas>", { id: "test" })
+                .attr("width", bounds.width * custom_scale)
+                .attr("height", bounds.height * custom_scale);
             stage.enableDOMEvents(false);
             stage.canvas = anotherCanvas[0];
 
-            stage.x = bounds.x * -1;
-            stage.y = bounds.y * -1;
+            stage.x = bounds.x * custom_scale * -1;
+            stage.y = bounds.y * custom_scale * -1;
+            stage.scale = custom_scale;
 
             renderer.reDrawEverything();
             grid.visible = false;
@@ -228,6 +231,7 @@ function init() {
         } finally {
             stage.x = backup.x;
             stage.y = backup.y;
+            stage.scale = backup.scale;
             stage.canvas = myCanvas;
             grid.visible = showGrid;
             renderer.reDrawEverything();
