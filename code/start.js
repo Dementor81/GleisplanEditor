@@ -66,19 +66,6 @@ function init() {
     pl.addImage("dkw.svg", "dkw");
     pl.addImage("weiche2.svg", "weiche");
 
-    pl.start().then(() => {
-        $("#collapseOne .accordion-body").append(newItemButton(signalTemplates.hv_hp));
-        /* $("#collapseOne .accordion-body").append(newItemButton(signalTemplates.ks_hp));
-        $("#collapseTwo .accordion-body").append(newItemButton(signalTemplates.hv_vr));
-        $("#collapseTwo .accordion-body").append(newItemButton(signalTemplates.ks_vr)); */
-        $("#collapseThree .accordion-body").append(newItemButton(signalTemplates.ne4));
-        $("#collapseThree .accordion-body").append(newItemButton(signalTemplates.ne1));
-        $("#collapseThree .accordion-body").append(newItemButton(signalTemplates.lf6));
-        $("#collapseThree .accordion-body").append(newItemButton(signalTemplates.lf7));
-        $("#collapseThree .accordion-body").append(newItemButton(signalTemplates.zs3));
-        loadRecent();
-    });
-
     stage = new createjs.Stage(myCanvas);
     stage.enableDOMEvents(true);
     /* console.log(createjs.Touch.isSupported());
@@ -99,6 +86,21 @@ function init() {
     main_container.addChild((signal_container = create_container("signals")));
     stage.addChild((ui_container = create_container("ui")));
     stage.addChild((overlay_container = create_container("overlay")));
+
+    selectRenderer(false);
+
+    pl.start().then(() => {
+        $("#collapseOne .accordion-body").append(newItemButton(signalTemplates.hv_hp));
+        /* $("#collapseOne .accordion-body").append(newItemButton(signalTemplates.ks_hp));
+        $("#collapseTwo .accordion-body").append(newItemButton(signalTemplates.hv_vr));
+        $("#collapseTwo .accordion-body").append(newItemButton(signalTemplates.ks_vr)); */
+        $("#collapseThree .accordion-body").append(newItemButton(signalTemplates.ne4));
+        $("#collapseThree .accordion-body").append(newItemButton(signalTemplates.ne1));
+        $("#collapseThree .accordion-body").append(newItemButton(signalTemplates.lf6));
+        $("#collapseThree .accordion-body").append(newItemButton(signalTemplates.lf7));
+        $("#collapseThree .accordion-body").append(newItemButton(signalTemplates.zs3));
+        loadRecent();
+    });
 
     createjs.Ticker.addEventListener("tick", stage);
 
@@ -174,10 +176,6 @@ function init() {
 
     $(btnDrawTracks).click(() => changeMode(MODE_EDIT));
 
-    $(btnGrid).click((e) => {
-        onShowGrid(!$(btnGrid).hasClass("active"));
-    });
-
     $(btnTexture).click((e) => {
         TEXTURE_MODE = !TEXTURE_MODE;
         $(btnTexture).toggleClass("active", TEXTURE_MODE);
@@ -252,17 +250,16 @@ function init() {
 
     onResizeWindow();
     changeMode(MODE_EDIT);
-    onShowGrid(showGrid);
-    selectRenderer(false);
+    //onShowGrid(showGrid);
 
     $(window).resize(onResizeWindow);
     myCanvas.focus();
 }
 
 function changeMode(newMode) {
+    onShowGrid(newMode == MODE_EDIT);
     $(btnPlay).toggleClass("active", newMode == MODE_PLAY);
     $(btnDrawTracks).toggleClass("active", newMode == MODE_EDIT);
-    $([myCanvas, sidebar]).toggleClass("toggled", newMode == MODE_EDIT);
     mode = newMode;
 }
 
@@ -288,7 +285,7 @@ function onShowGrid(on) {
     showGrid = on;
     drawGrid();
     stage.update();
-    $(btnGrid).toggleClass("active", on);
+    //$(btnGrid).toggleClass("active", on);
 }
 
 function onResizeWindow() {
