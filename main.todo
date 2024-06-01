@@ -21,7 +21,7 @@ Features:
     ☐ abgleich der erlaubten Signalstellung in eigener Funktion, nicht erlaubte signale werden abgeschaltet und nicht nur nicht gezeichnet
     ✔ Erstellung des Signalmenüs überarbeiten @done(24-05-30 08:51)
     ☐ KS Signale
-    ☐ Errror Handling mit schönem Output Boostrap toast oder so
+    ✔ Errror Handling mit schönem Output Boostrap toast oder so @done(24-06-01 16:12)
     ☐ visualisieren, wo genau ein Signal am Gleis angeheftet ist (vllt mit kleiner roten Linie)
     ☐ Sachen markieren und bemalen können
     ☐ vorgefertigte Gleispläne erstellen und laden

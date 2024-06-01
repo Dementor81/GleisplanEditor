@@ -23,10 +23,10 @@ Number.prototype.round = function (places) {
     return Math.round(this * x) / x;
 };
 
-Number.prototype.closeToBy= function (y, z) {
+Number.prototype.closeToBy = function (y, z) {
     const mod = this % y;
     return Math.min(mod, y - mod) < z;
-}
+};
 
 Array.prototype.remove = function (item) {
     const index = this.indexOf(item);
@@ -595,3 +595,38 @@ class Point {
         return p.x == this.x && p.y == this.y;
     }
 }
+
+// Function to create a toast element
+const createToast = (error) => {
+    return ui
+        .div("toast")
+        .attr({ role: "alert", "aria-live": "assertive", "aria-atomic": "true" })
+        .append([
+            $("<div>")
+                .addClass("toast-header")
+                .append([$("<strong>").addClass("me-auto").text("Fehler"), $("<button>").attr({ type: "button", "data-bs-dismiss": "toast", "aria-label": "Close" }).addClass("btn-close")]),
+            $("<div>")
+                .addClass("toast-body")
+                .append([$("<p>", { text: error.message })]),
+        ]);
+};
+
+const getToastContainer = () => {
+    let container = $("#toast-container");
+    if (container.length === 0) {
+        container = ui.div("toast-container").attr("id", "toast-container").css({ position: "fixed", bottom: "0", right: "0" });
+        $("body").append(container);
+    }
+    return container;
+};
+
+// Function to show the toast
+const showToast = (error) => {
+    console.error(error);
+    const toast = createToast(error);
+    getToastContainer().prepend(ui.div("p-3").append(toast));
+    $(toast).toast({ autohide: true, delay: 10000 }).toast("show");
+    $(toast).on("hidden.bs.toast", function () {
+        $(this).parent().remove();
+    });
+};

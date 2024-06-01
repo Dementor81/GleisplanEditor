@@ -205,7 +205,7 @@ function init() {
 
         try {
             let bounds = main_container.getBounds();
-
+            g=5
             const anotherCanvas = $("<canvas>", { id: "test" }).attr("width", bounds.width).attr("height", bounds.height);
             stage.enableDOMEvents(false);
             stage.canvas = anotherCanvas[0];
@@ -224,7 +224,7 @@ function init() {
                 a[0].click();
             });
         } catch (error) {
-            console.log(error);
+            showToast(error);
         } finally {
             stage.x = backup.x;
             stage.y = backup.y;
@@ -572,10 +572,10 @@ function setTrackAnchorPoints() {
     if (ankerPoints == null || ankerPoints.length == 0) {
         mouseAction.ankerPoints = [current];
     } else {
-        const last = ankerPoints.lastItem();       
+        const last = ankerPoints.lastItem();
         //if (!local_point.x.closeToBy(GRID_SIZE, SNAP_2_GRID) || !local_point.y.closeToBy(GRID_SIZE, SNAP_2_GRID)) return;
         if (!last.equals(current)) {
-            const slope = geometry.slope(last, current);                    
+            const slope = geometry.slope(last, current);
             if (ankerPoints.length == 1) {
                 if (slope.is(1, 0, -1)) ankerPoints.push(current);
             } else {
@@ -589,7 +589,6 @@ function setTrackAnchorPoints() {
                     ankerPoints.splice(i);
                     setTrackAnchorPoints();
                 } else {
-                   
                     //checks for the right slope
                     //no other straight or 45° and the previous slope and current slope musst not create a 90° angle
                     if (slope.is(1, 0, -1) && (slope == 0 || slope + geometry.slope(last, ankerPoints[ankerPoints.length - 2]) != 0)) {
@@ -597,7 +596,7 @@ function setTrackAnchorPoints() {
                     }
                 }
             }
-        } 
+        }
     }
 }
 
@@ -985,7 +984,7 @@ function loadRecent() {
             }
         }
     } catch (error) {
-        console.error(error);
+        showToast(error);
     }
 }
 
