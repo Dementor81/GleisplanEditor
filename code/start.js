@@ -63,7 +63,7 @@ function init() {
     initSignals();
 
     pl.addImage("schwellen.png", "schwellen");
-    pl.addImage("dkw.svg", "dkw");
+    pl.addImage("dkw2.svg", "dkw");
     pl.addImage("weiche2.svg", "weiche");
 
     stage = new createjs.Stage(myCanvas);
