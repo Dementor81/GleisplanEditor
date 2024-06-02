@@ -162,6 +162,7 @@ class Signal {
         const equation = splitEquation(stellung);
 
         if (equation.operator == "&&") return this.check(equation.left) && this.check(equation.right);
+        else if (equation.operator == "||") return this.check(equation.left) || this.check(equation.right);
         else {
             let data = this.get(equation.left);
             if (equation.operator == "=") return data == equation.right;
@@ -171,6 +172,7 @@ class Signal {
                 else if (equation.operator == "<=") return data <= equation.right;
                 else if (equation.operator == ">=") return data >= equation.right;
                 else if (equation.operator == ">") return data > equation.right;
+                else if (equation.operator == "!=") return data != equation.right;
             }
         }
     }

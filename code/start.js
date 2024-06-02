@@ -59,12 +59,16 @@ $(() => {
 });
 
 function init() {
-    pl = new preLoader("images");
-    initSignals();
+    try {
+        pl = new preLoader("images");
+        initSignals();
 
-    pl.addImage("schwellen.png", "schwellen");
-    pl.addImage("dkw2.svg", "dkw");
-    pl.addImage("weiche2.svg", "weiche");
+        pl.addImage("schwellen.png", "schwellen");
+        pl.addImage("dkw2.svg", "dkw");
+        pl.addImage("weiche2.svg", "weiche");
+    } catch (error) {
+        showToast(error);
+    }
 
     stage = new createjs.Stage(myCanvas);
     stage.enableDOMEvents(true);
@@ -90,9 +94,8 @@ function init() {
     selectRenderer(false);
 
     pl.start().then(() => {
-        $("#collapseOne .accordion-body").append(newItemButton(signalTemplates.hv_hp));
-        /* $("#collapseOne .accordion-body").append(newItemButton(signalTemplates.ks_hp));
-        $("#collapseTwo .accordion-body").append(newItemButton(signalTemplates.hv_vr));
+        $("#collapseOne .accordion-body").append([newItemButton(signalTemplates.hv_hp), newItemButton(signalTemplates.ks)]);
+        /* $("#collapseTwo .accordion-body").append(newItemButton(signalTemplates.hv_vr));
         $("#collapseTwo .accordion-body").append(newItemButton(signalTemplates.ks_vr)); */
         $("#collapseThree .accordion-body").append(newItemButton(signalTemplates.ne4));
         $("#collapseThree .accordion-body").append(newItemButton(signalTemplates.ne1));
@@ -432,13 +435,15 @@ function alignSignalWithTrack(signal_shape, pos) {
     if (pos.point) coordinates = pos.point;
     else coordinates = geometry.add(pos.track.getPointfromKm(pos.km), pos.track.start);
 
+    const template = signal_shape.signal._template;
+
     let p;
     if (pos.above) {
         signal_shape.rotation = 270 + pos.track._tmp.deg;
-        p = geometry.perpendicular(coordinates, pos.track._tmp.deg, -renderer.SIGNAL_DISTANCE_FROM_TRACK);
+        p = geometry.perpendicular(coordinates, pos.track._tmp.deg, -renderer.SIGNAL_DISTANCE_FROM_TRACK - template.distance_from_track);
     } else {
         signal_shape.rotation = 90 + pos.track._tmp.deg;
-        p = geometry.perpendicular(coordinates, pos.track._tmp.deg, renderer.SIGNAL_DISTANCE_FROM_TRACK);
+        p = geometry.perpendicular(coordinates, pos.track._tmp.deg, renderer.SIGNAL_DISTANCE_FROM_TRACK + template.distance_from_track);
     }
 
     signal_shape.x = p.x;

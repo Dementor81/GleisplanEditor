@@ -1,61 +1,101 @@
 [ 
-{"signal":"basis","src":"ks","sourceRect":{"x":1,"y":1,"width":73,"height":269},"pos":
-        {"left":3,"top":45}
+{"signal":"mast","sourceRect":{"x":2,"y":2,"width":334,"height":936},"pos":
+        {"left":4,"top":471}
     },
 
-{"signal":"schild","src":"ks","sourceRect":{"x":76,"y":1,"width":19,"height":111},"pos":
-        {"left":7,"top":37}
+{"signal":"schirm_hp","sourceRect":{"x":2,"y":942,"width":167,"height":308},"pos":
+        {"left":0,"top":167}
     },
 
-{"signal":"aus_hp","src":"ks","sourceRect":{"x":76,"y":114,"width":32,"height":62},"pos":
-        {"left":4,"top":33}
+{"signal":"wrw","sourceRect":{"x":2,"y":1254,"width":26,"height":282},"pos":
+        {"left":254,"top":801}
     },
 
-{"signal":"wrw_gelb","src":"ks","sourceRect":{"x":97,"y":1,"width":10,"height":96},"pos":
-        {"left":57,"top":175}
+{"signal":"zs3_licht","sourceRect":{"x":2,"y":1540,"width":159,"height":180},"pos":
+        {"left":5,"top":0}
     },
 
-{"signal":"ne2","src":"ks","sourceRect":{"x":76,"y":178,"width":22,"height":35},"pos":
-        {"left":50,"top":203}
+{"signal":"möhre","sourceRect":{"x":32,"y":1254,"width":24,"height":159},"pos":
+        {"left":257,"top":1055}
     },
 
-{"signal":"aus_zs3","src":"ks","sourceRect":{"x":100,"y":178,"width":26,"height":29},"pos":
-        {"left":7,"top":4}
+{"signal":"zs7_optik","sourceRect":{"x":32,"y":1417,"width":89,"height":86},"pos":
+        {"left":39,"top":372}
     },
 
-{"signal":"wrw","src":"ks","sourceRect":{"x":109,"y":1,"width":6,"height":85},"pos":
-        {"left":59,"top":177}
+{"signal":"zs3v_licht","sourceRect":{"x":60,"y":1254,"width":130,"height":158},"pos":
+        {"left":20,"top":477}
     },
 
-{"signal":"aus_ks1ks2","src":"ks","sourceRect":{"x":76,"y":215,"width":30,"height":14},"pos":
-        {"left":5,"top":56}
+{"signal":"sh1","sourceRect":{"x":32,"y":1507,"width":24,"height":25},"pos":
+        {"left":28,"top":421}
     },
 
-{"signal":"zs7","src":"ks","sourceRect":{"x":109,"y":88,"width":17,"height":14},"pos":
-        {"left":11,"top":75}
+{"signal":"kennlicht","sourceRect":{"x":60,"y":1507,"width":25,"height":24},"pos":
+        {"left":22,"top":202}
     },
 
-{"signal":"sh1","src":"ks","sourceRect":{"x":108,"y":209,"width":14,"height":14},"pos":
-        {"left":8,"top":75}
+{"signal":"zs1","sourceRect":{"x":89,"y":1507,"width":24,"height":24},"pos":
+        {"left":71,"top":376}
     },
 
-{"signal":"ks1","src":"ks","sourceRect":{"x":108,"y":225,"width":12,"height":15},"pos":
-        {"left":14,"top":56}
+{"signal":"ks1_optik_hp","sourceRect":{"x":125,"y":1416,"width":75,"height":78},"pos":
+        {"left":46,"top":289}
     },
 
-{"signal":"ks2","src":"ks","sourceRect":{"x":76,"y":231,"width":13,"height":13},"pos":
-        {"left":21,"top":55}
+{"signal":"zs3v","sourceRect":{"x":173,"y":942,"width":164,"height":144},"pos":
+        {"left":3,"top":477}
     },
 
-{"signal":"hp0","src":"ks","sourceRect":{"x":91,"y":231,"width":12,"height":14},"pos":
-        {"left":14,"top":40}
+{"signal":"zs3","sourceRect":{"x":173,"y":1090,"width":163,"height":144},"pos":
+        {"left":3,"top":18}
     },
 
-{"signal":"verk","src":"ks","sourceRect":{"x":97,"y":99,"width":5,"height":5},"pos":
-        {"left":7,"top":37}
+{"signal":"ks1_optik_hpvr","sourceRect":{"x":194,"y":1238,"width":74,"height":78},"pos":
+        {"left":2,"top":289}
     },
 
-{"signal":"zs1","src":"ks","sourceRect":{"x":104,"y":104,"width":5,"height":5},"pos":
-        {"left":17,"top":75}
+{"signal":"ks2_optik","sourceRect":{"x":194,"y":1320,"width":74,"height":78},"pos":
+        {"left":90,"top":289}
+    },
+
+{"signal":"hp0_optik","sourceRect":{"x":2,"y":1724,"width":75,"height":77},"pos":
+        {"left":46,"top":227}
+    },
+
+{"signal":"schild","sourceRect":{"x":2,"y":1805,"width":60,"height":75},"pos":
+        {"left":55,"top":623}
+    },
+
+{"signal":"zs7","sourceRect":{"x":2,"y":1884,"width":86,"height":74},"pos":
+        {"left":40,"top":374}
+    },
+
+{"signal":"hp0","sourceRect":{"x":66,"y":1805,"width":67,"height":54},"pos":
+        {"left":50,"top":229}
+    },
+
+{"signal":"ks1_hpvr","sourceRect":{"x":81,"y":1724,"width":68,"height":53},"pos":
+        {"left":5,"top":292}
+    },
+
+{"signal":"ks2","sourceRect":{"x":2,"y":1962,"width":68,"height":53},"pos":
+        {"left":93,"top":292}
+    },
+
+{"signal":"ks1_hp","sourceRect":{"x":74,"y":1962,"width":67,"height":53},"pos":
+        {"left":50,"top":292}
+    },
+
+{"signal":"zs1_optik","sourceRect":{"x":92,"y":1863,"width":31,"height":41},"pos":
+        {"left":68,"top":372}
+    },
+
+{"signal":"sh1_optik","sourceRect":{"x":92,"y":1908,"width":32,"height":40},"pos":
+        {"left":24,"top":418}
+    },
+
+{"signal":"kennlicht_optik","sourceRect":{"x":127,"y":1863,"width":31,"height":40},"pos":
+        {"left":19,"top":199}
     }
 ]
