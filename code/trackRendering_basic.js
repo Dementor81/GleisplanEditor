@@ -64,13 +64,13 @@ class trackRendering_basic {
             shape.graphics.moveTo(p1.x, p1.y).lineTo(p2.x, p2.y);
         }
 
-        const text = new createjs.Text(track.id, "Italic 10px Arial", "black");
+        /* const text = new createjs.Text(track.id, "Italic 10px Arial", "black");
         const p = geometry.perpendicular(track.along(track.start, track.length / 2), track.deg, 15);
 
         text.x = p.x;
         text.y = p.y;
         text.textBaseline = "alphabetic";
-        ui_container.addChild(text);
+        ui_container.addChild(text); */
 
         shape.setBounds(
             track.start.x - trackRendering_basic.HIT_TEST_DISTANCE,

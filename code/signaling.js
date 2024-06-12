@@ -151,7 +151,7 @@ class SignalTemplate {
     #_title = null;
     #_start = null;
     #_json_file = null;
-    #_scale = 0.4;
+    #_scale = 0.5;
     #_signalMenu = null;
     #_distance_from_track = 0;
 
@@ -207,7 +207,7 @@ class SignalTemplate {
     constructor(id, title, json_file, startElements, initialSignalStellung) {
         this.#_id = id;
         this.#_title = title;
-        this.#_start = initialSignalStellung;
+        if (initialSignalStellung) this.#_start = Array.isArray(initialSignalStellung) ? initialSignalStellung : [initialSignalStellung];
         this.#_json_file = json_file;
 
         if (startElements) {
@@ -282,6 +282,9 @@ function initSignals() {
                 { text: "weiß-gelb-weiß-gelb-weiß", option: "mastschild.wgwgw" },
             ],
         },
+        Bezeichnung: {
+            input: "Bezeichnung",
+        },
     };
 
     const lightMenu = [
@@ -326,19 +329,21 @@ function initSignals() {
     const verw_strecke = ["verwendung.bksig", "verwendung.sbk", "verwendung.esig"];
     const verw_bahnhof = ["verwendung.asig", "verwendung.zsig"];
 
+    //signal: ist das signal, dessen Stellung wir gerade setzen
+    //hp: ist das signal, dessen Stellung wir vorsignalisieren wollen
     const checkSignalDependencyFunction4HV = function (signal, hp) {
-        let stop_propagation = false
-        if (signal.get("vr") != -2) {
-            //-2 heißt, die Vorsignalfunktion ist vom User ausgeschaltet
+        let stop_propagation = false;
+        //-1 heißt, die Vorsignalfunktion ist vom User ausgeschaltet
+        if (signal.get("vr") != -1) {
+            //Das Hauptsignal zeigt nicht Hp 0 oder es ist ein alleinstehndes Vorsignal
             if (!signal.features.match("hp") || signal.get("hp") != 0) {
-                //Das Hauptsignal leuchtet oder es ist ein alleinstehndes Vorsignal
                 switch (hp._template.id) {
                     case "Hv77":
                     case "hv_hp":
                     case "hv_vr":
                         {
-                            signal.set_stellung("vr", hp.get("hp") >= 0 ? hp.get("hp") : 0, true, false);
-                            if (!signal.features.match("wdh")) stop_propagation =  true;
+                            signal.set_stellung("vr", hp.get("hp") >= 0 ? hp.get("hp") : 0, false);
+                            if (!signal.features.match("wdh")) stop_propagation = true;
                         }
                         break;
                     case "Hl":
@@ -346,19 +351,16 @@ function initSignals() {
                     case "ks_vr":
                         {
                             signal.set_stellung("vr", hp.get("hp") <= 0 ? 0 : 1, false);
-                            if (!signal.features.match("wdh")) stop_propagation =  true;
+                            if (!signal.features.match("wdh")) stop_propagation = true;
                         }
                         break;
-
-                    default:
-                        throw hp._template.id + " unbekannt";
                 }
 
                 if (hp.get("zs3") == 4) {
-                    signal.set_stellung("zs3v", 0);
+                    signal.set_stellung("zs3v", 0, false);
 
-                    if (signal.get("vr") > 0) signal.set_stellung("vr", 2);
-                } else signal.set_stellung("zs3v", hp.get("zs3"));
+                    if (signal.get("vr") > 0) signal.set_stellung("vr", 2, false);
+                } else signal.set_stellung("zs3v", hp.get("zs3"), false);
             }
         }
 
@@ -444,7 +446,12 @@ function initSignals() {
 
             new VisualElement(null, {
                 childs: ["hp_zs1_lichtp", new VisualElement("hp_zs1_licht", { stellung: "ersatz=zs1", off: "hp>0" }), "hp_zs1_schuten"],
-                conditions: ["verwendung.asig", "verwendung.sbk"],
+                conditions: ["verwendung.asig", "verwendung.bksig", "verwendung.sbk"],
+            }),
+
+            new VisualElement(null, {
+                childs: ["hp_zs7_lichtp", new VisualElement("hp_zs7_licht", { stellung: "ersatz=zs7", off: "hp>0" }), "hp_zs7_schuten"],
+                conditions: ["verwendung.esig", "verwendung.zsig"],
             }),
 
             new VisualElement(null, {
@@ -469,7 +476,7 @@ function initSignals() {
     t.addRule("hp>0 && zs3>6", "hp=1");
     t.addRule("hp>0 && zs3<=6 && zs3>0", "hp=2");
     t.initialFeatures = ["hp", "verwendung.asig", "mastschild.wrw"];
-    t.contextMenu = [].concat(settingsMenu.Verwendung, settingsMenu.Mastschild, settingsMenu.Vorsignal, settingsMenu.verkürzt);
+    t.contextMenu = [].concat(settingsMenu.Verwendung, settingsMenu.Mastschild, settingsMenu.Vorsignal, settingsMenu.verkürzt, settingsMenu.Bezeichnung);
     t.signalMenu = lightMenu;
     signalTemplates.hv_hp = t;
 
@@ -521,9 +528,9 @@ function initSignals() {
             new VisualElement(null, {
                 stellung: "hp=1",
                 childs: [
-                    new VisualElement("ks1_hpvr", { conditions: "vr", blinkt: true, off: "zs3v=0" }),
+                    new VisualElement("ks1_hpvr", { conditions: "vr", blinkt: true, off: "zs3v<=0" }),
                     new VisualElement("ks1_hpvr", { conditions: "vr", off: "zs3v>0" }),
-                    new VisualElement("ks1_hp", { conditions: "!vr", blinkt: true, off: "zs3v=0" }),
+                    new VisualElement("ks1_hp", { conditions: "!vr", blinkt: true, off: "zs3v<=0" }),
                     new VisualElement("ks1_hp", { conditions: "!vr", off: "zs3v>0" }),
                 ],
             }),
@@ -531,8 +538,12 @@ function initSignals() {
             new VisualElement("möhre", { conditions: "vr" }),
             new VisualElement("hp0", { stellung: "hp=0" }),
             new VisualElement(null, {
-                conditions: ["verwendung.asig", "verwendung.sbk"],
+                conditions: ["verwendung.asig", "verwendung.bksig", "verwendung.sbk"],
                 childs: ["zs1_optik", new VisualElement("zs1", { stellung: "ersatz=zs1", off: "hp>0", blinkt: true })],
+            }),
+            new VisualElement(null, {
+                conditions: ["verwendung.esig", "verwendung.zsig"],
+                childs: ["zs7_optik", new VisualElement("zs7", { stellung: "ersatz=zs7", off: "hp>0" })],
             }),
             new VisualElement(null, {
                 conditions: verw_bahnhof,
@@ -563,7 +574,7 @@ function initSignals() {
     );
     t.scale = 0.15;
     t.distance_from_track = 15;
-    t.initialFeatures = ["verwendung.asig"];
+    t.initialFeatures = ["hp", "verwendung.asig"];
     t.contextMenu = [].concat(settingsMenu.Verwendung, settingsMenu.Vorsignal, settingsMenu.verkürzt);
     t.signalMenu = [
         [
@@ -592,6 +603,39 @@ function initSignals() {
             },
         ],
     ];
+    //signal: ist das signal, dessen Stellung wir gerade setzen
+    //hp: ist das signal, dessen Stellung wir vorsignalisieren wollen
+    t.checkSignalDependency = function (signal, hp) {
+        let stop_propagation = false;
+        //-1 heißt, das Signal ist vom User ausgeschaltet
+        if (signal.get("hp") != -1) {
+            //Das Hauptsignal zeigt nicht Hp 0 oder es ist ein alleinstehndes Vorsignal
+            if (!signal.features.match("hp") || signal.get("hp") != 0) {
+                switch (hp._template.id) {
+                    case "Hv77":
+                    case "hv_hp":
+                    case "hv_vr":
+                        {
+                            signal.set_stellung("hp", hp.get("hp") >= 0 ? hp.get("hp") : 0, false);
+                            if (!signal.features.match("wdh")) stop_propagation = true;
+                        }
+                        break;
+                    case "Hl":
+                    case "ks":
+                    case "ks_vr":
+                        {
+                            signal.set_stellung("hp", hp.get("hp") <= 0 ? 2 : 1, false);
+                            if (!signal.features.match("wdh")) stop_propagation = true;
+                        }
+                        break;
+                }
+
+                signal.set_stellung("zs3v", hp.get("zs3"), false);
+            }
+        }
+
+        return stop_propagation;
+    };
 
     signalTemplates.ks = t;
 
@@ -626,30 +670,18 @@ function initSignals() {
     signalTemplates.ne4.initialFeatures = ["bauart.groß"];
 
     signalTemplates.ne1 = new SignalTemplate("ne1", "Ne 1", "basic", "ne1");
+    signalTemplates.ne1.scale = 1;
+    signalTemplates.ne1.distance_from_track = 5;
 
-    signalTemplates.lf6 = new SignalTemplate(
-        "lf6",
-        "Lf 6",
-        "basic",
-        ["lf6", new TextElement("lf6", { pos: [30, 8], format: "bold 30px Arial", color: "#333", btn_text: "Kennziffer", stellung: "geschw" })],
-        "geschw=9"
-    );
+    signalTemplates.lf6 = new SignalTemplate("lf6", "Lf 6", "basic", ["lf6", new TextElement("lf6", { pos: [30, 8], format: "bold 30px Arial", color: "#333", stellung: "geschw" })], "geschw=9");
     signalTemplates.lf6.initialFeatures = ["slave"];
+    signalTemplates.lf6.signalMenu = [{ input: 1, text: "Geschwindigkeit", setting: "geschw" }];
 
-    signalTemplates.lf7 = new SignalTemplate(
-        "lf7",
-        "Lf 7",
-        "basic",
-        ["lf7", new TextElement("lf7", { pos: [20, 10], format: "bold 40px Arial", color: "#333", btn_text: "Kennziffer", stellung: "geschw" })],
-        "geschw=6"
-    );
+    signalTemplates.lf7 = new SignalTemplate("lf7", "Lf 7", "basic", ["lf7", new TextElement("lf7", { pos: [20, 10], format: "bold 40px Arial", color: "#333", stellung: "geschw" })], "geschw=6");
     signalTemplates.lf7.initialFeatures = ["master"];
+    signalTemplates.lf7.signalMenu = [{ input: 1, text: "Geschwindigkeit", setting: "geschw" }];
 
-    signalTemplates.zs3 = new SignalTemplate(
-        "zs3",
-        "Zs 3 (alleinst.)",
-        "basic",
-        ["Zs3_Form", new TextElement("zs3", { pos: [30, 25], format: "bold 25px Arial", btn_text: "Kennziffer", stellung: "geschw" })],
-        "geschw=8"
-    );
+    signalTemplates.zs3 = new SignalTemplate("zs3", "Zs 3 (alleinst.)", "basic", ["Zs3_Form", new TextElement("zs3", { pos: [30, 25], format: "bold 25px Arial", stellung: "geschw" })], "geschw=8");
+
+    signalTemplates.zs3.signalMenu = [{ input: 1, text: "Geschwindigkeit", setting: "geschw" }];
 }

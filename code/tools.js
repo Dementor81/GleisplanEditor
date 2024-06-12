@@ -276,7 +276,8 @@ const ui = {
                 .attr("data_signal", menu_item.setting)
                 .html(menu_item.text)
                 .click((e) => {
-                    signal.set_stellung(menu_item.setting, null, !$(e.target).hasClass("active"));
+                    //if the user clicks on an active btn, we set the value manually on -1 to diactivate it
+                    signal.set_stellung(menu_item.setting, ($(e.target).hasClass("active") ? -1 : undefined));
                 });
     },
     create_Input: function (text, stellung, signal) {
@@ -351,26 +352,43 @@ const ui = {
     showContextMenu: function (point, parent, items, signal) {
         const createDropDownItems = function (items, dd) {
             return items.map((item) => {
-                const li = $("<li>");
-                const a = $("<a>", { class: "dropdown-item", href: "#" }).text(item.text);
-                if (item.childs) {
-                    li.addClass("dropend");
-                    a.addClass("dropdown-toggle submenu");
-                    a.attr("type", "button");
-                    a.attr("data-bs-toggle", "dropdown");
-                    a.append($("<ul>", { class: "dropdown-menu dropdown-menu-end" }).append(createDropDownItems(item.childs, dd)));
+                if (item.text) {
+                    const li = $("<li>");
+                    const a = $("<a>", { class: "dropdown-item", href: "#" }).text(item.text);
+                    if (item.childs) {
+                        li.addClass("dropend");
+                        a.addClass("dropdown-toggle submenu");
+                        a.attr("type", "button");
+                        a.attr("data-bs-toggle", "dropdown");
+                        a.append($("<ul>", { class: "dropdown-menu dropdown-menu-end" }).append(createDropDownItems(item.childs, dd)));
+                    } else {
+                        a.attr("data-signal-option", item.option);
+                        a.toggleClass("active", signal.features.match(item.option));
+                        a.click(() => {
+                            signal.features?.set(item.option, !a.hasClass("active"));
+                            dd.hide();
+                            renderer.reDrawEverything();
+                            save();
+                        });
+                    }
+                    li.append(a);
+                    return li;
                 } else {
-                    a.attr("data-signal-option", item.option);
-                    a.toggleClass("active", signal.features.match(item.option));
-                    a.click(() => {
-                        signal.features?.set(item.option, !a.hasClass("active"));
-                        dd.hide();
-                        renderer.reDrawEverything();
-                        save();
-                    });
+                    const id = uuidv4();
+                    return ui.div("dropdown-item").append(
+                        $("<div>", { class: "form-floating" }).append([
+                            $("<input>", {
+                                type: "text",
+                                id: id,
+                                class: "form-control  form-control-sm",
+                                value: signal._bezeichnung,
+                            }).on("input", (e) => {
+                                signal._bezeichnung = e.target.value;
+                            }),
+                            $("<label>", { for: id, text: item.input }),
+                        ])
+                    );
                 }
-                li.append(a);
-                return li;
             });
         };
 
@@ -391,8 +409,8 @@ const ui = {
         $dummy.css({ position: "absolute", left: point.x + rect.x, top: point.y + rect.y });
         dropdownList.show();
     },
-    div: function (c) {
-        return $("<div>", { class: c });
+    div: function (c, i) {
+        return $("<div>", { class: c }).append(i);
     },
 
     showModalDialog: function (content, ok_function) {

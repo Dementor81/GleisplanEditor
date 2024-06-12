@@ -105,3 +105,32 @@ html, body {
     padding: 0px !important;
 }
 
+.dropdown-item {
+    padding-left: 40px !important;
+}
+
+.dropdown-item.active {    
+    background-color:transparent !important;
+    color:black !important;
+    position: relative;
+    left: -30px;
+    font-weight: bold;
+}
+
+.dropdown-item.active::before{
+    content: "";
+    background: url(check.svg);
+    background-size: 25px 25px;
+    width: 30px;
+    height: 30px;
+    padding-top: 2px;
+    display: block;
+    float: left;
+}
+
+/* .dropdown-item::before{
+    content: ' ';
+  background: url(check.svg);
+    width: 30px;
+    height: 30px;
+} */

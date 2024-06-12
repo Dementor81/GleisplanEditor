@@ -7,6 +7,7 @@ class Signal {
         s._template = signalTemplates[o._template];
         s._signalStellung = o._signalStellung;
         s._positioning = o._positioning;
+        s._bezeichnung = o._bezeichnung;
         s.features.map = new Map(JSON.parse(o.features));
         return s;
     }
@@ -19,12 +20,14 @@ class Signal {
         above: false,
         flipped: false,
     };
+    _bezeichnung = "";
 
     stringify() {
         return {
             _class: "Signal",
             _template: this._template.id,
             _signalStellung: this._signalStellung,
+            _bezeichnung: this._bezeichnung,
             _positioning: {
                 km: this._positioning.km,
                 above: this._positioning.above,
@@ -78,17 +81,20 @@ class Signal {
                 else this.features.set(template.initialFeatures);
 
             if (template.initialSignalStellung)
-                if (Array.isArray(template.initialSignalStellung)) template.initialSignalStellung.forEach((i) => this.set_stellung(i));
-                else this.set_stellung(template.initialSignalStellung);
+                template.initialSignalStellung.forEach((i) => this.set_stellung(i, null, false));
         }
     }
 
     //Setzt die Signalstellung, 2 Möglichkeiten:
     //set("zs3",60)
+    //set("hp",1)
     //oder
     //set("hp=0")
     //set("ersatz=zs7")
-    set_stellung(stellung, subkey, value = true, chain = true) {
+    //set("hp=0,1") der Value hat vorrang vor dem in stellung enthaltenen Value
+    //value=false schaltet die Signalstellung auf -1, also aus. Wird vom Menü zum ausschalten einer Signalstellung verwendet
+    //chain=false verhindert, dass das Signal versucht das davor und dahinterliegende Signal zu informieren
+    set_stellung(stellung, subkey, chain = true) {
         let changed = false;
         /* const splitted = stellung.split("=");
         if (splitted.length == 2) {
@@ -96,22 +102,18 @@ class Signal {
             stellung = splitted[0];
         } */
         if (subkey == undefined) [stellung, subkey] = stellung.split("=");
-        if (value) {
-            if (this.get(stellung) != subkey) {
-                /* if (this.check(stellung)) delete this._signalStellung[stellung];
+        else [stellung] = stellung.split("=");
+
+        if (this.get(stellung) != subkey) {
+            /* if (this.check(stellung)) delete this._signalStellung[stellung];
             else this._signalStellung[stellung] = value; */
 
-                if (!isNaN(subkey)) {
-                    this._signalStellung[stellung] = Number(subkey);
-                } else {
-                    this._signalStellung[stellung] = subkey;
-                }
-
-                changed = true;
+            if (!isNaN(subkey)) {
+                this._signalStellung[stellung] = Number(subkey);
+            } else {
+                this._signalStellung[stellung] = subkey;
             }
-        } else if (this._signalStellung[stellung] != null) {
-            //delete this._signalStellung[stellung];
-            this._signalStellung[stellung] = -1;
+
             changed = true;
         }
 
@@ -274,7 +276,7 @@ class Signal {
                     let button = $("#btn_" + item.text.replace(" ", "_"), popup);
                     if (button.length == 1) {
                         button.toggleClass("active", this.check(item.setting));
-                        if (item.ve.every(ve=>ve.isAllowed(this))) button.removeAttr("disabled");
+                        if (item.ve.every((ve) => ve.isAllowed(this))) button.removeAttr("disabled");
                         else button.attr("disabled", "disabled");
                     }
                 });
