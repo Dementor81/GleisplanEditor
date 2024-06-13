@@ -362,7 +362,7 @@ function initSignals() {
                     if (signal.get("vr") > 0) signal.set_stellung("vr", 2, false);
                 } else signal.set_stellung("zs3v", hp.get("zs3"), false);
 
-                if (hp.get("zs3") <= 6 && hp.get("hp") > 0) signal.set_stellung("vr", 2, false);
+                //if (hp.get("zs3").between(1,6) && hp.get("hp") > 0) signal.set_stellung("vr", 2, false);
             }
         }
 
@@ -462,18 +462,19 @@ function initSignals() {
             }),
 
             new VisualElement(null, {
-                childs: ["zs3", new TextElement("zs3", { pos: [115, 80], format: "bold 80px Arial", color: "#eee", btn_text: "Zs 3 Geschwindigkeit", stellung: "zs3" })],
+                childs: ["zs3", new TextElement("zs3", { pos: [115, 80], format: "bold 80px Arial", color: "#eee", stellung: "zs3" })],
                 off: "zs3<=0",
             }),
 
             new VisualElement(null, {
-                childs: ["zs3v", new TextElement("zs3v", { pos: [115, 890], format: "bold 80px Arial", color: "#ffde36", btn_text: "Zs 3v Geschwindigkeit", stellung: "zs3v" })],
+                childs: ["zs3v", new TextElement("zs3v", { pos: [115, 890], format: "bold 80px Arial", color: "#ffde36", stellung: "zs3v" })],
                 off: "zs3v<=0",
             }),
         ],
         ["hp=0", "vr=0"]
     );
     t.scale = 0.15;
+    t.distance_from_track = 4;
     t.checkSignalDependency = checkSignalDependencyFunction4HV;
     t.addRule("hp>0 && zs3>6", "hp=1");
     t.addRule("hp>0 && zs3<=6 && zs3>0", "hp=2");
@@ -482,34 +483,54 @@ function initSignals() {
     t.signalMenu = lightMenu;
     signalTemplates.hv_hp = t;
 
-    //HV Vorsignal
-    /* t = new SignalTemplate(
+    t = new SignalTemplate(
         "hv_vr",
         "Hv Vorsignal",
         "hv",
         [
-            "basis",
-            "vr",
+            "mast,vr_schirm,vr_lichtp",
             new VisualElement("ne2", { conditions: "!wdh" }),
+            new VisualElement("vr_zusatz_schirm,vr_zusatz_lichtp", { conditions: ["verk","wdh"] }),
+            new VisualElement("vr_zusatz_licht", { conditions: "verk", stellung: "verk=1" }),
+            new VisualElement("vr_zusatz_licht", { conditions: "wdh" }),
             new VisualElement(null, {
                 childs: [
-                    new VisualElement("vr0", { btn_text: "Vr 0", stellung: "vr=0" }),
-                    new VisualElement("vr1", { btn_text: "Vr 1", stellung: "vr=1" }),
-                    new VisualElement("vr2", { btn_text: "Vr 2", stellung: "vr=2" }),
+                    new VisualElement("vr_gelb_oben,vr_gelb_unten", { stellung: "vr=0" }),
+                    new VisualElement("vr_grün_oben,vr_grün_unten", { stellung: "vr=1" }),
+                    new VisualElement("vr_gelb_unten,vr_grün_oben", { stellung: "vr=2" }),
                 ],
             }),
-            new VisualElement("verk", { conditions: ["verk", "wdh"] }),
-            new VisualElement("verk_licht", { btn_text: "Verkürzt", conditions: "verk", stellung: "verk=1" }),
-            new VisualElement("verk_licht", { conditions: "wdh" }),
+            "vr_schuten",
+            new VisualElement("vr_zusatz_schute", { conditions: "verk" }),
+            new VisualElement(null, {
+                childs: ["zs3v", new TextElement("zs3v", { pos: [115, 890], format: "bold 80px Arial", color: "#ffde36", stellung: "zs3v" })],
+                off: "zs3v<=0",
+            }),
         ],
-        "vr=0"
+        ["vr=0"]
     );
-    t.scale = 0.05;
+    t.scale = 0.15;
+    t.distance_from_track = 4;
     t.checkSignalDependency = checkSignalDependencyFunction4HV;
     t.initialFeatures = ["vr"];
-    t.contextMenu = [].concat(menu.verkürzt, menu.wiederholer);
+    t.contextMenu = [].concat(settingsMenu.verkürzt,settingsMenu.wiederholer);
+    t.signalMenu = [
+        [
+            {
+                btnGroup: 1,
+                items: [
+                    { btn: 1, text: "Vr 0", setting: "vr=0" },
+                    { btn: 1, text: "Vr 1", setting: "vr=1" },
+                    { btn: 1, text: "Vr 2", setting: "vr=2" },
+                    { btn: 1, text: "verkürzt", setting: "verk=1" },
+                ],
+            },
+            { input: 1, text: "Zs 3v", setting: "zs3v" },
+        ],
+    ];
     signalTemplates.hv_vr = t;
- */
+
+    
     //KS Hauptsignal
     t = new SignalTemplate(
         "ks",
@@ -647,6 +668,100 @@ function initSignals() {
     };
 
     signalTemplates.ks = t;
+
+    t = new SignalTemplate(
+        "ks_vr",
+        "Ks Vorsignal",
+        "ks",
+        [
+            "mast",
+            "schirm_hp",            
+            new VisualElement(null, {
+                conditions: "vr",
+                childs: ["ks1_optik_hpvr", "ks2_optik", new VisualElement("ks2", { stellung: "hp=2" })],
+            }),
+            new VisualElement("ks1_optik_hp", { conditions: "!vr" }),
+
+            new VisualElement(null, {
+                stellung: "hp=1",
+                childs: [
+                    new VisualElement("ks1_hpvr", { conditions: "vr", blinkt: true, off: "zs3v<=0" }),
+                    new VisualElement("ks1_hpvr", { conditions: "vr", off: "zs3v>0" }),
+                    new VisualElement("ks1_hp", { conditions: "!vr", blinkt: true, off: "zs3v<=0" }),
+                    new VisualElement("ks1_hp", { conditions: "!vr", off: "zs3v>0" }),
+                ],
+            }),
+
+            new VisualElement("möhre", { conditions: "vr" }),
+            new VisualElement("hp0", { stellung: "hp=0" }),
+            new VisualElement(null, {
+                conditions: ["verwendung.asig", "verwendung.bksig", "verwendung.sbk"],
+                childs: ["zs1_optik", new VisualElement("zs1", { stellung: "ersatz=zs1", off: "hp>0", blinkt: true })],
+            }),
+            new VisualElement(null, {
+                conditions: ["verwendung.esig", "verwendung.zsig"],
+                childs: ["zs7_optik", new VisualElement("zs7", { stellung: "ersatz=zs7", off: "hp>0" })],
+            }),
+            new VisualElement(null, {
+                conditions: verw_bahnhof,
+                childs: ["sh1_optik", "zs1_optik", new VisualElement("zs1,sh1", { stellung: "ersatz=sh1", off: "hp>0" })],
+            }),
+
+            new VisualElement(null, {
+                conditions: "verk",
+                childs: ["kennlicht_optik", new VisualElement("kennlicht", { conditions: "verk", stellung: "verk=1", off: "hp=0" })],
+            }),
+
+            new VisualElement(null, {
+                conditions: verw_bahnhof,
+                childs: ["kennlicht_optik", new VisualElement("kennlicht", { stellung: "ersatz=kennlicht", off: "hp>=0" })],
+            }),
+
+            new VisualElement(null, {
+                childs: ["zs3", new TextElement("zs3", { pos: [85, 80], format: "bold 80px Arial", color: "#eee", btn_text: "Zs 3 Geschwindigkeit", stellung: "zs3" })],
+                off: "zs3<=0",
+            }),
+
+            new VisualElement(null, {
+                childs: ["zs3v", new TextElement("zs3v", { pos: [85, 490], format: "bold 80px Arial", color: "#ffde36", btn_text: "Zs 3v Geschwindigkeit", stellung: "zs3v" })],
+                off: "zs3v<=0",
+            }),
+        ],
+        "hp=0"
+    );
+    t.scale = 0.15;
+    t.distance_from_track = 15;
+    t.initialFeatures = ["hp", "verwendung.asig"];
+    t.contextMenu = [].concat(settingsMenu.Verwendung, settingsMenu.Vorsignal, settingsMenu.verkürzt);
+    t.signalMenu = [
+        [
+            {
+                btnGroup: 1,
+                items: [
+                    { btn: 1, text: "Hp 0", setting: "hp=0" },
+                    { btn: 1, text: "Ks 1", setting: "hp=1" },
+                    { btn: 1, text: "Ks 2", setting: "hp=2" },
+                ],
+            },
+            { input: 1, text: "Zs 3", setting: "zs3" },
+        ],
+
+        [{ input: 1, text: "Zs 3v", setting: "zs3v" }],
+        [
+            {
+                btnGroup: 1,
+                items: [
+                    { btn: 1, text: "Zs 1", setting: "ersatz=zs1" },
+                    { btn: 1, text: "Zs 7", setting: "ersatz=zs7" },
+                    { btn: 1, text: "Zs 8", setting: "ersatz=zs8" },
+                    { btn: 1, text: "Sh 1", setting: "ersatz=sh1" },
+                    { btn: 1, text: "Kennlicht", setting: "ersatz=kennlicht" },
+                ],
+            },
+        ],
+    ];
+    t.checkSignalDependency = signalTemplates.ks.checkSignalDependency;
+    signalTemplates.ks_vr = t;
 
     //Ks Vorsignal
     /* signalTemplates.ks_vr = new SignalTemplate(

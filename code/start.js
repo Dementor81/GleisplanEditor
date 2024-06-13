@@ -95,8 +95,8 @@ function init() {
 
     pl.start().then(() => {
         $("#collapseOne .accordion-body").append([newItemButton(signalTemplates.hv_hp), newItemButton(signalTemplates.ks)]);
-        /* $("#collapseTwo .accordion-body").append(newItemButton(signalTemplates.hv_vr));
-        $("#collapseTwo .accordion-body").append(newItemButton(signalTemplates.ks_vr)); */
+        $("#collapseTwo .accordion-body").append(newItemButton(signalTemplates.hv_vr));
+        $("#collapseTwo .accordion-body").append(newItemButton(signalTemplates.ks_vr));
         $("#collapseThree .accordion-body").append(newItemButton(signalTemplates.ne4));
         $("#collapseThree .accordion-body").append(newItemButton(signalTemplates.ne1));
         $("#collapseThree .accordion-body").append(newItemButton(signalTemplates.lf6));
@@ -266,6 +266,10 @@ function changeMode(newMode) {
     $(btnPlay).toggleClass("active", newMode == MODE_PLAY);
     $(btnDrawTracks).toggleClass("active", newMode == MODE_EDIT);
     mode = newMode;
+    if (mode == MODE_PLAY) {
+        const bsOffcanvas = bootstrap.Offcanvas.getInstance(document.getElementById("sidebar"));
+        if (bsOffcanvas) bsOffcanvas.hide();
+    }
 }
 
 function selectRenderer(textured) {
@@ -648,7 +652,7 @@ function handleStageMouseUp(e) {
                         mouseAction.container.signal._template.title,
                         mouseAction.container.signal.getHTML(),
                         $(myCanvas)
-                    );                    
+                    );
                 } else if (mode === MODE_EDIT) {
                     if (!$("#generated_menu").length) {
                         let context_menu = ui.showContextMenu({ x: e.rawX, y: e.rawY }, $(myCanvas), mouseAction.container.signal.getContextMenu(), mouseAction.container.signal);
