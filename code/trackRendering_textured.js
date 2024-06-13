@@ -90,7 +90,7 @@ class trackRendering_textured {
 
         texture_container.x = track.start.x;
         texture_container.y = track.start.y;
-        texture_container.setBounds(0,0 - this.schwellenHöhe/2, track.end.x - track.start.x, track.end.y - track.start.y + this.schwellenHöhe);
+        texture_container.setBounds(0, 0 - this.schwellenHöhe / 2, track.end.x - track.start.x, track.end.y - track.start.y + this.schwellenHöhe);
         container.addChild(texture_container);
         return texture_container;
     }
@@ -309,14 +309,36 @@ class trackRendering_textured {
                 })
             );
         }
+
+        this.renderSwitchUI(sw);
     }
 
     reRenderSwitch(sw) {
         const s = ui_container.children.find((c) => c.sw == sw);
         if (s) s.parent.removeChild(s);
 
-        renderSwitchUI(sw);
+        this.renderSwitchUI(sw);
     }
 
-    renderSwitchUI(sw) {}
+    renderSwitchUI(sw) {
+        ui_container.addChild(
+            (() => {
+                let c = new createjs.Container();
+                c.mouseChildren = false;
+                c.name = "switch";
+                c.sw = sw;
+                [sw.from, sw.branch].forEach((t) => {
+                    const arrow = new createjs.Shape();
+                    c.addChild(arrow);
+
+                    arrow.graphics.setStrokeStyle(trackRendering_basic.STROKE, "round").beginStroke("#333");
+                    arrow.graphics.drawArrow(20, 5);
+                    arrow.x = sw.location.x;
+                    arrow.y = sw.location.y;
+                    arrow.rotation = findAngle(sw.location, t.end.equals(sw.location) ? t.start : t.end);
+                });
+                return c;
+            })()
+        );
+    }
 }

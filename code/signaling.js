@@ -297,7 +297,7 @@ function initSignals() {
                     { btn: 1, text: "Hp 2", setting: "hp=2" },
                 ],
             },
-            { input: 1, text: "Zs 3 Geschwindigkeit", setting: "zs3" },
+            { input: 1, text: "Zs 3", setting: "zs3" },
         ],
 
         [
@@ -310,7 +310,7 @@ function initSignals() {
                     { btn: 1, text: "verkürzt", setting: "verk=1" },
                 ],
             },
-            { input: 1, text: "Zs 3v Geschwindigkeit", setting: "zs3v" },
+            { input: 1, text: "Zs 3v", setting: "zs3v" },
         ],
         [
             {
@@ -361,6 +361,8 @@ function initSignals() {
 
                     if (signal.get("vr") > 0) signal.set_stellung("vr", 2, false);
                 } else signal.set_stellung("zs3v", hp.get("zs3"), false);
+
+                if (hp.get("zs3") <= 6 && hp.get("hp") > 0) signal.set_stellung("vr", 2, false);
             }
         }
 
@@ -586,10 +588,10 @@ function initSignals() {
                     { btn: 1, text: "Ks 2", setting: "hp=2" },
                 ],
             },
-            { input: 1, text: "Zs 3 Geschwindigkeit", setting: "zs3" },
+            { input: 1, text: "Zs 3", setting: "zs3" },
         ],
 
-        [{ input: 1, text: "Zs 3v Geschwindigkeit", setting: "zs3v" }],
+        [{ input: 1, text: "Zs 3v", setting: "zs3v" }],
         [
             {
                 btnGroup: 1,
@@ -610,13 +612,19 @@ function initSignals() {
         //-1 heißt, das Signal ist vom User ausgeschaltet
         if (signal.get("hp") != -1) {
             //Das Hauptsignal zeigt nicht Hp 0 oder es ist ein alleinstehndes Vorsignal
+            let anderes_zs3 = hp.get("zs3");
+            let eigenes_zs3 = signal.get("zs3");
             if (!signal.features.match("hp") || signal.get("hp") != 0) {
+                let x = hp.get("hp");
+
                 switch (hp._template.id) {
                     case "Hv77":
                     case "hv_hp":
                     case "hv_vr":
                         {
-                            signal.set_stellung("hp", hp.get("hp") >= 0 ? hp.get("hp") : 0, false);
+                            signal.set_stellung("hp", x >= 1 ? 1 : 2, false);
+                            if (x == 2 && anderes_zs3 <= 0) anderes_zs3 = 4;
+
                             if (!signal.features.match("wdh")) stop_propagation = true;
                         }
                         break;
@@ -624,14 +632,15 @@ function initSignals() {
                     case "ks":
                     case "ks_vr":
                         {
-                            signal.set_stellung("hp", hp.get("hp") <= 0 ? 2 : 1, false);
+                            signal.set_stellung("hp", x <= 0 ? 2 : 1, false);
+
                             if (!signal.features.match("wdh")) stop_propagation = true;
                         }
                         break;
                 }
-
-                signal.set_stellung("zs3v", hp.get("zs3"), false);
             }
+            if (eigenes_zs3 <= anderes_zs3 && eigenes_zs3 > 0) anderes_zs3 = -1;
+            signal.set_stellung("zs3v", anderes_zs3, false);
         }
 
         return stop_propagation;

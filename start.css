@@ -22,6 +22,14 @@ html, body {
     z-index: 99;
 }
 
+#toolbar a {
+    font-size: x-large !important;
+}
+
+.btn-toolbar{
+    column-gap: 20px;
+}
+
 #CanvasContainer {
     overflow: hidden;
     height: 100%;
@@ -99,6 +107,10 @@ html, body {
     flex-direction: column;
     padding: 0px;
     gap: 10px;
+}
+
+.popover{
+    max-width: 40rem !important;
 }
 
 .popover-body{

@@ -219,6 +219,7 @@ function init() {
 
             renderer.reDrawEverything();
             grid.visible = false;
+            ui_container.visible = false;
             stage.update();
 
             let img_data = stage.toDataURL("#00000000", "image/png");
@@ -235,6 +236,7 @@ function init() {
             stage.scale = backup.scale;
             stage.canvas = myCanvas;
             grid.visible = showGrid;
+            ui_container.visible = true;
             renderer.reDrawEverything();
             stage.enableDOMEvents(true);
         }
@@ -362,7 +364,7 @@ function handleStageMouseDown(event) {
 function getHitTest() {
     let local_point = stage.globalToLocal(stage.mouseX, stage.mouseY);
 
-    return main_container.getObjectUnderPoint(local_point.x, local_point.y, 1);
+    return stage.getObjectUnderPoint(local_point.x, local_point.y, 1);
 }
 
 function getHitTrackInfo(use_offset) {
@@ -646,18 +648,7 @@ function handleStageMouseUp(e) {
                         mouseAction.container.signal._template.title,
                         mouseAction.container.signal.getHTML(),
                         $(myCanvas)
-                    );
-                    $(".popover-body button").click(mouseAction.container.signal, (e) => {
-                        e.data.syncHTML(popup.tip);
-                        renderer.reDrawEverything();
-                        save();
-                    });
-
-                    $(".popover-body input").on("input", mouseAction.container.signal, (e) => {
-                        e.data.syncHTML(popup.tip);
-                        renderer.reDrawEverything();
-                        save();
-                    });
+                    );                    
                 } else if (mode === MODE_EDIT) {
                     if (!$("#generated_menu").length) {
                         let context_menu = ui.showContextMenu({ x: e.rawX, y: e.rawY }, $(myCanvas), mouseAction.container.signal.getContextMenu(), mouseAction.container.signal);

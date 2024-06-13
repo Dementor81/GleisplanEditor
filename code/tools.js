@@ -35,6 +35,11 @@ Array.prototype.remove = function (item) {
     }
 };
 
+Array.prototype.justNull = function () {
+    if (this.every((i) => i == null)) return null;
+    else return this;
+};
+
 Array.prototype.lastItem = function () {
     if (this.length > 0) {
         return this[this.length - 1];
@@ -266,19 +271,12 @@ function deg2rad(deg) {
 }
 
 const ui = {
-    create_toggleButton: function (menu_item, signal) {
-        if (menu_item.ve != null && menu_item.ve.length > 0 && menu_item.ve.every((ve) => signal.features.match(ve.conditions)))
-            return $("<button>", {
-                type: "button",
-                id: "btn_" + menu_item.text.replace(" ", "_"),
-                class: "btn btn-primary btn-sm",
-            })
-                .attr("data_signal", menu_item.setting)
-                .html(menu_item.text)
-                .click((e) => {
-                    //if the user clicks on an active btn, we set the value manually on -1 to diactivate it
-                    signal.set_stellung(menu_item.setting, ($(e.target).hasClass("active") ? -1 : undefined));
-                });
+    create_toggleButton: function (text) {
+        return $("<button>", {
+            type: "button",
+            id: "btn_" + text.replace(" ", "_"),
+            class: "btn btn-primary btn-sm",
+        }).html(text);
     },
     create_Input: function (text, stellung, signal) {
         const id = uuidv4();
@@ -654,4 +652,56 @@ const showToast = (error) => {
     $(toast).on("hidden.bs.toast", function () {
         $(this).parent().remove();
     });
+};
+
+const BS = {
+    createListGroupItem(items) {
+        return $("<li>", { class: "list-group-item" }).append(items);
+    },
+
+    create_buttonToolbar(items) {
+        return ui.div("btn-toolbar", items).attr("role", "toolbar");
+    },
+    create_buttonGroup(items) {
+        return ui.div("btn-group", items);
+    },
+    create_DropDownItem(text) {
+        return $("<a>", {
+            class: "dropdown-item",
+            text: text,
+            href: "#",
+        });
+    },
+
+    create_DropDown(items, text) {
+        return ui.div("dropdown d-grid", [
+            $("<button>", {
+                class: "btn btn-primary dropdown-toggle btn-sm",
+                type: "button",
+                text: text,
+                id: "btn_" + text.replace(" ", "_"),
+            }).attr("data-bs-toggle", "dropdown"),
+            ui.div("dropdown-menu", items),
+        ]);
+    },
+
+    lightBulb() {
+        return $(
+            "<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='currentColor' class='bi bi-lightbulb' viewBox='0 0 16 16'>" +
+                "<path d='M2 6a6 6 0 1 1 10.174 4.31c-.203.196-.359.4-.453.619l-.762 1.769A.5.5 0 0 1 10.5 13a.5.5 0 0 1 0 1 .5.5 0 0 1 0 1l-.224.447a1 1 0 0 1-.894.553H6.618a1 1 0 0 1-.894-.553L5.5 15a.5.5 0 0 1 0-1 .5.5 0 0 1 0-1 .5.5 0 0 1-.46-.302l-.761-1.77a1.964 1.964 0 0 0-.453-.618A5.984 5.984 0 0 1 2 6zm6-5a5 5 0 0 0-3.479 8.592c.263.254.514.564.676.941L5.83 12h4.342l.632-1.467c.162-.377.413-.687.676-.941A5 5 0 0 0 8 1z'/> </svg>"
+        );
+    },
+
+    createAndAppendZs3(listGroup, signal, label) {
+        listGroup.append(this.create_ListGroupItem([this.create_label(label), this.createButtonContainer(this.create_Zs3DropDown(signal))]));
+    },
+};
+
+createjs.Graphics.prototype.drawArrow = function (length, size) {
+    this
+        .mt(0, 0)
+        .lt(length, 0)
+        .mt(length - size, -size / 2)
+        .lt(length, 0)
+        .lt(length - size, size / 2);   
 };

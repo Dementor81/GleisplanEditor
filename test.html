@@ -28,7 +28,7 @@
         <script src="code/preLoader.js"></script>
         <script src="code/signaling.js"></script>
 
-        <script src="tools.js"></script>
+        <script src="code/tools.js"></script>
         <script src="code/track.js?02"></script>
 
         <style type="text/css"></style>
@@ -52,100 +52,30 @@
             <body>
                 <canvas id="myCanvas" width="1000" height="1000"></canvas>
                 <script>
-                    function createBoxFromLine(startPoint, endPoint, size) {
-                        // Calculate the direction vector of the line segment
-                        const directionX = endPoint.x - startPoint.x;
-                        const directionY = endPoint.y - startPoint.y;
+                    function drawArrow(container,p1,angle,length, size,color) {
+                        var arrow = new createjs.Shape();
+                        
+                        arrow.graphics.drawArrow(p1,angle,length, size,color);
 
-                        // Calculate the length of the direction vector
-                        const length = Math.sqrt(directionX * directionX + directionY * directionY);
+                        arrow.x =p1.x;
+                        arrow.y =p1.y;
+                        arrow.rotation = angle;
 
-                        // Normalize the direction vector
-                        const normalizedDirectionX = directionX / length;
-                        const normalizedDirectionY = directionY / length;
-
-                        // Calculate the perpendicular vector (swapping x and y components and negating one of them)
-                        const perpendicularX = -normalizedDirectionY * size;
-                        const perpendicularY = normalizedDirectionX * size;
-                        return {
-                            bottomLeft: {
-                                x: startPoint.x + perpendicularX,
-                                y: startPoint.y + perpendicularY,
-                            },
-                            bottomRight: {
-                                x: endPoint.x + perpendicularX,
-                                y: endPoint.y + perpendicularY,
-                            },
-                            topRight: {
-                                x: endPoint.x - perpendicularX,
-                                y: endPoint.y - perpendicularY,
-                            },
-                            topLeft: {
-                                x: startPoint.x - perpendicularX,
-                                y: startPoint.y - perpendicularY,
-                            },
-                        };
+                        container.addChild(arrow);
                     }
 
-                    function drawLine(ctx, p1, p2, color = "#000", size = 1) {
-                        ctx.strokeStyle = color;
-                        ctx.lineWidth = size;
+                    // Beispielaufruf:
+                    var stage = new createjs.Stage("myCanvas"); // Erstelle eine Stage
+                    var container = new createjs.Container(); // Erstelle einen Container
 
-                        // draw a red line
-                        ctx.beginPath();
-                        ctx.moveTo(p1.x, p1.y);
-                        ctx.lineTo(p2.x, p2.y);
-                        ctx.stroke();
-                    }
+                    // Zeichne einen roten Pfeil im Container
+                    drawArrow(container,{x:100,y:100},45,100, 10, "red");
 
-                    function drawPoint(context, point, label, color, size) {
-                        if (color == null) {
-                            color = "#000";
-                        }
-                        if (size == null) {
-                            size = 5;
-                        }
+                    // Füge den Container zur Bühne hinzu
+                    stage.addChild(container);
 
-                        const radius = 0.5 * size;
-
-                        // to increase smoothing for numbers with decimal part
-                        const pointX = Math.round(point.x - radius);
-                        const pointY = Math.round(point.y - radius);
-
-                        context.beginPath();
-                        context.fillStyle = color;
-                        context.fillRect(pointX, pointY, size, size);
-                        context.fill();
-
-                        if (label) {
-                            var textX = Math.round(point.x);
-                            var textY = Math.round(pointY - 5);
-
-                            context.font = "Italic 14px Arial";
-                            context.fillStyle = color;
-                            context.textAlign = "center";
-                            context.fillText(label, textX, textY);
-                        }
-                    }
-
-                    // Get the canvas element and its context
-                    var canvas = document.getElementById("myCanvas");
-                    var context = canvas.getContext("2d");
-
-                    // Define the two given points
-                    const point1 = { x: 100, y: 300 };
-                    const point2 = { x: 170, y: 335 };
-
-                    drawPoint(context, point1, "p1", "#000", 3);
-                    drawPoint(context, point2, "p2", "#000", 3);
-                    drawLine(context, point1, point2);
-
-                    const box = createBoxFromLine(point1, point2, 55);
-
-                    drawPoint(context, box.topLeft, "topLeft", "#000", 3);
-                    drawPoint(context, box.topRight, "topRight", "#000", 3);
-                    drawPoint(context, box.bottomRight, "bottomRight", "#000", 3);
-                    drawPoint(context, box.bottomLeft, "bottomLeft", "#000", 3);
+                    // Aktualisiere die Bühne
+                    stage.update();
                 </script>
             </body>
         </html>

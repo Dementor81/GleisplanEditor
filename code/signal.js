@@ -80,8 +80,7 @@ class Signal {
                 if (Array.isArray(template.initialFeatures)) template.initialFeatures.forEach((i) => this.features.set(i, true));
                 else this.features.set(template.initialFeatures);
 
-            if (template.initialSignalStellung)
-                template.initialSignalStellung.forEach((i) => this.set_stellung(i, null, false));
+            if (template.initialSignalStellung) template.initialSignalStellung.forEach((i) => this.set_stellung(i, null, false));
         }
     }
 
@@ -243,26 +242,43 @@ class Signal {
     getHTML() {
         const ul = $("<ul>", { class: "list-group list-group-flush" });
 
-        ul.append(this._template.signalMenu.map((data) => this.createBootstrapMenu(data)));
+        const update = function (command, active) {
+            this.set_stellung(command,active? -1 : undefined);
+            renderer.reDrawEverything();
+            this.checkBootstrapMenu(this._template.signalMenu, ul);
+            save();
+        };
+
+        ul.append(this._template.signalMenu.map((data) => this.createBootstrapMenuItems(data, update)));
 
         this.syncHTML(ul);
 
         return ul;
     }
 
-    createBootstrapMenu(data) {
+    setStellungFromUI(command, activ) {
+        this.set_stellung(command);
+        renderer.reDrawEverything();
+        save();
+    }
+
+    createBootstrapMenuItems(data, update) {
         if (data) {
             if (Array.isArray(data)) {
-                let items = data.map((item) => this.createBootstrapMenu(item));
+                let items = data.map((item) => this.createBootstrapMenuItems(item, update)).justNull();
                 if (items) {
-                    let menu = $("<li>", { class: "list-group-item" }).append(items);
+                    let menu = BS.createListGroupItem(BS.create_buttonToolbar(items));
                     return menu;
                 } else return null;
             } else if (data.btnGroup) {
-                let buttons = data.items.map((item) => ui.create_toggleButton(item, this));
-                return ui.create_buttonGroup(buttons);
+                let buttons = data.items
+                    .filter((mi) => mi.ve != null && mi.ve.length > 0 && mi.ve.every((ve) => this.features.match(ve.conditions)))
+                    .map((item) => ui.create_toggleButton(item.text, item.setting).on("click", (e) => update.bind(this)(item.setting, $(e.target).hasClass("active"))))
+                    .justNull();
+                if (buttons) return ui.create_buttonGroup(buttons);
+                else return null;
             } else if (data.input) {
-                return ui.create_Input(data.text, data.setting, this);
+                return Sig_UI.create_SpeedDropDown(data.setting, data.text).onValueChanged(update.bind(this));
             }
         }
     }
@@ -281,42 +297,17 @@ class Signal {
                     }
                 });
             } else if (data.input) {
-                //return ui.create_Input(data.text, data.setting, this);
+                let button = $("#btn_" + data.text.replace(" ", "_"), popup);
+                if (button.length == 1) {
+                    const v = this.get(data.setting);
+                    button.text(data.text + (v > 0 ? " Kz " + v : " aus"));
+                }
             }
         }
     }
 
     syncHTML(popup) {
         this.checkBootstrapMenu(this._template.signalMenu, popup);
-        /* let buttons = $("button", popup);
-        buttons.each((i, e) => {
-            const stellung = e.attributes["data_signal"].value;
-            $(e).toggleClass("active", this.check(stellung));
-
-            if (this._template.StellungIsAllowed(stellung[0], this)) $(e).removeAttr("disabled");
-            else $(e).attr("disabled", "disabled");
-        }); */
-
-        /* let switchable_visuell_elements = this._template.elements.filter((e) => e.switchable && this.options.match(e.options));
-        switchable_visuell_elements.forEach(element => {
-            let button = $("#btn_" + element.id, popup);
-            if (button.length) {
-                if (element.isEnabled(this)) {
-                    button.addClass("active");
-                    button.attr("aria-pressed", "true");
-                }
-                else {
-                    button.attr("aria-pressed", "false");
-                    button.removeClass("active");
-                }
-    
-                if (element.isAllowed(this))
-                    button.removeAttr('disabled');
-                else
-                    button.attr('disabled', 'disabled');
-    
-            }
-        }); */
     }
 
     getContextMenu() {
@@ -378,3 +369,34 @@ class Signal {
         }
     }
 }
+
+const Sig_UI = {
+    create_zs3DropDownItems(stellung) {
+        let a = [BS.create_DropDownItem("aus").attr("data_command", stellung + "=-1")];
+        for (let i = 1; i <= 9; i++) {
+            a.push(BS.create_DropDownItem(i + "0").attr("data_command", stellung + "=" + i));
+        }
+        return a;
+    },
+    create_SpeedDropDown(signal, text) {
+        const dd = BS.create_DropDown(this.create_zs3DropDownItems(signal), text);
+        dd.onValueChanged = function (f) {
+            this._onValueChanged = f;
+            return this;
+        }.bind(dd);
+        dd.on("hide.bs.dropdown", (e) => {
+            if (e.clickEvent?.target && e.clickEvent?.target.nodeName == 'A' && dd._onValueChanged) {
+                dd._onValueChanged($(e.clickEvent.target).attr("data_command"));
+            }
+        });
+
+        return dd;
+
+        return BS.create_buttonGroup([
+            dd,
+            /*  ui.create_toggleButtonX(this.lightBulb(), "btn_" + signal + "licht", () => {
+                this._signalStellung[signal].licht = !this._signalStellung[signal].licht;
+            }), */
+        ]);
+    },
+};
