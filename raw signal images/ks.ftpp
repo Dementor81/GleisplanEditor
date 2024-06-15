@@ -5,7 +5,7 @@
   "savePath": "/home/marcus/code/bahnhof/images",
   "images": [],
   "folders": [
-    "/home/marcus/code/bahnhof/raw signal images/ks"
+    "/home/marcus/code/bahnhof/raw signal images/ks1"
   ],
   "packOptions": {
     "textureName": "ks",
@@ -32,6 +32,6 @@
     "alphaThreshold": "0",
     "detectIdentical": true,
     "packer": "MaxRectsBin",
-    "packerMethod": "BestShortSideFit"
+    "packerMethod": "BestAreaFit"
   }
 }

@@ -52,6 +52,11 @@ Array.prototype.first = function () {
     } else return null;
 };
 
+Array.prototype.each = function (f) {
+    this.forEach(f);
+    return this;
+};
+
 function type(value) {
     if (value === null) {
         return "null";
@@ -167,23 +172,19 @@ function uuidv4() {
 
 function splitEquation(equation) {
     let leftOperand, rightOperand, operator;
-    let index = equation.indexOf("&&");
+    let index = equation.indexOf("||");
     if (index !== -1) {
-        leftOperand = equation.substring(0, index).trim();
-        rightOperand = equation.substring(index + 2).trim();
-        operator = "&&";
+        [leftOperand, rightOperand] = equation.split("||").each((e) => e.trim());
+        operator = "||";
     } else {
-        index = equation.indexOf("||");
+        index = equation.indexOf("&&");
         if (index !== -1) {
-            leftOperand = equation.substring(0, index).trim();
-            rightOperand = equation.substring(index + 2).trim();
+            [leftOperand, rightOperand] = equation.split("&&").each((e) => e.trim());
             operator = "&&";
         } else {
             const math_operators = /[=<>!]+/; // Regular expression to match any of the operators
 
-            const parts = equation.split(math_operators, 2);
-            leftOperand = parts[0].trim(); // "a"
-            rightOperand = parts[1].trim(); // "6"
+            [leftOperand, rightOperand] = equation.split(math_operators).each((e) => e.trim());
             operator = equation.match(math_operators)[0];
         }
     }
@@ -698,10 +699,9 @@ const BS = {
 };
 
 createjs.Graphics.prototype.drawArrow = function (length, size) {
-    this
-        .mt(0, 0)
+    this.mt(0, 0)
         .lt(length, 0)
         .mt(length - size, -size / 2)
         .lt(length, 0)
-        .lt(length - size, size / 2);   
+        .lt(length - size, size / 2);
 };

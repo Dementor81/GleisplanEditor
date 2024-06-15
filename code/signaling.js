@@ -490,7 +490,7 @@ function initSignals() {
         [
             "mast,vr_schirm,vr_lichtp",
             new VisualElement("ne2", { conditions: "!wdh" }),
-            new VisualElement("vr_zusatz_schirm,vr_zusatz_lichtp", { conditions: ["verk","wdh"] }),
+            new VisualElement("vr_zusatz_schirm,vr_zusatz_lichtp", { conditions: ["verk", "wdh"] }),
             new VisualElement("vr_zusatz_licht", { conditions: "verk", stellung: "verk=1" }),
             new VisualElement("vr_zusatz_licht", { conditions: "wdh" }),
             new VisualElement(null, {
@@ -513,7 +513,7 @@ function initSignals() {
     t.distance_from_track = 4;
     t.checkSignalDependency = checkSignalDependencyFunction4HV;
     t.initialFeatures = ["vr"];
-    t.contextMenu = [].concat(settingsMenu.verkürzt,settingsMenu.wiederholer);
+    t.contextMenu = [].concat(settingsMenu.verkürzt, settingsMenu.wiederholer);
     t.signalMenu = [
         [
             {
@@ -530,21 +530,23 @@ function initSignals() {
     ];
     signalTemplates.hv_vr = t;
 
-    
     //KS Hauptsignal
     t = new SignalTemplate(
         "ks",
         "Ks Hauptsignal",
         "ks",
         [
+            new VisualElement(null, {
+                childs: ["zs3", new TextElement("zs3", { pos: [85, 80], format: "bold 80px Arial", color: "#eee", btn_text: "Zs 3 Geschwindigkeit", stellung: "zs3" })],
+                off: "zs3<=0",
+            }),
             "mast",
             "schirm_hp",
             "wrw",
-            "hp0_optik",
             "schild",
             new VisualElement(null, {
                 conditions: "vr",
-                childs: ["ks1_optik_hpvr", "ks2_optik", new VisualElement("ks2", { stellung: "hp=2" })],
+                childs: ["ks1_2_optik_hpvr", new VisualElement("ks2", { stellung: "hp=2" })],
             }),
             new VisualElement("ks1_optik_hp", { conditions: "!vr" }),
 
@@ -574,18 +576,13 @@ function initSignals() {
             }),
 
             new VisualElement(null, {
-                conditions: "verk",
-                childs: ["kennlicht_optik", new VisualElement("kennlicht", { conditions: "verk", stellung: "verk=1", off: "hp=0" })],
+                conditions: ["verk&&vr"],
+                childs: ["kennlicht_optik", new VisualElement("kennlicht", { stellung: "verk=1", off: "hp=0||hp=1&&zs3v<=0" })],
             }),
 
             new VisualElement(null, {
                 conditions: verw_bahnhof,
                 childs: ["kennlicht_optik", new VisualElement("kennlicht", { stellung: "ersatz=kennlicht", off: "hp>=0" })],
-            }),
-
-            new VisualElement(null, {
-                childs: ["zs3", new TextElement("zs3", { pos: [85, 80], format: "bold 80px Arial", color: "#eee", btn_text: "Zs 3 Geschwindigkeit", stellung: "zs3" })],
-                off: "zs3<=0",
             }),
 
             new VisualElement(null, {
@@ -623,6 +620,10 @@ function initSignals() {
                     { btn: 1, text: "Sh 1", setting: "ersatz=sh1" },
                     { btn: 1, text: "Kennlicht", setting: "ersatz=kennlicht" },
                 ],
+            },
+            {
+                btnGroup: 1,
+                items: [{ btn: 1, text: "Verk", setting: "verk=1" }],
             },
         ],
     ];
@@ -675,51 +676,26 @@ function initSignals() {
         "ks",
         [
             "mast",
-            "schirm_hp",            
-            new VisualElement(null, {
-                conditions: "vr",
-                childs: ["ks1_optik_hpvr", "ks2_optik", new VisualElement("ks2", { stellung: "hp=2" })],
-            }),
-            new VisualElement("ks1_optik_hp", { conditions: "!vr" }),
+            "schirm_vr",
+            new VisualElement("ks2_vr", { stellung: "hp=2" }),
 
             new VisualElement(null, {
                 stellung: "hp=1",
-                childs: [
-                    new VisualElement("ks1_hpvr", { conditions: "vr", blinkt: true, off: "zs3v<=0" }),
-                    new VisualElement("ks1_hpvr", { conditions: "vr", off: "zs3v>0" }),
-                    new VisualElement("ks1_hp", { conditions: "!vr", blinkt: true, off: "zs3v<=0" }),
-                    new VisualElement("ks1_hp", { conditions: "!vr", off: "zs3v>0" }),
-                ],
+                childs: [new VisualElement("ks1_vr", { blinkt: true, off: "zs3v<=0" }), new VisualElement("ks1_vr", { off: "zs3v>0" })],
             }),
 
-            new VisualElement("möhre", { conditions: "vr" }),
-            new VisualElement("hp0", { stellung: "hp=0" }),
             new VisualElement(null, {
-                conditions: ["verwendung.asig", "verwendung.bksig", "verwendung.sbk"],
-                childs: ["zs1_optik", new VisualElement("zs1", { stellung: "ersatz=zs1", off: "hp>0", blinkt: true })],
+                conditions: "wdh",
+                childs: ["sh1_optik", new VisualElement("sh1", { off: "hp=0||hp=1&&zs3v<=0" })],
             }),
-            new VisualElement(null, {
-                conditions: ["verwendung.esig", "verwendung.zsig"],
-                childs: ["zs7_optik", new VisualElement("zs7", { stellung: "ersatz=zs7", off: "hp>0" })],
-            }),
-            new VisualElement(null, {
-                conditions: verw_bahnhof,
-                childs: ["sh1_optik", "zs1_optik", new VisualElement("zs1,sh1", { stellung: "ersatz=sh1", off: "hp>0" })],
+
+            new VisualElement("ne2", {
+                conditions: "!wdh",
             }),
 
             new VisualElement(null, {
                 conditions: "verk",
-                childs: ["kennlicht_optik", new VisualElement("kennlicht", { conditions: "verk", stellung: "verk=1", off: "hp=0" })],
-            }),
-
-            new VisualElement(null, {
-                conditions: verw_bahnhof,
-                childs: ["kennlicht_optik", new VisualElement("kennlicht", { stellung: "ersatz=kennlicht", off: "hp>=0" })],
-            }),
-
-            new VisualElement(null, {
-                childs: ["zs3", new TextElement("zs3", { pos: [85, 80], format: "bold 80px Arial", color: "#eee", btn_text: "Zs 3 Geschwindigkeit", stellung: "zs3" })],
-                off: "zs3<=0",
+                childs: ["verk_optik", new VisualElement("verk", { conditions: "verk", off: "hp=0||hp=1&&zs3v<=0" })],
             }),
 
             new VisualElement(null, {
@@ -727,23 +703,21 @@ function initSignals() {
                 off: "zs3v<=0",
             }),
         ],
-        "hp=0"
+        "hp=2"
     );
     t.scale = 0.15;
     t.distance_from_track = 15;
-    t.initialFeatures = ["hp", "verwendung.asig"];
-    t.contextMenu = [].concat(settingsMenu.Verwendung, settingsMenu.Vorsignal, settingsMenu.verkürzt);
+    t.initialFeatures = ["vr"];
+    t.contextMenu = [].concat(settingsMenu.verkürzt, settingsMenu.wiederholer);
     t.signalMenu = [
         [
             {
                 btnGroup: 1,
                 items: [
-                    { btn: 1, text: "Hp 0", setting: "hp=0" },
                     { btn: 1, text: "Ks 1", setting: "hp=1" },
                     { btn: 1, text: "Ks 2", setting: "hp=2" },
                 ],
             },
-            { input: 1, text: "Zs 3", setting: "zs3" },
         ],
 
         [{ input: 1, text: "Zs 3v", setting: "zs3v" }],

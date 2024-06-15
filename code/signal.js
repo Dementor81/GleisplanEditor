@@ -64,8 +64,11 @@ class Signal {
                 return antiMatch ? !retValue : retValue;
             }.bind(this);
             if (Array.isArray(condition)) {
-                return condition.find(match_single) != null;
-            } else return match_single(condition);
+                return condition.some(this.match.bind(this));
+            } else if(condition.includes('&&')){
+                return condition.split('&&').every(match_single)
+            }
+            else return match_single(condition);
         },
         stringify: function () {
             return JSON.stringify(Array.from(this.map.entries()));
