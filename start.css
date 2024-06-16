@@ -1,7 +1,7 @@
-/* @font-face {
-    font-family: "DIN condenced";
-    src: url("../signale/font/D-DINCondensed.otf");
-} */
+@font-face {
+    font-family: "DOT";
+    src: url("intodotmatrix.ttf");
+}
 
 html, body {
     height: 100%;

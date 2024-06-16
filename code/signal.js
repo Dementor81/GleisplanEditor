@@ -65,10 +65,9 @@ class Signal {
             }.bind(this);
             if (Array.isArray(condition)) {
                 return condition.some(this.match.bind(this));
-            } else if(condition.includes('&&')){
-                return condition.split('&&').every(match_single)
-            }
-            else return match_single(condition);
+            } else if (condition.includes("&&")) {
+                return condition.split("&&").every(match_single);
+            } else return match_single(condition);
         },
         stringify: function () {
             return JSON.stringify(Array.from(this.map.entries()));
@@ -158,26 +157,49 @@ class Signal {
         else return -1;
     }
 
+    static _splitEquation(equation) {
+        const ret = {};
+        //the order is important, otherwise it would find '=' before '!='
+        //and OR ist prioritised before AND
+        const operators = ["||", "&&", "!=", "<=", ">=", "=", ">", "<"];
+        let parts;
+        for (let op of operators) {
+            parts = equation.split(op);
+            if (parts.length > 1) {
+                ret.operands = parts;
+                ret.operator = op;
+                break;
+            }
+        }
+
+        if (!ret.operator) throw new Error("Operator not found in equation");
+
+        return ret;
+    }
+
     //checks if a specific Stellung is set
     //e.g. get("hp=0") returns true for Hp 0
     check(stellung) {
         if (stellung == null) return true;
 
-        const equation = splitEquation(stellung);
+        const equation = Signal._splitEquation(stellung);
 
-        if (equation.operator == "&&") return this.check(equation.left) && this.check(equation.right);
-        else if (equation.operator == "||") return this.check(equation.left) || this.check(equation.right);
+        switch (equation.operator) {
+            case "&&":
+                return equation.operands.every(this.check, this);
+            case "||":
+                return equation.operands.some(this.check, this);
+        }
+
+        let data = this.get(equation.operands[0].trim());
+        if (equation.operator == "=") return data == equation.operands[1].trim();
         else {
-            let data = this.get(equation.left);
-            if (equation.operator == "=") return data == equation.right;
-            else {
-                equation.right = Number.parseInt(equation.right);
-                if (equation.operator == "<") return data < equation.right;
-                else if (equation.operator == "<=") return data <= equation.right;
-                else if (equation.operator == ">=") return data >= equation.right;
-                else if (equation.operator == ">") return data > equation.right;
-                else if (equation.operator == "!=") return data != equation.right;
-            }
+            const right = Number.parseInt(equation.operands[1].trim());
+            if (equation.operator == "<") return data < right;
+            else if (equation.operator == "<=") return data <= right;
+            else if (equation.operator == ">=") return data >= right;
+            else if (equation.operator == ">") return data > right;
+            else if (equation.operator == "!=") return data != right;
         }
     }
 
@@ -195,13 +217,15 @@ class Signal {
             this.addImageElement(ve);
         } else if (ve instanceof TextElement) {
             if (!ve.pos) throw new Error("TextElement doesnt have a pos");
-            var js_text = new createjs.Text(ve.getText(this), ve.format, ve.color);
-            js_text.x = ve.pos[0];
-            js_text.y = ve.pos[1];
-            js_text.textAlign = "center";
-            js_text.textBaseline = "top";
-            js_text.lineHeight = 20;
-            this._rendering.container.addChild(js_text);
+            if (this.features.match(ve.conditions) && ve.isAllowed(this)) {
+                var js_text = new createjs.Text(ve.getText(this), ve.format, ve.color);
+                js_text.x = ve.pos[0];
+                js_text.y = ve.pos[1];
+                js_text.textAlign = "center";
+                js_text.textBaseline = "top";
+                js_text.lineHeight = 20;
+                this._rendering.container.addChild(js_text);
+            }
         } else if (ve instanceof VisualElement) {
             if (this.features.match(ve.conditions))
                 if (ve.isAllowed(this) && ve.isEnabled(this)) {
@@ -246,7 +270,7 @@ class Signal {
         const ul = $("<ul>", { class: "list-group list-group-flush" });
 
         const update = function (command, active) {
-            this.set_stellung(command,active? -1 : undefined);
+            this.set_stellung(command, active ? -1 : undefined);
             renderer.reDrawEverything();
             this.checkBootstrapMenu(this._template.signalMenu, ul);
             save();
@@ -388,7 +412,7 @@ const Sig_UI = {
             return this;
         }.bind(dd);
         dd.on("hide.bs.dropdown", (e) => {
-            if (e.clickEvent?.target && e.clickEvent?.target.nodeName == 'A' && dd._onValueChanged) {
+            if (e.clickEvent?.target && e.clickEvent?.target.nodeName == "A" && dd._onValueChanged) {
                 dd._onValueChanged($(e.clickEvent.target).attr("data_command"));
             }
         });
