@@ -1,6 +1,11 @@
 @font-face {
     font-family: "DOT";
-    src: url("intodotmatrix.ttf");
+    src: url("font/intodotmatrix.ttf");
+}
+
+@font-face {
+    font-family: "condenced";
+    src: url("font/D-DINCondensed.otf");
 }
 
 html, body {

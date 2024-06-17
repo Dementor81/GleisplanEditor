@@ -217,7 +217,7 @@ class Signal {
             this.addImageElement(ve);
         } else if (ve instanceof TextElement) {
             if (!ve.pos) throw new Error("TextElement doesnt have a pos");
-            if (this.features.match(ve.conditions) && ve.isAllowed(this)) {
+            if (this.features.match(ve.conditions) && ve.isAllowed(this) && ve.isEnabled(this)) {
                 var js_text = new createjs.Text(ve.getText(this), ve.format, ve.color);
                 js_text.x = ve.pos[0];
                 js_text.y = ve.pos[1];
@@ -229,14 +229,14 @@ class Signal {
         } else if (ve instanceof VisualElement) {
             if (this.features.match(ve.conditions))
                 if (ve.isAllowed(this) && ve.isEnabled(this)) {
+                    if (ve.image) {
+                        this.addImageElement(ve, ve.blinkt);
+                    }
                     if (ve.childs) {
                         for (let index = 0; index < ve.childs.length; index++) {
                             const c = ve.childs[index];
                             this.drawVisualElement(c);
                         }
-                    }
-                    if (ve.image) {
-                        this.addImageElement(ve, ve.blinkt);
                     }
                 }
         } else console.log("unknown type of VisualElement: " + ve);

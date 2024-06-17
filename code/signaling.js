@@ -80,7 +80,7 @@ class VisualElement {
 
     isAllowed(signal) {
         return this.off == null || !signal.check(this.off);
-    }   
+    }
 }
 
 class TextElement extends VisualElement {
@@ -100,8 +100,13 @@ class TextElement extends VisualElement {
         return this.#_color;
     }
 
-    getText = (s) => s._signalStellung[this.stellung];
+    getText = (s) => s.get(this.stellung);
     //setText = (s, text) => s._signalStellung[this.id] = text;
+
+    isEnabled(signal) {
+        const val = signal.get(this.stellung);
+        return isNaN(val) || val > 0;
+    }
 }
 
 class SignalTemplate {
@@ -429,11 +434,23 @@ function initSignals() {
             new VisualElement(null, {
                 childs: ["zs3", new TextElement("zs3", { pos: [115, 80], format: "bold 80px Arial", color: "#eee", stellung: "zs3" })],
                 off: "zs3<=0",
+                conditions: "!zusatz_oben",
             }),
 
             new VisualElement(null, {
                 childs: ["zs3v", new TextElement("zs3v", { pos: [115, 890], format: "bold 80px Arial", color: "#ffde36", stellung: "zs3v" })],
                 off: "zs3v<=0",
+                conditions: "!zusatz_unten",
+            }),
+
+            new VisualElement("zs3v_licht", {
+                conditions: "zusatz_unten",
+                childs: [new TextElement("zs3v", { pos: [120, 885], format: "60px DOT", color: "#ffde36", conditions: "zusatz_unten", stellung: "zs3v", off: "hp<=0" })],
+            }),
+
+            new VisualElement("zs3_licht", {
+                conditions: "zusatz_oben",
+                childs: [new TextElement("zs3", { pos: [120, 78], format: "60px DOT", color: "#eee", conditions: "zusatz_oben", stellung: "zs3", off: "hp<=0" })],
             }),
         ],
         ["hp=0", "vr=0"]
@@ -444,7 +461,7 @@ function initSignals() {
     t.addRule("hp>0 && zs3>6", "hp=1");
     t.addRule("hp>0 && zs3<=6 && zs3>0", "hp=2");
     t.initialFeatures = ["hp", "verwendung.asig", "mastschild.wrw"];
-    t.contextMenu = [].concat(settingsMenu.Verwendung, settingsMenu.Mastschild, settingsMenu.Vorsignal, settingsMenu.verkürzt, settingsMenu.Bezeichnung);
+    t.contextMenu = [].concat(settingsMenu.Verwendung, settingsMenu.Mastschild, settingsMenu.Vorsignal, settingsMenu.verkürzt, settingsMenu.Zusatz, settingsMenu.Bezeichnung);
     t.signalMenu = lightMenu;
     signalTemplates.hv_hp = t;
 
@@ -470,6 +487,11 @@ function initSignals() {
             new VisualElement(null, {
                 childs: ["zs3v", new TextElement("zs3v", { pos: [115, 890], format: "bold 80px Arial", color: "#ffde36", stellung: "zs3v" })],
                 off: "zs3v<=0",
+                conditions: "!zusatz_unten",
+            }),
+            new VisualElement("zs3v_licht", {
+                conditions: "zusatz_unten",
+                childs: [new TextElement("zs3v", { pos: [120, 885], format: "60px DOT", color: "#ffde36", conditions: "zusatz_unten", stellung: "zs3v", off: "vr=0" })],
             }),
         ],
         ["vr=0"]
@@ -478,7 +500,7 @@ function initSignals() {
     t.distance_from_track = 4;
     t.checkSignalDependency = checkSignalDependencyFunction4HV;
     t.initialFeatures = ["vr"];
-    t.contextMenu = [].concat(settingsMenu.verkürzt, settingsMenu.wiederholer);
+    t.contextMenu = [].concat(settingsMenu.verkürzt, settingsMenu.wiederholer, settingsMenu.Zusatz);
     t.signalMenu = [
         [
             {
@@ -503,6 +525,7 @@ function initSignals() {
         [
             new VisualElement("zs3_licht", {
                 conditions: "zusatz_oben",
+                childs: [new TextElement("zs3", { pos: [90, 40], format: "85px DOT", color: "#eee", conditions: "zusatz_oben", stellung: "zs3", off: "hp<=0" })],
             }),
 
             new VisualElement(null, {
@@ -513,7 +536,7 @@ function initSignals() {
             "mast",
             "schirm_hp",
             "wrw",
-            "schild",
+
             new VisualElement(null, {
                 conditions: "vr",
                 childs: ["ks1_2_optik_hpvr", new VisualElement("ks2", { stellung: "hp=2" })],
@@ -563,11 +586,12 @@ function initSignals() {
 
             new VisualElement("zs3v_licht", {
                 conditions: "zusatz_unten",
+                childs: [
+                    new TextElement("zs3v", { pos: [90, 520], format: "85px DOT", color: "#ffde36", conditions: "zusatz_unten", stellung: "zs3v", off: "hp<=0" }),
+                    new VisualElement("zs6_licht", { stellung: "zs6=1", off: "hp<=0" }),
+                ],
             }),
-
-            new TextElement("zs3v", { pos: [90, 520], format: "85px DOT", color: "#ffde36", conditions: "zusatz_unten", stellung: "zs3v", off: "hp<=0" }),
-
-            new TextElement("zs3", { pos: [90, 40], format: "85px DOT", color: "#eee", conditions: "zusatz_oben", stellung: "zs3", off: "hp<=0" }),
+            "schild",
         ],
         "hp=0"
     );
@@ -603,6 +627,12 @@ function initSignals() {
             {
                 btnGroup: 1,
                 items: [{ btn: 1, text: "Verk", setting: "verk=1" }],
+            },
+        ],
+        [
+            {
+                btnGroup: 1,
+                items: [{ btn: 1, text: "Zs 6", setting: "zs6=1" }],
             },
         ],
     ];
@@ -678,8 +708,13 @@ function initSignals() {
             }),
 
             new VisualElement(null, {
+                conditions: "!zusatz_unten",
                 childs: ["zs3v", new TextElement("zs3v", { pos: [85, 490], format: "bold 80px Arial", color: "#ffde36", btn_text: "Zs 3v Geschwindigkeit", stellung: "zs3v" })],
                 off: "zs3v<=0",
+            }),
+            new VisualElement("zs3v_licht", {
+                conditions: "zusatz_unten",
+                childs: [new TextElement("zs3v", { pos: [90, 520], format: "85px DOT", color: "#ffde36", stellung: "zs3v", off: "hp=2" })],
             }),
         ],
         "hp=2"
@@ -687,7 +722,7 @@ function initSignals() {
     t.scale = 0.13;
     t.distance_from_track = 15;
     t.initialFeatures = ["vr"];
-    t.contextMenu = [].concat(settingsMenu.verkürzt, settingsMenu.wiederholer);
+    t.contextMenu = [].concat(settingsMenu.verkürzt, settingsMenu.wiederholer, settingsMenu.Zusatz);
     t.signalMenu = [
         [
             {
