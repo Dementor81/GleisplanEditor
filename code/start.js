@@ -1067,7 +1067,7 @@ function hideStartScreen() {
 }
 
 function ShowPreBuildScreen() {
-    $(divRecent).toggle(localStorage.getItem("last1") != null);
+    if (localStorage.getItem("bahnhof_last1") == null) $(btnLoadRecent).attr("disabled", "disabled");
     $(btnStartFromZero).click(hideStartScreen);
     $(btnLoadRecent).click(() => {
         loadRecent();
