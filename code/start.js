@@ -102,7 +102,7 @@ function init() {
         $("#collapseThree .accordion-body").append(newItemButton(signalTemplates.lf6));
         $("#collapseThree .accordion-body").append(newItemButton(signalTemplates.lf7));
         $("#collapseThree .accordion-body").append(newItemButton(signalTemplates.zs3));
-        loadRecent();
+        ShowPreBuildScreen();
     });
 
     createjs.Ticker.addEventListener("tick", stage);
@@ -1060,4 +1060,54 @@ function drawPoint(point, label = "", color = "#000", size = 1) {
         text.textBaseline = "alphabetic";
         debug_container.addChild(text);
     }
+}
+
+function hideStartScreen() {
+    bootstrap.Modal.getInstance(loadModal).hide();
+}
+
+function ShowPreBuildScreen() {
+    $(divRecent).toggle(localStorage.getItem("last1") != null);
+    $(btnStartFromZero).click(hideStartScreen);
+    $(btnLoadRecent).click(() => {
+        loadRecent();
+        hideStartScreen();
+    });
+    $(btnLoad2Gleisig).on("click", () => {
+        loadPrebuildbyName("ktm_2");
+        hideStartScreen();
+    });
+    /*$(btnLoadFromFile).click(() => { loadSignalsFromFile(); hideStartScreen(); });
+    loadPrebuilds(); */
+    let m = bootstrap.Modal.getOrCreateInstance(loadModal);
+    m._element.addEventListener(
+        "hidden.bs.modal",
+        (x) => {
+            bootstrap.Modal.getOrCreateInstance(x.target).dispose();
+            $(btnStartFromZero).off("click");
+            $(btnLoadRecent).off("click");
+            $(btnLoadFromFile).off("click");
+        },
+        { once: true }
+    );
+    m.show();
+}
+
+function loadPrebuildbyName(name) {
+    let xmlhttp = new XMLHttpRequest();
+    xmlhttp.onreadystatechange = function () {
+        if (this.readyState == 4 && this.status == 200) {
+            let i;
+            let xmlDoc = this.responseXML;
+
+            let x = xmlDoc.getElementsByTagName("setup");
+            for (i = 0; i < x.length; i++) {
+                if (x[i].getElementsByTagName("title")[0].textContent == name) {
+                    loadFromJson(x[i].getElementsByTagName("json")[0].childNodes[0].wholeText.trim());
+                }
+            }
+        }
+    };
+    xmlhttp.open("GET", "prebuilds.xml" + "?" + Math.floor(Math.random() * 100), true);
+    xmlhttp.send();
 }

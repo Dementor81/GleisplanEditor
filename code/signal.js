@@ -209,6 +209,10 @@ class Signal {
         this._template.elements.forEach((ve) => this.drawVisualElement(ve));
 
         delete this._rendering;
+
+ /*        let sig_bounds = c.getBounds();
+        if (sig_bounds == null) throw Error(template.title + " has no visual Element visible");
+        c.cache(sig_bounds.x, sig_bounds.y, sig_bounds.width, sig_bounds.height); */
     }
 
     drawVisualElement(ve) {

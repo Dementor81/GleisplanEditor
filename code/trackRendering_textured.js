@@ -90,7 +90,17 @@ class trackRendering_textured {
 
         texture_container.x = track.start.x;
         texture_container.y = track.start.y;
-        texture_container.setBounds(0, 0 - this.schwellenHöhe / 2, track.end.x - track.start.x, track.end.y - track.start.y + this.schwellenHöhe);
+
+        const bounds = {
+            x:0,
+            y:0 - this.schwellenHöhe / 2,
+            width: track.end.x - track.start.x,
+            height:track.end.y - track.start.y + this.schwellenHöhe
+        }
+        //texture_container.setBounds(bounds.x,bounds.y,bounds.width,bounds.height);
+
+        //texture_container.cache(bounds.x,bounds.y,bounds.width,bounds.height);
+
         container.addChild(texture_container);
         return texture_container;
     }
@@ -134,23 +144,6 @@ class trackRendering_textured {
         }
     }
 
-    drawPoint(point, label = "", color = "#000", size = 1) {
-        const s = new createjs.Shape();
-        s.graphics.setStrokeStyle(1).beginStroke(color).beginFill(color).drawCircle(0, 0, size);
-        s.x = point.x; //+ track.start.x;
-        s.y = point.y; //+ track.start.y;
-
-        ui_container.addChild(s);
-
-        if (label) {
-            const text = new createjs.Text(label, "Italic 10px Arial", color);
-            text.x = s.x;
-            text.y = s.y - 5;
-            text.textBaseline = "alphabetic";
-            ui_container.addChild(text);
-        }
-    }
-
     drawStraightDoubleRail(rail_shape, startPoint, endPoint) {
         this.drawStraightRail(rail_shape, startPoint, endPoint, -this.schwellenHöhe / 2 + this.rail_offset);
         this.drawStraightRail(rail_shape, startPoint, endPoint, this.schwellenHöhe / 2 - this.rail_offset);
@@ -184,7 +177,7 @@ class trackRendering_textured {
         if (geometry.distance(startpoint, endpoint) > 1) {
             rail_shape.hitArea = this.createHitArea(startpoint, endpoint, track.deg);
 
-            this.drawSchwellen(track, startpoint, endpoint, container, this.schwellenImg);
+            this.drawSchwellen(track, startpoint, endpoint, container);
             container.addChild(rail_shape);
             this.drawStraightDoubleRail(rail_shape, startpoint, endpoint);
         }

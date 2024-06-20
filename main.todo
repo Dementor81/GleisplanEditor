@@ -9,6 +9,7 @@ Bugs:
     ✔ Signalstellung abschalten, wenn sie nicht mehr erlaubt sind @done(24-06-01 11:04)
     ✔ bisherige Signale auf neuen Stand bringen @done(24-06-07 19:44)
     ✔ Vorsignalisierung KS und KS/HV @done(24-06-13 16:40)
+    ☐ bounds werden bei Strecken mit bögen falsch gesetzt
 
 Detailing:
     ✔ Weichen Schaltung schöner darstellen @done(23-12-13 11:13)
@@ -35,19 +36,19 @@ Features:
     ☐ einzelne Signalfunktionen ativieren und deaktivieren können (zb z1, z7, zp 9)
     ☐ Rules erweitern, dass sie auch Features abfragen und aktivieren können
     ☐ Verwednung schaltet automatisch mehrere Feature um (Mastschild + Zusatzsignale)
-    ☐ Textfelder für Beschriftung von Geleisen hinzufügen
-    ☐ caching zur Performancesteugerung implementieren
-    ☐ Signalbezeichnung
+    ☐ Textfelder für Beschriftung von Gleisen hinzufügen
+    ☐ caching zur Performancesteugerung implementieren    
+    ☐ Bahnsteige einzeichen
 
 Big Features:
-    ☐ Gelsie markieren und malen können
-    ☐ vorgefertigte Gleispläne erstellen und laden
+    ☐ Gleise markieren und bemalen können
+    ✔ vorgefertigte Gleispläne erstellen und laden @done(24-06-20 19:43)
     ☐ Züge von Hand bewegen
     ☐ Signalbezeichnung einführen
     ☐ Rückgängig Funktion
     ☐ Signale als korrekte DIN Signalsymbole zeigen
     ☐ HauptsignaleSignale um zusätzliche Signale (lf,zp usw) erweitern
-    ☐ die Verbindung von signalen durch linien entlang der Gelsie visualisieren
+    ☐ die Verbindung von Signalen durch linien entlang der Gelsie visualisieren
 
 
 
