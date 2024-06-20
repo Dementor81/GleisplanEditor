@@ -92,6 +92,7 @@ function init() {
     stage.addChild((overlay_container = create_container("overlay")));
 
     selectRenderer(false);
+    ShowPreBuildScreen();
 
     pl.start().then(() => {
         $("#collapseOne .accordion-body").append([newItemButton(signalTemplates.hv_hp), newItemButton(signalTemplates.ks)]);
@@ -102,7 +103,6 @@ function init() {
         $("#collapseThree .accordion-body").append(newItemButton(signalTemplates.lf6));
         $("#collapseThree .accordion-body").append(newItemButton(signalTemplates.lf7));
         $("#collapseThree .accordion-body").append(newItemButton(signalTemplates.zs3));
-        ShowPreBuildScreen();
     });
 
     createjs.Ticker.addEventListener("tick", stage);
