@@ -682,3 +682,20 @@ createjs.Graphics.prototype.drawArrow = function (length, size) {
         .lt(length, 0)
         .lt(length - size, size / 2);
 };
+
+
+function testPerformance(f,txt) {
+   
+    const startTime = performance.now();
+    
+    for (let i = 0; i < 1000; i++) {
+        //renderer.reDrawEverything();
+        f();
+    }
+    
+    let endTime = performance.now();
+    let timeDiff = Math.round((endTime - startTime)/10);
+
+    console.log(`Execution time: ${timeDiff} ms for ${txt}`);
+    
+}

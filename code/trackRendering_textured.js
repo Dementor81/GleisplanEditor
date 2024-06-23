@@ -2,17 +2,10 @@
 
 class trackRendering_textured {
     static TRACK_SCALE = 0.2;
-
-    static signale_scale = 0.5; //0.2
+    static signale_scale = 0.5;
     static SCHWELLEN_VARIANTEN = 24;
 
-    /*  static RAIL = [
-        [2.5, "#222"],
-        [2, "#999999"],
-        [1, "#eeeeee"],
-    ]; */
-
-    static RAIL = [
+    static RAILS = [
         [2.8, "#222"],
         [2.4, "#999"],
         [1.2, "#eee"],
@@ -47,6 +40,7 @@ class trackRendering_textured {
     calcRenderValues() {
         this.schwellenImg = pl.getImage("schwellen");
         this.schwellenHöhe = this.schwellenImg.height * trackRendering_textured.TRACK_SCALE;
+        this.schwellenHöhe_2 = this.schwellenHöhe / 2;
         this.schwellenBreite = (this.schwellenImg.width / trackRendering_textured.SCHWELLEN_VARIANTEN) * trackRendering_textured.TRACK_SCALE;
         this.schwellenGap = this.schwellenBreite * 1;
         this.rail_offset = this.schwellenHöhe / 4.7;
@@ -56,8 +50,7 @@ class trackRendering_textured {
 
     renderAllTracks() {
         tracks.forEach((t) => {
-            let shape = this.renderTrack(track_container, t);
-            if (selectedTrack == t) selectTrack(shape);
+            this.renderTrack(track_container, t);
             t.signals.forEach((signal) => {
                 let c = signal_container.addChild(createSignalContainer(signal));
                 alignSignalWithTrack(c);
@@ -67,7 +60,7 @@ class trackRendering_textured {
 
     createHitArea(startpoint, endpoint, deg) {
         const hit = new createjs.Shape();
-        const sw2 = this.schwellenHöhe / 2;
+        const sw2 = this.schwellenHöhe_2;
         const p1 = geometry.perpendicular(startpoint, deg, -sw2);
         const p2 = geometry.perpendicular(startpoint, deg, sw2);
         const p3 = geometry.perpendicular(endpoint, deg, sw2);
@@ -79,39 +72,53 @@ class trackRendering_textured {
     }
 
     renderTrack(container, track) {
-        const texture_container = new createjs.Container();
-        texture_container.name = "track";
-        texture_container.track = track;
-        texture_container.mouseChildren = false;
+        const track_container = new createjs.Container();
+        track_container.name = "track";
+        track_container.track = track;
+        track_container.mouseChildren = false;
 
-        this.drawStraightTrack(texture_container, track);
+        this.drawStraightTrack(track_container, track);
 
-        if (type(track.switchAtTheEnd) == "Track") this.drawCurvedTrack(texture_container, track, track.switchAtTheEnd);
+        if (type(track.switchAtTheEnd) == "Track") this.drawCurvedTrack(track_container, track, track.switchAtTheEnd);
 
-        texture_container.x = track.start.x;
-        texture_container.y = track.start.y;
+        if (track.selected) this.#isSelected(track_container);
+
+        track_container.x = track.start.x;
+        track_container.y = track.start.y;
 
         const bounds = {
-            x:0,
-            y:0 - this.schwellenHöhe / 2,
+            x: 0,
+            y: 0 - this.schwellenHöhe_2,
             width: track.end.x - track.start.x,
-            height:track.end.y - track.start.y + this.schwellenHöhe
-        }
+            height: track.end.y - track.start.y + this.schwellenHöhe,
+        };
         //texture_container.setBounds(bounds.x,bounds.y,bounds.width,bounds.height);
 
         //texture_container.cache(bounds.x,bounds.y,bounds.width,bounds.height);
 
-        container.addChild(texture_container);
-        return texture_container;
+        container.addChild(track_container);
+        return track_container;
+    }
+
+    #isSelected(c) {
+        c.shadow = new createjs.Shadow("#ff0000", 0, 0, 3);
+    }
+
+    updateSelection() {
+        track_container.children.forEach((c) => {
+            if (c.track?.selected) this.#isSelected(c);
+            else c.shadow = null;
+        });
+        stage.update();
     }
 
     drawSchwellen(track, startPoint, endPoint, texture_container) {
-        const cos = Math.cos(track._tmp.rad),
-            sin = Math.sin(track._tmp.rad);
+        const cos = track._tmp.cos,
+            sin = track._tmp.sin;
 
         //kleine verschieben, damit man mit einer lücke anfängt - Zentrierung der schwelle
-        let x = startPoint.x + sin * (this.schwellenHöhe / 2) + cos * (this.schwellenGap / 2);
-        let y = startPoint.y - cos * (this.schwellenHöhe / 2) + sin * (this.schwellenGap / 2);
+        let x = startPoint.x + sin * this.schwellenHöhe_2 + cos * (this.schwellenGap / 2);
+        let y = startPoint.y - cos * this.schwellenHöhe_2 + sin * (this.schwellenGap / 2);
         let l = geometry.distance(startPoint, endPoint);
         let tmp = l / (this.schwellenBreite + this.schwellenGap);
         let anzSchwellen = Math.floor(tmp);
@@ -144,42 +151,51 @@ class trackRendering_textured {
         }
     }
 
-    drawStraightDoubleRail(rail_shape, startPoint, endPoint) {
-        this.drawStraightRail(rail_shape, startPoint, endPoint, -this.schwellenHöhe / 2 + this.rail_offset);
-        this.drawStraightRail(rail_shape, startPoint, endPoint, this.schwellenHöhe / 2 - this.rail_offset);
-    }
+    drawStraightRail(g, track, startPoint, endPoint) {
+        const offset = this.schwellenHöhe_2 - this.rail_offset;
 
-    drawStraightRail(rail_shape, startPoint, endPoint, y) {
-        const rad = deg2rad(findAngle(startPoint, endPoint));
+        const x = track._tmp.sin * offset,
+            y = track._tmp.cos * offset;
 
-        const cos = Math.cos(rad + π / 2),
-            sin = Math.sin(rad + π / 2);
+        let x1 = startPoint.x + x,
+            x2 = endPoint.x + x,
+            y1 = startPoint.y - y,
+            y2 = endPoint.y - y;
 
-        let x1 = startPoint.x + cos * y,
-            x2 = endPoint.x + cos * y,
-            y1 = startPoint.y + sin * y,
-            y2 = endPoint.y + sin * y;
+        const bounds = { x: x1, y: y1 };
 
-        trackRendering_textured.RAIL.forEach((r) => {
-            rail_shape.graphics.setStrokeStyle(r[0]).beginStroke(r[1]);
-            rail_shape.graphics.moveTo(x1, y1).lineTo(x2, y2);
+        trackRendering_textured.RAILS.forEach((r) => {
+            g.setStrokeStyle(r[0]).beginStroke(r[1]);
+            g.moveTo(x1, y1).lineTo(x2, y2);
+        });
+
+        (x1 = startPoint.x - x), (x2 = endPoint.x - x), (y1 = startPoint.y + y), (y2 = endPoint.y + y);
+
+        bounds.width = x2 - bounds.x;
+        bounds.height = y2 - bounds.y;
+
+        console.log(bounds);
+
+        trackRendering_textured.RAILS.forEach((r) => {
+            g.setStrokeStyle(r[0]).beginStroke(r[1]);
+            g.moveTo(x1, y1).lineTo(x2, y2);
         });
     }
 
     drawStraightTrack(container, track) {
-        let endpoint = geometry.sub(track.end, track.start),
-            startpoint = new Point(0, 0);
+        let endPoint = geometry.sub(track.end, track.start),
+            startPoint = new Point(0, 0);
 
         const rail_shape = new createjs.Shape();
 
-        if (track._tmp.switches[0]) startpoint = track.unit.multiply(this.main_x1);
-        if (track._tmp.switches[1]) endpoint = geometry.add(endpoint, track.unit.multiply(-this.main_x1));
-        if (geometry.distance(startpoint, endpoint) > 1) {
-            rail_shape.hitArea = this.createHitArea(startpoint, endpoint, track.deg);
+        if (track._tmp.switches[0]) startPoint = track.unit.multiply(this.main_x1);
+        if (track._tmp.switches[1]) endPoint = geometry.add(endPoint, track.unit.multiply(-this.main_x1));
+        if (geometry.distance(startPoint, endPoint) > 1) {
+            rail_shape.hitArea = this.createHitArea(startPoint, endPoint, track.deg);
 
-            this.drawSchwellen(track, startpoint, endpoint, container);
+            this.drawSchwellen(track, startPoint, endPoint, container);
             container.addChild(rail_shape);
-            this.drawStraightDoubleRail(rail_shape, startpoint, endpoint);
+            this.drawStraightRail(rail_shape.graphics, track, startPoint, endPoint);
         }
     }
 
@@ -210,12 +226,12 @@ class trackRendering_textured {
 
         const shape = new createjs.Shape();
         container.addChild(shape);
-        this.drawCurvedRail(shape, values.centerpoint, values.deg, trackRendering_textured.CURVE_RADIUS - this.schwellenHöhe / 2 + this.rail_offset);
-        this.drawCurvedRail(shape, values.centerpoint, values.deg, trackRendering_textured.CURVE_RADIUS + this.schwellenHöhe / 2 - this.rail_offset);
+        this.drawCurvedRail(shape, values.centerpoint, values.deg, trackRendering_textured.CURVE_RADIUS - this.schwellenHöhe_2 + this.rail_offset);
+        this.drawCurvedRail(shape, values.centerpoint, values.deg, trackRendering_textured.CURVE_RADIUS + this.schwellenHöhe_2 - this.rail_offset);
     }
 
     drawCurvedRail(rail_shape, centerpoint, start_deg, radius) {
-        trackRendering_textured.RAIL.forEach((r) => this.drawArc(rail_shape, centerpoint, radius, start_deg, r[1], r[0]));
+        trackRendering_textured.RAILS.forEach((r) => this.drawArc(rail_shape, centerpoint, radius, start_deg, r[1], r[0]));
     }
 
     drawArc(rail_shape, centerpoint, radius, start_deg, color, thickness) {
@@ -243,8 +259,8 @@ class trackRendering_textured {
 
             container.addChild(
                 new createjs.Bitmap(this.schwellenImg).set({
-                    x: centerpoint.x + Math.cos(rad) * (radius + this.schwellenHöhe / 2),
-                    y: centerpoint.y + Math.sin(rad) * (radius + this.schwellenHöhe / 2),
+                    x: centerpoint.x + Math.cos(rad) * (radius + this.schwellenHöhe_2),
+                    y: centerpoint.y + Math.sin(rad) * (radius + this.schwellenHöhe_2),
                     scale: trackRendering_textured.TRACK_SCALE,
                     sourceRect: new createjs.Rectangle(
                         (random * this.schwellenImg.width) / trackRendering_textured.SCHWELLEN_VARIANTEN,
@@ -311,6 +327,7 @@ class trackRendering_textured {
         if (s) s.parent.removeChild(s);
 
         this.renderSwitchUI(sw);
+        stage.update();
     }
 
     renderSwitchUI(sw) {

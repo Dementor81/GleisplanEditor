@@ -43,7 +43,6 @@ var showGrid = true;
 var mode = MODE_EDIT;
 var pl;
 var mouseAction = null;
-var selectedTrack;
 var loadQueue;
 
 var renderer;
@@ -177,6 +176,16 @@ function init() {
 
     $(btnPlay).click(() => changeMode(MODE_PLAY));
 
+    $(btnPerformance).on("click", () => {
+        testPerformance(() => {
+            renderer.reDrawEverything();
+        }, "redraw everything");
+
+        testPerformance(() => {
+            stage.update();
+        }, "stage update");
+    });
+
     $(btnDrawTracks).click(() => changeMode(MODE_EDIT));
 
     $(btnTexture).click((e) => {
@@ -243,9 +252,8 @@ function init() {
     });
 
     document.addEventListener("keydown", (e) => {
-        if (e.code == "Delete" && selectedTrack != null) {
-            deleteTrack(selectedTrack, null);
-            selectedTrack = null;
+        if (e.code == "Delete") {
+            tracks.filter(t=>t.selected).forEach(t=>deleteTrack(t, null))      
             cleanupTracks();
             connectTracks2();
             save();
@@ -660,14 +668,13 @@ function handleStageMouseUp(e) {
                 }
             } else if (mouseAction.container?.name == "track") {
                 if (mode === MODE_EDIT) {
-                    selectTrack(mouseAction.container);
-                    stage.update();
+                    if (mouseAction.container.track) mouseAction.container.track.selected = !mouseAction.container.track.selected;
+                    renderer.updateSelection();
                 }
             } else if (mouseAction.container?.name == "switch") {
                 switch_A_Switch(mouseAction.container.sw, mouseAction);
             } else {
-                selectTrack(null);
-                stage.update();
+                clearTrackSelection();
             }
         } else if (mouseAction.action === MOUSE_ACTION.DND_SIGNAL) {
             overlay_container.removeChild(mouseAction.container);
@@ -723,53 +730,13 @@ function switch_A_Switch(sw, mouseAction) {
     renderer.reRenderSwitch(sw);
 }
 
-function selectTrack(container) {
-    if (selectedTrack) {
-        //selectedTrack.color.style = track_color;
-        let c = track_container.children.find((c) => c.track == selectedTrack);
-        if (c) c.shadow = null;
-    }
-
-    selectedTrack = container?.track;
-    /* let box = new createjs.Shape();
-    box.graphics.setStrokeStyle(1).beginStroke("#e00").drawRect(track.start.x-5, track.start.y-5,track.end.x-track.start.x +5 ,track.end.y-track.start.y + 5 );
-    
-    ui_container.addChild(box); */
-    if (container) {
-        //selectedTrack.color.style = "red";
-        container.shadow = new createjs.Shadow("#ff0000", 0, 0, 5);
-        console.log(selectedTrack);
-    }
+function clearTrackSelection() {
+    tracks.forEach((t) => (t.selected = false));
+    renderer.updateSelection();
 }
 
-function deleteTrack(track, Track_shape, remove_signals = true) {
-    if (!track) track = Track_shape.track;
-    else Track_shape = track_container.children.find((c) => c.track === track);
-
-    track_container.removeChild(Track_shape);
-
+function deleteTrack(track) {
     tracks.remove(track);
-
-    if (remove_signals)
-        track.signals.forEach((s) => {
-            let i = signal_container.children.findIndex((c) => c.signal === s.signal);
-            if (i != -1) signal_container.removeChildAt(i);
-        });
-
-    track._tmp.switches.forEach((sw) => {
-        if (sw) {
-            if (type(sw) == "Track") {
-                sw._tmp.switches.remove(track);
-            } else {
-                if (track != sw.t1) sw.t1._tmp.switches.remove(sw);
-                if (track != sw.t2) sw.t2._tmp.switches.remove(sw);
-                if (sw.t3 && track != sw.t3) sw.t3._tmp.switches.remove(sw);
-                if (sw.t4 && track != sw.t4) sw.t4._tmp.switches.remove(sw);
-
-                switches.remove(sw);
-            }
-        }
-    });
 }
 
 function checkAndCreateTrack(p1, p2) {

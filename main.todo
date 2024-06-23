@@ -10,6 +10,7 @@ Bugs:
     ✔ bisherige Signale auf neuen Stand bringen @done(24-06-07 19:44)
     ✔ Vorsignalisierung KS und KS/HV @done(24-06-13 16:40)
     ☐ bounds werden bei Strecken mit bögen falsch gesetzt
+    ☐ lf6 lf7 signalisieren sich nicht automatisch vor
 
 Detailing:
     ✔ Weichen Schaltung schöner darstellen @done(23-12-13 11:13)

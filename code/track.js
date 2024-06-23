@@ -60,6 +60,7 @@ class Track {
     start = null;
     end = null;
     signals = [];
+    selected = false;
 
     //Temp values
     _tmp = {

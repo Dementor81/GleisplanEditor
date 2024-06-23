@@ -20,13 +20,28 @@ class trackRendering_basic {
 
     renderAllTracks() {
         tracks.forEach((t) => {
-            let shape = this.renderTrack(track_container, t);
-            if (selectedTrack == t) selectTrack(shape);
+            this.renderTrack(track_container, t);
             t.signals.forEach((signal) => {
                 let c = signal_container.addChild(createSignalContainer(signal));
                 alignSignalWithTrack(c);
             });
         });
+    }
+
+    isSelected(c) {
+        c.color.style = "#ff0000";
+    }
+
+    updateSelection() {
+        track_container.children.forEach((c) => {
+            if (c.track) {
+                if (c.track.selected) this.isSelected(c);
+                else {
+                    c.color.style = trackRendering_basic.TRACK_COLOR;
+                }
+            }
+        });
+        stage.update();
     }
 
     renderTrack(container, track) {
@@ -63,6 +78,8 @@ class trackRendering_basic {
             p2 = geometry.perpendicular(track.end, track._tmp.deg, trackRendering_basic.BUMPER_SIZE);
             shape.graphics.moveTo(p1.x, p1.y).lineTo(p2.x, p2.y);
         }
+
+        if (track.selected) isSelected(shape);
 
         /* const text = new createjs.Text(track.id, "Italic 10px Arial", "black");
         const p = geometry.perpendicular(track.along(track.start, track.length / 2), track.deg, 15);
@@ -115,6 +132,7 @@ class trackRendering_basic {
         if (s) s.parent.removeChild(s);
 
         this.renderSwitchUI(sw);
+        stage.update();
     }
 
     renderSwitchUI(sw) {
