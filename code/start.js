@@ -196,9 +196,10 @@ function init() {
 
     $("#btnClear").click(() => {
         tracks = [];
+        switches = []
 
-        save();
-        clearCanvas();
+        save();        
+        renderer.reDrawEverything();
     });
 
     $("#btnCenter").click(() => {
@@ -1012,13 +1013,13 @@ function GetDataURL_FromTemplate(template) {
     return data_url;
 }
 
-function drawPoint(point, label = "", color = "#000", size = 1) {
+function drawPoint(point,displayObject, label = "", color = "#000", size = 1) {
     const s = new createjs.Shape();
     s.graphics.setStrokeStyle(1).beginStroke(color).beginFill(color).drawCircle(0, 0, size);
     s.x = point.x; //+ track.start.x;
     s.y = point.y; //+ track.start.y;
 
-    debug_container.addChild(s);
+    displayObject.addChild(s);
 
     if (label) {
         const text = new createjs.Text(label, "Italic 10px Arial", color);

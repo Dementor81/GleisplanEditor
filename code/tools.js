@@ -170,8 +170,6 @@ function uuidv4() {
     return ([1e7] + -1e3 + -4e3 + -8e3 + -1e11).replace(/[018]/g, (c) => (c ^ (crypto.getRandomValues(new Uint8Array(1))[0] & (15 >> (c / 4)))).toString(16));
 }
 
-
-
 function isPointInsideBox(point, box, rotationAngle) {
     const { topLeft, topRight, bottomRight, bottomLeft } = box;
 
@@ -490,6 +488,14 @@ const geometry = {
             return false; // Point is outside the line segment
         }
     },
+    pointOnArc: function (radius, rad, centerpoint) {
+        const v = {
+            x: radius * Math.cos(rad) + centerpoint?.x,
+            y: radius * Math.sin(rad) + centerpoint?.y,
+        };       
+
+        return v;
+    },
 
     //calculates a point which is perpendicular to the given vector
     perpendicular: function (p, deg, distance) {
@@ -683,19 +689,16 @@ createjs.Graphics.prototype.drawArrow = function (length, size) {
         .lt(length - size, size / 2);
 };
 
-
-function testPerformance(f,txt) {
-   
+function testPerformance(f, txt) {
     const startTime = performance.now();
-    
+
     for (let i = 0; i < 1000; i++) {
         //renderer.reDrawEverything();
         f();
     }
-    
+
     let endTime = performance.now();
-    let timeDiff = Math.round((endTime - startTime)/10);
+    let timeDiff = Math.round((endTime - startTime) / 10);
 
     console.log(`Execution time: ${timeDiff} ms for ${txt}`);
-    
 }

@@ -79,7 +79,7 @@ class trackRendering_basic {
             shape.graphics.moveTo(p1.x, p1.y).lineTo(p2.x, p2.y);
         }
 
-        if (track.selected) isSelected(shape);
+        if (track.selected) this.isSelected(shape);
 
         /* const text = new createjs.Text(track.id, "Italic 10px Arial", "black");
         const p = geometry.perpendicular(track.along(track.start, track.length / 2), track.deg, 15);
