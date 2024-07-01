@@ -10,6 +10,7 @@ const GRID_SIZE = 100;
 const GRID_SIZE_2 = GRID_SIZE / 2;
 
 const SNAP_2_GRID = 30;
+const MAX_SCALE = 5;
 
 const DIRECTION = {
     LEFT_2_RIGTH: 1,
@@ -52,6 +53,7 @@ var switches = [];
 
 var signalTemplates = {};
 var prevent_input = false;
+var scale_changed = true;
 
 $(() => {
     init();
@@ -122,9 +124,10 @@ function init() {
 
             stage.scale -= step;
 
-            stage.scale = Math.min(Math.max(0.2, stage.scale), 5);
+            stage.scale = Math.min(Math.max(0.2, stage.scale), MAX_SCALE);
 
             if (stage.scale != old) {
+                //if we reached MIN or MAX, the scale value doesnt change anymore
                 // Find where the original point is now
                 let globalPoint = stage.localToGlobal(localPoint.x, localPoint.y);
                 // Move the map by the difference
@@ -132,8 +135,8 @@ function init() {
                 stage.y -= globalPoint.y - point.y;
 
                 drawGrid();
-
-                if (renderer.LOD && Math.abs(stage.scale - renderer.LOD) < Math.abs(step)) {
+                //if (stage.scale > old)
+                {
                     renderer.reDrawEverything();
                 }
 
@@ -177,13 +180,17 @@ function init() {
     $(btnPlay).click(() => changeMode(MODE_PLAY));
 
     $(btnPerformance).on("click", () => {
-        testPerformance(() => {
-            renderer.reDrawEverything();
+        /* testPerformance(() => {
+            renderer.reDrawEverything(true);
         }, "redraw everything");
 
         testPerformance(() => {
+            renderer.reDrawEverything();
+        }, "update everything");
+
+        testPerformance(() => {
             stage.update();
-        }, "stage update");
+        }, "stage update"); */
     });
 
     $(btnDrawTracks).click(() => changeMode(MODE_EDIT));
@@ -196,10 +203,11 @@ function init() {
 
     $("#btnClear").click(() => {
         tracks = [];
-        switches = []
+        switches = [];
 
-        save();        
-        renderer.reDrawEverything();
+        save();
+        renderer.reDrawEverything(true); //just to make sure, something accidently not deleted we be drawn to the stage.
+        stage.update();
     });
 
     $("#btnCenter").click(() => {
@@ -227,7 +235,7 @@ function init() {
             stage.y = bounds.y * custom_scale * -1;
             stage.scale = custom_scale;
 
-            renderer.reDrawEverything();
+            renderer.reDrawEverything(true);
             grid.visible = false;
             ui_container.visible = false;
             stage.update();
@@ -247,18 +255,20 @@ function init() {
             stage.canvas = myCanvas;
             grid.visible = showGrid;
             ui_container.visible = true;
-            renderer.reDrawEverything();
+            renderer.reDrawEverything(true);
             stage.enableDOMEvents(true);
+            stage.update();
         }
     });
 
     document.addEventListener("keydown", (e) => {
         if (e.code == "Delete") {
-            tracks.filter(t=>t.selected).forEach(t=>deleteTrack(t, null))      
+            tracks.filter((t) => t.selected).forEach((t) => deleteTrack(t, null));
             cleanupTracks();
             connectTracks2();
             save();
-            renderer.reDrawEverything();
+            renderer.reDrawEverything(true);
+            stage.update();
         }
     });
 
@@ -287,7 +297,8 @@ function selectRenderer(textured) {
     } else {
         renderer = new trackRendering_basic();
     }
-    renderer.reDrawEverything();
+    renderer.reDrawEverything(true);
+    stage.update();
 }
 
 function clearCanvas() {
@@ -425,9 +436,10 @@ function createSignalContainer(signal) {
     c.name = "signal";
     c.signal = signal;
     c.mouseChildren = false;
+    c.snapToPixel = true;
     c.scale = signal._template.scale;
 
-    signal.draw(c);
+    signal.draw(c, true);
     let sig_bounds = c.getBounds();
     if (sig_bounds) {
         // schläft fehl, wenn nichts gezeichnet wurde
@@ -505,19 +517,19 @@ function handleMouseMove(event) {
     if (mouseAction.action === MOUSE_ACTION.NONE) {
         //wie weit wurde die maus seit mousedown bewegt
         if (mouseAction.distance(stage.mouseX, stage.mouseY) > 4) {
-            if (event.nativeEvent.which == 1 && mode === MODE_EDIT && mouseAction.container?.name == "signal") {
+            if (event.nativeEvent.buttons == 1 && mode === MODE_EDIT && mouseAction.container?.name == "signal") {
                 mouseAction.action = MOUSE_ACTION.DND_SIGNAL;
 
                 mouseAction.container.signal._positioning.track.removeSignal(mouseAction.container.signal);
 
                 startDragAndDropSignal();
-            } else if (event.nativeEvent.which == 1 && mode === MODE_EDIT && mouseAction.container?.name != "signal") {
+            } else if (event.nativeEvent.buttons == 1 && mode === MODE_EDIT && mouseAction.container?.name != "signal") {
                 //stage.addEventListener("stagemousemove", handleMouseMove);
                 mouseAction.lineShape = new createjs.Shape();
                 overlay_container.addChild(mouseAction.lineShape);
                 setTrackAnchorPoints();
                 mouseAction.action = MOUSE_ACTION.BUILD_TRACK;
-            } else if (event.nativeEvent.which == 3) {
+            } else if (event.nativeEvent.buttons == 2) {
                 //stage.addEventListener("stagemousemove", handleMouseMove);
                 mouseAction.action = MOUSE_ACTION.SCROLL;
             }
@@ -563,6 +575,7 @@ function handleMouseMove(event) {
         stage.x += event.nativeEvent.movementX;
         stage.y += event.nativeEvent.movementY;
         drawGrid(false);
+        renderer.reDrawEverything();
     }
 
     stage.update();
@@ -570,7 +583,11 @@ function handleMouseMove(event) {
 
 function drawBluePrintTrack() {
     if (mouseAction.ankerPoints == null || mouseAction.ankerPoints.length == 0) return;
-    mouseAction.lineShape.graphics.c().setStrokeStyle(trackRendering_basic.STROKE).beginStroke("blue").moveTo(mouseAction.ankerPoints[0].x, mouseAction.ankerPoints[0].y);
+    mouseAction.lineShape.graphics
+        .c()
+        .setStrokeStyle(trackRendering_basic.STROKE)
+        .beginStroke("blue")
+        .moveTo(mouseAction.ankerPoints[0].x, mouseAction.ankerPoints[0].y);
     for (let index = 1; index < mouseAction.ankerPoints.length; index++) {
         const co = mouseAction.ankerPoints[index];
         mouseAction.lineShape.graphics.lt(co.x, co.y);
@@ -664,7 +681,12 @@ function handleStageMouseUp(e) {
                     );
                 } else if (mode === MODE_EDIT) {
                     if (!$("#generated_menu").length) {
-                        let context_menu = ui.showContextMenu({ x: e.rawX, y: e.rawY }, $(myCanvas), mouseAction.container.signal.getContextMenu(), mouseAction.container.signal);
+                        let context_menu = ui.showContextMenu(
+                            { x: e.rawX, y: e.rawY },
+                            $(myCanvas),
+                            mouseAction.container.signal.getContextMenu(),
+                            mouseAction.container.signal
+                        );
                     }
                 }
             } else if (mouseAction.container?.name == "track") {
@@ -702,7 +724,7 @@ function handleStageMouseUp(e) {
                 }
                 cleanupTracks();
                 connectTracks2();
-                renderer.reDrawEverything();
+                renderer.reDrawEverything(true);
 
                 save();
             }
@@ -903,7 +925,9 @@ function connectTracks2() {
             //checks if the point was already handled
             end_points.push(location);
             //searches for every track wich starts or end at that point, filters tracks wich would combine to a 90° angle
-            const connected_tracks = tracks.filter((t) => t != track && (t.start.equals(location) || t.end.equals(location)) && (t._tmp.deg == 0 || t._tmp.deg + track._tmp.deg != 0));
+            const connected_tracks = tracks.filter(
+                (t) => t != track && (t.start.equals(location) || t.end.equals(location)) && (t._tmp.deg == 0 || t._tmp.deg + track._tmp.deg != 0)
+            );
 
             if (connected_tracks.length == 1) {
                 track._tmp.switches[1] = connected_tracks[0];
@@ -972,7 +996,8 @@ function loadFromJson(json) {
     tracks = loaded.tracks;
     connectTracks2();
     drawGrid();
-    renderer.reDrawEverything();
+    renderer.reDrawEverything(true);
+    stage.update();
 }
 
 function newItemButton(template) {
@@ -1004,7 +1029,7 @@ function GetDataURL_FromTemplate(template) {
     $(document.body).append(c);
 
     let s = new createjs.Stage(c[0]);
-    signal.draw(s);
+    signal.draw(s, true);
     let sig_bounds = s.getBounds();
     if (sig_bounds == null) throw Error(template.title + " has no visual Element visible");
     s.cache(sig_bounds.x, sig_bounds.y, sig_bounds.width, sig_bounds.height);
@@ -1013,7 +1038,7 @@ function GetDataURL_FromTemplate(template) {
     return data_url;
 }
 
-function drawPoint(point,displayObject, label = "", color = "#000", size = 1) {
+function drawPoint(point, displayObject, label = "", color = "#000", size = 1) {
     const s = new createjs.Shape();
     s.graphics.setStrokeStyle(1).beginStroke(color).beginFill(color).drawCircle(0, 0, size);
     s.x = point.x; //+ track.start.x;
@@ -1078,4 +1103,72 @@ function loadPrebuildbyName(name) {
     };
     xmlhttp.open("GET", "prebuilds.xml" + "?" + Math.floor(Math.random() * 100), true);
     xmlhttp.send();
+}
+
+function LineVisible(line) {
+    const width = stage.canvas.width / stage.scaleX,
+        height = stage.canvas.height / stage.scaleY,
+        x = -stage.x / stage.scaleX,
+        y = -stage.y / stage.scaleY;
+    const screen_rectangle = { left: x, top: y, right: x + width, bottom: y + height };
+
+    const isInside = (point, rect) => point.x > rect.left && point.x < rect.right && point.y > rect.top && point.y < rect.bottom;
+
+    
+    if (isInside(line.start, screen_rectangle) || isInside(line.end, screen_rectangle)) return true; //
+
+    //left
+    let p1 = { x: x, y: y },
+        p2 = { x: x, y: screen_rectangle.bottom };
+    if (doLineSegmentsIntersect(p1, p2, line.start, line.end)) return true;
+    //bottom
+    p1 = p2;
+    p2 = { x: screen_rectangle.right, y: screen_rectangle.bottom };
+    if (doLineSegmentsIntersect(p1, p2, line.start, line.end)) return true;
+    //right
+    p1 = p2;
+    p2 = { x: screen_rectangle.right, y: y };
+    if (doLineSegmentsIntersect(p1, p2, line.start, line.end)) return true;
+    //top
+    p1 = p2;
+    p2 = { x: x, y: y };
+    if (doLineSegmentsIntersect(p1, p2, line.start, line.end)) return true;
+
+    return false;
+}
+
+function PointVisible(p1) {
+    const width = stage.canvas.width / stage.scaleX,
+        height = stage.canvas.height / stage.scaleY,
+        x = -stage.x / stage.scaleX,
+        y = -stage.y / stage.scaleY;
+
+    return p1.x.between(x, x + width) && p1.y.between(y, y + height);
+}
+
+function doLineSegmentsIntersect(p1, q1, p2, q2) {
+    const orientation = (p, q, r) => {
+        const val = (q.y - p.y) * (r.x - q.x) - (q.x - p.x) * (r.y - q.y);
+        return val === 0 ? 0 : val > 0 ? 1 : 2;
+    };
+
+    const onSegment = (p, q, r) => {
+        return q.x <= Math.max(p.x, r.x) && q.x >= Math.min(p.x, r.x) && q.y <= Math.max(p.y, r.y) && q.y >= Math.min(p.y, r.y);
+    };
+
+    const o1 = orientation(p1, q1, p2);
+    const o2 = orientation(p1, q1, q2);
+    const o3 = orientation(p2, q2, p1);
+    const o4 = orientation(p2, q2, q1);
+
+    if (o1 !== o2 && o3 !== o4) {
+        return true; // Segments intersect
+    }
+
+    if (o1 === 0 && onSegment(p1, p2, q1)) return true;
+    if (o2 === 0 && onSegment(p1, q2, q1)) return true;
+    if (o3 === 0 && onSegment(p2, p1, q2)) return true;
+    if (o4 === 0 && onSegment(p2, q1, q2)) return true;
+
+    return false; // No intersection
 }

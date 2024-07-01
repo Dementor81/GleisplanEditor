@@ -21,6 +21,8 @@ class Signal {
         flipped: false,
     };
     _bezeichnung = "";
+    _changed = false;
+    _dontCache = false;
 
     stringify() {
         return {
@@ -96,31 +98,22 @@ class Signal {
     //value=false schaltet die Signalstellung auf -1, also aus. Wird vom Menü zum ausschalten einer Signalstellung verwendet
     //chain=false verhindert, dass das Signal versucht das davor und dahinterliegende Signal zu informieren
     set_stellung(stellung, subkey, chain = true) {
-        let changed = false;
-        /* const splitted = stellung.split("=");
-        if (splitted.length == 2) {
-            value = splitted[1];
-            stellung = splitted[0];
-        } */
         if (subkey == undefined) [stellung, subkey] = stellung.split("=");
         else [stellung] = stellung.split("=");
 
         if (this.get(stellung) != subkey) {
-            /* if (this.check(stellung)) delete this._signalStellung[stellung];
-            else this._signalStellung[stellung] = value; */
-
             if (!isNaN(subkey)) {
                 this._signalStellung[stellung] = Number(subkey);
             } else {
                 this._signalStellung[stellung] = subkey;
             }
 
-            changed = true;
+            this._changed = true;
         }
 
         //Signal is actual positioned at a track (e.g. When Signal is created, there isnt a track yet)
         //and the signal indication actualy changed
-        if (this._positioning.track && changed && chain) {
+        if (this._positioning.track && this._changed && chain) {
             let stop = false;
             if (this.features.match(["hp", "master"])) {
                 let prevSignal = this;
@@ -138,7 +131,7 @@ class Signal {
             }
         }
 
-        if (changed)
+        if (this._changed)
             this._template.rules.forEach(
                 function (rule) {
                     let trigger = rule[0];
@@ -203,16 +196,17 @@ class Signal {
         }
     }
 
-    draw(c) {
-        this._rendering = { container: c };
+    draw(c, force = false) {
+        if (this._rendering == undefined && (force || this._changed)) {
+            this._rendering = { container: c };
 
-        this._template.elements.forEach((ve) => this.drawVisualElement(ve));
+            c.removeAllChildren();
 
-        delete this._rendering;
-
- /*        let sig_bounds = c.getBounds();
-        if (sig_bounds == null) throw Error(template.title + " has no visual Element visible");
-        c.cache(sig_bounds.x, sig_bounds.y, sig_bounds.width, sig_bounds.height); */
+            this._dontCache = false;
+            this._template.elements.forEach((ve) => this.drawVisualElement(ve));
+            this._changed = false;
+            delete this._rendering;
+        }
     }
 
     drawVisualElement(ve) {
@@ -261,6 +255,7 @@ class Signal {
                     this._rendering.container.addChild(bmp);
 
                     if (blinkt) {
+                        this._dontCache = true;
                         createjs.Tween.get(bmp, { loop: true }).wait(1000).to({ alpha: 0 }, 200).wait(800).to({ alpha: 1 }, 50);
                     }
 
@@ -276,6 +271,7 @@ class Signal {
         const update = function (command, active) {
             this.set_stellung(command, active ? -1 : undefined);
             renderer.reDrawEverything();
+            stage.update();
             this.checkBootstrapMenu(this._template.signalMenu, ul);
             save();
         };
@@ -285,12 +281,6 @@ class Signal {
         this.syncHTML(ul);
 
         return ul;
-    }
-
-    setStellungFromUI(command, activ) {
-        this.set_stellung(command);
-        renderer.reDrawEverything();
-        save();
     }
 
     createBootstrapMenuItems(data, update) {

@@ -210,6 +210,40 @@ function createBoxFromLine(startPoint, endPoint, unit, size) {
     };
 }
 
+function boundingBox(points) {
+    if (!Array.isArray(points) || points.length === 0) {
+        return null; // Wenn das Array leer oder kein Array ist, gib null zurück
+    }
+
+    // Initialisiere die Grenzwerte für x und y
+    let minX = points[0].x;
+    let maxX = points[0].x;
+    let minY = points[0].y;
+    let maxY = points[0].y;
+
+    // Durchlaufe alle Punkte im Array
+    for (const point of points) {
+        minX = Math.min(minX, point.x);
+        maxX = Math.max(maxX, point.x);
+        minY = Math.min(minY, point.y);
+        maxY = Math.max(maxY, point.y);
+    }
+
+    // Berechne Breite und Höhe der Bounding Box
+    const width = maxX - minX;
+    const height = maxY - minY;
+
+    // Erstelle das Bounding-Box-Objekt
+    const boundingBoxObj = {
+        x: minX,
+        y: minY,
+        width,
+        height
+    };
+
+    return boundingBoxObj;
+}
+
 function LineIsInCircle(line, circle) {
     // Find the distance between the line start and end points
     const lineDeltaX = line.end.x - line.start.x;
@@ -692,8 +726,7 @@ createjs.Graphics.prototype.drawArrow = function (length, size) {
 function testPerformance(f, txt) {
     const startTime = performance.now();
 
-    for (let i = 0; i < 1000; i++) {
-        //renderer.reDrawEverything();
+    for (let i = 0; i < 10000; i++) {        
         f();
     }
 

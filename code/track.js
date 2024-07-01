@@ -61,6 +61,7 @@ class Track {
     end = null;
     signals = [];
     selected = false;
+    rendered = false;
 
     //Temp values
     _tmp = {
