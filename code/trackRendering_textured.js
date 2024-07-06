@@ -17,7 +17,7 @@ class trackRendering_textured {
 
         this.SIGNAL_DISTANCE_FROM_TRACK = 35;
 
-        this.LOD = 3;
+        this.LOD = 1.2;
         this._lastRenderScale = 0;
     }
 
