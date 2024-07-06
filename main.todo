@@ -38,7 +38,7 @@ Features:
     ☐ Rules erweitern, dass sie auch Features abfragen und aktivieren können
     ☐ Verwednung schaltet automatisch mehrere Feature um (Mastschild + Zusatzsignale)
     ☐ Textfelder für Beschriftung von Gleisen hinzufügen
-    ☐ caching zur Performancesteugerung implementieren    
+    ✔ caching zur Performancesteugerung implementieren @done(24-07-06 13:22)
     ☐ Bahnsteige einzeichen
     ☐ Prellbock im texturmodus anzeigen
 
