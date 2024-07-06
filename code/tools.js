@@ -167,7 +167,9 @@ function clone(obj) {
 }
 
 function uuidv4() {
-    return ([1e7] + -1e3 + -4e3 + -8e3 + -1e11).replace(/[018]/g, (c) => (c ^ (crypto.getRandomValues(new Uint8Array(1))[0] & (15 >> (c / 4)))).toString(16));
+    return ([1e7] + -1e3 + -4e3 + -8e3 + -1e11).replace(/[018]/g, (c) =>
+        (c ^ (crypto.getRandomValues(new Uint8Array(1))[0] & (15 >> (c / 4)))).toString(16)
+    );
 }
 
 function isPointInsideBox(point, box, rotationAngle) {
@@ -238,7 +240,7 @@ function boundingBox(points) {
         x: minX,
         y: minY,
         width,
-        height
+        height,
     };
 
     return boundingBoxObj;
@@ -481,15 +483,20 @@ const geometry = {
         return (pB.x - pA.x) * (pC.y - pA.y) == (pC.x - pA.x) * (pB.y - pA.y);
     },
     getIntersectionPoint: function (line1, line2) {
-        const denominator = (line2.end.y - line2.start.y) * (line1.end.x - line1.start.x) - (line2.end.x - line2.start.x) * (line1.end.y - line1.start.y);
+        const denominator =
+            (line2.end.y - line2.start.y) * (line1.end.x - line1.start.x) - (line2.end.x - line2.start.x) * (line1.end.y - line1.start.y);
 
         // If the denominator is 0, the lines are parallel and don't intersect
         if (denominator === 0) {
             return null;
         }
 
-        const ua = ((line2.end.x - line2.start.x) * (line1.start.y - line2.start.y) - (line2.end.y - line2.start.y) * (line1.start.x - line2.start.x)) / denominator;
-        const ub = ((line1.end.x - line1.start.x) * (line1.start.y - line2.start.y) - (line1.end.y - line1.start.y) * (line1.start.x - line2.start.x)) / denominator;
+        const ua =
+            ((line2.end.x - line2.start.x) * (line1.start.y - line2.start.y) - (line2.end.y - line2.start.y) * (line1.start.x - line2.start.x)) /
+            denominator;
+        const ub =
+            ((line1.end.x - line1.start.x) * (line1.start.y - line2.start.y) - (line1.end.y - line1.start.y) * (line1.start.x - line2.start.x)) /
+            denominator;
 
         // If ua or ub is less than 0 or greater than 1, the intersection point is outside of the segments
         if (ua < 0 || ua > 1 || ub < 0 || ub > 1) {
@@ -526,7 +533,7 @@ const geometry = {
         const v = {
             x: radius * Math.cos(rad) + centerpoint?.x,
             y: radius * Math.sin(rad) + centerpoint?.y,
-        };       
+        };
 
         return v;
     },
@@ -645,7 +652,10 @@ const createToast = (error) => {
         .append([
             $("<div>")
                 .addClass("toast-header")
-                .append([$("<strong>").addClass("me-auto").text("Fehler"), $("<button>").attr({ type: "button", "data-bs-dismiss": "toast", "aria-label": "Close" }).addClass("btn-close")]),
+                .append([
+                    $("<strong>").addClass("me-auto").text("Fehler"),
+                    $("<button>").attr({ type: "button", "data-bs-dismiss": "toast", "aria-label": "Close" }).addClass("btn-close"),
+                ]),
             $("<div>")
                 .addClass("toast-body")
                 .append([$("<p>", { text: error.message })]),
@@ -723,10 +733,14 @@ createjs.Graphics.prototype.drawArrow = function (length, size) {
         .lt(length - size, size / 2);
 };
 
+createjs.Container.prototype.countContainers = function () {
+    return this.children.filter((c) => c instanceof createjs.Container).reduce((count, c) => count + c.countContainers(),0) + 1;
+};
+
 function testPerformance(f, txt) {
     const startTime = performance.now();
 
-    for (let i = 0; i < 10000; i++) {        
+    for (let i = 0; i < 1000; i++) {
         f();
     }
 

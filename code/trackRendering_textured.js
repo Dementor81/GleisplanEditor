@@ -26,20 +26,22 @@ class trackRendering_textured {
 
         const rIC = requestIdleCallback ?? setTimeout;
 
-        this._idleCallback = rIC((function (r) {
-            const toBeRemoved = track_container.children.filter((c) => c.track && !LineVisible(c.track));
-            toBeRemoved.forEach((c) => {
-                const signalsToBeRemoved = signal_container.children.filter((cs) => cs.signal._positioning.track == c.track);
-                signalsToBeRemoved.forEach((cs) => {
-                    signal_container.removeChild(cs);
-                });
+        this._idleCallback = rIC(
+            function (r) {
+                const toBeRemoved = track_container.children.filter((c) => c.track && !LineVisible(c.track));
+                toBeRemoved.forEach((c) => {
+                    const signalsToBeRemoved = signal_container.children.filter((cs) => cs.signal._positioning.track == c.track);
+                    signalsToBeRemoved.forEach((cs) => {
+                        signal_container.removeChild(cs);
+                    });
 
-                c.track.rendered = false;
-                delete c.track;
-                track_container.removeChild(c);
-            });
-            this._idleCallback = null;
-        }).bind(this));
+                    c.track.rendered = false;
+                    delete c.track;
+                    track_container.removeChild(c);
+                });
+                this._idleCallback = null;
+            }.bind(this)
+        );
     }
 
     reDrawEverything(force = false) {
@@ -91,11 +93,7 @@ class trackRendering_textured {
                     t.signals.forEach((signal) => {
                         const c = signal_container.addChild(createSignalContainer(signal));
                         alignSignalWithTrack(c);
-
-                        /*  if (!signal._dontCache) {
-                            const bounds = c.getBounds();
-                            c.cache(bounds.x, bounds.y, bounds.width, bounds.height, stage.scale);
-                        } */
+                        this.handleCachingSignal(c);
                     });
                 } else if (this._rendering.lodChanged) {
                     const c2 = c.children.find((c) => c.track == t);
@@ -107,15 +105,20 @@ class trackRendering_textured {
             signal_container.children.forEach((c) => {
                 if (c.signal._changed) {
                     c.signal.draw(c);
-                    /*c.uncache();
-                     if (!c.signal._dontCache) {
-                        const bounds = c.getBounds();
-                        c.updateCache();
-                        //c.cache(bounds.x, bounds.y, bounds.width, bounds.height, stage.scale);
-                    } */
+                    this.handleCachingSignal(c);
                 }
             });
         }
+    }
+
+    handleCachingSignal(c) {
+        if (!c.signal._dontCache) {
+            if (c.bitmapCache) c.updateCache();
+            else {
+                const bounds = c.getBounds();
+                c.cache(bounds.x, bounds.y, bounds.width, bounds.height, stage.scale);
+            }
+        } else c.uncache();
     }
 
     createHitArea(startpoint, endpoint, deg) {
@@ -151,7 +154,7 @@ class trackRendering_textured {
         const bounds = boundingBox(bounds_points);
         track_container.setBounds(bounds.x, bounds.y, bounds.width, bounds.height);
 
-        //track_container.cache(bounds.x, bounds.y, bounds.width, bounds.height, MAX_SCALE + 2);
+        track_container.cache(bounds.x, bounds.y, bounds.width, bounds.height, MAX_SCALE + 2);
 
         container.addChild(track_container);
         track.rendered = true;
@@ -162,6 +165,8 @@ class trackRendering_textured {
         this.drawStraightTrack(container, track);
 
         if (type(track.switchAtTheEnd) == "Track") this.drawCurvedTrack(container, track, track.switchAtTheEnd);
+
+        container.updateCache();
     }
 
     #isSelected(c) {

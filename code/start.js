@@ -180,36 +180,19 @@ function init() {
     $(btnPlay).click(() => changeMode(MODE_PLAY));
 
     $(btnPerformance).on("click", () => {
-        /* testPerformance(() => {
+        stage.scale = 0.5;
+        stage.x = 912;
+        stage.y = 369;
+        drawGrid();
+        testPerformance(() => {
             renderer.reDrawEverything(true);
         }, "redraw everything");
 
         testPerformance(() => {
-            renderer.reDrawEverything();
-        }, "update everything");
-
-        testPerformance(() => {
             stage.update();
-        }, "stage update"); */
+        }, "stage update");
 
-        function countContainers(stage) {
-            let containerCount = 0;
-        
-            function traverseDisplayList(displayObject) {
-                if (displayObject instanceof createjs.Container) {
-                    containerCount++;
-                    for (let i = 0; i < displayObject.numChildren; i++) {
-                        traverseDisplayList(displayObject.getChildAt(i));
-                    }
-                }
-            }
-        
-            traverseDisplayList(stage);
-            return containerCount;
-        }
-        
-        // Usage example:        
-        const totalContainers = countContainers(main_container);
+        const totalContainers = main_container.countContainers();
         console.log(`Total containers (including sub-containers): ${totalContainers}`);
     });
 
@@ -850,7 +833,7 @@ function checkAndCreateTrack(p1, p2) {
     } else createTrack(p1, p2);
 }
 
-function createTrack(start, end) {    
+function createTrack(start, end) {
     tracks.push(new Track(start, end));
 }
 
@@ -1120,7 +1103,6 @@ function LineVisible(line) {
 
     const isInside = (point, rect) => point.x > rect.left && point.x < rect.right && point.y > rect.top && point.y < rect.bottom;
 
-    
     if (isInside(line.start, screen_rectangle) || isInside(line.end, screen_rectangle)) return true; //
 
     //left

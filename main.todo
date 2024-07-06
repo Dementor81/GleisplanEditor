@@ -9,7 +9,7 @@ Bugs:
     ✔ Signalstellung abschalten, wenn sie nicht mehr erlaubt sind @done(24-06-01 11:04)
     ✔ bisherige Signale auf neuen Stand bringen @done(24-06-07 19:44)
     ✔ Vorsignalisierung KS und KS/HV @done(24-06-13 16:40)
-    ☐ bounds werden bei Strecken mit bögen falsch gesetzt
+    ✔ bounds werden bei Strecken mit bögen falsch gesetzt @done(24-07-06 12:50)
     ☐ lf6 lf7 signalisieren sich nicht automatisch vor
 
 Detailing:
@@ -40,6 +40,7 @@ Features:
     ☐ Textfelder für Beschriftung von Gleisen hinzufügen
     ☐ caching zur Performancesteugerung implementieren    
     ☐ Bahnsteige einzeichen
+    ☐ Prellbock im texturmodus anzeigen
 
 Big Features:
     ☐ Gleise markieren und bemalen können
