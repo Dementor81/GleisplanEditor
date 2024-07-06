@@ -191,6 +191,26 @@ function init() {
         testPerformance(() => {
             stage.update();
         }, "stage update"); */
+
+        function countContainers(stage) {
+            let containerCount = 0;
+        
+            function traverseDisplayList(displayObject) {
+                if (displayObject instanceof createjs.Container) {
+                    containerCount++;
+                    for (let i = 0; i < displayObject.numChildren; i++) {
+                        traverseDisplayList(displayObject.getChildAt(i));
+                    }
+                }
+            }
+        
+            traverseDisplayList(stage);
+            return containerCount;
+        }
+        
+        // Usage example:        
+        const totalContainers = countContainers(main_container);
+        console.log(`Total containers (including sub-containers): ${totalContainers}`);
     });
 
     $(btnDrawTracks).click(() => changeMode(MODE_EDIT));
@@ -216,6 +236,7 @@ function init() {
         stage.y = 0;
         save();
         drawGrid();
+        renderer.reDrawEverything();
         stage.update();
     });
 
@@ -829,23 +850,8 @@ function checkAndCreateTrack(p1, p2) {
     } else createTrack(p1, p2);
 }
 
-function createTrack(start, end) {
-    /* const slope = geometry.slope(start, end);
-    
-    let filteredTracks = tracks.filter((track) => geometry.within(start, end, track.start));
-    if (filteredTracks.length == 1 && filteredTracks[0]._tmp.slope == slope) {
-        filteredTracks[0].setNewStart(start);
-        return;
-    } 
-    
-    filteredTracks = tracks.filter((track) => geometry.within(start, end, track.end));
-    if (filteredTracks.length == 1 && filteredTracks[0]._tmp.slope == slope) {
-        filteredTracks[0].setNewEnd(end);
-        return;
-    }  */
-
-    if (deepEqual(start, end)) debugger;
-    else tracks.push(new Track(start, end));
+function createTrack(start, end) {    
+    tracks.push(new Track(start, end));
 }
 
 function cleanupTracks() {

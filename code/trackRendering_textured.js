@@ -17,19 +17,29 @@ class trackRendering_textured {
 
         this.SIGNAL_DISTANCE_FROM_TRACK = 35;
 
-        this.LOD = 1.2;
+        this.LOD = 3;
         this._lastRenderScale = 0;
     }
 
     cleanUp() {
-        requestIdleCallback(function () {
+        if (this._idleCallback) cancelIdleCallback(this._idleCallback);
+
+        const rIC = requestIdleCallback ?? setTimeout;
+
+        this._idleCallback = rIC((function (r) {
             const toBeRemoved = track_container.children.filter((c) => c.track && !LineVisible(c.track));
-            
             toBeRemoved.forEach((c) => {
+                const signalsToBeRemoved = signal_container.children.filter((cs) => cs.signal._positioning.track == c.track);
+                signalsToBeRemoved.forEach((cs) => {
+                    signal_container.removeChild(cs);
+                });
+
                 c.track.rendered = false;
+                delete c.track;
                 track_container.removeChild(c);
             });
-        });
+            this._idleCallback = null;
+        }).bind(this));
     }
 
     reDrawEverything(force = false) {
@@ -40,7 +50,7 @@ class trackRendering_textured {
             }, 500);
         else {
             if (this._rendering == undefined) {
-                this._rendering = true;
+                this._rendering = {};
                 if (force) {
                     clearCanvas();
                     this.calcRenderValues();
@@ -49,9 +59,7 @@ class trackRendering_textured {
                 } else {
                     //if we passed the LOD in either direction we have to rerender the tracks
                     if (this.LOD.between(this._lastRenderScale, stage.scale)) {
-                        track_container.removeAllChildren();
-                        tracks.forEach((t) => (t.rendered = false));
-                        switches.forEach((sw) => (sw.rendered = false));
+                        this._rendering.lodChanged = true;
                     }
                 }
 
@@ -77,18 +85,21 @@ class trackRendering_textured {
 
     renderAllTracks(c, force) {
         tracks.forEach((t) => {
-            //TODO: check if the track just crosses the screen
             if (LineVisible(t)) {
                 if (force || !t.rendered) {
                     this.renderTrack(c, t);
                     t.signals.forEach((signal) => {
-                        let c = signal_container.addChild(createSignalContainer(signal));
+                        const c = signal_container.addChild(createSignalContainer(signal));
                         alignSignalWithTrack(c);
+
                         /*  if (!signal._dontCache) {
                             const bounds = c.getBounds();
                             c.cache(bounds.x, bounds.y, bounds.width, bounds.height, stage.scale);
                         } */
                     });
+                } else if (this._rendering.lodChanged) {
+                    const c2 = c.children.find((c) => c.track == t);
+                    this.updateTrack(c2, t);
                 }
             }
         });
@@ -144,6 +155,13 @@ class trackRendering_textured {
 
         container.addChild(track_container);
         track.rendered = true;
+    }
+
+    updateTrack(container, track) {
+        container.removeAllChildren();
+        this.drawStraightTrack(container, track);
+
+        if (type(track.switchAtTheEnd) == "Track") this.drawCurvedTrack(container, track, track.switchAtTheEnd);
     }
 
     #isSelected(c) {
