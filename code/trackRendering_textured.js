@@ -76,6 +76,7 @@ class trackRendering_textured {
 
     calcRenderValues() {
         this.schwellenImg = pl.getImage("schwellen");
+        this.bumperImg = pl.getImage("bumper");
         this.schwellenHöhe = this.schwellenImg.height * trackRendering_textured.TRACK_SCALE;
         this.schwellenHöhe_2 = this.schwellenHöhe / 2;
         this.schwellenBreite = (this.schwellenImg.width / trackRendering_textured.SCHWELLEN_VARIANTEN) * trackRendering_textured.TRACK_SCALE;
@@ -146,6 +147,8 @@ class trackRendering_textured {
 
         if (track.selected) this.#isSelected(track_container);
 
+        this.drawBumper(track, track_container);
+
         track_container.x = track.start.x;
         track_container.y = track.start.y;
 
@@ -160,11 +163,42 @@ class trackRendering_textured {
         track.rendered = true;
     }
 
+    drawBumper(track, track_container) {
+        if (track.switchAtTheEnd == null) {
+            track_container.addChild(
+                new createjs.Bitmap(this.bumperImg).set({
+                    y: track._tmp.vector.y,
+                    x: track._tmp.vector.x,
+                    scale: trackRendering_textured.TRACK_SCALE,
+                    scaleX: -trackRendering_textured.TRACK_SCALE,
+                    rotation: track._tmp.deg,
+                    regY: this.bumperImg.height / 2,
+                    regX: this.bumperImg.width,
+                })
+            );
+        }
+
+        if (track.switchAtTheStart == null) {
+            track_container.addChild(
+                new createjs.Bitmap(this.bumperImg).set({
+                    y: 0,
+                    x: 0,
+                    scale: trackRendering_textured.TRACK_SCALE,
+                    scaleX: trackRendering_textured.TRACK_SCALE,
+                    rotation: track._tmp.deg,
+                    regY: this.bumperImg.height / 2,
+                    regX: this.bumperImg.width,
+                })
+            );
+        }
+    }
+
     updateTrack(container, track) {
         container.removeAllChildren();
         this.drawStraightTrack(container, track);
 
         if (type(track.switchAtTheEnd) == "Track") this.drawCurvedTrack(container, track, track.switchAtTheEnd);
+        this.drawBumper(track, container);
 
         container.updateCache();
     }
@@ -265,7 +299,9 @@ class trackRendering_textured {
         rail_shape.snapToPixel = true;
 
         if (track.switchAtTheStart) startPoint = track.unit.multiply(this.main_x1);
+        else startPoint = geometry.add(startPoint, track.unit.multiply(-GRID_SIZE_2));
         if (track.switchAtTheEnd) endPoint = geometry.add(endPoint, track.unit.multiply(-this.main_x1));
+        else endPoint = geometry.add(endPoint, track.unit.multiply(GRID_SIZE_2));
         if (geometry.distance(startPoint, endPoint) > 1) {
             rail_shape.hitArea = this.createHitArea(startPoint, endPoint, track.deg);
 

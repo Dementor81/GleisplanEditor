@@ -67,6 +67,7 @@ function init() {
         pl.addImage("schwellen.png", "schwellen");
         pl.addImage("dkw2.svg", "dkw");
         pl.addImage("weiche2.svg", "weiche");
+        pl.addImage("bumper1.svg", "bumper");
     } catch (error) {
         showToast(error);
     }

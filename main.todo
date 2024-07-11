@@ -40,7 +40,7 @@ Features:
     ☐ Textfelder für Beschriftung von Gleisen hinzufügen
     ✔ caching zur Performancesteugerung implementieren @done(24-07-06 13:22)
     ☐ Bahnsteige einzeichen
-    ☐ Prellbock im texturmodus anzeigen
+    ✔ Prellbock im texturmodus anzeigen @done(24-07-11 20:44)
 
 Big Features:
     ☐ Gleise markieren und bemalen können
