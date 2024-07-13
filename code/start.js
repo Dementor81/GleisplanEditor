@@ -23,6 +23,8 @@ const MOUSE_ACTION = {
     BUILD_TRACK: 2,
     MOVE_ITEM: 3,
     DND_SIGNAL: 4,
+    ADD_TRAIN: 5,
+    MOVE_TRAIN: 6,
 };
 
 const SWITCH_TYPE = {
@@ -35,7 +37,7 @@ const SWITCH_TYPE = {
     CROSSING: 10,
 };
 
-var stage, debug_container, main_container, overlay_container, ui_container, signal_container, track_container, grid;
+var stage, debug_container, main_container, overlay_container, ui_container, signal_container, track_container, train_container, grid;
 
 var TEXTURE_MODE = false;
 var startpoint;
@@ -50,6 +52,7 @@ var renderer;
 
 var tracks = [];
 var switches = [];
+var trains = [];
 
 var signalTemplates = {};
 var prevent_input = false;
@@ -90,11 +93,13 @@ function init() {
     stage.addChild((debug_container = create_container("debug")));
     main_container.addChild((track_container = create_container("tracks")));
     main_container.addChild((signal_container = create_container("signals")));
+    main_container.addChild((train_container = create_container("trains")));
     stage.addChild((ui_container = create_container("ui")));
     stage.addChild((overlay_container = create_container("overlay")));
 
-    selectRenderer(false);
-    ShowPreBuildScreen();
+    selectRenderer(true);
+    loadRecent();
+    //ShowPreBuildScreen();
 
     pl.start().then(() => {
         $("#collapseOne .accordion-body").append([newItemButton(signalTemplates.hv_hp), newItemButton(signalTemplates.ks)]);
@@ -208,6 +213,7 @@ function init() {
     $("#btnClear").click(() => {
         tracks = [];
         switches = [];
+        trains = [];
 
         save();
         renderer.reDrawEverything(true); //just to make sure, something accidently not deleted we be drawn to the stage.
@@ -311,6 +317,7 @@ function clearCanvas() {
     track_container.removeAllChildren();
     signal_container.removeAllChildren();
     overlay_container.removeAllChildren();
+    train_container.removeAllChildren();
     ui_container.removeAllChildren();
     stage.update();
 }
@@ -386,6 +393,9 @@ function handleStageMouseDown(event) {
             return geometry.distance(this.startPoint, { x: x, y: y });
         },
     };
+
+    if ($("#btnAddTrain").hasClass("active")) mouseAction.action = MOUSE_ACTION.ADD_TRAIN;
+
     //console.log(mouseAction);
     stage.addEventListener("stagemousemove", handleMouseMove);
 }
@@ -528,6 +538,8 @@ function handleMouseMove(event) {
                 mouseAction.container.signal._positioning.track.removeSignal(mouseAction.container.signal);
 
                 startDragAndDropSignal();
+            } else if (event.nativeEvent.buttons == 1 && mode === MODE_EDIT && mouseAction.container?.name == "train") {
+                mouseAction.action = MOUSE_ACTION.MOVE_TRAIN;
             } else if (event.nativeEvent.buttons == 1 && mode === MODE_EDIT && mouseAction.container?.name != "signal") {
                 //stage.addEventListener("stagemousemove", handleMouseMove);
                 mouseAction.lineShape = new createjs.Shape();
@@ -544,7 +556,7 @@ function handleMouseMove(event) {
     if (mouseAction.action === MOUSE_ACTION.DND_SIGNAL) {
         //searches for a hit in 2 steps:
         //1st: at the mouse position and if it finds a track there
-        //it 2nd searches for the track the signals base
+        //it 2nd searches for the track at the signal´s base
         let hitInformation = getHitTrackInfo(false);
         if (hitInformation) {
             hitInformation.flipped = event.nativeEvent.altKey;
@@ -580,6 +592,27 @@ function handleMouseMove(event) {
         stage.x += event.nativeEvent.movementX;
         stage.y += event.nativeEvent.movementY;
         drawGrid(false);
+        renderer.reDrawEverything();
+    } else if (mouseAction.action === MOUSE_ACTION.MOVE_TRAIN) {
+        const train = mouseAction.container.train;
+        const currentTrack = train.track;
+        let new_pos = (local_point.x - currentTrack.start.x) / currentTrack._tmp.cos; //event.nativeEvent.movementX / stage.scale;
+        let newTrack;
+        if (new_pos.outoff(0, currentTrack.length)) {
+            const sw = new_pos < 0 ? currentTrack.switchAtTheStart : currentTrack.switchAtTheEnd;
+
+            if (sw) {
+                if (type(sw) == "Track") newTrack = sw;
+                else if (sw.from == currentTrack) newTrack = sw.branch;
+                else if (sw.branch == currentTrack) newTrack = sw.from;
+
+                if (newTrack) {
+                    train.track = newTrack;
+                    new_pos = new_pos < 0 ? newTrack.length - new_pos : new_pos - newTrack.length;
+                }
+            }
+        }
+        train.pos = Math.minmax(0, new_pos, train.track.length);
         renderer.reDrawEverything();
     }
 
@@ -663,10 +696,46 @@ function getGlobalBounds(container) {
 function handleStageMouseUp(e) {
     //console.log("handleStageMouseUp", e);
 
-    let p2 = stage.globalToLocal(stage.mouseX, stage.mouseY);
     if (mouseAction == null) return;
     if (e.nativeEvent.which == 1) {
-        if (mouseAction.action === MOUSE_ACTION.NONE && mouseAction.distance(stage.mouseX, stage.mouseY) < 4) {
+        if (mouseAction.action === MOUSE_ACTION.DND_SIGNAL) {
+            overlay_container.removeChild(mouseAction.container);
+
+            if (mouseAction.hit_track) {
+                signal_container.addChild(mouseAction.container);
+                mouseAction.hit_track.track.AddSignal(mouseAction.container.signal);
+            }
+            save();
+            overlay_container.removeAllChildren();
+            stage.update();
+        } else if (mouseAction.action === MOUSE_ACTION.BUILD_TRACK) {
+            if (mouseAction.ankerPoints.length > 1) {
+                let tmpPoint = mouseAction.ankerPoints[0];
+                for (let i = 1; i < mouseAction.ankerPoints.length; i++) {
+                    const p0 = mouseAction.ankerPoints[i - 1];
+                    const p1 = mouseAction.ankerPoints[i];
+                    const p2 = mouseAction.ankerPoints.length > i + 1 ? mouseAction.ankerPoints[i + 1] : null;
+                    //steigung ändert sich, also track erstellen
+                    if (!p2 || geometry.slope(p0, p1) != geometry.slope(p1, p2)) {
+                        checkAndCreateTrack(tmpPoint, p1);
+                        tmpPoint = p1;
+                    }
+                }
+                cleanupTracks();
+                connectTracks2();
+                renderer.reDrawEverything(true);
+
+                save();
+            }
+            overlay_container.removeAllChildren();
+
+            stage.update();
+        } else if (mouseAction.action === MOUSE_ACTION.ADD_TRAIN) {
+            if (mouseAction.container?.name == "track") {
+                addTrain(mouseAction.container.track, stage.globalToLocal(stage.mouseX, stage.mouseY));
+                $("#btnAddTrain").removeClass("active");
+            }
+        } else if (mouseAction.action === MOUSE_ACTION.NONE && mouseAction.distance(stage.mouseX, stage.mouseY) < 4) {
             if (mouseAction.container?.name == "signal") {
                 if (mode === MODE_PLAY) {
                     let bounds = getGlobalBounds(mouseAction.container);
@@ -704,44 +773,22 @@ function handleStageMouseUp(e) {
             } else {
                 clearTrackSelection();
             }
-        } else if (mouseAction.action === MOUSE_ACTION.DND_SIGNAL) {
-            overlay_container.removeChild(mouseAction.container);
-
-            if (mouseAction.hit_track) {
-                signal_container.addChild(mouseAction.container);
-                mouseAction.hit_track.track.AddSignal(mouseAction.container.signal);
-            }
-            save();
-            overlay_container.removeAllChildren();
-            stage.update();
-        } else if (mouseAction.action === MOUSE_ACTION.BUILD_TRACK) {
-            if (mouseAction.ankerPoints.length > 1) {
-                let tmpPoint = mouseAction.ankerPoints[0];
-                for (let i = 1; i < mouseAction.ankerPoints.length; i++) {
-                    const p0 = mouseAction.ankerPoints[i - 1];
-                    const p1 = mouseAction.ankerPoints[i];
-                    const p2 = mouseAction.ankerPoints.length > i + 1 ? mouseAction.ankerPoints[i + 1] : null;
-                    //steigung ändert sich, also track erstellen
-                    if (!p2 || geometry.slope(p0, p1) != geometry.slope(p1, p2)) {
-                        checkAndCreateTrack(tmpPoint, p1);
-                        tmpPoint = p1;
-                    }
-                }
-                cleanupTracks();
-                connectTracks2();
-                renderer.reDrawEverything(true);
-
-                save();
-            }
-            overlay_container.removeAllChildren();
-
-            stage.update();
         }
     } else if (mouseAction.action === MOUSE_ACTION.SCROLL) {
         save();
     }
 
     stage.removeEventListener("stagemousemove", handleMouseMove);
+}
+
+function addTrain(track, point) {
+    const train = {
+        pos: (point.x - track.start.x) / track._tmp.cos,
+        track: track,
+    };
+
+    trains.push(train);
+    renderer.reDrawEverything();
 }
 
 function switch_A_Switch(sw, mouseAction) {

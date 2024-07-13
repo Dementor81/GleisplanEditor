@@ -48,7 +48,7 @@ class trackRendering_textured {
         if (!pl.loaded)
             //stupid code that should prevent drawing, before the preloader is ready
             setTimeout(() => {
-                reDrawEverything(force);
+                this.reDrawEverything(force);
             }, 500);
         else {
             if (this._rendering == undefined) {
@@ -67,6 +67,7 @@ class trackRendering_textured {
 
                 this.renderAllTracks(track_container, force);
                 this.renderAllSwitches(track_container, force);
+                this.renderAllTrains();
                 this._lastRenderScale = stage.scale;
                 this.cleanUp();
                 delete this._rendering;
@@ -83,7 +84,33 @@ class trackRendering_textured {
         this.schwellenGap = this.schwellenBreite * 1;
         this.rail_offset = this.schwellenHöhe / 4.7;
 
+        this.TRAIN_HEIGHT = this.schwellenHöhe - this.rail_offset;
+        this.TRAIN_WIDTH = GRID_SIZE * 0.7;
+
         this.main_x1 = (Math.sin(π / 8) * trackRendering_textured.CURVE_RADIUS) / Math.cos(π / 8);
+    }
+
+    renderAllTrains() {
+        train_container.removeAllChildren();
+        trains.forEach((train) => {
+            const g = new createjs.Graphics();
+            g.setStrokeStyle(1);
+            g.beginStroke(createjs.Graphics.getRGB(0, 0, 0));
+            g.beginFill(createjs.Graphics.getRGB(255, 0, 0));
+            g.drawRoundRect(0, 0, this.TRAIN_WIDTH, this.TRAIN_HEIGHT, 1.5);
+
+            const s = new createjs.Shape(g);
+            const p = geometry.add(train.track.start, train.track.unit.multiply(train.pos));
+            s.x = p.x;
+            s.y = p.y;
+            s.regX = this.TRAIN_WIDTH / 2;
+            s.regY = this.TRAIN_HEIGHT / 2;
+            s.rotation = train.track.deg;
+            s.name = "train";
+            s.train = train;
+
+            train_container.addChild(s);
+        });
     }
 
     renderAllTracks(c, force) {

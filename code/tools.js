@@ -14,6 +14,10 @@ Number.prototype.outoff = function (a, b) {
     return this < min || this > max;
 };
 
+Math.minmax = function (min, value, max) {
+    return Math.max(min, Math.min(max, value));
+};
+
 Number.prototype.is = function (a) {
     return Array.from(arguments).includes(this);
 };
