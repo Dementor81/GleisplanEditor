@@ -96,9 +96,9 @@ function init() {
    stage.addChild((ui_container = create_container("ui")));
    stage.addChild((overlay_container = create_container("overlay")));
 
-   selectRenderer(true);
-   loadRecent();
-   //ShowPreBuildScreen();
+   selectRenderer(false);
+   //loadRecent();
+   ShowPreBuildScreen();
 
    pl.start().then(() => {
       $("#collapseOne .accordion-body").append([newItemButton(signalTemplates.hv_hp), newItemButton(signalTemplates.ks)]);
