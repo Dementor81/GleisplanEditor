@@ -52,7 +52,6 @@ var renderer;
 
 var tracks = [];
 var switches = [];
-var trains = [];
 
 var signalTemplates = {};
 var prevent_input = false;
@@ -213,7 +212,7 @@ function init() {
    $("#btnClear").click(() => {
       tracks = [];
       switches = [];
-      trains = [];
+      Train.allTrains = [];
 
       save();
       renderer.reDrawEverything(true); //just to make sure, something accidently not deleted we be drawn to the stage.
@@ -594,27 +593,7 @@ function handleMouseMove(event) {
       drawGrid(false);
       renderer.reDrawEverything();
    } else if (mouseAction.action === MOUSE_ACTION.MOVE_TRAIN) {
-      const train = mouseAction.container.train;
-      const currentTrack = train.track;
-      let new_pos = (local_point.x - currentTrack.start.x) / currentTrack._tmp.cos; //event.nativeEvent.movementX / stage.scale;
-      let newTrack;
-      if (new_pos.outoff(0 + renderer.TRAIN_WIDTH / 2, currentTrack.length - renderer.TRAIN_WIDTH / 2)) {
-         const sw = new_pos <= 0 + renderer.TRAIN_WIDTH / 2 ? currentTrack.switchAtTheStart : currentTrack.switchAtTheEnd;
-
-         if (sw) {
-            if (type(sw) == "Track") newTrack = sw;
-            else if (sw.from == currentTrack) newTrack = sw.branch;
-            else if (sw.branch == currentTrack) newTrack = sw.from;
-
-            if (newTrack) {
-               if (new_pos.outoff(0, currentTrack.length)) {
-                  train.track = newTrack;
-                  train.pos = new_pos <= 0 ? newTrack.length + new_pos : new_pos - currentTrack.length;
-               } else train.pos = new_pos;
-            }
-         }
-      }
-      if (newTrack == null) train.pos = Math.minmax(0 + renderer.TRAIN_WIDTH / 2, new_pos, train.track.length - renderer.TRAIN_WIDTH / 2);
+      Train.moveTrain(mouseAction.container.train,event.nativeEvent.movementX);
       renderer.reDrawEverything();
    }
 
@@ -734,7 +713,17 @@ function handleStageMouseUp(e) {
          stage.update();
       } else if (mouseAction.action === MOUSE_ACTION.ADD_TRAIN) {
          if (mouseAction.container?.name == "track") {
-            addTrain(mouseAction.container.track, stage.globalToLocal(stage.mouseX, stage.mouseY));
+            const track = mouseAction.container.track;
+            let train,trainX;
+            for (let index = 0; index <= 3; index++) {
+               train = Train.addTrain(track, (stage.globalToLocal(stage.mouseX, stage.mouseY).x - track.start.x) / track._tmp.cos );
+               trainX?.coupleBack(train);
+               trainX = train
+
+            }
+            Train.moveTrain(train,0)
+            renderer.reDrawEverything();
+            stage.update();
             $("#btnAddTrain").removeClass("active");
          }
       } else if (mouseAction.action === MOUSE_ACTION.NONE && mouseAction.distance(stage.mouseX, stage.mouseY) < 4) {
@@ -781,16 +770,6 @@ function handleStageMouseUp(e) {
    }
 
    stage.removeEventListener("stagemousemove", handleMouseMove);
-}
-
-function addTrain(track, point) {
-   const train = {
-      pos: (point.x - track.start.x) / track._tmp.cos,
-      track: track,
-   };
-
-   trains.push(train);
-   renderer.reDrawEverything();
 }
 
 function switch_A_Switch(sw, mouseAction) {
