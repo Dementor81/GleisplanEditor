@@ -306,14 +306,14 @@ function initSignals() {
         //-1 heißt, die Vorsignalfunktion ist vom User ausgeschaltet
         if (signal.get("vr") != -1) {
             //Das Hauptsignal zeigt nicht Hp 0 oder es ist ein alleinstehndes Vorsignal
-            if (!signal.features.match("hp") || signal.get("hp") != 0) {
+            if (!signal.matchFeature("hp") || signal.get("hp") != 0) {
                 switch (hp._template.id) {
                     case "Hv77":
                     case "hv_hp":
                     case "hv_vr":
                         {
                             signal.set_stellung("vr", hp.get("hp") >= 0 ? hp.get("hp") : 0, false);
-                            if (!signal.features.match("vr_op.wdh")) stop_propagation = true;
+                            if (!signal.matchFeature("vr_op.wdh")) stop_propagation = true;
                         }
                         break;
                     case "Hl":
@@ -321,7 +321,7 @@ function initSignals() {
                     case "ks_vr":
                         {
                             signal.set_stellung("vr", hp.get("hp") <= 0 ? 0 : 1, false);
-                            if (!signal.features.match("vr_op.wdh")) stop_propagation = true;
+                            if (!signal.matchFeature("vr_op.wdh")) stop_propagation = true;
                         }
                         break;
                 }
@@ -645,7 +645,7 @@ function initSignals() {
             //Das Hauptsignal zeigt nicht Hp 0 oder es ist ein alleinstehndes Vorsignal
             let anderes_zs3 = hp.get("zs3");
             let eigenes_zs3 = signal.get("zs3");
-            if (!signal.features.match("hp") || signal.get("hp") != 0) {
+            if (!signal.matchFeature("hp") || signal.get("hp") != 0) {
                 let x = hp.get("hp");
 
                 switch (hp._template.id) {
@@ -656,7 +656,7 @@ function initSignals() {
                             signal.set_stellung("hp", x >= 1 ? 1 : 2, false);
                             if (x == 2 && anderes_zs3 <= 0) anderes_zs3 = 4;
 
-                            if (!signal.features.match("vr_op.wdh")) stop_propagation = true;
+                            if (!signal.matchFeature("vr_op.wdh")) stop_propagation = true;
                         }
                         break;
                     case "Hl":
@@ -665,7 +665,7 @@ function initSignals() {
                         {
                             signal.set_stellung("hp", x <= 0 ? 2 : 1, false);
 
-                            if (!signal.features.match("vr_op.wdh")) stop_propagation = true;
+                            if (!signal.matchFeature("vr_op.wdh")) stop_propagation = true;
                         }
                         break;
                 }
