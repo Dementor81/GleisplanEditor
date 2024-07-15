@@ -274,8 +274,8 @@ function init() {
    document.addEventListener("keydown", (e) => {
       if (e.code == "Delete") {
          tracks.filter((t) => t.selected).forEach((t) => deleteTrack(t, null));
-         cleanupTracks();
-         connectTracks2();
+         Track.cleanupTracks();
+         Track.connectTracks();
          save();
          renderer.reDrawEverything(true);
          stage.update();
@@ -676,8 +676,8 @@ function getGlobalBounds(container) {
 
 function handleStageMouseUp(e) {
    //console.log("handleStageMouseUp", e);
-
    if (mouseAction == null) return;
+   let local_point = stage.globalToLocal(stage.mouseX, stage.mouseY)
    if (e.nativeEvent.which == 1) {
       if (mouseAction.action === MOUSE_ACTION.DND_SIGNAL) {
          overlay_container.removeChild(mouseAction.container);
@@ -702,8 +702,8 @@ function handleStageMouseUp(e) {
                   tmpPoint = p1;
                }
             }
-            cleanupTracks();
-            connectTracks2();
+            Track.cleanupTracks();
+            Track.connectTracks();
             renderer.reDrawEverything(true);
 
             save();
@@ -760,7 +760,9 @@ function handleStageMouseUp(e) {
                renderer.updateSelection();
             }
          } else if (mouseAction.container?.name == "switch") {
-            switch_A_Switch(mouseAction.container.sw, mouseAction);
+            Track.switch_A_Switch(mouseAction.container.sw,local_point.x);
+            renderer.reRenderSwitch(mouseAction.container.sw);
+            stage.update();
          } else {
             clearTrackSelection();
          }
@@ -772,19 +774,7 @@ function handleStageMouseUp(e) {
    stage.removeEventListener("stagemousemove", handleMouseMove);
 }
 
-function switch_A_Switch(sw, mouseAction) {
-   if (!sw.type.is(SWITCH_TYPE.DKW)) {
-      sw.branch = swap(sw.branch, sw.t2, sw.t3);
-   } else {
-      if (mouseAction.offset.x < sw.location.x) {
-         sw.branch = swap(sw.branch, sw.t2, sw.t3);
-      } else {
-         sw.from = swap(sw.from, sw.t1, sw.t4);
-      }
-   }
 
-   renderer.reRenderSwitch(sw);
-}
 
 function clearTrackSelection() {
    tracks.forEach((t) => (t.selected = false));
@@ -866,98 +856,6 @@ function createTrack(start, end) {
    tracks.push(new Track(start, end));
 }
 
-function cleanupTracks() {
-   let i = 0;
-   while (i < tracks.length) {
-      const track = tracks[i];
-
-      //searches for every track wich starts or end at that point, filters tracks wich would combine to a 90° angle
-      const connected_tracks = tracks.filter((t) => t != track && (t.start.equals(track.end) || t.end.equals(track.end)));
-
-      if (connected_tracks.length == 1 && connected_tracks[0].rad == track.rad) {
-         Track.joinTrack(track, connected_tracks[0]);
-         deleteTrack(connected_tracks[0], false);
-      } else i++;
-   }
-}
-
-function createSwitch(location, tracks) {
-   const sw = {
-      location: location,
-      t1: null,
-      t2: null,
-      t3: null,
-      //t4: null //only available if its a dkw
-      type: 0,
-      branch: null, // one of the tracks
-      from: null, //normal switch: always t1, on dkw switchable
-   };
-
-   const groupedByRad = Object.values(groupBy(tracks, "_tmp.rad"));
-   if (groupedByRad.length != 2) return; // throw new Error("Wrong switch connection! found " + groupedByRad.length + " different slopes");
-
-   //sort each group by its x coordinate
-   groupedByRad.forEach((a) => a.sort((t1, t2) => t1.start.x - t2.start.x));
-   //sort the groups by the number of tracks in it. this way, the branch is always in the 2nd group.
-   groupedByRad.sort((a, b) => b.length - a.length);
-
-   //cause we have sorted by the number of tracks, t3 is always the branch
-   sw.t3 = groupedByRad[1][0];
-
-   sw.type = ((findAngle(location, sw.t3.end.equals(location) ? sw.t3.start : sw.t3.end, groupedByRad[0][0].rad) / 45) % 8) + 1;
-
-   if (sw.type == SWITCH_TYPE.FROM_LEFT || sw.type == SWITCH_TYPE.FROM_RIGHT) {
-      sw.t1 = groupedByRad[0][1];
-      sw.t2 = groupedByRad[0][0];
-   } else {
-      sw.t1 = groupedByRad[0][0];
-      sw.t2 = groupedByRad[0][1];
-   }
-   //stellt die Weiche standardmäßig ins Hauptgleis
-   sw.branch = sw.t2;
-   sw.from = sw.t1;
-
-   if (tracks.length == 4) {
-      sw.type = SWITCH_TYPE.DKW;
-      sw.t4 = groupedByRad[1][1];
-   }
-
-   sw.t1.addSwitch(sw);
-   sw.t2.addSwitch(sw);
-   if (sw.t3) sw.t3.addSwitch(sw);
-   if (sw.t4) sw.t4.addSwitch(sw);
-
-   return sw;
-}
-
-function connectTracks2() {
-   tracks.forEach((track) => (track._tmp.switches = [])); //delets all swichtes
-   switches = [];
-   let sw;
-   const end_points = [];
-   //iterate over all tracks
-   for (let i = 0; i < tracks.length; i++) {
-      const track = tracks[i];
-      const location = track.end; //gets its endpoint
-      if (!end_points.some((p) => p.equals(location))) {
-         //checks if the point was already handled
-         end_points.push(location);
-         //searches for every track wich starts or end at that point, filters tracks wich would combine to a 90° angle
-         const connected_tracks = tracks.filter(
-            (t) => t != track && (t.start.equals(location) || t.end.equals(location)) && (t._tmp.deg == 0 || t._tmp.deg + track._tmp.deg != 0)
-         );
-
-         if (connected_tracks.length == 1) {
-            track._tmp.switches[1] = connected_tracks[0];
-            connected_tracks[0]._tmp.switches[0] = track;
-         } else if (connected_tracks.length.between(2, 3)) {
-            connected_tracks.push(track);
-            if ((sw = createSwitch(location, connected_tracks))) switches.push(sw);
-         }
-      }
-   }
-}
-
 function replacer(key, value) {
    if (value != null && typeof value.stringify === "function") {
       return value.stringify();
@@ -1012,7 +910,7 @@ function loadFromJson(json) {
    stage.y = loaded.scrollY;
    stage.scale = loaded.zoom;
    tracks = loaded.tracks;
-   connectTracks2();
+   Track.connectTracks();
    drawGrid();
    renderer.reDrawEverything(true);
    stage.update();

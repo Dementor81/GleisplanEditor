@@ -20,6 +20,8 @@ Detailing:
     ✔ Weichenstellung im Screenshot ausblenden @done(24-06-13 16:40)
     ✔ Skalierung überarbeiten, Gleise dichter zusammen, dafür Weichen überarbeiten @started(24-05-30 08:52) @done(24-06-01 19:53) @lasted(2d11h1m49s)
 
+CleanUp:
+    ☐ swichtes Array entfernen
 
 Features:
     ✔ Signale verketten/automatische vorsignalisierung @started(23-11-21 12:15) @done(24-01-08 11:46) @lasted(6w5d23h31m36s)
@@ -41,6 +43,9 @@ Features:
     ☐ Verwednung schaltet automatisch mehrere Feature um (Mastschild + Zusatzsignale)
     ☐ Textfelder für Beschriftung von Gleisen hinzufügen
     ☐ Bahnsteige einzeichen
+    ☐ mehere gleise, ganze Bahnhüfe verschieben
+    ☐ Signale koopieren, per drag&drop
+    
 
 Big Features:
     ☐ Gleise markieren und bemalen können
@@ -51,6 +56,7 @@ Big Features:
     ☐ Signale als korrekte DIN Signalsymbole zeigen
     ☐ HauptsignaleSignale um zusätzliche Signale (lf,zp usw) erweitern
     ☐ die Verbindung von Signalen durch linien entlang der Gelsie visualisieren
+    ☐ Signale in einem eigenen Fenster vergrößern (wie beim SignalSim)
 
 
 

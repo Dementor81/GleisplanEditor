@@ -459,10 +459,13 @@ class trackRendering_textured {
 
       if (sw.type != SWITCH_TYPE.DKW) {
          img = pl.getImage("weiche");
+
          const switch_values = this.calcSwitchValues(sw);
 
          container.addChild(
             (bitmap = new createjs.Bitmap(img).set({
+               name:"switch",
+               sw:sw,
                y: switch_values.p1.y,
                x: switch_values.p1.x,
                regY: img.height - this.schwellenHöhe / trackRendering_textured.TRACK_SCALE / 2,
@@ -475,6 +478,8 @@ class trackRendering_textured {
          img = pl.getImage("dkw");
          container.addChild(
             (bitmap = new createjs.Bitmap(img).set({
+               name:"switch",
+               sw:sw,
                y: sw.location.y,
                x: sw.location.x,
                regY: img.height / 2,
@@ -494,8 +499,7 @@ class trackRendering_textured {
       const s = ui_container.children.find((c) => c.sw == sw);
       if (s) s.parent.removeChild(s);
 
-      this.renderSwitchUI(sw);
-      stage.update();
+      this.renderSwitchUI(sw);      
    }
 
    renderSwitchUI(sw) {
