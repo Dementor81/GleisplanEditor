@@ -302,7 +302,10 @@ function initSignals() {
     //signal: ist das signal, dessen Stellung wir gerade setzen
     //hp: ist das signal, dessen Stellung wir vorsignalisieren wollen
     const checkSignalDependencyFunction4HV = function (signal, hp) {
+        //make sure we only handle main signals
+        if(!hp.matchFeature("hp")||!signal.matchFeature("vr")) return;
         let stop_propagation = false;
+        
         //-1 heißt, die Vorsignalfunktion ist vom User ausgeschaltet
         if (signal.get("vr") != -1) {
             //Das Hauptsignal zeigt nicht Hp 0 oder es ist ein alleinstehndes Vorsignal
@@ -639,6 +642,8 @@ function initSignals() {
     //signal: ist das signal, dessen Stellung wir gerade setzen
     //hp: ist das signal, dessen Stellung wir vorsignalisieren wollen
     t.checkSignalDependency = function (signal, hp) {
+        //make sure we only handle main signals
+        if(!hp.matchFeature("hp")||!signal.matchFeature("vr")) return;
         let stop_propagation = false;
         //-1 heißt, das Signal ist vom User ausgeschaltet
         if (signal.get("hp") != -1) {
@@ -772,9 +777,19 @@ function initSignals() {
     signalTemplates.lf6.initialFeatures = ["slave"];
     signalTemplates.lf6.signalMenu = [{ input: 1, text: "Geschwindigkeit", setting: "geschw" }];
 
+
+
     signalTemplates.lf7 = new SignalTemplate("lf7", "Lf 7", "basic", ["lf7", new TextElement("lf7", { pos: [20, 10], format: "bold 40px Arial", color: "#333", stellung: "geschw" })], "geschw=6");
     signalTemplates.lf7.initialFeatures = ["master"];
     signalTemplates.lf7.signalMenu = [{ input: 1, text: "Geschwindigkeit", setting: "geschw" }];
+    
+    signalTemplates.lf7.checkSignalDependency = signalTemplates.lf6.checkSignalDependency = function (signal, hp) {
+        if(signal._template.id == "lf6" && hp._template.id == "lf7"){
+            signal.set_stellung("geschw", hp.get("geschw"),false);
+            return true;
+        }
+        return false;
+    };
 
     signalTemplates.zs3 = new SignalTemplate("zs3", "Zs 3 (alleinst.)", "basic", ["Zs3_Form", new TextElement("zs3", { pos: [30, 25], format: "bold 25px Arial", stellung: "geschw" })], "geschw=8");
 

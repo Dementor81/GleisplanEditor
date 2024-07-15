@@ -121,7 +121,7 @@ class Signal {
             do {
                prevSignal = this.search4Signal(prevSignal, DIRECTION.RIGHT_2_LEFT);
                if (prevSignal && prevSignal._template.checkSignalDependency)
-                  stop = prevSignal._template.checkSignalDependency(prevSignal, this, ["vr", "slave"]);
+                  stop = prevSignal._template.checkSignalDependency(prevSignal, this);
             } while (!stop && prevSignal);
          }
          if (this.matchFeature(["vr", "slave"]) && this._template.checkSignalDependency) {
@@ -271,7 +271,7 @@ class Signal {
    getHTML() {
       const ul = $("<ul>", { class: "list-group list-group-flush" });
 
-      const update = function (command, active) {
+      const updateFunc = function (command, active) {
          this.set_stellung(command, active ? -1 : undefined);
          renderer.reDrawEverything();
          stage.update();
@@ -279,7 +279,7 @@ class Signal {
          save();
       };
 
-      ul.append(this._template.signalMenu.map((data) => this.createBootstrapMenuItems(data, update)));
+      ul.append(this._template.signalMenu.map((data) => this.createBootstrapMenuItems(data, updateFunc)));
 
       this.syncHTML(ul);
 
@@ -385,7 +385,7 @@ class Signal {
 
          if ((sw = track._tmp.switches[dir == 1 ? 1 : 0])) {
             if (type(sw) == "Track") track = sw;
-            else track = getTrackAtBranch(sw, track); //TODO: hier muss noch mehr logik rein!
+            else track = getTrackAtBranch(sw, track); 
 
             if (track) {
                index = track.signals.length - 1;

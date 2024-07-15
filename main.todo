@@ -10,7 +10,7 @@ Bugs:
     ✔ bisherige Signale auf neuen Stand bringen @done(24-06-07 19:44)
     ✔ Vorsignalisierung KS und KS/HV @done(24-06-13 16:40)
     ✔ bounds werden bei Strecken mit bögen falsch gesetzt @done(24-07-06 12:50)
-    ☐ lf6 lf7 signalisieren sich nicht automatisch vor
+    ✔ lf6 lf7 signalisieren sich nicht automatisch vor @done(24-07-15 17:46)
 
 Detailing:
     ✔ Weichen Schaltung schöner darstellen @done(23-12-13 11:13)
@@ -25,27 +25,27 @@ Features:
     ✔ Signale verketten/automatische vorsignalisierung @started(23-11-21 12:15) @done(24-01-08 11:46) @lasted(6w5d23h31m36s)
     ✔ Zs 8 @started(24-05-19 09:27) @done(24-05-19 09:51) @lasted(24m1s)
     ✔ Zs3/Zs3v @started(24-05-19 09:51) @done(24-05-19 11:41) @lasted(1h50m13s)
-    ☐ abgleich der erlaubten Signalstellung in eigener Funktion, nicht erlaubte signale werden abgeschaltet und nicht nur nicht gezeichnet
     ✔ Erstellung des Signalmenüs überarbeiten @done(24-05-30 08:51)
     ✔ KS Signale @done(24-06-13 16:40)
     ✔ Errror Handling mit schönem Output Boostrap toast oder so @done(24-06-01 16:12)
-    ☐ visualisieren, wo genau ein Signal am Gleis angeheftet ist (vllt mit kleiner roten Linie) 
     ✔ Startseite @done(24-06-12 18:29)    
-    ☐ Zs 6
-    ✔ alleinstehdes Vorsignal @done(24-06-15 16:56)
+    ✔ caching zur Performancesteigerung implementieren @done(24-07-06 13:22)
     ✔ Weichenstellung auch im Texturmodus anzeigen @done(24-06-13 16:41)
+    ✔ Prellbock im texturmodus anzeigen @done(24-07-11 20:44)
+    ✔ alleinstehdes Vorsignal @done(24-06-15 16:56)
+    ☐ abgleich der erlaubten Signalstellung in eigener Funktion, nicht erlaubte signale werden abgeschaltet und nicht nur nicht gezeichnet
+    ☐ visualisieren, wo genau ein Signal am Gleis angeheftet ist (vllt mit kleiner roten Linie) 
+    ☐ Zs 6
     ☐ einzelne Signalfunktionen ativieren und deaktivieren können (zb z1, z7, zp 9)
     ☐ Rules erweitern, dass sie auch Features abfragen und aktivieren können
     ☐ Verwednung schaltet automatisch mehrere Feature um (Mastschild + Zusatzsignale)
     ☐ Textfelder für Beschriftung von Gleisen hinzufügen
-    ✔ caching zur Performancesteugerung implementieren @done(24-07-06 13:22)
     ☐ Bahnsteige einzeichen
-    ✔ Prellbock im texturmodus anzeigen @done(24-07-11 20:44)
 
 Big Features:
     ☐ Gleise markieren und bemalen können
     ✔ vorgefertigte Gleispläne erstellen und laden @done(24-06-20 19:43)
-    ☐ Züge von Hand bewegen
+    ✔ Züge von Hand bewegen @done(24-07-15 16:51)
     ☐ Signalbezeichnung einführen
     ☐ Rückgängig Funktion
     ☐ Signale als korrekte DIN Signalsymbole zeigen
