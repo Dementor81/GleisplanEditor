@@ -7,7 +7,6 @@ class Signal {
       s._template = signalTemplates[o._template];
       s._signalStellung = o._signalStellung;
       s._positioning = o._positioning;
-      s._bezeichnung = o._bezeichnung;
       s._features = new Map(JSON.parse(o.features));
       return s;
    }
@@ -21,7 +20,6 @@ class Signal {
       flipped: false,
    };
    _features = new Map();
-   _bezeichnung = "";
    _changed = false;
    _dontCache = false;
 
@@ -30,7 +28,6 @@ class Signal {
          _class: "Signal",
          _template: this._template.id,
          _signalStellung: this._signalStellung,
-         _bezeichnung: this._bezeichnung,
          _positioning: {
             km: this._positioning.km,
             above: this._positioning.above,
@@ -40,54 +37,88 @@ class Signal {
       };
    }
 
-  
-   
-
    constructor(template) {
       if (template) {
          this._template = template;
 
          if (template.initialFeatures)
             if (Array.isArray(template.initialFeatures)) template.initialFeatures.forEach((i) => this.setFeature(i, true));
-            else this.setFeature(template.initialFeatures,true);
+            else this.setFeature(template.initialFeatures, true);
 
          if (template.initialSignalStellung) template.initialSignalStellung.forEach((i) => this.set_stellung(i, null, false));
       }
    }
 
- //features saves how a signal is used (Asig,Esig etc) and if it supports things like Vorsignal or Verkürzte Bremswege
+   get title() {
+      let title = "";
+      if (this.matchFeature("hp"))
+          switch (this.getFeature("verwendung")) {
+              case "zsig":
+                  title += "Zsig";
+                  break;
+              case "esig":
+                  title += "Esig";
+                  break;
+              case "asig":
+                  title += "Asig";
+                  break;
+              case "bksig":
+                  title += "Bk";
+                  break;
+              case "sbk":
+                  title += "Sbk";
+                  break;
+
+              default:
+                  break;
+          }
+      
+
+      const bez = this.getFeature("bez");
+      if(bez)
+          title += " " + bez.replace("-", " ");
+
+      return title;
+  }
+
+   //features saves how a signal is used (Asig,Esig etc) and if it supports things like Vorsignal or Verkürzte Bremswege
    //there are two types of features: single worded like "vr" or "verk"
    //and features which work es a group and are build out of 2 Words like "mastschild.wgwgw"
    setFeature(o, value) {
-         const splitted = o.split(".");
-         if (splitted.length == 1) {
-            if (value) this._features.set(o, true);
-            else this._features.delete(o);
-         } else if (splitted.length == 2) this._features.set(splitted[0], splitted[1]);
-         else throw new Error();
+      const splitted = o.split(".");
+      if (splitted.length == 1) {
+         if (value) this._features.set(o, value);
+         else this._features.delete(o);
+      } else if (splitted.length == 2) this._features.set(splitted[0], splitted[1]);
+      else throw new Error();
 
-         this._changed = true;
-      }
+      this._changed = true;
+   }
+
+   getFeature(key) {
+      if (this._features.has(key)) return this._features.get(key);
+      else return null;
+   }
 
    matchFeature(condition) {
-         if (condition == null || condition.length == 0) return true; // wenn das visualElement keine conditions fordert, ist es immer ein match
-         const match_single = function (singleCondition) {
-            const splitted = singleCondition.split(".");
-            const antiMatch = splitted[0][0] == "!";
-            let retValue;
-            if (antiMatch) splitted[0] = splitted[0].substring(1);
-            if (splitted.length == 1) retValue = this._features.has(splitted[0]);
-            else if (splitted.length == 2) retValue = this._features.get(splitted[0]) == splitted[1];
-            else throw new Error();
+      if (condition == null || condition.length == 0) return true; // wenn das visualElement keine conditions fordert, ist es immer ein match
+      const match_single = function (singleCondition) {
+         const splitted = singleCondition.split(".");
+         const antiMatch = splitted[0][0] == "!";
+         let retValue;
+         if (antiMatch) splitted[0] = splitted[0].substring(1);
+         if (splitted.length == 1) retValue = this._features.has(splitted[0]);
+         else if (splitted.length == 2) retValue = this._features.get(splitted[0]) == splitted[1];
+         else throw new Error();
 
-            return antiMatch ? !retValue : retValue;
-         }.bind(this);
-         if (Array.isArray(condition)) {
-            return condition.some(this.matchFeature.bind(this));
-         } else if (condition.includes("&&")) {
-            return condition.split("&&").every(match_single);
-         } else return match_single(condition);
-      }
+         return antiMatch ? !retValue : retValue;
+      }.bind(this);
+      if (Array.isArray(condition)) {
+         return condition.some(this.matchFeature.bind(this));
+      } else if (condition.includes("&&")) {
+         return condition.split("&&").every(match_single);
+      } else return match_single(condition);
+   }
 
    //Setzt die Signalstellung, 2 Möglichkeiten:
    //set("zs3",60)
@@ -120,8 +151,7 @@ class Signal {
             let prevSignal = this;
             do {
                prevSignal = this.search4Signal(prevSignal, DIRECTION.RIGHT_2_LEFT);
-               if (prevSignal && prevSignal._template.checkSignalDependency)
-                  stop = prevSignal._template.checkSignalDependency(prevSignal, this);
+               if (prevSignal && prevSignal._template.checkSignalDependency) stop = prevSignal._template.checkSignalDependency(prevSignal, this);
             } while (!stop && prevSignal);
          }
          if (this.matchFeature(["vr", "slave"]) && this._template.checkSignalDependency) {
@@ -217,7 +247,7 @@ class Signal {
       else if (typeof ve == "string") {
          this.addImageElement(ve);
       } else if (ve instanceof TextElement) {
-         if (!ve.pos) throw new Error("TextElement doesnt have a pos");
+         if (!ve.pos) throw new Error("TextElement doesnt have a position");
          if (this.matchFeature(ve.conditions) && ve.isAllowed(this) && ve.isEnabled(this)) {
             var js_text = new createjs.Text(ve.getText(this), ve.format, ve.color);
             js_text.x = ve.pos[0];
@@ -269,21 +299,24 @@ class Signal {
    }
 
    getHTML() {
-      const ul = $("<ul>", { class: "list-group list-group-flush" });
+      if (this._template.signalMenu?.length) {
+         const ul = $("<ul>", { class: "list-group list-group-flush" });
 
-      const updateFunc = function (command, active) {
-         this.set_stellung(command, active ? -1 : undefined);
-         renderer.reDrawEverything();
-         stage.update();
-         this.checkBootstrapMenu(this._template.signalMenu, ul);
-         save();
-      };
+         const updateFunc = function (command, active) {
+            this.set_stellung(command, active ? -1 : undefined);
+            renderer.reDrawEverything();
+            stage.update();
+            this.checkBootstrapMenu(this._template.signalMenu, ul);
+            save();
+         };
 
-      ul.append(this._template.signalMenu.map((data) => this.createBootstrapMenuItems(data, updateFunc)));
+         ul.append(this._template.signalMenu.map((data) => this.createBootstrapMenuItems(data, updateFunc)));
 
-      this.syncHTML(ul);
+         this.syncHTML(ul);
 
-      return ul;
+         return ul;
+      }
+      return "";
    }
 
    createBootstrapMenuItems(data, update) {
@@ -385,7 +418,7 @@ class Signal {
 
          if ((sw = track._tmp.switches[dir == 1 ? 1 : 0])) {
             if (type(sw) == "Track") track = sw;
-            else track = getTrackAtBranch(sw, track); 
+            else track = getTrackAtBranch(sw, track);
 
             if (track) {
                index = track.signals.length - 1;
@@ -417,12 +450,5 @@ const Sig_UI = {
       });
 
       return dd;
-
-      return BS.create_buttonGroup([
-         dd,
-         /*  ui.create_toggleButtonX(this.lightBulb(), "btn_" + signal + "licht", () => {
-                this._signalStellung[signal].licht = !this._signalStellung[signal].licht;
-            }), */
-      ]);
    },
 };

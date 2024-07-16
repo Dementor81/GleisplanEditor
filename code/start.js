@@ -740,7 +740,7 @@ function handleStageMouseUp(e) {
 
                let popup = ui.showPopup(
                   { x: p.x, y: p.y, width: bounds.height, height: bounds.width },
-                  mouseAction.container.signal._template.title,
+                  (mouseAction.container.signal._template.title + " " + mouseAction.container.signal.title).trim(),
                   mouseAction.container.signal.getHTML(),
                   $(myCanvas)
                );

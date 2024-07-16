@@ -396,9 +396,11 @@ const ui = {
                         type: "text",
                         id: id,
                         class: "form-control  form-control-sm",
-                        value: signal._bezeichnung,
+                        value: signal.getFeature("bez"),
                      }).on("input", (e) => {
-                        signal._bezeichnung = e.target.value;
+                        signal.setFeature("bez",e.target.value);
+                        renderer.reDrawEverything();
+                        save();
                      }),
                      $("<label>", { for: id, text: item.input }),
                   ])

@@ -11,14 +11,24 @@ Bugs:
     ✔ Vorsignalisierung KS und KS/HV @done(24-06-13 16:40)
     ✔ bounds werden bei Strecken mit bögen falsch gesetzt @done(24-07-06 12:50)
     ✔ lf6 lf7 signalisieren sich nicht automatisch vor @done(24-07-15 17:46)
+    ☐ lange bezeichnungen sprengen das schild, Text muss sich autom. verkleinern
+
+Content:
+    ☐ Ne 2
+    ☐ Ne 3
+    ☐ Zs 6 alleinstehend
+    ☐ Sperrsignal
+
+
 
 Detailing:
     ✔ Weichen Schaltung schöner darstellen @done(23-12-13 11:13)
     ✔ Signalmenü schön machen @done(24-06-13 16:40)
     ✔ settingsmenü mit häckchen als markierung @done(24-06-07 20:33)
-    ☐ Navbar überarbeiten
     ✔ Weichenstellung im Screenshot ausblenden @done(24-06-13 16:40)
     ✔ Skalierung überarbeiten, Gleise dichter zusammen, dafür Weichen überarbeiten @started(24-05-30 08:52) @done(24-06-01 19:53) @lasted(2d11h1m49s)
+    ☐ Navbar überarbeiten
+    ☐ "Neues Signal" Menü überarbeiten
 
 CleanUp:
     ☐ swichtes Array entfernen
@@ -35,6 +45,7 @@ Features:
     ✔ Weichenstellung auch im Texturmodus anzeigen @done(24-06-13 16:41)
     ✔ Prellbock im texturmodus anzeigen @done(24-07-11 20:44)
     ✔ alleinstehdes Vorsignal @done(24-06-15 16:56)
+    ✔ Signalbezeichnung einführen @done(24-07-16 18:53)
     ☐ abgleich der erlaubten Signalstellung in eigener Funktion, nicht erlaubte signale werden abgeschaltet und nicht nur nicht gezeichnet
     ☐ visualisieren, wo genau ein Signal am Gleis angeheftet ist (vllt mit kleiner roten Linie) 
     ☐ Zs 6
@@ -43,15 +54,15 @@ Features:
     ☐ Verwednung schaltet automatisch mehrere Feature um (Mastschild + Zusatzsignale)
     ☐ Textfelder für Beschriftung von Gleisen hinzufügen
     ☐ Bahnsteige einzeichen
-    ☐ mehere gleise, ganze Bahnhüfe verschieben
+    ☐ mehere gleise, ganze Bahnhöfe verschieben
     ☐ Signale koopieren, per drag&drop
+    ☐ Sperrsignale
     
 
 Big Features:
     ☐ Gleise markieren und bemalen können
     ✔ vorgefertigte Gleispläne erstellen und laden @done(24-06-20 19:43)
     ✔ Züge von Hand bewegen @done(24-07-15 16:51)
-    ☐ Signalbezeichnung einführen
     ☐ Rückgängig Funktion
     ☐ Signale als korrekte DIN Signalsymbole zeigen
     ☐ HauptsignaleSignale um zusätzliche Signale (lf,zp usw) erweitern
