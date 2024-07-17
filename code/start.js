@@ -918,6 +918,7 @@ function loadFromJson(json) {
    Track.connectTracks();
    Train.allTrains = loaded.trains?.clean() || []; ////when something went wront while loading trains, we filter all nulls
    Train.allTrains.forEach((t) => t.restore());
+   Train.allTrains = Train.allTrains.filter((t) => t.track != null);
 
    drawGrid();
    renderer.reDrawEverything(true);
