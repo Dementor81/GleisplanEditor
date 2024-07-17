@@ -593,7 +593,7 @@ function handleMouseMove(event) {
       drawGrid(false);
       renderer.reDrawEverything();
    } else if (mouseAction.action === MOUSE_ACTION.MOVE_TRAIN) {
-      Train.moveTrain(mouseAction.container.train,event.nativeEvent.movementX);
+      Train.moveTrain(mouseAction.container.train, event.nativeEvent.movementX);
       renderer.reDrawEverything();
    }
 
@@ -677,7 +677,7 @@ function getGlobalBounds(container) {
 function handleStageMouseUp(e) {
    //console.log("handleStageMouseUp", e);
    if (mouseAction == null) return;
-   let local_point = stage.globalToLocal(stage.mouseX, stage.mouseY)
+   let local_point = stage.globalToLocal(stage.mouseX, stage.mouseY);
    if (e.nativeEvent.which == 1) {
       if (mouseAction.action === MOUSE_ACTION.DND_SIGNAL) {
          overlay_container.removeChild(mouseAction.container);
@@ -713,19 +713,24 @@ function handleStageMouseUp(e) {
          stage.update();
       } else if (mouseAction.action === MOUSE_ACTION.ADD_TRAIN) {
          if (mouseAction.container?.name == "track") {
+            const color = ["#ff0000", "#ffff00", "#00ff00", "#0000ff"].random();
             const track = mouseAction.container.track;
-            let train,trainX;
-            for (let index = 0; index <= 3; index++) {
-               train = Train.addTrain(track, (stage.globalToLocal(stage.mouseX, stage.mouseY).x - track.start.x) / track._tmp.cos );
-               trainX?.coupleBack(train);
-               trainX = train
-
+            let train, car, car2;
+            car = train = Train.addTrain(track, (local_point.x - track.start.x) / track._tmp.cos, color);
+            Train.allTrains.push(train);
+            for (let index = 0; index <= 2; index++) {
+               car2 = Train.addTrain(track, (local_point.x - track.start.x) / track._tmp.cos, color);
+               car.coupleBack(car2);
+               car = car2;
             }
-            Train.moveTrain(train,0)
+            Train.moveTrain(train, 0);
             renderer.reDrawEverything();
             stage.update();
+            save();
             $("#btnAddTrain").removeClass("active");
          }
+      } else if (mouseAction.action === MOUSE_ACTION.MOVE_TRAIN) {
+         save();
       } else if (mouseAction.action === MOUSE_ACTION.NONE && mouseAction.distance(stage.mouseX, stage.mouseY) < 4) {
          if (mouseAction.container?.name == "signal") {
             if (mode === MODE_PLAY) {
@@ -760,7 +765,7 @@ function handleStageMouseUp(e) {
                renderer.updateSelection();
             }
          } else if (mouseAction.container?.name == "switch") {
-            Track.switch_A_Switch(mouseAction.container.sw,local_point.x);
+            Track.switch_A_Switch(mouseAction.container.sw, local_point.x);
             renderer.reRenderSwitch(mouseAction.container.sw);
             stage.update();
          } else {
@@ -773,8 +778,6 @@ function handleStageMouseUp(e) {
 
    stage.removeEventListener("stagemousemove", handleMouseMove);
 }
-
-
 
 function clearTrackSelection() {
    tracks.forEach((t) => (t.selected = false));
@@ -869,6 +872,7 @@ function getSaveString() {
    return JSON.stringify(
       {
          tracks: tracks,
+         trains: Train.allTrains,
          zoom: stage.scale,
          scrollX: stage.x,
          scrollY: stage.y,
@@ -900,6 +904,7 @@ function loadRecent() {
 function receiver(key, value) {
    if (value?._class) {
       const myClass = eval(value._class + ".FromObject")(value);
+      if (myClass == null) showToast(new Error("error loading " + key));
       return myClass;
    } else return value;
 }
@@ -909,8 +914,11 @@ function loadFromJson(json) {
    stage.x = loaded.scrollX;
    stage.y = loaded.scrollY;
    stage.scale = loaded.zoom;
-   tracks = loaded.tracks;
+   tracks = loaded.tracks?.clean() || []; //when something went wront while loading track, we filter all nulls
    Track.connectTracks();
+   Train.allTrains = loaded.trains?.clean() || []; ////when something went wront while loading trains, we filter all nulls
+   Train.allTrains.forEach((t) => t.restore());
+
    drawGrid();
    renderer.reDrawEverything(true);
    stage.update();
@@ -1021,7 +1029,7 @@ function loadPrebuildbyName(name) {
    xmlhttp.send();
 }
 
-function LineVisible(line) {
+function TrackVisible(track) {
    const width = stage.canvas.width / stage.scaleX,
       height = stage.canvas.height / stage.scaleY,
       x = -stage.x / stage.scaleX,
@@ -1030,24 +1038,24 @@ function LineVisible(line) {
 
    const isInside = (point, rect) => point.x > rect.left && point.x < rect.right && point.y > rect.top && point.y < rect.bottom;
 
-   if (isInside(line.start, screen_rectangle) || isInside(line.end, screen_rectangle)) return true; //
+   if (isInside(track.start, screen_rectangle) || isInside(track.end, screen_rectangle)) return true; //
 
    //left
    let p1 = { x: x, y: y },
       p2 = { x: x, y: screen_rectangle.bottom };
-   if (doLineSegmentsIntersect(p1, p2, line.start, line.end)) return true;
+   if (geometry.doLineSegmentsIntersect(p1, p2, track.start, track.end)) return true;
    //bottom
    p1 = p2;
    p2 = { x: screen_rectangle.right, y: screen_rectangle.bottom };
-   if (doLineSegmentsIntersect(p1, p2, line.start, line.end)) return true;
+   if (geometry.doLineSegmentsIntersect(p1, p2, track.start, track.end)) return true;
    //right
    p1 = p2;
    p2 = { x: screen_rectangle.right, y: y };
-   if (doLineSegmentsIntersect(p1, p2, line.start, line.end)) return true;
+   if (geometry.doLineSegmentsIntersect(p1, p2, track.start, track.end)) return true;
    //top
    p1 = p2;
    p2 = { x: x, y: y };
-   if (doLineSegmentsIntersect(p1, p2, line.start, line.end)) return true;
+   if (geometry.doLineSegmentsIntersect(p1, p2, track.start, track.end)) return true;
 
    return false;
 }
@@ -1059,31 +1067,4 @@ function PointVisible(p1) {
       y = -stage.y / stage.scaleY;
 
    return p1.x.between(x, x + width) && p1.y.between(y, y + height);
-}
-
-function doLineSegmentsIntersect(p1, q1, p2, q2) {
-   const orientation = (p, q, r) => {
-      const val = (q.y - p.y) * (r.x - q.x) - (q.x - p.x) * (r.y - q.y);
-      return val === 0 ? 0 : val > 0 ? 1 : 2;
-   };
-
-   const onSegment = (p, q, r) => {
-      return q.x <= Math.max(p.x, r.x) && q.x >= Math.min(p.x, r.x) && q.y <= Math.max(p.y, r.y) && q.y >= Math.min(p.y, r.y);
-   };
-
-   const o1 = orientation(p1, q1, p2);
-   const o2 = orientation(p1, q1, q2);
-   const o3 = orientation(p2, q2, p1);
-   const o4 = orientation(p2, q2, q1);
-
-   if (o1 !== o2 && o3 !== o4) {
-      return true; // Segments intersect
-   }
-
-   if (o1 === 0 && onSegment(p1, p2, q1)) return true;
-   if (o2 === 0 && onSegment(p1, q2, q1)) return true;
-   if (o3 === 0 && onSegment(p2, p1, q2)) return true;
-   if (o4 === 0 && onSegment(p2, q1, q2)) return true;
-
-   return false; // No intersection
 }

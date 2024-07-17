@@ -4,6 +4,9 @@ class Track {
    static findTrackbySignal(s) {
       return tracks.find((t) => t.signals.find((o) => o.signal == s) != undefined);
    }
+   static findTrackByPoint(p) {      
+      return tracks.find(track=>geometry.pointOnLine(track.start, track.end, p))
+   }
 
    static counter = 0;
 
@@ -134,16 +137,16 @@ class Track {
    }
 
    static switch_A_Switch(sw, mouseX) {
-    if (!sw.type.is(SWITCH_TYPE.DKW)) {
-       sw.branch = swap(sw.branch, sw.t2, sw.t3);
-    } else {
-       if (mouseX < sw.location.x) {
-          sw.branch = swap(sw.branch, sw.t2, sw.t3);
-       } else {
-          sw.from = swap(sw.from, sw.t1, sw.t4);
-       }
-    }   
- }
+      if (!sw.type.is(SWITCH_TYPE.DKW)) {
+         sw.branch = swap(sw.branch, sw.t2, sw.t3);
+      } else {
+         if (mouseX < sw.location.x) {
+            sw.branch = swap(sw.branch, sw.t2, sw.t3);
+         } else {
+            sw.from = swap(sw.from, sw.t1, sw.t4);
+         }
+      }
+   }
 
    static FromObject(o) {
       let t = new Track(o.start, o.end);

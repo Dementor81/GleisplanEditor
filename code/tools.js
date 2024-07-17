@@ -56,9 +56,15 @@ Array.prototype.first = function () {
    } else return null;
 };
 
-Array.prototype.each = function (f) {
-   this.forEach(f);
-   return this;
+//removes all null items from the array
+Array.prototype.clean = function () {
+   return this.filter(n => n)
+};
+
+//returns a random item from the array
+Array.prototype.random = function () {
+   if (this.length == 0) return;
+   return this[Math.randomInt(this.length - 1)];
 };
 
 function type(value) {
@@ -398,7 +404,7 @@ const ui = {
                         class: "form-control  form-control-sm",
                         value: signal.getFeature("bez"),
                      }).on("input", (e) => {
-                        signal.setFeature("bez",e.target.value);
+                        signal.setFeature("bez", e.target.value);
                         renderer.reDrawEverything();
                         save();
                      }),
@@ -535,6 +541,33 @@ const geometry = {
       } else {
          return false; // Point is outside the line segment
       }
+   },
+   //returns true if 2 line, described by 4 points intersect, each other
+   doLineSegmentsIntersect: function(p1, q1, p2, q2) {
+      const orientation = (p, q, r) => {
+         const val = (q.y - p.y) * (r.x - q.x) - (q.x - p.x) * (r.y - q.y);
+         return val === 0 ? 0 : val > 0 ? 1 : 2;
+      };
+   
+      const onSegment = (p, q, r) => {
+         return q.x <= Math.max(p.x, r.x) && q.x >= Math.min(p.x, r.x) && q.y <= Math.max(p.y, r.y) && q.y >= Math.min(p.y, r.y);
+      };
+   
+      const o1 = orientation(p1, q1, p2);
+      const o2 = orientation(p1, q1, q2);
+      const o3 = orientation(p2, q2, p1);
+      const o4 = orientation(p2, q2, q1);
+   
+      if (o1 !== o2 && o3 !== o4) {
+         return true; // Segments intersect
+      }
+   
+      if (o1 === 0 && onSegment(p1, p2, q1)) return true;
+      if (o2 === 0 && onSegment(p1, q2, q1)) return true;
+      if (o3 === 0 && onSegment(p2, p1, q2)) return true;
+      if (o4 === 0 && onSegment(p2, q1, q2)) return true;
+   
+      return false; // No intersection
    },
    pointOnArc: function (radius, rad, centerpoint) {
       const v = {

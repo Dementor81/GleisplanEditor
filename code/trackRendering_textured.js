@@ -28,7 +28,7 @@ class trackRendering_textured {
 
       this._idleCallback = rIC(
          function (r) {
-            const toBeRemoved = track_container.children.filter((c) => c.track && !LineVisible(c.track));
+            const toBeRemoved = track_container.children.filter((c) => c.track && !TrackVisible(c.track));
             toBeRemoved.forEach((c) => {
                const signalsToBeRemoved = signal_container.children.filter((cs) => cs.signal._positioning.track == c.track);
                signalsToBeRemoved.forEach((cs) => {
@@ -93,39 +93,52 @@ class trackRendering_textured {
    renderAllTrains() {
       train_container.removeAllChildren();
       Train.allTrains.forEach((train) => {
-         const g = new createjs.Graphics();
-         g.setStrokeStyle(1);
-         g.beginStroke(createjs.Graphics.getRGB(0, 0, 0));
-         g.beginFill(createjs.Graphics.getRGB(255, 0, 0));
-         let corner = [1.5, 1.5, 1.5, 1.5];
-
-         if (train.trainCoupledFront == null) {
-            corner[0] = corner[3] = 20;
-         }
-
-         if (train.trainCoupledBack == null) {
-            corner[1] = corner[2] = 20;
-         }
-
-         g.drawRoundRectComplex(0, 0, this.TRAIN_WIDTH, this.TRAIN_HEIGHT, corner[0], corner[1], corner[2], corner[3]);
-
-         const s = new createjs.Shape(g);
+         const c = new createjs.Container();
+         c.name = "train";
+         c.train = train;
+         c.mouseChildren = false;
          const p = geometry.add(train.track.start, train.track.unit.multiply(train.pos));
-         s.x = p.x;
-         s.y = p.y;
-         s.regX = this.TRAIN_WIDTH / 2;
-         s.regY = this.TRAIN_HEIGHT / 2;
-         s.rotation = train.track.deg;
-         s.name = "train";
-         s.train = train;
+         /* c.x = p.x;
+         c.y = p.y; */
+         this.renderCar(train, c, true);
+         if (train.trainCoupledBack) this.renderCar(train.trainCoupledBack, c);
 
-         train_container.addChild(s);
+         train_container.addChild(c);
       });
+   }
+
+   renderCar(car, container, first = false) {
+      const g = new createjs.Graphics();
+      g.setStrokeStyle(1);
+      g.beginStroke(createjs.Graphics.getRGB(0, 0, 0));
+      g.beginFill(car.color);
+      let corner = [1.5, 1.5, 1.5, 1.5];
+
+      if (first) {
+         corner[0] = corner[3] = 20;
+      }
+
+      if (car.trainCoupledBack == null) {
+         corner[1] = corner[2] = 20;
+      }
+
+      g.drawRoundRectComplex(0, 0, this.TRAIN_WIDTH, this.TRAIN_HEIGHT, corner[0], corner[1], corner[2], corner[3]);
+
+      const s = new createjs.Shape(g);
+      const p = geometry.add(car.track.start, car.track.unit.multiply(car.pos));
+      s.x = p.x;
+      s.y = p.y;
+      s.regX = this.TRAIN_WIDTH / 2;
+      s.regY = this.TRAIN_HEIGHT / 2;
+      s.rotation = car.track.deg;
+
+      container.addChild(s);
+      if (car.trainCoupledBack) this.renderCar(car.trainCoupledBack, container);
    }
 
    renderAllTracks(c, force) {
       tracks.forEach((t) => {
-         if (LineVisible(t)) {
+         if (TrackVisible(t)) {
             if (force || !t.rendered) {
                this.renderTrack(c, t);
                t.signals.forEach((signal) => {
@@ -464,8 +477,8 @@ class trackRendering_textured {
 
          container.addChild(
             (bitmap = new createjs.Bitmap(img).set({
-               name:"switch",
-               sw:sw,
+               name: "switch",
+               sw: sw,
                y: switch_values.p1.y,
                x: switch_values.p1.x,
                regY: img.height - this.schwellenHöhe / trackRendering_textured.TRACK_SCALE / 2,
@@ -478,8 +491,8 @@ class trackRendering_textured {
          img = pl.getImage("dkw");
          container.addChild(
             (bitmap = new createjs.Bitmap(img).set({
-               name:"switch",
-               sw:sw,
+               name: "switch",
+               sw: sw,
                y: sw.location.y,
                x: sw.location.x,
                regY: img.height / 2,
@@ -499,7 +512,7 @@ class trackRendering_textured {
       const s = ui_container.children.find((c) => c.sw == sw);
       if (s) s.parent.removeChild(s);
 
-      this.renderSwitchUI(sw);      
+      this.renderSwitchUI(sw);
    }
 
    renderSwitchUI(sw) {

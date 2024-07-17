@@ -3,17 +3,17 @@
 class Train {
    static allTrains = [];
 
-   static addTrain(track, pointX) {
-      const train = new Train(track, pointX);
-      Train.allTrains.push(train);
+   static addTrain(track, km, color = "#ff0000") {
+      const train = new Train();
+      train.track = track;
+      train.pos = km;
+      train._color = color;
+
       return train;
    }
 
    static moveTrain(train, movementX) {
       let first_car = train;
-      while (first_car.trainCoupledFront != null) {
-         first_car = first_car.trainCoupledFront;
-      }
 
       let last_car = train;
       while (last_car.trainCoupledBack != null) {
@@ -23,17 +23,16 @@ class Train {
       if (!Train.movementPossible(first_car, movementX) || !Train.movementPossible(last_car, movementX)) return;
       //TODO check if the first and last car are either on the same track or the tracks are connected to prevent derailing
       let car = first_car;
+      let new_pos;
+      let currentTrack;
+
+      currentTrack = car.track;
+      new_pos = car.pos + movementX / stage.scale / currentTrack._tmp.cos;
 
       while (car) {
-         let currentTrack;
-         let new_pos;
-         if (car.trainCoupledFront) {
-            currentTrack = car.trainCoupledFront.track;
+         if (car != first_car) {
             //new_pos = car.trainCoupledFront.pos + car.trainCoupledFront.track.start.x + renderer.TRAIN_WIDTH + 10 - car.track.start.x;
-            new_pos = car.trainCoupledFront.pos + renderer.TRAIN_WIDTH + 10;
-         } else {
-            currentTrack = car.track;
-            new_pos = car.pos + movementX / stage.scale / currentTrack._tmp.cos;
+            new_pos += renderer.TRAIN_WIDTH + 10;
          }
          let newTrack;
          if (new_pos.outoff(0, currentTrack.length)) {
@@ -47,6 +46,8 @@ class Train {
                if (newTrack) {
                   car.track = newTrack;
                   car.pos = new_pos <= 0 ? newTrack.length + new_pos : new_pos - currentTrack.length;
+                  currentTrack = newTrack;
+                  new_pos = car.pos;
                }
             }
          } else {
@@ -68,13 +69,55 @@ class Train {
       } else return true;
    }
 
-   constructor(track, pos) {
-      this.track = track;
-      this.pos = pos;
+   static FromObject(o) {
+      const train = new Train();
+      train._color = o.color;
+      train._coordinates = o.coordinates;
+      train.trainCoupledBack = o.trainCoupledBack;
+      return train;
+   }
+
+   _track = null;
+   _pos = null;
+   _coordinates = null;
+   _color = "#000000";
+   trainCoupledBack = null;
+
+   get track() {
+      return this._track;
+   }
+
+   set track(t) {
+      this._track = t;
+   }
+
+   get pos() {
+      return this._pos;
+   }
+
+   set pos(km) {
+      this._pos = km;
+      if (this._track) this._coordinates = geometry.add(this._track.start, this._track.getPointfromKm(km));
+   }
+
+   get color() {
+      return this._color;
    }
 
    coupleBack(train) {
       this.trainCoupledBack = train;
-      train.trainCoupledFront = this;
+   }
+
+   restore() {
+      const t = Track.findTrackByPoint(this._coordinates);
+      if (t) {
+         this.track = t;
+         this.pos = t.getKmfromPoint(this._coordinates);
+      }
+      if (this.trainCoupledBack) this.trainCoupledBack.restore();
+   }
+
+   stringify() {
+      return { _class: "Train", coordinates: this._coordinates, color: this._color, trainCoupledBack: this.trainCoupledBack };
    }
 }
