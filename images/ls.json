@@ -1,0 +1,61 @@
+[ 
+{"signal":"basis","sourceRect":{"x":2,"y":2,"width":359,"height":312},"pos":
+        {"left":0,"top":0}
+    },
+
+{"signal":"wrw","sourceRect":{"x":2,"y":318,"width":43,"height":195},"pos":
+        {"left":304,"top":95}
+    },
+
+{"signal":"schild","sourceRect":{"x":49,"y":318,"width":107,"height":96},"pos":
+        {"left":155,"top":118}
+    },
+
+{"signal":"lp_w_unten","sourceRect":{"x":49,"y":418,"width":69,"height":93},"pos":
+        {"left":67,"top":144}
+    },
+
+{"signal":"lp_r_rechts","sourceRect":{"x":122,"y":418,"width":69,"height":92},"pos":
+        {"left":232,"top":41}
+    },
+
+{"signal":"lp_w_oben","sourceRect":{"x":160,"y":318,"width":70,"height":92},"pos":
+        {"left":170,"top":41}
+    },
+
+{"signal":"lp_r_links","sourceRect":{"x":195,"y":414,"width":69,"height":92},"pos":
+        {"left":69,"top":41}
+    },
+
+{"signal":"schute_w_oben","sourceRect":{"x":268,"y":318,"width":63,"height":59},"pos":
+        {"left":173,"top":38}
+    },
+
+{"signal":"schute_r_rechts","sourceRect":{"x":268,"y":381,"width":62,"height":59},"pos":
+        {"left":235,"top":38}
+    },
+
+{"signal":"schute_w_unten","sourceRect":{"x":268,"y":444,"width":62,"height":60},"pos":
+        {"left":70,"top":141}
+    },
+
+{"signal":"schute_r_links","sourceRect":{"x":365,"y":2,"width":62,"height":59},"pos":
+        {"left":72,"top":38}
+    },
+
+{"signal":"r_rechts","sourceRect":{"x":365,"y":65,"width":58,"height":57},"pos":
+        {"left":237,"top":41}
+    },
+
+{"signal":"w_unten","sourceRect":{"x":365,"y":126,"width":58,"height":57},"pos":
+        {"left":72,"top":145}
+    },
+
+{"signal":"r_links","sourceRect":{"x":365,"y":187,"width":57,"height":57},"pos":
+        {"left":74,"top":41}
+    },
+
+{"signal":"w_oben","sourceRect":{"x":365,"y":248,"width":57,"height":57},"pos":
+        {"left":176,"top":41}
+    }
+]

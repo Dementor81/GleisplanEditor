@@ -95,15 +95,18 @@ function init() {
    main_container.addChild((train_container = create_container("trains")));
    stage.addChild((ui_container = create_container("ui")));
    stage.addChild((overlay_container = create_container("overlay")));
-
+   
    selectRenderer(false);
    //loadRecent();
    ShowPreBuildScreen();
 
    pl.start().then(() => {
-      $("#collapseOne .accordion-body").append([newItemButton(signalTemplates.hv_hp), newItemButton(signalTemplates.ks)]);
+      $("#collapseOne .accordion-body").append([newItemButton(signalTemplates.hv_hp), 
+         newItemButton(signalTemplates.ks),newItemButton(signalTemplates.ls)]);
+         $("#collapseOne .accordion-body").append([newItemButton(signalTemplates.ls)]);
       $("#collapseTwo .accordion-body").append(newItemButton(signalTemplates.hv_vr));
       $("#collapseTwo .accordion-body").append(newItemButton(signalTemplates.ks_vr));
+      $("#collapseTwo .accordion-body").append();
       $("#collapseThree .accordion-body").append(newItemButton(signalTemplates.ne4));
       $("#collapseThree .accordion-body").append(newItemButton(signalTemplates.ne1));
       $("#collapseThree .accordion-body").append(newItemButton(signalTemplates.lf6));

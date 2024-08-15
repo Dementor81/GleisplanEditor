@@ -829,6 +829,36 @@ function initSignals() {
    t.checkSignalDependency = signalTemplates.ks.checkSignalDependency;
    signalTemplates.ks_vr = t;
 
+   //ls
+   t = new SignalTemplate("ls", "Lichtsperrsignal", "ls", [
+      "basis","lp_r_links", "lp_r_rechts", "lp_w_oben", "lp_w_unten",
+      new VisualElement("r_links,r_rechts", { stellung: "hp=0" }),
+      new VisualElement("w_oben,w_unten", { stellung: "hp=1" }),
+      "schute_r_links","schute_r_rechts", "schute_w_oben","schute_w_unten",
+      new VisualElement("schild", {
+         conditions: "bez",
+         childs: [new TextElement("Bez", { pos: [205, 125], format: "bold 55px condenced", color: "#333", stellung: "#bez" })],
+      }),
+   ],"hp=0");
+   t.scale = 0.07;
+   t.contextMenu = [].concat(settingsMenu.Bezeichnung);
+   t.signalMenu = [
+      [
+         {
+            btnGroup: 1,
+            items: [
+               { btn: 1, text: "Hp 0", setting: "hp=0" },
+               { btn: 1, text: "Sh 1", setting: "hp=1" },
+            ],
+         },
+      ],
+      [{ btn: 1, text: "Kennlicht", setting: "ersatz=kennlicht" }],      
+   ];
+   signalTemplates.ls = t;
+
+
+
+
    //ne4
    signalTemplates.ne4 = new SignalTemplate("ne4", "Ne 4", "basic", [
       new VisualElement("ne4_g", { conditions: "bauart.groß" }),
