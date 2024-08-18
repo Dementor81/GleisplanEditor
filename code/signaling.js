@@ -153,64 +153,65 @@ class SignalTemplate {
    set distance_from_track(v) {
       this.#_distance_from_track = v;
    }
-   
-   get signalMenuX() {
+
+   get signalMenu() {
       return this.#_signalMenu;
    }
 
-   set signalMenuX(m) {
+   set signalMenu(m) {
       this.#_signalMenu = this.parseSignalCommandMenu(m);
-
-      /* let queue = [...m];
-
-      while (queue.length > 0) {
-         let current = queue.shift();
-
-         if (Array.isArray(current)) queue.push(...current);
-         else {
-            if (current.items) queue.push(...[].concat(current.items));
-            if (current.setting) current.ve = this.getVisualElementByStellung(current.setting);
-         }
-      } */
-
-
    }
 
    parseSignalCommandMenu(menu) {
-      let menu_items = menu.map((item) => [this.parseSignalCommandMenu_string(item)]);
+      let menu_items = menu.map((item) => {
+         if (Array.isArray(item)) return item.map((m) => this.parseSignalCommandMenu_string(m));
+         else return [this.parseSignalCommandMenu_string(item)];
+      });
       return menu_items;
    }
 
    parseSignalCommandMenu_string(str) {
       let items = str.split(",").map((str) => {
-         let splitted = str.split("|");
-         if (splitted.length != 2) throw Error("Signal Command Menu Item need text and command, sperated by |");
-         
-         let item = {
-            text: splitted[0],
-            command: splitted[1],
-            visual_elements: this.getVisualElementByStellung(splitted[1]),
+         let text, command;
+         let match = str.match(/\(([^)]*)\)/);
+         if (match) {
+            command = str.split("(")[0];
+            text = match[1];
+         } else {
+            command = str;
+            // 1. Entferne alles vor und inklusive einem "="
+            text = command.includes("=") ? command.split("=")[1] : command;
+            if(text.length == 1)
+               text = command.replace("="," ");
+            else
+               text = text.replace(/(\d)/, " $1");
+            // 2. Das erste Zeichen in einen Großbuchstaben verwandeln
+            text = text.charAt(0).toUpperCase() + text.slice(1);
+            // 3. Vor der ersten Ziffer ein Leerzeichen einfügen
+            
+         }
+         return {
+            type: command.includes("=") ? "btn" : "dropdown",
+            text: text,
+            command: command,
+            visual_elements: this.getVisualElementByStellung(command),
          };
-         if (item.command.includes("=")) item.btn = 1;
-         else item.input = 1;
-
-         return item;
       });
 
       if (items.length > 1)
          return {
-            btnGroup: 1,
+            type: "group",
             items: items,
          };
-      else return items;
+      else return items[0];
    }
 
-
-   constructor(id, title, json_file, startElements, initialSignalStellung) {
+   constructor(id, title, json_file, startElements, initialSignalStellung, features) {
       this.#_id = id;
       this.#_title = title;
       if (initialSignalStellung) this.#_start = Array.isArray(initialSignalStellung) ? initialSignalStellung : [initialSignalStellung];
       this.#_json_file = json_file;
+      this.initialFeatures = features;
 
       if (startElements) {
          if (Array.isArray(startElements)) this.elements = startElements;
@@ -296,44 +297,7 @@ function initSignals() {
       },
    };
 
-   const lightMenu = [
-      [
-         {
-            btnGroup: 1,
-            items: [
-               { btn: 1, text: "Hp 0", setting: "hp=0" },
-               { btn: 1, text: "Hp 1", setting: "hp=1" },
-               { btn: 1, text: "Hp 2", setting: "hp=2" },
-            ],
-         },
-         { input: 1, text: "Zs 3", setting: "zs3" },
-      ],
-
-      [
-         {
-            btnGroup: 1,
-            items: [
-               { btn: 1, text: "Vr 0", setting: "vr=0" },
-               { btn: 1, text: "Vr 1", setting: "vr=1" },
-               { btn: 1, text: "Vr 2", setting: "vr=2" },
-               { btn: 1, text: "verkürzt", setting: "verk=1" },
-            ],
-         },
-         { input: 1, text: "Zs 3v", setting: "zs3v" },
-      ],
-      [
-         {
-            btnGroup: 1,
-            items: [
-               { btn: 1, text: "Zs 1", setting: "ersatz=zs1" },
-               { btn: 1, text: "Zs 7", setting: "ersatz=zs7" },
-               { btn: 1, text: "Zs 8", setting: "ersatz=zs8" },
-               { btn: 1, text: "Sh 1", setting: "ersatz=sh1" },
-               { btn: 1, text: "Kennlicht", setting: "ersatz=kennlicht" },
-            ],
-         },
-      ],
-   ];
+   const lightMenu = [["hp=0,hp=1,hp=2","zs3"],["vr=0,vr=1,vr=2","zs3v"],"ersatz=zs1,ersatz=zs7,ersatz=zs8,ersatz=sh1,ersatz=kennlicht",]
 
    const verw_strecke = ["verwendung.bksig", "verwendung.sbk", "verwendung.esig"];
    const verw_bahnhof = ["verwendung.asig", "verwendung.zsig"];
@@ -521,14 +485,14 @@ function initSignals() {
             childs: [new TextElement("Bez", { pos: [116, 1033], format: "bold 55px condenced", color: "#333", stellung: "#bez" })],
          }),
       ],
-      ["hp=0", "vr=0"]
+      ["hp=0", "vr=0"],
+      ["hp", "verwendung.asig", "mastschild.wrw"]
    );
    t.scale = 0.15;
    t.distance_from_track = 4;
    t.checkSignalDependency = checkSignalDependencyFunction4HV;
    t.addRule("hp>0 && zs3>6", "hp=1");
    t.addRule("hp>0 && zs3<=6 && zs3>0", "hp=2");
-   t.initialFeatures = ["hp", "verwendung.asig", "mastschild.wrw"];
    t.contextMenu = [].concat(
       settingsMenu.Verwendung,
       settingsMenu.Mastschild,
@@ -585,20 +549,7 @@ function initSignals() {
    t.checkSignalDependency = checkSignalDependencyFunction4HV;
    t.initialFeatures = ["vr"];
    t.contextMenu = [].concat(settingsMenu.verkürzt, settingsMenu.wiederholer, settingsMenu.Zusatz);
-   t.signalMenu = [
-      [
-         {
-            btnGroup: 1,
-            items: [
-               { btn: 1, text: "Vr 0", setting: "vr=0" },
-               { btn: 1, text: "Vr 1", setting: "vr=1" },
-               { btn: 1, text: "Vr 2", setting: "vr=2" },
-               { btn: 1, text: "verkürzt", setting: "verk=1" },
-            ],
-         },
-         { input: 1, text: "Zs 3v", setting: "zs3v" },
-      ],
-   ];
+   t.signalMenu = ["vr=0,vr=1,vr=2","zs3v"]      
    signalTemplates.hv_vr = t;
 
    //KS Hauptsignal
@@ -699,42 +650,13 @@ function initSignals() {
    t.initialFeatures = ["hp", "verwendung.asig"];
    t.contextMenu = [].concat(settingsMenu.Verwendung, settingsMenu.Vorsignal, settingsMenu.verkürzt, settingsMenu.Zusatz, settingsMenu.Bezeichnung);
    t.signalMenu = [
-      [
-         {
-            btnGroup: 1,
-            items: [
-               { btn: 1, text: "Hp 0", setting: "hp=0" },
-               { btn: 1, text: "Ks 1", setting: "hp=1" },
-               { btn: 1, text: "Ks 2", setting: "hp=2" },
-            ],
-         },
-         { input: 1, text: "Zs 3", setting: "zs3" },
-      ],
-
-      [{ input: 1, text: "Zs 3v", setting: "zs3v" }],
-      [
-         {
-            btnGroup: 1,
-            items: [
-               { btn: 1, text: "Zs 1", setting: "ersatz=zs1" },
-               { btn: 1, text: "Zs 7", setting: "ersatz=zs7" },
-               { btn: 1, text: "Zs 8", setting: "ersatz=zs8" },
-               { btn: 1, text: "Sh 1", setting: "ersatz=sh1" },
-               { btn: 1, text: "Kennlicht", setting: "ersatz=kennlicht" },
-            ],
-         },
-         {
-            btnGroup: 1,
-            items: [{ btn: 1, text: "Verk", setting: "verk=1" }],
-         },
-      ],
-      [
-         {
-            btnGroup: 1,
-            items: [{ btn: 1, text: "Zs 6", setting: "zs6=1" }],
-         },
-      ],
+      ["hp=0,hp=1(Ks 1),hp=2(Ks 2)", "zs3"],
+      "zs3v",
+      "ersatz=zs1,ersatz=zs7,ersatz=zs8,ersatz=sh1",
+      "verk=1(Verk.)",
+      "zs6=1(Zs 6)",
    ];
+
    //signal: ist das signal, dessen Stellung wir gerade setzen
    //hp: ist das signal, dessen Stellung wir vorsignalisieren wollen
    t.checkSignalDependency = function (signal, hp) {
@@ -833,7 +755,7 @@ function initSignals() {
    t.distance_from_track = 15;
    t.initialFeatures = ["vr"];
    t.contextMenu = [].concat(settingsMenu.verkürzt, settingsMenu.wiederholer, settingsMenu.Zusatz);
-   t.signalMenuX = ["Ks 1|hp=1,Ks 2|hp=2", "Zs 3v|zs3v", "Zs 1|ersatz=zs1,Zs 7|ersatz=zs7,Zs 8|ersatz=zs8,Sh 1|ersatz=sh1"];
+   t.signalMenu = ["hp=1(Ks 1),hp=2(Ks 2)", "zs3v", "ersatz=kennlicht"];
 
    t.checkSignalDependency = signalTemplates.ks.checkSignalDependency;
    signalTemplates.ks_vr = t;
@@ -864,18 +786,7 @@ function initSignals() {
    );
    t.scale = 0.07;
    t.contextMenu = [].concat(settingsMenu.Bezeichnung);
-   t.signalMenu = [
-      [
-         {
-            btnGroup: 1,
-            items: [
-               { btn: 1, text: "Hp 0", setting: "hp=0" },
-               { btn: 1, text: "Sh 1", setting: "hp=1" },
-            ],
-         },
-      ],
-      [{ btn: 1, text: "Kennlicht", setting: "ersatz=kennlicht" }],
-   ];
+   t.signalMenu = ["hp=0,hp=1(Sh 1)", "ersatz=kennlicht"];
    signalTemplates.ls = t;
 
    //ne4
@@ -906,7 +817,7 @@ function initSignals() {
       "geschw=9"
    );
    signalTemplates.lf6.initialFeatures = ["slave"];
-   signalTemplates.lf6.signalMenu = [{ input: 1, text: "Geschwindigkeit", setting: "geschw" }];
+   signalTemplates.lf6.signalMenu = ["geschw()"];
 
    signalTemplates.lf7 = new SignalTemplate(
       "lf7",
@@ -916,7 +827,7 @@ function initSignals() {
       "geschw=6"
    );
    signalTemplates.lf7.initialFeatures = ["master"];
-   signalTemplates.lf7.signalMenu = [{ input: 1, text: "Geschwindigkeit", setting: "geschw" }];
+   signalTemplates.lf7.signalMenu = ["geschw()"];
 
    signalTemplates.lf7.checkSignalDependency = signalTemplates.lf6.checkSignalDependency = function (signal, hp) {
       if (signal._template.id == "lf6" && hp._template.id == "lf7") {
@@ -934,5 +845,5 @@ function initSignals() {
       "geschw=8"
    );
 
-   signalTemplates.zs3.signalMenu = [{ input: 1, text: "Geschwindigkeit", setting: "geschw" }];
+   signalTemplates.zs3.signalMenu = ["geschw()"];
 }

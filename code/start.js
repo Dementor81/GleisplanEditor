@@ -103,7 +103,6 @@ function init() {
    pl.start().then(() => {
       $("#collapseOne .accordion-body").append([newItemButton(signalTemplates.hv_hp), 
          newItemButton(signalTemplates.ks),newItemButton(signalTemplates.ls)]);
-         $("#collapseOne .accordion-body").append([newItemButton(signalTemplates.ls)]);
       $("#collapseTwo .accordion-body").append(newItemButton(signalTemplates.hv_vr));
       $("#collapseTwo .accordion-body").append(newItemButton(signalTemplates.ks_vr));
       $("#collapseTwo .accordion-body").append();
