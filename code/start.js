@@ -43,7 +43,7 @@ var TEXTURE_MODE = false;
 var startpoint;
 var previousTouch;
 var showGrid = true;
-var mode = MODE_EDIT;
+var edit_mode = false;
 var pl;
 var mouseAction = null;
 var loadQueue;
@@ -95,14 +95,17 @@ function init() {
    main_container.addChild((train_container = create_container("trains")));
    stage.addChild((ui_container = create_container("ui")));
    stage.addChild((overlay_container = create_container("overlay")));
-   
+
    selectRenderer(false);
    //loadRecent();
    ShowPreBuildScreen();
 
    pl.start().then(() => {
-      $("#collapseOne .accordion-body").append([newItemButton(signalTemplates.hv_hp), 
-         newItemButton(signalTemplates.ks),newItemButton(signalTemplates.ls)]);
+      $("#collapseOne .accordion-body").append([
+         newItemButton(signalTemplates.hv_hp),
+         newItemButton(signalTemplates.ks),
+         newItemButton(signalTemplates.ls),
+      ]);
       $("#collapseTwo .accordion-body").append(newItemButton(signalTemplates.hv_vr));
       $("#collapseTwo .accordion-body").append(newItemButton(signalTemplates.ks_vr));
       $("#collapseTwo .accordion-body").append();
@@ -184,26 +187,7 @@ function init() {
       });
    }
 
-   $(btnPlay).click(() => changeMode(MODE_PLAY));
-
-   $(btnPerformance).on("click", () => {
-      stage.scale = 0.5;
-      stage.x = 912;
-      stage.y = 369;
-      drawGrid();
-      testPerformance(() => {
-         renderer.reDrawEverything(true);
-      }, "redraw everything");
-
-      testPerformance(() => {
-         stage.update();
-      }, "stage update");
-
-      const totalContainers = main_container.countContainers();
-      console.log(`Total containers (including sub-containers): ${totalContainers}`);
-   });
-
-   $(btnDrawTracks).click(() => changeMode(MODE_EDIT));
+   $(btnDrawTracks).click(() => toggleEditMode());
 
    $(btnTexture).click((e) => {
       TEXTURE_MODE = !TEXTURE_MODE;
@@ -285,22 +269,17 @@ function init() {
    });
 
    onResizeWindow();
-   changeMode(MODE_EDIT);
+   toggleEditMode(false);
    //onShowGrid(showGrid);
 
    $(window).resize(onResizeWindow);
    myCanvas.focus();
 }
 
-function changeMode(newMode) {
-   onShowGrid(newMode == MODE_EDIT);
-   $(btnPlay).toggleClass("active", newMode == MODE_PLAY);
-   $(btnDrawTracks).toggleClass("active", newMode == MODE_EDIT);
-   mode = newMode;
-   if (mode == MODE_PLAY) {
-      const bsOffcanvas = bootstrap.Offcanvas.getInstance(document.getElementById("sidebar"));
-      if (bsOffcanvas) bsOffcanvas.hide();
-   }
+function toggleEditMode(mode) {
+   edit_mode = mode != undefined ? mode : !edit_mode;
+   onShowGrid(edit_mode);
+   $(btnDrawTracks).toggleClass("active", edit_mode);
 }
 
 function selectRenderer(textured) {
@@ -533,7 +512,7 @@ function handleMouseMove(event) {
    if (mouseAction.action === MOUSE_ACTION.NONE) {
       //wie weit wurde die maus seit mousedown bewegt
       if (mouseAction.distance(stage.mouseX, stage.mouseY) > 4) {
-         if (event.nativeEvent.buttons == 1 && mode === MODE_EDIT && mouseAction.container?.name == "signal") {
+         if (event.nativeEvent.buttons == 1 && edit_mode && mouseAction.container?.name == "signal") {
             mouseAction.action = MOUSE_ACTION.DND_SIGNAL;
 
             mouseAction.container.signal._positioning.track.removeSignal(mouseAction.container.signal);
@@ -541,7 +520,7 @@ function handleMouseMove(event) {
             startDragAndDropSignal();
          } else if (event.nativeEvent.buttons == 1 && mouseAction.container?.name == "train") {
             mouseAction.action = MOUSE_ACTION.MOVE_TRAIN;
-         } else if (event.nativeEvent.buttons == 1 && mode === MODE_EDIT && mouseAction.container?.name != "signal") {
+         } else if (event.nativeEvent.buttons == 1 && edit_mode && mouseAction.container?.name != "signal") {
             //stage.addEventListener("stagemousemove", handleMouseMove);
             mouseAction.lineShape = new createjs.Shape();
             overlay_container.addChild(mouseAction.lineShape);
@@ -735,7 +714,7 @@ function handleStageMouseUp(e) {
          save();
       } else if (mouseAction.action === MOUSE_ACTION.NONE && mouseAction.distance(stage.mouseX, stage.mouseY) < 4) {
          if (mouseAction.container?.name == "signal") {
-            if (mode === MODE_PLAY) {
+            if (edit_mode === MODE_PLAY) {
                let bounds = getGlobalBounds(mouseAction.container);
 
                let p = stage.localToGlobal(
@@ -751,7 +730,7 @@ function handleStageMouseUp(e) {
                   mouseAction.container.signal.getHTML(),
                   $(myCanvas)
                );
-            } else if (mode === MODE_EDIT) {
+            } else if (edit_mode) {
                if (!$("#generated_menu").length) {
                   let context_menu = ui.showContextMenu(
                      { x: e.rawX, y: e.rawY },
@@ -762,7 +741,7 @@ function handleStageMouseUp(e) {
                }
             }
          } else if (mouseAction.container?.name == "track") {
-            if (mode === MODE_EDIT) {
+            if (edit_mode) {
                if (mouseAction.container.track) mouseAction.container.track.selected = !mouseAction.container.track.selected;
                renderer.updateSelection();
             }

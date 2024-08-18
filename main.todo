@@ -12,12 +12,13 @@ Bugs:
     ✔ bounds werden bei Strecken mit bögen falsch gesetzt @done(24-07-06 12:50)
     ✔ lf6 lf7 signalisieren sich nicht automatisch vor @done(24-07-15 17:46)
     ☐ lange bezeichnungen sprengen das schild, Text muss sich autom. verkleinern
+    ☐ Züge bleiben auf gelöschten/geänderten phantom Gleisen
 
 Content:
     ☐ Ne 2
     ☐ Ne 3
     ☐ Zs 6 alleinstehend
-    ☐ Sperrsignal
+    ✔ Sperrsignal @done(24-08-18 19:09)
 
 
 
@@ -48,7 +49,6 @@ Features:
     ✔ Signalbezeichnung einführen @done(24-07-16 18:53)
     ☐ abgleich der erlaubten Signalstellung in eigener Funktion, nicht erlaubte signale werden abgeschaltet und nicht nur nicht gezeichnet
     ☐ visualisieren, wo genau ein Signal am Gleis angeheftet ist (vllt mit kleiner roten Linie) 
-    ☐ Zs 6
     ☐ einzelne Signalfunktionen ativieren und deaktivieren können (zb z1, z7, zp 9)
     ☐ Rules erweitern, dass sie auch Features abfragen und aktivieren können
     ☐ Verwednung schaltet automatisch mehrere Feature um (Mastschild + Zusatzsignale)
@@ -56,7 +56,6 @@ Features:
     ☐ Bahnsteige einzeichen
     ☐ mehere gleise, ganze Bahnhöfe verschieben
     ☐ Signale koopieren, per drag&drop
-    ☐ Sperrsignale
     
 
 Big Features:
