@@ -153,11 +153,15 @@ class SignalTemplate {
    set distance_from_track(v) {
       this.#_distance_from_track = v;
    }
+   
+   get signalMenuX() {
+      return this.#_signalMenu;
+   }
 
-   set signalMenu(m) {
-      this.#_signalMenu = m;
+   set signalMenuX(m) {
+      this.#_signalMenu = this.parseSignalCommandMenu(m);
 
-      let queue = [...m];
+      /* let queue = [...m];
 
       while (queue.length > 0) {
          let current = queue.shift();
@@ -167,12 +171,40 @@ class SignalTemplate {
             if (current.items) queue.push(...[].concat(current.items));
             if (current.setting) current.ve = this.getVisualElementByStellung(current.setting);
          }
-      }
+      } */
+
+
    }
 
-   get signalMenu() {
-      return this.#_signalMenu;
+   parseSignalCommandMenu(menu) {
+      let menu_items = menu.map((item) => [this.parseSignalCommandMenu_string(item)]);
+      return menu_items;
    }
+
+   parseSignalCommandMenu_string(str) {
+      let items = str.split(",").map((str) => {
+         let splitted = str.split("|");
+         if (splitted.length != 2) throw Error("Signal Command Menu Item need text and command, sperated by |");
+         
+         let item = {
+            text: splitted[0],
+            command: splitted[1],
+            visual_elements: this.getVisualElementByStellung(splitted[1]),
+         };
+         if (item.command.includes("=")) item.btn = 1;
+         else item.input = 1;
+
+         return item;
+      });
+
+      if (items.length > 1)
+         return {
+            btnGroup: 1,
+            items: items,
+         };
+      else return items;
+   }
+
 
    constructor(id, title, json_file, startElements, initialSignalStellung) {
       this.#_id = id;
@@ -665,7 +697,7 @@ function initSignals() {
    t.scale = 0.15;
    t.distance_from_track = 15;
    t.initialFeatures = ["hp", "verwendung.asig"];
-   t.contextMenu = [].concat(settingsMenu.Verwendung, settingsMenu.Vorsignal, settingsMenu.verkürzt, settingsMenu.Zusatz,settingsMenu.Bezeichnung);
+   t.contextMenu = [].concat(settingsMenu.Verwendung, settingsMenu.Vorsignal, settingsMenu.verkürzt, settingsMenu.Zusatz, settingsMenu.Bezeichnung);
    t.signalMenu = [
       [
          {
@@ -801,45 +833,35 @@ function initSignals() {
    t.distance_from_track = 15;
    t.initialFeatures = ["vr"];
    t.contextMenu = [].concat(settingsMenu.verkürzt, settingsMenu.wiederholer, settingsMenu.Zusatz);
-   t.signalMenu = [
-      [
-         {
-            btnGroup: 1,
-            items: [
-               { btn: 1, text: "Ks 1", setting: "hp=1" },
-               { btn: 1, text: "Ks 2", setting: "hp=2" },
-            ],
-         },
-      ],
+   t.signalMenuX = ["Ks 1|hp=1,Ks 2|hp=2", "Zs 3v|zs3v", "Zs 1|ersatz=zs1,Zs 7|ersatz=zs7,Zs 8|ersatz=zs8,Sh 1|ersatz=sh1"];
 
-      [{ input: 1, text: "Zs 3v", setting: "zs3v" }],
-      [
-         {
-            btnGroup: 1,
-            items: [
-               { btn: 1, text: "Zs 1", setting: "ersatz=zs1" },
-               { btn: 1, text: "Zs 7", setting: "ersatz=zs7" },
-               { btn: 1, text: "Zs 8", setting: "ersatz=zs8" },
-               { btn: 1, text: "Sh 1", setting: "ersatz=sh1" },
-               { btn: 1, text: "Kennlicht", setting: "ersatz=kennlicht" },
-            ],
-         },
-      ],
-   ];
    t.checkSignalDependency = signalTemplates.ks.checkSignalDependency;
    signalTemplates.ks_vr = t;
 
    //ls
-   t = new SignalTemplate("ls", "Lichtsperrsignal", "ls", [
-      "basis","lp_r_links", "lp_r_rechts", "lp_w_oben", "lp_w_unten",
-      new VisualElement("r_links,r_rechts", { stellung: "hp=0" }),
-      new VisualElement("w_oben,w_unten", { stellung: "hp=1" }),
-      "schute_r_links","schute_r_rechts", "schute_w_oben","schute_w_unten",
-      new VisualElement("schild", {
-         conditions: "bez",
-         childs: [new TextElement("Bez", { pos: [205, 125], format: "bold 55px condenced", color: "#333", stellung: "#bez" })],
-      }),
-   ],"hp=0");
+   t = new SignalTemplate(
+      "ls",
+      "Lichtsperrsignal",
+      "ls",
+      [
+         "basis",
+         "lp_r_links",
+         "lp_r_rechts",
+         "lp_w_oben",
+         "lp_w_unten",
+         new VisualElement("r_links,r_rechts", { stellung: "hp=0" }),
+         new VisualElement("w_oben,w_unten", { stellung: "hp=1" }),
+         "schute_r_links",
+         "schute_r_rechts",
+         "schute_w_oben",
+         "schute_w_unten",
+         new VisualElement("schild", {
+            conditions: "bez",
+            childs: [new TextElement("Bez", { pos: [205, 125], format: "bold 55px condenced", color: "#333", stellung: "#bez" })],
+         }),
+      ],
+      "hp=0"
+   );
    t.scale = 0.07;
    t.contextMenu = [].concat(settingsMenu.Bezeichnung);
    t.signalMenu = [
@@ -852,12 +874,9 @@ function initSignals() {
             ],
          },
       ],
-      [{ btn: 1, text: "Kennlicht", setting: "ersatz=kennlicht" }],      
+      [{ btn: 1, text: "Kennlicht", setting: "ersatz=kennlicht" }],
    ];
    signalTemplates.ls = t;
-
-
-
 
    //ne4
    signalTemplates.ne4 = new SignalTemplate("ne4", "Ne 4", "basic", [

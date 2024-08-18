@@ -299,18 +299,18 @@ class Signal {
    }
 
    getHTML() {
-      if (this._template.signalMenu?.length) {
+      if (this._template.signalMenuX?.length) {
          const ul = $("<ul>", { class: "list-group list-group-flush" });
 
          const updateFunc = function (command, active) {
             this.set_stellung(command, active ? -1 : undefined);
             renderer.reDrawEverything();
             stage.update();
-            this.checkBootstrapMenu(this._template.signalMenu, ul);
+            this.checkBootstrapMenu(this._template.signalMenuX, ul);
             save();
          };
 
-         ul.append(this._template.signalMenu.map((data) => this.createBootstrapMenuItems(data, updateFunc)));
+         ul.append(this._template.signalMenuX.map((data) => this.createBootstrapMenuItems(data, updateFunc)));
 
          this.syncHTML(ul);
 
@@ -329,15 +329,15 @@ class Signal {
             } else return null;
          } else if (data.btnGroup) {
             let buttons = data.items
-               .filter((mi) => mi.ve != null && mi.ve.length > 0 && mi.ve.every((ve) => this.matchFeature(ve.conditions)))
+               .filter((mi) => mi.visual_elements != null && mi.visual_elements.length > 0 && mi.visual_elements.every((ve) => this.matchFeature(ve.conditions)))
                .map((item) =>
-                  ui.create_toggleButton(item.text, item.setting).on("click", (e) => update.bind(this)(item.setting, $(e.target).hasClass("active")))
+                  ui.create_toggleButton(item.text, item.command).on("click", (e) => update.bind(this)(item.command, $(e.target).hasClass("active")))
                )
                .justNull();
             if (buttons) return ui.create_buttonGroup(buttons);
             else return null;
          } else if (data.input) {
-            return Sig_UI.create_SpeedDropDown(data.setting, data.text).onValueChanged(update.bind(this));
+            return Sig_UI.create_SpeedDropDown(data.command, data.text).onValueChanged(update.bind(this));
          }
       }
    }
@@ -350,15 +350,15 @@ class Signal {
             data.items.forEach((item) => {
                let button = $("#btn_" + item.text.replace(" ", "_"), popup);
                if (button.length == 1) {
-                  button.toggleClass("active", this.check(item.setting));
-                  if (item.ve.every((ve) => ve.isAllowed(this))) button.removeAttr("disabled");
+                  button.toggleClass("active", this.check(item.command));
+                  if (item.visual_elements.every((ve) => ve.isAllowed(this))) button.removeAttr("disabled");
                   else button.attr("disabled", "disabled");
                }
             });
          } else if (data.input) {
             let button = $("#btn_" + data.text.replace(" ", "_"), popup);
             if (button.length == 1) {
-               const v = this.get(data.setting);
+               const v = this.get(data.command);
                button.text(data.text + (v > 0 ? " Kz " + v : " aus"));
             }
          }
@@ -366,7 +366,7 @@ class Signal {
    }
 
    syncHTML(popup) {
-      this.checkBootstrapMenu(this._template.signalMenu, popup);
+      this.checkBootstrapMenu(this._template.signalMenuX, popup);
    }
 
    getContextMenu() {
