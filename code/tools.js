@@ -685,7 +685,7 @@ class Point {
 }
 
 // Function to create a toast element
-const createToast = (error) => {
+const createToast = (title,txt) => {
    return ui
       .div("toast")
       .attr({ role: "alert", "aria-live": "assertive", "aria-atomic": "true" })
@@ -693,12 +693,12 @@ const createToast = (error) => {
          $("<div>")
             .addClass("toast-header")
             .append([
-               $("<strong>").addClass("me-auto").text("Fehler"),
+               $("<strong>").addClass("me-auto").text(title),
                $("<button>").attr({ type: "button", "data-bs-dismiss": "toast", "aria-label": "Close" }).addClass("btn-close"),
             ]),
          $("<div>")
             .addClass("toast-body")
-            .append([$("<p>", { text: error.message })]),
+            .append([$("<p>", { text: txt })]),
       ]);
 };
 
@@ -712,9 +712,19 @@ const getToastContainer = () => {
 };
 
 // Function to show the toast
-const showToast = (error) => {
+const showErrorToast = (error) => {
    console.error(error);
-   const toast = createToast(error);
+   const toast = createToast("Ups, Da gabs einen Fehler",error.message);
+   getToastContainer().prepend(ui.div("p-3").append(toast));
+   $(toast).toast({ autohide: true, delay: 10000 }).toast("show");
+   $(toast).on("hidden.bs.toast", function () {
+      $(this).parent().remove();
+   });
+};
+
+const showInfoToast = (txt) => {
+   console.info(txt);
+   const toast = createToast("Information:",txt);
    getToastContainer().prepend(ui.div("p-3").append(toast));
    $(toast).toast({ autohide: true, delay: 10000 }).toast("show");
    $(toast).on("hidden.bs.toast", function () {

@@ -71,7 +71,7 @@ function init() {
       pl.addImage("weiche2.svg", "weiche");
       pl.addImage("bumper1.svg", "bumper");
    } catch (error) {
-      showToast(error);
+      showErrorToast(error);
    }
 
    stage = new createjs.Stage(myCanvas);
@@ -220,18 +220,23 @@ function init() {
 
       try {
          const custom_scale = 2;
+         stage.enableDOMEvents(false);
+
+         stage.scale = custom_scale;
+
+         renderer.reDrawEverything(true, true);
+
          let bounds = main_container.getBounds();
+         if (!bounds) {
+            showInfoToast("Nix zu sehen");
+            return;
+         }
          const anotherCanvas = $("<canvas>", { id: "test" })
             .attr("width", bounds.width * custom_scale)
             .attr("height", bounds.height * custom_scale);
-         stage.enableDOMEvents(false);
          stage.canvas = anotherCanvas[0];
-
-         stage.x = bounds.x * custom_scale * -1;
-         stage.y = bounds.y * custom_scale * -1;
-         stage.scale = custom_scale;
-
-         renderer.reDrawEverything(true);
+         stage.x = bounds.x * -custom_scale;
+         stage.y = bounds.y * -custom_scale;
          grid.visible = false;
          ui_container.visible = false;
          stage.update();
@@ -243,7 +248,7 @@ function init() {
             a[0].click();
          });
       } catch (error) {
-         showToast(error);
+         showErrorToast(error);
       } finally {
          stage.x = backup.x;
          stage.y = backup.y;
@@ -878,14 +883,14 @@ function loadRecent() {
          }
       }
    } catch (error) {
-      showToast(error);
+      showErrorToast(error);
    }
 }
 
 function receiver(key, value) {
    if (value?._class) {
       const myClass = eval(value._class + ".FromObject")(value);
-      if (myClass == null) showToast(new Error("error loading " + key));
+      if (myClass == null) showErrorToast(new Error("error loading " + key));
       return myClass;
    } else return value;
 }
@@ -1009,44 +1014,4 @@ function loadPrebuildbyName(name) {
    };
    xmlhttp.open("GET", "prebuilds.xml" + "?" + Math.floor(Math.random() * 100), true);
    xmlhttp.send();
-}
-
-function TrackVisible(track) {
-   const width = stage.canvas.width / stage.scaleX,
-      height = stage.canvas.height / stage.scaleY,
-      x = -stage.x / stage.scaleX,
-      y = -stage.y / stage.scaleY;
-   const screen_rectangle = { left: x, top: y, right: x + width, bottom: y + height };
-
-   const isInside = (point, rect) => point.x > rect.left && point.x < rect.right && point.y > rect.top && point.y < rect.bottom;
-
-   if (isInside(track.start, screen_rectangle) || isInside(track.end, screen_rectangle)) return true; //
-
-   //left
-   let p1 = { x: x, y: y },
-      p2 = { x: x, y: screen_rectangle.bottom };
-   if (geometry.doLineSegmentsIntersect(p1, p2, track.start, track.end)) return true;
-   //bottom
-   p1 = p2;
-   p2 = { x: screen_rectangle.right, y: screen_rectangle.bottom };
-   if (geometry.doLineSegmentsIntersect(p1, p2, track.start, track.end)) return true;
-   //right
-   p1 = p2;
-   p2 = { x: screen_rectangle.right, y: y };
-   if (geometry.doLineSegmentsIntersect(p1, p2, track.start, track.end)) return true;
-   //top
-   p1 = p2;
-   p2 = { x: x, y: y };
-   if (geometry.doLineSegmentsIntersect(p1, p2, track.start, track.end)) return true;
-
-   return false;
-}
-
-function PointVisible(p1) {
-   const width = stage.canvas.width / stage.scaleX,
-      height = stage.canvas.height / stage.scaleY,
-      x = -stage.x / stage.scaleX,
-      y = -stage.y / stage.scaleY;
-
-   return p1.x.between(x, x + width) && p1.y.between(y, y + height);
 }

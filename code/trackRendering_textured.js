@@ -28,7 +28,7 @@ class trackRendering_textured {
 
       this._idleCallback = rIC(
          function (r) {
-            const toBeRemoved = track_container.children.filter((c) => c.track && !TrackVisible(c.track));
+            const toBeRemoved = track_container.children.filter((c) => c.track && !this.TrackVisible(c.track));
             toBeRemoved.forEach((c) => {
                const signalsToBeRemoved = signal_container.children.filter((cs) => cs.signal._positioning.track == c.track);
                signalsToBeRemoved.forEach((cs) => {
@@ -44,15 +44,20 @@ class trackRendering_textured {
       );
    }
 
-   reDrawEverything(force = false) {
+   ///force=false means, each element decides if it needs to be redrawn. If something global changed,
+   ///like the scale, force needs to be true.
+   /// dont_optimize parameter disables the optimasation to only handle and draw elements inside the viewport
+   /// and disables caching.
+   /// its used by the export to image functionality
+   reDrawEverything(force = false, dont_optimize = false) {
       if (!pl.loaded)
          //stupid code that should prevent drawing, before the preloader is ready
          setTimeout(() => {
-            this.reDrawEverything(force);
+            this.reDrawEverything(force, dont_optimize);
          }, 500);
       else {
          if (this._rendering == undefined) {
-            this._rendering = {};
+            this._rendering = { dont_optimize: dont_optimize };
             if (force) {
                clearCanvas();
                this.calcRenderValues();
@@ -69,7 +74,7 @@ class trackRendering_textured {
             this.renderAllSwitches(track_container, force);
             this.renderAllTrains();
             this._lastRenderScale = stage.scale;
-            this.cleanUp();
+            if (!dont_optimize) this.cleanUp();
             delete this._rendering;
          }
       }
@@ -98,8 +103,6 @@ class trackRendering_textured {
          c.train = train;
          c.mouseChildren = false;
          const p = geometry.add(train.track.start, train.track.unit.multiply(train.pos));
-         /* c.x = p.x;
-         c.y = p.y; */
          this.renderCar(train, c, true);
          if (train.trainCoupledBack) this.renderCar(train.trainCoupledBack, c);
 
@@ -138,7 +141,7 @@ class trackRendering_textured {
 
    renderAllTracks(c, force) {
       tracks.forEach((t) => {
-         if (TrackVisible(t)) {
+         if (this.TrackVisible(t)) {
             if (force || !t.rendered) {
                this.renderTrack(c, t);
                t.signals.forEach((signal) => {
@@ -207,7 +210,7 @@ class trackRendering_textured {
       const bounds = boundingBox(bounds_points);
       track_container.setBounds(bounds.x, bounds.y, bounds.width, bounds.height);
 
-      track_container.cache(bounds.x, bounds.y, bounds.width, bounds.height, MAX_SCALE + 2);
+      if (!this._rendering.dont_optimize) track_container.cache(bounds.x, bounds.y, bounds.width, bounds.height, MAX_SCALE + 2);
 
       container.addChild(track_container);
       track.rendered = true;
@@ -456,7 +459,7 @@ class trackRendering_textured {
 
    renderAllSwitches(c, force) {
       switches.forEach((sw) => {
-         if (PointVisible(sw.location) && (force || !sw.rendered)) this.renderSwitch(c, sw);
+         if (this.PointVisible(sw.location) && (force || !sw.rendered)) this.renderSwitch(c, sw);
          //if (sw.type.is(SWITCH_TYPE.CROSSING)) return;
       });
    }
@@ -535,5 +538,47 @@ class trackRendering_textured {
             return c;
          })()
       );
+   }
+
+   PointVisible(p1) {
+      if (this._rendering?.dont_optimize) return true;
+      const width = stage.canvas.width / stage.scaleX,
+         height = stage.canvas.height / stage.scaleY,
+         x = -stage.x / stage.scaleX,
+         y = -stage.y / stage.scaleY;
+
+      return p1.x.between(x, x + width) && p1.y.between(y, y + height);
+   }
+
+   TrackVisible(track) {
+      if (this._rendering?.dont_optimize) return true;
+      const width = stage.canvas.width / stage.scaleX,
+         height = stage.canvas.height / stage.scaleY,
+         x = -stage.x / stage.scaleX,
+         y = -stage.y / stage.scaleY;
+      const screen_rectangle = { left: x, top: y, right: x + width, bottom: y + height };
+
+      const isInside = (point, rect) => point.x > rect.left && point.x < rect.right && point.y > rect.top && point.y < rect.bottom;
+
+      if (isInside(track.start, screen_rectangle) || isInside(track.end, screen_rectangle)) return true; //
+
+      //left
+      let p1 = { x: x, y: y },
+         p2 = { x: x, y: screen_rectangle.bottom };
+      if (geometry.doLineSegmentsIntersect(p1, p2, track.start, track.end)) return true;
+      //bottom
+      p1 = p2;
+      p2 = { x: screen_rectangle.right, y: screen_rectangle.bottom };
+      if (geometry.doLineSegmentsIntersect(p1, p2, track.start, track.end)) return true;
+      //right
+      p1 = p2;
+      p2 = { x: screen_rectangle.right, y: y };
+      if (geometry.doLineSegmentsIntersect(p1, p2, track.start, track.end)) return true;
+      //top
+      p1 = p2;
+      p2 = { x: x, y: y };
+      if (geometry.doLineSegmentsIntersect(p1, p2, track.start, track.end)) return true;
+
+      return false;
    }
 }
