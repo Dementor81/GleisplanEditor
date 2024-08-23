@@ -46,63 +46,64 @@
 
       <div id="toolbar" class="navbar-dark rounded-pill">
          <a id="navbarBrand" class="navbar-brand" href="start.html"><img src="logo.svg" alt="" width="70" height="70" />Gleisplan Editor</a>
-         <button id="btnDrawTracks" type="button" class="btn btn-secondary btn-sm active" title="Gleise und Signale zeichnen">
-            Baumodus
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-tools" viewBox="0 0 16 16">
-               <path
-                  d="M9.972 2.508a.5.5 0 0 0-.16-.556l-.178-.129a5.009 5.009 0 0 0-2.076-.783C6.215.862 4.504 1.229 2.84 3.133H1.786a.5.5 0 0 0-.354.147L.146 4.567a.5.5 0 0 0 0 .706l2.571 2.579a.5.5 0 0 0 .708 0l1.286-1.29a.5.5 0 0 0 .146-.353V5.57l8.387 8.873A.5.5 0 0 0 14 14.5l1.5-1.5a.5.5 0 0 0 .017-.689l-9.129-8.63c.747-.456 1.772-.839 3.112-.839a.5.5 0 0 0 .472-.334z"
-               />
-            </svg>
-         </button>
-         <button id="btnDraw" type="button" class="btn btn-secondary btn-sm" title="Zeichnen">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-tools"
-                viewBox="0 0 16 16">
-                <path
-                    d="M12.146.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1 0 .708l-10 10a.5.5 0 0 1-.168.11l-5 2a.5.5 0 0 1-.65-.65l2-5a.5.5 0 0 1 .11-.168l10-10zM11.207 2.5 13.5 4.793 14.793 3.5 12.5 1.207 11.207 2.5zm1.586 3L10.5 3.207 4 9.707V10h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.293l6.5-6.5zm-9.761 5.175-.106.106-1.528 3.821 3.821-1.528.106-.106A.5.5 0 0 1 5 12.5V12h-.5a.5.5 0 0 1-.5-.5V11h-.5a.5.5 0 0 1-.468-.325z" />
-            </svg>
-        </button> 
-         <button id="btnClear" type="button" class="btn btn-secondary btn-sm" title="alles entfernen">
-            <i class="bi bi-trash"></i>
-         </button>         
-         <button id="btnCenter" type="button" class="btn btn-secondary btn-sm" title="Ansicht zentrieren">
-            <i class="bi bi-bullseye"></i>
-         </button>
-         <button id="btnImage" type="button" class="btn btn-secondary btn-sm" title="Ansicht als Bild herunterladen">
-            <i class="bi bi-camera"></i>
-         </button>
-         <button id="btnTexture" type="button" class="btn btn-secondary btn-sm" title="Echte Schienen anzeigen">
-            <i class="bi bi-emoji-sunglasses-fill"></i>
-         </button>
-         <div class="d-flex ms-auto" style="gap:10px;padding-right: 1rem;">
-           <button
-            id="btnPlaceSignals"
-            type="button"
-            class="btn btn-secondary btn-sm"
-            title="Signale hinzufügen"
-            data-bs-toggle="offcanvas"
-            data-bs-target="#sidebar"
-         >
-            <svg
-               xmlns="http://www.w3.org/2000/svg"
-               width="16"
-               height="16"
-               fill="currentColor"
-               class="bi bi-sign-stop-lights-fill"
-               viewBox="0 0 16 16"
+         <div class="" style="padding-left: 2rem">
+            <button id="btnDrawTracks" type="button" class="btn btn-secondary btn-sm active" title="Gleise und Signale zeichnen">
+               Baumodus
+               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-tools" viewBox="0 0 16 16">
+                  <path
+                     d="M9.972 2.508a.5.5 0 0 0-.16-.556l-.178-.129a5.009 5.009 0 0 0-2.076-.783C6.215.862 4.504 1.229 2.84 3.133H1.786a.5.5 0 0 0-.354.147L.146 4.567a.5.5 0 0 0 0 .706l2.571 2.579a.5.5 0 0 0 .708 0l1.286-1.29a.5.5 0 0 0 .146-.353V5.57l8.387 8.873A.5.5 0 0 0 14 14.5l1.5-1.5a.5.5 0 0 0 .017-.689l-9.129-8.63c.747-.456 1.772-.839 3.112-.839a.5.5 0 0 0 .472-.334z"
+                  />
+               </svg>
+            </button>
+            <button id="btnDraw" type="button" class="btn btn-secondary btn-sm" data-bs-toggle="button" title="Zeichnen">
+               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-tools" viewBox="0 0 16 16">
+                  <path
+                     d="M12.146.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1 0 .708l-10 10a.5.5 0 0 1-.168.11l-5 2a.5.5 0 0 1-.65-.65l2-5a.5.5 0 0 1 .11-.168l10-10zM11.207 2.5 13.5 4.793 14.793 3.5 12.5 1.207 11.207 2.5zm1.586 3L10.5 3.207 4 9.707V10h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.293l6.5-6.5zm-9.761 5.175-.106.106-1.528 3.821 3.821-1.528.106-.106A.5.5 0 0 1 5 12.5V12h-.5a.5.5 0 0 1-.5-.5V11h-.5a.5.5 0 0 1-.468-.325z"
+                  />
+               </svg>
+            </button>
+            <button id="btnClear" type="button" class="btn btn-secondary btn-sm" title="alles entfernen">
+               <i class="bi bi-trash"></i>
+            </button>
+            <button id="btnCenter" type="button" class="btn btn-secondary btn-sm" title="Ansicht zentrieren">
+               <i class="bi bi-bullseye"></i>
+            </button>
+            <button id="btnImage" type="button" class="btn btn-secondary btn-sm" title="Ansicht als Bild herunterladen">
+               <i class="bi bi-camera"></i>
+            </button>
+            <button id="btnTexture" type="button" class="btn btn-secondary btn-sm" title="Echte Schienen anzeigen">
+               <i class="bi bi-emoji-sunglasses-fill"></i>
+            </button>
+         </div>
+         <div class="d-flex ms-auto" style="gap: 10px; padding-right: 1rem">
+            <button
+               id="btnPlaceSignals"
+               type="button"
+               class="btn btn-secondary btn-sm"
+               title="Signale hinzufügen"
+               data-bs-toggle="offcanvas"
+               data-bs-target="#sidebar"
             >
-               <path d="M8 6a1 1 0 1 0 0-2 1 1 0 0 0 0 2Zm0 3a1 1 0 1 0 0-2 1 1 0 0 0 0 2Zm1 2a1 1 0 1 1-2 0 1 1 0 0 1 2 0Z" />
-               <path
-                  d="M9.05.435c-.58-.58-1.52-.58-2.1 0L.436 6.95c-.58.58-.58 1.519 0 2.098l6.516 6.516c.58.58 1.519.58 2.098 0l6.516-6.516c.58-.58.58-1.519 0-2.098L9.05.435ZM6 4a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4Z"
-               />
-            </svg>
-            Neue Signale
-         </button>         
-         <button id="btnAddTrain" type="button" class="btn btn-secondary btn-sm" title="Zug hinzufügen" data-bs-toggle="button">
-            <img src="train-front.svg" width="16" height="16" />
-            Züge
-         </button>
-          </div>
-         
+               <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="16"
+                  height="16"
+                  fill="currentColor"
+                  class="bi bi-sign-stop-lights-fill"
+                  viewBox="0 0 16 16"
+               >
+                  <path d="M8 6a1 1 0 1 0 0-2 1 1 0 0 0 0 2Zm0 3a1 1 0 1 0 0-2 1 1 0 0 0 0 2Zm1 2a1 1 0 1 1-2 0 1 1 0 0 1 2 0Z" />
+                  <path
+                     d="M9.05.435c-.58-.58-1.52-.58-2.1 0L.436 6.95c-.58.58-.58 1.519 0 2.098l6.516 6.516c.58.58 1.519.58 2.098 0l6.516-6.516c.58-.58.58-1.519 0-2.098L9.05.435ZM6 4a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4Z"
+                  />
+               </svg>
+               Neue Signale
+            </button>
+            <button id="btnAddTrain" type="button" class="btn btn-secondary btn-sm" title="Zug hinzufügen" data-bs-toggle="button">
+               <img src="train-front.svg" width="16" height="16" />
+               Züge
+            </button>
+         </div>
       </div>
       <div id="CanvasContainer">
          <canvas id="myCanvas" width="10" height="10"></canvas>
@@ -280,6 +281,36 @@
                </div>
             </div>
          </div>
+      </div>
+
+      <div
+         id="drawingPanel"
+         class="d-flex flex-row gap-3 rounded-pill offcanvas offcanvas-bottom"
+         data-bs-scroll="true"
+         data-bs-backdrop="false"
+      >
+      <div class="btn-group" role="group" >
+         <input type="radio" class="btn-check" name="DrawingColor" id="btnDrawingColorRed" value="red" autocomplete="off" checked>
+         <label class="btn btn-outline-primary" for="btnDrawingColorRed">rot</label>
+       
+         <input type="radio" class="btn-check" name="DrawingColor" id="btnDrawingColorGreen" value="green" autocomplete="off">
+         <label class="btn btn-outline-primary" for="btnDrawingColorGreen">grün</label>
+       
+         <input type="radio" class="btn-check" name="DrawingColor" id="btnDrawingColorBlue" value="blue" autocomplete="off">
+         <label class="btn btn-outline-primary" for="btnDrawingColorBlue">blau</label>
+       </div>
+       <div class="btn-group" role="group" >
+         <input type="radio" class="btn-check" name="DrawingWidth" id="btnDrawingWidth1" value="5" autocomplete="off" checked>
+         <label class="btn btn-outline-primary" for="btnDrawingWidth1">dünn</label>
+       
+         <input type="radio" class="btn-check" name="DrawingWidth" id="btnDrawingWidth2" value="10" autocomplete="off">
+         <label class="btn btn-outline-primary" for="btnDrawingWidth2">mittel</label>
+       
+         <input type="radio" class="btn-check" name="DrawingWidth" id="btnDrawingWidth3" value="20" autocomplete="off">
+         <label class="btn btn-outline-primary" for="btnDrawingWidth3">dick</label>
+       </div>
+         <button id="btnDrawingEraser" type="button" class="btn btn-light btn-sm" title="Radierer">Radierer</button>
+         <button id="btnDrawingClear" type="button" class="btn btn-light btn-sm" title="Löschen">Löschen</button>
       </div>
    </body>
 </html>

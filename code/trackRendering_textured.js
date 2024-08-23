@@ -59,7 +59,9 @@ class trackRendering_textured {
          if (this._rendering == undefined) {
             this._rendering = { dont_optimize: dont_optimize };
             if (force) {
-               clearCanvas();
+               track_container.removeAllChildren();
+               signal_container.removeAllChildren();
+               train_container.removeAllChildren();
                this.calcRenderValues();
                tracks.forEach((t) => (t.rendered = false));
                switches.forEach((sw) => (sw.rendered = false));

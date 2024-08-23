@@ -17,7 +17,7 @@ const DIRECTION = {
    RIGHT_2_LEFT: -1,
 };
 
-const MOUSE_ACTION = {
+const MOUSE_DOWN_ACTION = {
    NONE: 0,
    SCROLL: 1,
    BUILD_TRACK: 2,
@@ -25,6 +25,7 @@ const MOUSE_ACTION = {
    DND_SIGNAL: 4,
    ADD_TRAIN: 5,
    MOVE_TRAIN: 6,
+   DRAWING: 7,
 };
 
 const SWITCH_TYPE = {
@@ -37,13 +38,23 @@ const SWITCH_TYPE = {
    CROSSING: 10,
 };
 
-var stage, debug_container, main_container, overlay_container, ui_container, signal_container, track_container, train_container, grid;
+var stage,
+   debug_container,
+   main_container,
+   overlay_container,
+   ui_container,
+   signal_container,
+   track_container,
+   train_container,
+   drawing_container,
+   grid;
 
 var TEXTURE_MODE = false;
-var startpoint;
 var previousTouch;
 var showGrid = true;
 var edit_mode = false;
+var drawing_mode = false;
+var drawing_color = "red";
 var pl;
 var mouseAction = null;
 var loadQueue;
@@ -75,6 +86,7 @@ function init() {
    }
 
    stage = new createjs.Stage(myCanvas);
+   stage.autoClear = true;
    stage.enableDOMEvents(true);
    /* console.log(createjs.Touch.isSupported());
     if (createjs.Touch.isSupported())
@@ -95,6 +107,7 @@ function init() {
    main_container.addChild((train_container = create_container("trains")));
    stage.addChild((ui_container = create_container("ui")));
    stage.addChild((overlay_container = create_container("overlay")));
+   stage.addChild((drawing_container = create_container("drawing_container")));
 
    selectRenderer(false);
    //loadRecent();
@@ -238,6 +251,7 @@ function init() {
          stage.x = bounds.x * -custom_scale;
          stage.y = bounds.y * -custom_scale;
          grid.visible = false;
+         drawing_container.visible = false;
          ui_container.visible = false;
          stage.update();
 
@@ -255,11 +269,28 @@ function init() {
          stage.scale = backup.scale;
          stage.canvas = myCanvas;
          grid.visible = showGrid;
+         drawing_container.visible = true;
          ui_container.visible = true;
          renderer.reDrawEverything(true);
          stage.enableDOMEvents(true);
          stage.update();
       }
+   });
+
+   $("#btnDraw").click((e) => {
+      drawing_mode = $("#btnDraw").hasClass("active");
+      var myOffcanvas = document.getElementById("drawingPanel");
+      var bsOffcanvas = bootstrap.Offcanvas.getOrCreateInstance(myOffcanvas);
+      if (drawing_mode) {
+         bsOffcanvas.show();
+      } else {
+         bsOffcanvas.hide();
+      }
+   });
+
+   $("#btnDrawingClear").click((e) => {
+      drawing_container.removeAllChildren();
+      stage.update();
    });
 
    document.addEventListener("keydown", (e) => {
@@ -275,7 +306,6 @@ function init() {
 
    onResizeWindow();
    toggleEditMode(false);
-   //onShowGrid(showGrid);
 
    $(window).resize(onResizeWindow);
    myCanvas.focus();
@@ -283,7 +313,9 @@ function init() {
 
 function toggleEditMode(mode) {
    edit_mode = mode != undefined ? mode : !edit_mode;
-   onShowGrid(edit_mode);
+   showGrid = edit_mode;
+   drawGrid();
+   stage.update();
    $(btnDrawTracks).toggleClass("active", edit_mode);
 }
 
@@ -298,6 +330,7 @@ function selectRenderer(textured) {
 }
 
 function clearCanvas() {
+   drawing_container.removeAllChildren();
    debug_container.removeAllChildren();
    track_container.removeAllChildren();
    signal_container.removeAllChildren();
@@ -305,13 +338,6 @@ function clearCanvas() {
    train_container.removeAllChildren();
    ui_container.removeAllChildren();
    stage.update();
-}
-
-function onShowGrid(on) {
-   showGrid = on;
-   drawGrid();
-   stage.update();
-   //$(btnGrid).toggleClass("active", on);
 }
 
 function onResizeWindow() {
@@ -370,16 +396,26 @@ function handleStageMouseDown(event) {
    //console.log(hittest ? hittest : "nothing hit");
 
    mouseAction = {
-      action: MOUSE_ACTION.NONE,
+      action: drawing_mode ? MOUSE_DOWN_ACTION.DRAWING : MOUSE_DOWN_ACTION.NONE,
       container: hittest,
-      startPoint: new Point(event.stageX, event.stageY),
+      startPoint: stage.globalToLocal(stage.mouseX, stage.mouseY),
+      _distancePoint: new Point(event.stageX, event.stageY),
       offset: hittest?.globalToLocal(stage.mouseX, stage.mouseY), //Koordinate auf dem angeklickten Object (zb Signal), damit der Container am Mauszeiger "klebt"
-      distance: function (x, y) {
-         return geometry.distance(this.startPoint, { x: x, y: y });
+      distance: function () {
+         return geometry.distance(this._distancePoint, new Point(stage.mouseX, stage.mouseY));
       },
    };
 
-   if ($("#btnAddTrain").hasClass("active")) mouseAction.action = MOUSE_ACTION.ADD_TRAIN;
+   if (drawing_mode) {
+      const color = document.querySelector('input[name="DrawingColor"]:checked').value;
+      const width = document.querySelector('input[name="DrawingWidth"]:checked').value;
+
+      drawing_container.addChild((mouseAction.shape = new createjs.Shape()));
+      mouseAction.shape.graphics.setStrokeStyle(width, "round", "round").beginStroke(color);
+      mouseAction.old_point = new Point(event.stageX, event.stageY);
+   }
+
+   if ($("#btnAddTrain").hasClass("active")) mouseAction.action = MOUSE_DOWN_ACTION.ADD_TRAIN;
 
    //console.log(mouseAction);
    stage.addEventListener("stagemousemove", handleMouseMove);
@@ -503,7 +539,10 @@ function handleMouseMove(event) {
    if (!event.primary) {
       return;
    }
-   if (mouseAction == null) return;
+   if (mouseAction == null) {
+      stage.removeEventListener("stagemousemove", handleMouseMove);
+      return;
+   }
    //falls mouseMove noch läuft, obwohl der User keinen button mehr drückt
    //tritt vor allem beim debugging auf
    if (event.nativeEvent.buttons == 0) {
@@ -514,31 +553,35 @@ function handleMouseMove(event) {
    let local_point = stage.globalToLocal(stage.mouseX, stage.mouseY);
    //console.log(local_point, { x: stage.mouseX, y: stage.mouseY });
 
-   if (mouseAction.action === MOUSE_ACTION.NONE) {
+   if (mouseAction.action === MOUSE_DOWN_ACTION.NONE) {
       //wie weit wurde die maus seit mousedown bewegt
-      if (mouseAction.distance(stage.mouseX, stage.mouseY) > 4) {
+      if (mouseAction.distance() > 4) {
          if (event.nativeEvent.buttons == 1 && edit_mode && mouseAction.container?.name == "signal") {
-            mouseAction.action = MOUSE_ACTION.DND_SIGNAL;
+            mouseAction.action = MOUSE_DOWN_ACTION.DND_SIGNAL;
 
             mouseAction.container.signal._positioning.track.removeSignal(mouseAction.container.signal);
 
             startDragAndDropSignal();
          } else if (event.nativeEvent.buttons == 1 && mouseAction.container?.name == "train") {
-            mouseAction.action = MOUSE_ACTION.MOVE_TRAIN;
+            mouseAction.action = MOUSE_DOWN_ACTION.MOVE_TRAIN;
          } else if (event.nativeEvent.buttons == 1 && edit_mode && mouseAction.container?.name != "signal") {
             //stage.addEventListener("stagemousemove", handleMouseMove);
             mouseAction.lineShape = new createjs.Shape();
             overlay_container.addChild(mouseAction.lineShape);
             setTrackAnchorPoints();
-            mouseAction.action = MOUSE_ACTION.BUILD_TRACK;
+            mouseAction.action = MOUSE_DOWN_ACTION.BUILD_TRACK;
          } else if (event.nativeEvent.buttons == 2) {
             //stage.addEventListener("stagemousemove", handleMouseMove);
-            mouseAction.action = MOUSE_ACTION.SCROLL;
+            mouseAction.action = MOUSE_DOWN_ACTION.SCROLL;
          }
       }
    }
+   if (mouseAction.action === MOUSE_DOWN_ACTION.DRAWING) {
+      mouseAction.shape.graphics.mt(mouseAction.startPoint.x, mouseAction.startPoint.y).lt(local_point.x, local_point.y);
 
-   if (mouseAction.action === MOUSE_ACTION.DND_SIGNAL) {
+      mouseAction.startPoint.x = local_point.x;
+      mouseAction.startPoint.y = local_point.y;
+   } else if (mouseAction.action === MOUSE_DOWN_ACTION.DND_SIGNAL) {
       //searches for a hit in 2 steps:
       //1st: at the mouse position and if it finds a track there
       //it 2nd searches for the track at the signal´s base
@@ -570,15 +613,15 @@ function handleMouseMove(event) {
          mouseAction.container.x = local_point.x;
          mouseAction.container.y = local_point.y;
       }
-   } else if (mouseAction.action === MOUSE_ACTION.BUILD_TRACK) {
+   } else if (mouseAction.action === MOUSE_DOWN_ACTION.BUILD_TRACK) {
       setTrackAnchorPoints();
       drawBluePrintTrack();
-   } else if (mouseAction.action === MOUSE_ACTION.SCROLL) {
+   } else if (mouseAction.action === MOUSE_DOWN_ACTION.SCROLL) {
       stage.x += event.nativeEvent.movementX;
       stage.y += event.nativeEvent.movementY;
       drawGrid(false);
       renderer.reDrawEverything();
-   } else if (mouseAction.action === MOUSE_ACTION.MOVE_TRAIN) {
+   } else if (mouseAction.action === MOUSE_DOWN_ACTION.MOVE_TRAIN) {
       Train.moveTrain(mouseAction.container.train, event.nativeEvent.movementX);
       renderer.reDrawEverything();
    }
@@ -662,10 +705,13 @@ function getGlobalBounds(container) {
 
 function handleStageMouseUp(e) {
    //console.log("handleStageMouseUp", e);
-   if (mouseAction == null) return;
+   if (mouseAction == null) {
+      stage.removeEventListener("stagemousemove", handleMouseMove);
+      return;
+   }
    let local_point = stage.globalToLocal(stage.mouseX, stage.mouseY);
    if (e.nativeEvent.which == 1) {
-      if (mouseAction.action === MOUSE_ACTION.DND_SIGNAL) {
+      if (mouseAction.action === MOUSE_DOWN_ACTION.DND_SIGNAL) {
          overlay_container.removeChild(mouseAction.container);
 
          if (mouseAction.hit_track) {
@@ -675,7 +721,7 @@ function handleStageMouseUp(e) {
          save();
          overlay_container.removeAllChildren();
          stage.update();
-      } else if (mouseAction.action === MOUSE_ACTION.BUILD_TRACK) {
+      } else if (mouseAction.action === MOUSE_DOWN_ACTION.BUILD_TRACK) {
          if (mouseAction.ankerPoints.length > 1) {
             let tmpPoint = mouseAction.ankerPoints[0];
             for (let i = 1; i < mouseAction.ankerPoints.length; i++) {
@@ -697,7 +743,7 @@ function handleStageMouseUp(e) {
          overlay_container.removeAllChildren();
 
          stage.update();
-      } else if (mouseAction.action === MOUSE_ACTION.ADD_TRAIN) {
+      } else if (mouseAction.action === MOUSE_DOWN_ACTION.ADD_TRAIN) {
          if (mouseAction.container?.name == "track") {
             const color = ["#ff0000", "#ffff00", "#00ff00", "#0000ff"].random();
             const track = mouseAction.container.track;
@@ -715,9 +761,9 @@ function handleStageMouseUp(e) {
             save();
             $("#btnAddTrain").removeClass("active");
          }
-      } else if (mouseAction.action === MOUSE_ACTION.MOVE_TRAIN) {
+      } else if (mouseAction.action === MOUSE_DOWN_ACTION.MOVE_TRAIN) {
          save();
-      } else if (mouseAction.action === MOUSE_ACTION.NONE && mouseAction.distance(stage.mouseX, stage.mouseY) < 4) {
+      } else if (mouseAction.action === MOUSE_DOWN_ACTION.NONE && mouseAction.distance() < 4) {
          if (mouseAction.container?.name == "signal") {
             if (edit_mode === MODE_PLAY) {
                let bounds = getGlobalBounds(mouseAction.container);
@@ -758,7 +804,7 @@ function handleStageMouseUp(e) {
             clearTrackSelection();
          }
       }
-   } else if (mouseAction.action === MOUSE_ACTION.SCROLL) {
+   } else if (mouseAction.action === MOUSE_DOWN_ACTION.SCROLL) {
       save();
    }
 
@@ -917,7 +963,7 @@ function newItemButton(template) {
       .attr("data-signal", template.id)
       .on("mousedown", (e) => {
          mouseAction = {
-            action: MOUSE_ACTION.DND_SIGNAL,
+            action: MOUSE_DOWN_ACTION.DND_SIGNAL,
             template: signalTemplates[e.target.attributes["data-signal"].value],
          };
 
