@@ -61,6 +61,7 @@ class trackRendering_textured {
             if (force) {
                track_container.removeAllChildren();
                signal_container.removeAllChildren();
+               ui_container.removeAllChildren();
                train_container.removeAllChildren();
                this.calcRenderValues();
                tracks.forEach((t) => (t.rendered = false));
@@ -168,7 +169,7 @@ class trackRendering_textured {
    }
 
    handleCachingSignal(c) {
-      if (!c.signal._dontCache) {
+      if (!c.signal._dontCache && !this._rendering.dont_optimize) {
          if (c.bitmapCache) c.updateCache();
          else {
             const bounds = c.getBounds();

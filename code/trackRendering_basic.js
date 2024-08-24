@@ -15,6 +15,8 @@ class trackRendering_basic {
       track_container.removeAllChildren();
       signal_container.removeAllChildren();
       train_container.removeAllChildren();
+      ui_container.removeAllChildren();
+
       this.renderAllTracks();
       this.renderAllSwitches();
       stage.update();
