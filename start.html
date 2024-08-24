@@ -77,12 +77,10 @@
          </div>
          <div class="d-flex ms-auto" style="gap: 10px; padding-right: 1rem">
             <button
-               id="btnPlaceSignals"
+               id="btnAddSignals"
                type="button"
                class="btn btn-secondary btn-sm"
                title="Signale hinzufügen"
-               data-bs-toggle="offcanvas"
-               data-bs-target="#sidebar"
             >
                <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -108,7 +106,7 @@
       <div id="CanvasContainer">
          <canvas id="myCanvas" width="10" height="10"></canvas>
       </div>
-      <div id="sidebar" class="offcanvas offcanvas-top" data-bs-scroll="true" data-bs-backdrop="false">
+      <div id="sidebar" class="offcanvas offcanvas-end" data-bs-scroll="true" data-bs-backdrop="false">
          <div class="accordion accordion-flush" id="newItemMenu">
             <div class="accordion-item">
                <h4 class="accordion-header" id="headingOne">
@@ -285,7 +283,7 @@
 
       <div
          id="drawingPanel"
-         class="d-flex flex-row gap-3 rounded-pill offcanvas offcanvas-bottom"
+         class="d-flex flex-row gap-3 rounded-pill offcanvas offcanvas-bottom border shadow-sm"
          data-bs-scroll="true"
          data-bs-backdrop="false"
       >

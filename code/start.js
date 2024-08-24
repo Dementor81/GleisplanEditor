@@ -110,8 +110,8 @@ function init() {
    stage.addChild((drawing_container = create_container("drawing_container")));
 
    selectRenderer(false);
-   //loadRecent();
-   ShowPreBuildScreen();
+   loadRecent();
+   //ShowPreBuildScreen();
 
    pl.start().then(() => {
       $("#collapseOne .accordion-body").append([
@@ -127,6 +127,7 @@ function init() {
       $("#collapseThree .accordion-body").append(newItemButton(signalTemplates.lf6));
       $("#collapseThree .accordion-body").append(newItemButton(signalTemplates.lf7));
       $("#collapseThree .accordion-body").append(newItemButton(signalTemplates.zs3));
+      ShowAddSignalMenu();
    });
 
    createjs.Ticker.addEventListener("tick", stage);
@@ -208,6 +209,8 @@ function init() {
       selectRenderer(TEXTURE_MODE);
    });
 
+   $("#btnAddSignals").click(() => ShowAddSignalMenu());
+
    $("#btnClear").click(() => {
       tracks = [];
       switches = [];
@@ -279,8 +282,7 @@ function init() {
 
    $("#btnDraw").click((e) => {
       drawing_mode = $("#btnDraw").hasClass("active");
-      var myOffcanvas = document.getElementById("drawingPanel");
-      var bsOffcanvas = bootstrap.Offcanvas.getOrCreateInstance(myOffcanvas);
+      const bsOffcanvas = bootstrap.Offcanvas.getOrCreateInstance(document.getElementById("drawingPanel"));
       if (drawing_mode) {
          bsOffcanvas.show();
       } else {
@@ -309,6 +311,16 @@ function init() {
 
    $(window).resize(onResizeWindow);
    myCanvas.focus();
+}
+
+function ShowAddSignalMenu() {
+   var bsOffcanvas = bootstrap.Offcanvas.getOrCreateInstance($("#sidebar"));
+   bsOffcanvas.toggle();
+   /* if (drawing_mode) {
+         bsOffcanvas.show();
+      } else {
+         bsOffcanvas.hide();
+      } */
 }
 
 function toggleEditMode(mode) {
@@ -958,13 +970,17 @@ function loadFromJson(json) {
 }
 
 function newItemButton(template) {
-   return $("<button>", { class: "newItem" })
-      .css("background-image", "url(" + GetDataURL_FromTemplate(template) + ")")
-      .attr("data-signal", template.id)
-      .on("mousedown", (e) => {
+   return ui
+      .div("d-flex newSignalItem align-items-center user-select-none", [
+         ui.div(
+            "flex-shrink-0 newItem_image"            
+         ).css("background-image", "url(" + GetDataURL_FromTemplate(template) + ")"),
+         ui.div("flex-grow-5 ms-2", template.title),
+      ])
+      .on("mousedown", (e) => { 
          mouseAction = {
             action: MOUSE_DOWN_ACTION.DND_SIGNAL,
-            template: signalTemplates[e.target.attributes["data-signal"].value],
+            template:template
          };
 
          //mouseup beim document anmelden, weil mouseup im stage nicht ausgelöst wird, wenn mousedown nicht auch auf der stage war
@@ -976,20 +992,24 @@ function newItemButton(template) {
          stage.addEventListener("stagemousemove", handleMouseMove);
 
          startDragAndDropSignal(e.offsetX, e.offsetY);
-      });
+      });  
 }
 
 function GetDataURL_FromTemplate(template) {
    let signal = new Signal(template);
 
-   let c = $("<canvas>").attr({ width: 100, height: 100 });
+   let c = $("<canvas>").attr({ width: 450, height: 450 });
    $(document.body).append(c);
 
    let s = new createjs.Stage(c[0]);
+   s.scale = template.scale;
    signal.draw(s, true);
-   let sig_bounds = s.getBounds();
+   s.update();
+   let sig_bounds = s.getBounds();  
+   
    if (sig_bounds == null) throw Error(template.title + " has no visual Element visible");
-   s.cache(sig_bounds.x, sig_bounds.y, sig_bounds.width, sig_bounds.height);
+   s.cache(sig_bounds.x, sig_bounds.y, sig_bounds.width, sig_bounds.height,template.scale);
+   
    let data_url = s.bitmapCache.getCacheDataURL();
    c.remove();
    return data_url;
