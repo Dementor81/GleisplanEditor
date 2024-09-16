@@ -160,7 +160,6 @@ class Track {
    start = null;
    end = null;
    signals = [];
-   selected = false;
    rendered = false;
 
    //Temp values

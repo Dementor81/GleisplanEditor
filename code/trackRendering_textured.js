@@ -149,6 +149,7 @@ class trackRendering_textured {
                this.renderTrack(c, t);
                t.signals.forEach((signal) => {
                   const c = signal_container.addChild(createSignalContainer(signal));
+                  if (selection.isSelectedObject(signal)) c.shadow = new createjs.Shadow("#ff0000", 0, 0, 3);
                   alignSignalWithTrack(c);
                   this.handleCachingSignal(c);
                });
@@ -170,11 +171,11 @@ class trackRendering_textured {
 
    handleCachingSignal(c) {
       if (!c.signal._dontCache && !this._rendering.dont_optimize) {
-         if (c.bitmapCache) c.updateCache();
-         else {
-            const bounds = c.getBounds();
-            c.cache(bounds.x, bounds.y, bounds.width, bounds.height, stage.scale);
-         }
+         if (c.bitmapCache) c.uncache(); // c.updateCache(); //we cant just update the cache, cause maybe the bounds have changed
+         //else {
+         const bounds = c.getBounds();
+         c.cache(bounds.x, bounds.y, bounds.width, bounds.height, stage.scale);
+         //}
       } else c.uncache();
    }
 
@@ -201,7 +202,7 @@ class trackRendering_textured {
 
       if (type(track.switchAtTheEnd) == "Track") bounds_points.push(...this.drawCurvedTrack(track_container, track, track.switchAtTheEnd));
 
-      if (track.selected) this.#isSelected(track_container);
+      if (selection.isSelectedObject(track)) this.#isSelected(track_container);
 
       this.drawBumper(track, track_container);
 
@@ -265,8 +266,14 @@ class trackRendering_textured {
 
    updateSelection() {
       track_container.children.forEach((c) => {
-         if (c.track?.selected) this.#isSelected(c);
+         if (selection.isSelectedObject(c.track)) this.#isSelected(c);
          else c.shadow = null;
+      });
+      signal_container.children.forEach((c)=> {
+         if (c.signal) {
+            if (selection.isSelectedObject(c.signal)) this.#isSelected(c);
+            else c.shadow = null;
+         }
       });
       stage.update();
    }

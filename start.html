@@ -76,12 +76,7 @@
             </button>
          </div>
          <div class="d-flex ms-auto" style="gap: 10px; padding-right: 1rem">
-            <button
-               id="btnAddSignals"
-               type="button"
-               class="btn btn-secondary btn-sm"
-               title="Signale hinzufügen"
-            >
+            <button id="btnAddSignals" type="button" class="btn btn-secondary btn-sm" title="Signale hinzufügen">
                <svg
                   xmlns="http://www.w3.org/2000/svg"
                   width="16"
@@ -150,6 +145,103 @@
                </h2>
                <div id="collapseThree" class="accordion-collapse collapse" aria-labelledby="headingThree" data-bs-parent="#newItemMenu">
                   <div class="accordion-body"></div>
+               </div>
+            </div>
+         </div>
+         <div class="accordion accordion-flush" id="signalEditMenu">
+            <div class="accordion-item">
+               <h4 class="accordion-header">
+                  <button class="accordion-button user-select-none" type="button" data-bs-toggle="collapse" data-bs-target="#collapseSignalStellung">
+                     Signalstellung
+                  </button>
+               </h4>
+               <div id="collapseSignalStellung" class="accordion-collapse collapse show" data-bs-parent="#newItemMenu">
+                  <div class="accordion-body"></div>
+               </div>
+            </div>
+            <div class="accordion-item">
+               <h2 class="accordion-header">
+                  <button
+                     class="accordion-button collapsed user-select-none"
+                     type="button"
+                     data-bs-toggle="collapse"
+                     data-bs-target="#collapseSignalEinstelllung"
+                  >
+                     Einstellungen
+                  </button>
+               </h2>
+               <div id="collapseSignalEinstelllung" class="accordion-collapse collapse" data-bs-parent="#newItemMenu">
+                  <div class="accordion-body">
+                     <!-- <div class="pb-3 ps-3 border-bottom">
+                        <div id="DropDownVerwendung" class="dropdown">
+                           <button
+                              class="btn btn-sm btn-secondary dropdown-toggle"
+                              type="button"
+                              id="dropdownMenuButton1"
+                              data-bs-toggle="dropdown"
+                              aria-expanded="false"
+                           >
+                              Verwendung
+                           </button>
+                           <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton1">
+                              <li><a class="dropdown-item" href="#">Esig</a></li>
+                              <li><a class="dropdown-item" href="#">Asig</a></li>
+                              <li><a class="dropdown-item" href="#">Zsig</a></li>
+                              <li><a class="dropdown-item" href="#">Bksig</a></li>
+                              <li><a class="dropdown-item" href="#">Sbk</a></li>
+                           </ul>
+                        </div>
+                     </div>
+
+                     <div class="ps-3 pb-3 border-bottom text-light">
+                        <div class="form-check form-switch">
+                           <input class="form-check-input" type="checkbox" role="switch" id="flexSwitchCheckDefault" />
+                           <label class="form-check-label" for="flexSwitchCheckDefault">Vorsignalfunktion</label>
+                        </div>
+                        <div class="ps-3">
+                           <div class="form-check form-switch">
+                              <input class="form-check-input" type="checkbox" role="switch" id="flexSwitchCheckChecked" checked />
+                              <label class="form-check-label" for="flexSwitchCheckChecked">Verkürzt</label>
+                           </div>
+                           <div class="form-check form-switch">
+                              <input class="form-check-input" type="checkbox" role="switch" id="flexSwitchCheckChecked" checked />
+                              <label class="form-check-label" for="flexSwitchCheckChecked">Wiederholer</label>
+                           </div>
+                        </div>
+                     </div>
+                     <div class="ps-3 pb-3 border-bottom text-light">
+                        <label>Mastschild</label>
+                        <div class="ps-3">
+                           <div class="form-check form-check-inline">
+                              <input class="form-check-input" type="radio" id="inlineCheckbox2" value="option2">
+                              <label class="form-check-label" for="inlineCheckbox2">W-R-W</label>
+                            </div>
+                            <div class="form-check form-check-inline">
+                              <input class="form-check-input" type="radio" id="inlineCheckbox3" value="option3" disabled>
+                              <label class="form-check-label" for="inlineCheckbox3">W-G-W-G-W</label>
+                            </div>
+                        </div>
+                     </div>
+                     <div class="ps-3 pb-3 border-bottom text-light">
+                        <label>Zusatzanzeiger</label>
+                        <div class="ps-3">
+                           <div class="form-check form-check-inline">
+                              <input class="form-check-input" type="checkbox" id="inlineCheckbox2" value="option2">
+                              <label class="form-check-label" for="inlineCheckbox2">oben</label>
+                            </div>
+                            <div class="form-check form-check-inline">
+                              <input class="form-check-input" type="checkbox" id="inlineCheckbox3" value="option3" disabled>
+                              <label class="form-check-label" for="inlineCheckbox3">unten</label>
+                            </div>
+                        </div>
+                     </div> -->
+                     <div class=" ps-3">
+                        <div class="input-group input-group-sm mb-3">
+                           <span class="input-group-text" id="basic-addon1">Bezeichnung</span>
+                           <input type="text" class="form-control" placeholder="" aria-label="Username" aria-describedby="basic-addon1">
+                         </div>
+                     </div>
+                  </div>
                </div>
             </div>
          </div>
@@ -287,26 +379,26 @@
          data-bs-scroll="true"
          data-bs-backdrop="false"
       >
-      <div class="btn-group" role="group" >
-         <input type="radio" class="btn-check" name="DrawingColor" id="btnDrawingColorRed" value="red" autocomplete="off" checked>
-         <label class="btn btn-outline-primary" for="btnDrawingColorRed">rot</label>
-       
-         <input type="radio" class="btn-check" name="DrawingColor" id="btnDrawingColorGreen" value="green" autocomplete="off">
-         <label class="btn btn-outline-primary" for="btnDrawingColorGreen">grün</label>
-       
-         <input type="radio" class="btn-check" name="DrawingColor" id="btnDrawingColorBlue" value="blue" autocomplete="off">
-         <label class="btn btn-outline-primary" for="btnDrawingColorBlue">blau</label>
-       </div>
-       <div class="btn-group" role="group" >
-         <input type="radio" class="btn-check" name="DrawingWidth" id="btnDrawingWidth1" value="5" autocomplete="off" checked>
-         <label class="btn btn-outline-primary" for="btnDrawingWidth1">dünn</label>
-       
-         <input type="radio" class="btn-check" name="DrawingWidth" id="btnDrawingWidth2" value="10" autocomplete="off">
-         <label class="btn btn-outline-primary" for="btnDrawingWidth2">mittel</label>
-       
-         <input type="radio" class="btn-check" name="DrawingWidth" id="btnDrawingWidth3" value="20" autocomplete="off">
-         <label class="btn btn-outline-primary" for="btnDrawingWidth3">dick</label>
-       </div>
+         <div class="btn-group" role="group">
+            <input type="radio" class="btn-check" name="DrawingColor" id="btnDrawingColorRed" value="red" autocomplete="off" checked />
+            <label class="btn btn-outline-primary" for="btnDrawingColorRed">rot</label>
+
+            <input type="radio" class="btn-check" name="DrawingColor" id="btnDrawingColorGreen" value="green" autocomplete="off" />
+            <label class="btn btn-outline-primary" for="btnDrawingColorGreen">grün</label>
+
+            <input type="radio" class="btn-check" name="DrawingColor" id="btnDrawingColorBlue" value="blue" autocomplete="off" />
+            <label class="btn btn-outline-primary" for="btnDrawingColorBlue">blau</label>
+         </div>
+         <div class="btn-group" role="group">
+            <input type="radio" class="btn-check" name="DrawingWidth" id="btnDrawingWidth1" value="5" autocomplete="off" checked />
+            <label class="btn btn-outline-primary" for="btnDrawingWidth1">dünn</label>
+
+            <input type="radio" class="btn-check" name="DrawingWidth" id="btnDrawingWidth2" value="10" autocomplete="off" />
+            <label class="btn btn-outline-primary" for="btnDrawingWidth2">mittel</label>
+
+            <input type="radio" class="btn-check" name="DrawingWidth" id="btnDrawingWidth3" value="20" autocomplete="off" />
+            <label class="btn btn-outline-primary" for="btnDrawingWidth3">dick</label>
+         </div>
          <button id="btnDrawingEraser" type="button" class="btn btn-light btn-sm" title="Radierer">Radierer</button>
          <button id="btnDrawingClear" type="button" class="btn btn-light btn-sm" title="Löschen">Löschen</button>
       </div>

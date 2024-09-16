@@ -44,12 +44,11 @@ html, body {
     background-color: #505050!important;
     border-radius: 4px;
     margin: 4rem 1rem 1rem 0rem;
-    width: 14rem;
     z-index: 0;
 }
 
-.accordion div{
-    background-color: transparent !important;
+#collapseSignalEinstelllung{
+    background-color: #505050;
 }
 
 .focus, .btn:focus {

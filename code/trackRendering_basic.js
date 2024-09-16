@@ -28,6 +28,7 @@ class trackRendering_basic {
          t.signals.forEach((signal) => {
             let c = signal_container.addChild(createSignalContainer(signal));
             alignSignalWithTrack(c);
+            if (selection.isSelectedObject(signal)) c.shadow = new createjs.Shadow("#ff0000", 0, 0, 3);
          });
       });
    }
@@ -39,10 +40,14 @@ class trackRendering_basic {
    updateSelection() {
       track_container.children.forEach((c) => {
          if (c.track) {
-            if (c.track.selected) this.isSelected(c);
-            else {
-               c.color.style = trackRendering_basic.TRACK_COLOR;
-            }
+            if (selection.isSelectedObject(c.track)) this.isSelected(c);
+            else c.color.style = trackRendering_basic.TRACK_COLOR;
+         }
+      });
+      signal_container.children.forEach(function (c) {
+         if (c.signal) {
+            if (selection.isSelectedObject(c.signal)) c.shadow = new createjs.Shadow("#ff0000", 0, 0, 3);
+            else c.shadow = null;
          }
       });
       stage.update();
@@ -82,8 +87,7 @@ class trackRendering_basic {
          p2 = geometry.perpendicular(track.end, track._tmp.deg, trackRendering_basic.BUMPER_SIZE);
          shape.graphics.moveTo(p1.x, p1.y).lineTo(p2.x, p2.y);
       }
-
-      if (track.selected) this.isSelected(shape);
+      if (selection.isSelectedObject(track)) this.isSelected(shape);
 
       /* const text = new createjs.Text(track.id, "Italic 10px Arial", "black");
         const p = geometry.perpendicular(track.along(track.start, track.length / 2), track.deg, 15);

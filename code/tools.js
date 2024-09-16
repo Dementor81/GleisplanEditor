@@ -58,7 +58,7 @@ Array.prototype.first = function () {
 
 //removes all null items from the array
 Array.prototype.clean = function () {
-   return this.filter(n => n)
+   return this.filter((n) => n);
 };
 
 //returns a random item from the array
@@ -543,30 +543,30 @@ const geometry = {
       }
    },
    //returns true if 2 line, described by 4 points intersect, each other
-   doLineSegmentsIntersect: function(p1, q1, p2, q2) {
+   doLineSegmentsIntersect: function (p1, q1, p2, q2) {
       const orientation = (p, q, r) => {
          const val = (q.y - p.y) * (r.x - q.x) - (q.x - p.x) * (r.y - q.y);
          return val === 0 ? 0 : val > 0 ? 1 : 2;
       };
-   
+
       const onSegment = (p, q, r) => {
          return q.x <= Math.max(p.x, r.x) && q.x >= Math.min(p.x, r.x) && q.y <= Math.max(p.y, r.y) && q.y >= Math.min(p.y, r.y);
       };
-   
+
       const o1 = orientation(p1, q1, p2);
       const o2 = orientation(p1, q1, q2);
       const o3 = orientation(p2, q2, p1);
       const o4 = orientation(p2, q2, q1);
-   
+
       if (o1 !== o2 && o3 !== o4) {
          return true; // Segments intersect
       }
-   
+
       if (o1 === 0 && onSegment(p1, p2, q1)) return true;
       if (o2 === 0 && onSegment(p1, q2, q1)) return true;
       if (o3 === 0 && onSegment(p2, p1, q2)) return true;
       if (o4 === 0 && onSegment(p2, q1, q2)) return true;
-   
+
       return false; // No intersection
    },
    pointOnArc: function (radius, rad, centerpoint) {
@@ -685,7 +685,7 @@ class Point {
 }
 
 // Function to create a toast element
-const createToast = (title,txt) => {
+const createToast = (title, txt) => {
    return ui
       .div("toast")
       .attr({ role: "alert", "aria-live": "assertive", "aria-atomic": "true" })
@@ -714,7 +714,7 @@ const getToastContainer = () => {
 // Function to show the toast
 const showErrorToast = (error) => {
    console.error(error);
-   const toast = createToast("Ups, Da gabs einen Fehler",error.message);
+   const toast = createToast("Ups, Da gabs einen Fehler", error.message);
    getToastContainer().prepend(ui.div("p-3").append(toast));
    $(toast).toast({ autohide: true, delay: 10000 }).toast("show");
    $(toast).on("hidden.bs.toast", function () {
@@ -724,7 +724,7 @@ const showErrorToast = (error) => {
 
 const showInfoToast = (txt) => {
    console.info(txt);
-   const toast = createToast("Information:",txt);
+   const toast = createToast("Information:", txt);
    getToastContainer().prepend(ui.div("p-3").append(toast));
    $(toast).toast({ autohide: true, delay: 10000 }).toast("show");
    $(toast).on("hidden.bs.toast", function () {
@@ -743,23 +743,127 @@ const BS = {
    create_buttonGroup(items) {
       return ui.div("btn-group", items);
    },
-   create_DropDownItem(text) {
+   create_DropDownItem(text, value) {
       return $("<a>", {
          class: "dropdown-item",
          text: text,
          href: "#",
+         value: value ?? text,
       });
    },
 
-   create_DropDown(items, text) {
-      return ui.div("dropdown d-grid", [
-         $("<button>", {
-            class: "btn btn-primary dropdown-toggle btn-sm",
-            type: "button",
-            text: text,
-            id: "btn_" + text.replace(" ", "_"),
-         }).attr("data-bs-toggle", "dropdown"),
-         ui.div("dropdown-menu", items),
+   create_DropDown(items, text, onChange) {
+      return ui
+         .div("dropdown d-grid", [
+            $("<button>", {
+               class: "btn btn-primary dropdown-toggle btn-sm",
+               type: "button",
+               text: text,
+               id: "btn_" + text.replace(" ", "_"),
+            }).attr("data-bs-toggle", "dropdown"),
+            ui.div(
+               "dropdown-menu",
+               items.map((item) => BS.create_DropDownItem(...item.split("|")))
+            ),
+         ])
+         .on("hide.bs.dropdown", (e) => {
+            if (e.clickEvent?.target && e.clickEvent?.target.nodeName == "A") {
+               const value = $(e.clickEvent.target).attr("value");
+               $(e.currentTarget).attr("value", value);
+               if (onChange) onChange(value);
+            }
+         })
+         .on("show.bs.dropdown", (e) => {
+            const targetValue = $(e.currentTarget).attr("value");
+            if (!targetValue) return;
+            $(".dropdown-item", e.currentTarget)
+               .removeClass("active")
+               .each(function () {
+                  if ($(this).attr("value") === targetValue) {
+                     $(this).addClass("active");
+                  }
+               });
+         });
+   },
+
+   createSwitchStructure(mainLabel, subLabels, onchange) {
+      let [text, value] = mainLabel.split("|");
+      let $mainDiv;
+
+      const $mainInput = $("<input/>", {
+         class: "form-check-input",
+         type: "checkbox",
+         role: "switch",
+         id: "switch_" + text,
+      })
+         .on("change", function () {
+            const isChecked = $(this).is(":checked");
+            $("input", $mainDiv.children()[1]).prop("disabled", !isChecked);
+            if (onchange) onchange($(this).attr("data"), isChecked);
+         })
+         .attr("data", value ?? text);
+
+      const $mainLabel = $("<label/>", {
+         class: "form-check-label",
+         for: "switch_" + text,
+         text: text,
+      });
+
+      $mainDiv = ui.div("ps-3 pb-3 border-bottom text-light", [
+         ui.div("form-check form-switch", [$mainInput, $mainLabel]),
+         ui.div(
+            "ps-3",
+            subLabels.map(function (label) {
+               [text, value] = label.split("|");
+               return ui.div("form-check form-switch", [
+                  $("<input/>", {
+                     class: "form-check-input",
+                     type: "checkbox",
+                     role: "switch",
+                     id: "switch_" + text,
+                     checked: true, // Default to checked as per your example
+                  })
+                     .on("change", function () {
+                        const isChecked = $(this).is(":checked");
+                        if (onchange) onchange($(this).attr("data"), isChecked);
+                     })
+                     .attr("data", value ?? text),
+
+                  $("<label/>", {
+                     class: "form-check-label",
+                     for: "switch_" + text,
+                     text: text,
+                  }),
+               ]);
+            })
+         ),
+      ]);
+      return $mainDiv;
+   },
+   createOptionGroup(header, options, inputType = "radio", onchange) {
+      return ui.div("ps-3 pb-3 border-bottom text-light", [
+         $("<label>").text(header),
+         ui.div(
+            "ps-3",
+            options.map(function (option) {
+               let [text, value] = option.split("|");
+               let id = "input_" + text;
+               // Create the div for each form-check-inline
+               return ui.div("form-check form-check-inline", [
+                  $("<input>")
+                     .addClass("form-check-input")
+                     .attr("id", id)
+                     .attr("name", "OptionGroup_" + header)
+                     .attr("type", inputType)
+                     .attr("value", value ?? text)
+                     .on("change", function () {
+                        const isChecked = $(this).is(":checked");
+                        if (onchange) onchange($(this).attr("value"), isChecked);
+                     }),
+                  $("<label>").addClass("form-check-label").attr("for", id).text(text),
+               ]);
+            })
+         ),
       ]);
    },
 

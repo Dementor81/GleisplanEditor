@@ -265,33 +265,13 @@ class SignalTemplate {
 
 function initSignals() {
    const settingsMenu = {
-      Verwendung: {
-         text: "Verwendung",
-         childs: [
-            { text: "Esig", option: "verwendung.esig" },
-            { text: "Asig", option: "verwendung.asig" },
-            { text: "Zsig", option: "verwendung.zsig" },
-            { text: "Bksig", option: "verwendung.bksig" },
-            { text: "Sbk", option: "verwendung.sbk" },
-         ],
-      },
-      Vorsignal: { text: "Vorsignalfunktion", option: "vr" },
-      verkürzt: { text: "verkürzt", option: "vr_op.verk" },
-      wiederholer: { text: "Wiederholer", option: "vr_op.wdh" },
-      Mastschild: {
-         text: "Mastschild",
-         childs: [
-            { text: "weiß-rot-weiß", option: "mastschild.wrw" },
-            { text: "weiß-gelb-weiß-gelb-weiß", option: "mastschild.wgwgw" },
-         ],
-      },
-      Zusatz: {
-         text: "Zusatzanzeiger",
-         childs: [
-            { text: "oben", option: "zusatz_oben" },
-            { text: "unten", option: "zusatz_unten" },
-         ],
-      },
+      Verwendung: ["Verwendung","Esig,Asig,Zsig,Bksig,Sbk"],
+      Vorsignal: "vr(Vorsignalfunktion)" ,
+      verkürzt: "vr_op.verk(Verkürzt)",
+      wiederholer: "vr_op.wdh(Wiederholer)",
+      Mastschild: ["Mastschild","wrw(weiß-rot-weiß),wgwgw(weiß-gelb-weiß-gelb-weiß)"],
+      Zusatz_oben: "zusatz_oben(Zusatzanzeiger oben)",
+      Zusatz_unten: "zusatz_unten(Zusatzanzeiger unten)" ,       
       Bezeichnung: {
          input: "Bezeichnung",
       },

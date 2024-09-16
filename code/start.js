@@ -54,7 +54,6 @@ var previousTouch;
 var showGrid = true;
 var edit_mode = false;
 var drawing_mode = false;
-var drawing_color = "red";
 var pl;
 var mouseAction = null;
 var loadQueue;
@@ -67,6 +66,16 @@ var switches = [];
 var signalTemplates = {};
 var prevent_input = false;
 var scale_changed = true;
+
+var selection = {
+   type: "",
+   object: null,
+   isSelectedObject: function (test) {
+      if (!test || !this.object || this.type != type(test)) return false;
+      if (Array.isArray(this.object)) return this.object.includes(test);
+      else return this.object === test;
+   },
+};
 
 $(() => {
    init();
@@ -109,25 +118,26 @@ function init() {
    stage.addChild((overlay_container = create_container("overlay")));
    stage.addChild((drawing_container = create_container("drawing_container")));
 
-   selectRenderer(false);
-   loadRecent();
    //ShowPreBuildScreen();
 
    pl.start().then(() => {
-      $("#collapseOne .accordion-body").append([
+      $("#newItemMenu #collapseOne .accordion-body").append([
          newItemButton(signalTemplates.hv_hp),
          newItemButton(signalTemplates.ks),
          newItemButton(signalTemplates.ls),
       ]);
-      $("#collapseTwo .accordion-body").append(newItemButton(signalTemplates.hv_vr));
-      $("#collapseTwo .accordion-body").append(newItemButton(signalTemplates.ks_vr));
-      $("#collapseTwo .accordion-body").append();
-      $("#collapseThree .accordion-body").append(newItemButton(signalTemplates.ne4));
-      $("#collapseThree .accordion-body").append(newItemButton(signalTemplates.ne1));
-      $("#collapseThree .accordion-body").append(newItemButton(signalTemplates.lf6));
-      $("#collapseThree .accordion-body").append(newItemButton(signalTemplates.lf7));
-      $("#collapseThree .accordion-body").append(newItemButton(signalTemplates.zs3));
-      ShowAddSignalMenu();
+      $("#newItemMenu #collapseTwo.accordion-body").append(newItemButton(signalTemplates.hv_vr));
+      $("#newItemMenu #collapseTwo .accordion-body").append(newItemButton(signalTemplates.ks_vr));
+      $("#newItemMenu #collapseTwo .accordion-body").append();
+      $("#newItemMenu #collapseThree .accordion-body").append(newItemButton(signalTemplates.ne4));
+      $("#newItemMenu #collapseThree .accordion-body").append(newItemButton(signalTemplates.ne1));
+      $("#newItemMenu #collapseThree .accordion-body").append(newItemButton(signalTemplates.lf6));
+      $("#newItemMenu #collapseThree .accordion-body").append(newItemButton(signalTemplates.lf7));
+      $("#newItemMenu #collapseThree .accordion-body").append(newItemButton(signalTemplates.zs3));
+      //ShowAddSignalMenu();
+
+      selectRenderer(false);
+      loadRecent();
    });
 
    createjs.Ticker.addEventListener("tick", stage);
@@ -209,7 +219,7 @@ function init() {
       selectRenderer(TEXTURE_MODE);
    });
 
-   $("#btnAddSignals").click(() => ShowAddSignalMenu());
+   $("#btnAddSignals").click(() => showMenu("newItemMenu"));
 
    $("#btnClear").click(() => {
       tracks = [];
@@ -297,20 +307,46 @@ function init() {
 
    document.addEventListener("keydown", (e) => {
       if (e.code == "Delete") {
-         tracks.filter((t) => t.selected).forEach((t) => deleteTrack(t, null));
-         Track.cleanupTracks();
-         Track.connectTracks();
-         save();
-         renderer.reDrawEverything(true);
-         stage.update();
+         if (selection.object) {
+            if (selection.type == "Track") [].concat(selection.object).forEach((t) => deleteTrack(t, null));
+            if (selection.type == "Signal") [].concat(selection.object).forEach((s) => removeSignal(s, null));
+            Track.cleanupTracks();
+            Track.connectTracks();
+            save();
+            renderer.reDrawEverything(true);
+            stage.update();
+         }
       }
    });
+
+   initSignalMenu();
 
    onResizeWindow();
    toggleEditMode(false);
 
    $(window).resize(onResizeWindow);
    myCanvas.focus();
+}
+
+function showMenu(id) {
+   var bsOffcanvas = bootstrap.Offcanvas.getOrCreateInstance($("#sidebar"));
+   if (!id) {
+      bsOffcanvas.hide();
+      return;
+   }
+   const current_menu = $('#sidebar>div:not([style*="display: none"])');
+
+   $("#sidebar > div")
+      .not("#" + id)
+      .hide();
+   $("#sidebar > #" + id).show();
+
+   bsOffcanvas.show();
+   if (bsOffcanvas._isShown) {
+      //bsOffcanvas.show();
+   } else {
+      //bsOffcanvas.hide();
+   }
 }
 
 function ShowAddSignalMenu() {
@@ -321,6 +357,35 @@ function ShowAddSignalMenu() {
       } else {
          bsOffcanvas.hide();
       } */
+}
+
+function initSignalMenu() {
+   $("#collapseSignalEinstelllung>.accordion-body").append([
+      BS.create_DropDown(
+         "Esig,Asig,Zsig,Bksig,Sbk".split(",").map((x) => x + "|verwendung." + x.toLowerCase()),
+         "Verwendung",
+         (v) => {
+            selection.object.setFeature(v);
+            renderer.reDrawEverything();
+            save();
+         }
+      ),
+      BS.createSwitchStructure("Vorsignalfunktion|vr", ["verkürzt|vr_op.verk", "wiederholer|vr_op.wdh"], (v,on) => {
+         selection.object.setFeature(v,on);
+         renderer.reDrawEverything();
+         save();
+      }),
+      BS.createOptionGroup("Mastschild",["W-R-W|mastschild.wrw", "W-G-W-G-W|mastschild.wgwgw"],"radio", (v,on) => {
+         selection.object.setFeature(v,on);
+         renderer.reDrawEverything();
+         save();
+      }),
+      BS.createOptionGroup("Zusatzanzeiger",["zusatz_unten", "zusatz_oben"], "checkbox", (v,on) => {
+         selection.object.setFeature(v,on);
+         renderer.reDrawEverything();
+         save();
+      }),
+   ]);
 }
 
 function toggleEditMode(mode) {
@@ -339,6 +404,22 @@ function selectRenderer(textured) {
    }
    renderer.reDrawEverything(true);
    stage.update();
+}
+
+function selectObject(object, e) {
+   if (!object) {
+      selection.object = null;
+      selection.type = "";
+      return;
+   }
+   const t = type(object);
+   if (t != selection.type) {
+      selection.object = object;
+      selection.type = t;
+   } else {
+      if (e?.nativeEvent?.ctrlKey) selection.object = Array.isArray(selection.object) ? [...selection.object, object] : [selection.object, object];
+      else selection.object = object;
+   }
 }
 
 function clearCanvas() {
@@ -777,7 +858,16 @@ function handleStageMouseUp(e) {
          save();
       } else if (mouseAction.action === MOUSE_DOWN_ACTION.NONE && mouseAction.distance() < 4) {
          if (mouseAction.container?.name == "signal") {
-            if (edit_mode === MODE_PLAY) {
+            selectObject(mouseAction.container.signal, e);
+            renderer.updateSelection();
+            let body = $("#signalEditMenu #collapseSignalStellung .accordion-body");
+            body.empty();
+            body.append(mouseAction.container.signal.getHTML());
+            /* body = $("#signalMenu #collapseSignalEinstelllung .accordion-body");
+            body.empty();
+            body.append(mouseAction.container.signal.getContextMenu()); */
+            showMenu("signalEditMenu");
+            /* if (edit_mode === MODE_PLAY) {
                let bounds = getGlobalBounds(mouseAction.container);
 
                let p = stage.localToGlobal(
@@ -802,18 +892,19 @@ function handleStageMouseUp(e) {
                      mouseAction.container.signal
                   );
                }
-            }
+            } */
          } else if (mouseAction.container?.name == "track") {
-            if (edit_mode) {
-               if (mouseAction.container.track) mouseAction.container.track.selected = !mouseAction.container.track.selected;
-               renderer.updateSelection();
-            }
+            selectObject(mouseAction.container.track, e);
+            showMenu();
+            renderer.updateSelection();
          } else if (mouseAction.container?.name == "switch") {
             Track.switch_A_Switch(mouseAction.container.sw, local_point.x);
             renderer.reRenderSwitch(mouseAction.container.sw);
             stage.update();
          } else {
-            clearTrackSelection();
+            selectObject();
+            showMenu();
+            renderer.updateSelection();
          }
       }
    } else if (mouseAction.action === MOUSE_DOWN_ACTION.SCROLL) {
@@ -823,13 +914,13 @@ function handleStageMouseUp(e) {
    stage.removeEventListener("stagemousemove", handleMouseMove);
 }
 
-function clearTrackSelection() {
-   tracks.forEach((t) => (t.selected = false));
-   renderer.updateSelection();
-}
-
 function deleteTrack(track) {
    tracks.remove(track);
+}
+
+function removeSignal(s) {
+   const track = tracks.find((t) => t.signals.includes(s));
+   if (track) track.removeSignal(s);
 }
 
 function checkAndCreateTrack(p1, p2) {
@@ -972,15 +1063,13 @@ function loadFromJson(json) {
 function newItemButton(template) {
    return ui
       .div("d-flex newSignalItem align-items-center user-select-none", [
-         ui.div(
-            "flex-shrink-0 newItem_image"            
-         ).css("background-image", "url(" + GetDataURL_FromTemplate(template) + ")"),
+         ui.div("flex-shrink-0 newItem_image").css("background-image", "url(" + GetDataURL_FromTemplate(template) + ")"),
          ui.div("flex-grow-5 ms-2", template.title),
       ])
-      .on("mousedown", (e) => { 
+      .on("mousedown", (e) => {
          mouseAction = {
             action: MOUSE_DOWN_ACTION.DND_SIGNAL,
-            template:template
+            template: template,
          };
 
          //mouseup beim document anmelden, weil mouseup im stage nicht ausgelöst wird, wenn mousedown nicht auch auf der stage war
@@ -992,7 +1081,7 @@ function newItemButton(template) {
          stage.addEventListener("stagemousemove", handleMouseMove);
 
          startDragAndDropSignal(e.offsetX, e.offsetY);
-      });  
+      });
 }
 
 function GetDataURL_FromTemplate(template) {
@@ -1005,11 +1094,11 @@ function GetDataURL_FromTemplate(template) {
    s.scale = template.scale;
    signal.draw(s, true);
    s.update();
-   let sig_bounds = s.getBounds();  
-   
+   let sig_bounds = s.getBounds();
+
    if (sig_bounds == null) throw Error(template.title + " has no visual Element visible");
-   s.cache(sig_bounds.x, sig_bounds.y, sig_bounds.width, sig_bounds.height,template.scale);
-   
+   s.cache(sig_bounds.x, sig_bounds.y, sig_bounds.width, sig_bounds.height, template.scale);
+
    let data_url = s.bitmapCache.getCacheDataURL();
    c.remove();
    return data_url;

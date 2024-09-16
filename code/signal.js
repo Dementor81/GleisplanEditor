@@ -52,34 +52,32 @@ class Signal {
    get title() {
       let title = "";
       if (this.matchFeature("hp"))
-          switch (this.getFeature("verwendung")) {
-              case "zsig":
-                  title += "Zsig";
-                  break;
-              case "esig":
-                  title += "Esig";
-                  break;
-              case "asig":
-                  title += "Asig";
-                  break;
-              case "bksig":
-                  title += "Bk";
-                  break;
-              case "sbk":
-                  title += "Sbk";
-                  break;
+         switch (this.getFeature("verwendung")) {
+            case "zsig":
+               title += "Zsig";
+               break;
+            case "esig":
+               title += "Esig";
+               break;
+            case "asig":
+               title += "Asig";
+               break;
+            case "bksig":
+               title += "Bk";
+               break;
+            case "sbk":
+               title += "Sbk";
+               break;
 
-              default:
-                  break;
-          }
-      
+            default:
+               break;
+         }
 
       const bez = this.getFeature("bez");
-      if(bez)
-          title += " " + bez.replace("-", " ");
+      if (bez) title += " " + bez.replace("-", " ");
 
       return title;
-  }
+   }
 
    //features saves how a signal is used (Asig,Esig etc) and if it supports things like Vorsignal or Verkürzte Bremswege
    //there are two types of features: single worded like "vr" or "verk"
@@ -89,8 +87,10 @@ class Signal {
       if (splitted.length == 1) {
          if (value) this._features.set(o, value);
          else this._features.delete(o);
-      } else if (splitted.length == 2) this._features.set(splitted[0], splitted[1]);
-      else throw new Error();
+      } else if (splitted.length == 2) {
+         if (value == false) this._features.set(splitted[0], null);
+         else this._features.set(splitted[0], splitted[1]);
+      } else throw new Error();
 
       this._changed = true;
    }
@@ -327,17 +327,20 @@ class Signal {
                let menu = BS.createListGroupItem(BS.create_buttonToolbar(items));
                return menu;
             } else return null;
-         } else if (data.type =="group") {
+         } else if (data.type == "group") {
             let buttons = data.items
-               .filter((mi) => mi.visual_elements != null && mi.visual_elements.length > 0 && mi.visual_elements.every((ve) => this.matchFeature(ve.conditions)))
+               .filter(
+                  (mi) =>
+                     mi.visual_elements != null && mi.visual_elements.length > 0 && mi.visual_elements.every((ve) => this.matchFeature(ve.conditions))
+               )
                .map((item) =>
                   ui.create_toggleButton(item.text, item.command).on("click", (e) => update.bind(this)(item.command, $(e.target).hasClass("active")))
                )
                .justNull();
             if (buttons) return ui.create_buttonGroup(buttons);
             else return null;
-         } else if (data.type =="dropdown") {
-            return Sig_UI.create_SpeedDropDown(data.command, data.text).onValueChanged(update.bind(this));
+         } else if (data.type == "dropdown") {
+            return Sig_UI.create_SpeedDropDown(data.command, data.text, update.bind(this));
          }
       }
    }
@@ -346,7 +349,7 @@ class Signal {
       if (data) {
          if (Array.isArray(data)) {
             data.forEach((item) => this.checkBootstrapMenu(item, popup));
-         } else if (data.type =="group") {
+         } else if (data.type == "group") {
             data.items.forEach((item) => {
                let button = $("#btn_" + item.text.replace(" ", "_"), popup);
                if (button.length == 1) {
@@ -355,7 +358,7 @@ class Signal {
                   else button.attr("disabled", "disabled");
                }
             });
-         } else if (data.type =="dropdown") {
+         } else if (data.type == "dropdown") {
             let button = $("#btn_" + data.text.replace(" ", "_"), popup);
             if (button.length == 1) {
                const v = this.get(data.command);
@@ -430,25 +433,9 @@ class Signal {
 }
 
 const Sig_UI = {
-   create_zs3DropDownItems(stellung) {
-      let a = [BS.create_DropDownItem("aus").attr("data_command", stellung + "=-1")];
-      for (let i = 1; i <= 9; i++) {
-         a.push(BS.create_DropDownItem(i + "0").attr("data_command", stellung + "=" + i));
-      }
-      return a;
-   },
-   create_SpeedDropDown(signal, text) {
-      const dd = BS.create_DropDown(this.create_zs3DropDownItems(signal), text);
-      dd.onValueChanged = function (f) {
-         this._onValueChanged = f;
-         return this;
-      }.bind(dd);
-      dd.on("hide.bs.dropdown", (e) => {
-         if (e.clickEvent?.target && e.clickEvent?.target.nodeName == "A" && dd._onValueChanged) {
-            dd._onValueChanged($(e.clickEvent.target).attr("data_command"));
-         }
-      });
-
-      return dd;
+   create_SpeedDropDown(signal, text, onChange) {
+      const items = Array.from({ length: 10 }, (_, i) => `${i}0|${signal}=${i}`);
+      items[0] = `aus|${signal}=-1`;
+      return BS.create_DropDown(items, text, onChange);
    },
 };
