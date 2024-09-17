@@ -41,14 +41,16 @@ html, body {
 }
 
 #sidebar {
-    background-color: #505050!important;
-    border-radius: 4px;
+    /* background-color: #f9f9f9; */
     margin: 4rem 1rem 1rem 0rem;
     z-index: 0;
+    top: 0;
+    right: 0;
+    width: 22rem;
 }
 
-#collapseSignalEinstelllung{
-    background-color: #505050;
+#signalEditMenuHeader{
+    padding: 1rem;
 }
 
 .focus, .btn:focus {
@@ -162,6 +164,10 @@ html, body {
     padding-top: 5px;
     padding-bottom: 5px;
     background-color: white;
+}
+
+.webkit-fill-width{
+    width: -webkit-fill-available;
 }
 
 /* .dropdown-item::before{

@@ -809,7 +809,7 @@ const BS = {
          text: text,
       });
 
-      $mainDiv = ui.div("ps-3 pb-3 border-bottom text-light", [
+      $mainDiv = ui.div("ps-3 pb-3 border-bottom", [
          ui.div("form-check form-switch", [$mainInput, $mainLabel]),
          ui.div(
             "ps-3",
@@ -841,7 +841,7 @@ const BS = {
       return $mainDiv;
    },
    createOptionGroup(header, options, inputType = "radio", onchange) {
-      return ui.div("ps-3 pb-3 border-bottom text-light", [
+      return ui.div("ps-3 pb-3 border-bottom", [
          $("<label>").text(header),
          ui.div(
             "ps-3",

@@ -360,7 +360,7 @@ function ShowAddSignalMenu() {
 }
 
 function initSignalMenu() {
-   $("#collapseSignalEinstelllung>.accordion-body").append([
+   $("#nav-profile").append([
       BS.create_DropDown(
          "Esig,Asig,Zsig,Bksig,Sbk".split(",").map((x) => x + "|verwendung." + x.toLowerCase()),
          "Verwendung",
@@ -380,7 +380,7 @@ function initSignalMenu() {
          renderer.reDrawEverything();
          save();
       }),
-      BS.createOptionGroup("Zusatzanzeiger",["zusatz_unten", "zusatz_oben"], "checkbox", (v,on) => {
+      BS.createOptionGroup("Zusatzanzeiger",["unten|zusatz_unten", "oben|zusatz_oben"], "checkbox", (v,on) => {
          selection.object.setFeature(v,on);
          renderer.reDrawEverything();
          save();
@@ -860,7 +860,7 @@ function handleStageMouseUp(e) {
          if (mouseAction.container?.name == "signal") {
             selectObject(mouseAction.container.signal, e);
             renderer.updateSelection();
-            let body = $("#signalEditMenu #collapseSignalStellung .accordion-body");
+            let body = $("#nav-home");
             body.empty();
             body.append(mouseAction.container.signal.getHTML());
             /* body = $("#signalMenu #collapseSignalEinstelllung .accordion-body");

@@ -300,7 +300,7 @@ class Signal {
 
    getHTML() {
       if (this._template.signalMenu?.length) {
-         const ul = $("<ul>", { class: "list-group list-group-flush" });
+         const ul = ui.div("d-flex flex-column bd-highlight mb-3");
 
          const updateFunc = function (command, active) {
             this.set_stellung(command, active ? -1 : undefined);
@@ -324,8 +324,7 @@ class Signal {
          if (Array.isArray(data)) {
             let items = data.map((item) => this.createBootstrapMenuItems(item, update)).justNull();
             if (items) {
-               let menu = BS.createListGroupItem(BS.create_buttonToolbar(items));
-               return menu;
+               return ui.div("p-3 border-bottom",BS.create_buttonToolbar(items))
             } else return null;
          } else if (data.type == "group") {
             let buttons = data.items
