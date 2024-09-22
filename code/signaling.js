@@ -158,6 +158,10 @@ class SignalTemplate {
       return this.#_signalMenu;
    }
 
+   get start() {
+      return this.#_start;
+   }
+
    set signalMenu(m) {
       this.#_signalMenu = this.parseSignalCommandMenu(m);
    }
@@ -181,14 +185,11 @@ class SignalTemplate {
             command = str;
             // 1. Entferne alles vor und inklusive einem "="
             text = command.includes("=") ? command.split("=")[1] : command;
-            if(text.length == 1)
-               text = command.replace("="," ");
-            else
-               text = text.replace(/(\d)/, " $1");
+            if (text.length == 1) text = command.replace("=", " ");
+            else text = text.replace(/(\d)/, " $1");
             // 2. Das erste Zeichen in einen Großbuchstaben verwandeln
             text = text.charAt(0).toUpperCase() + text.slice(1);
             // 3. Vor der ersten Ziffer ein Leerzeichen einfügen
-            
          }
          return {
             type: command.includes("=") ? "btn" : "dropdown",
@@ -225,7 +226,7 @@ class SignalTemplate {
       this.elements.push(element);
    }
 
-   getVisualElementByStellung(signal_aspect) {
+   getVisualElementByStellung(signalStellung) {
       let results = [];
       const iterateItems = function (current) {
          if (Array.isArray(current)) return current.some((item) => iterateItems(item));
@@ -235,7 +236,7 @@ class SignalTemplate {
                return true;
             }
 
-            if (current.stellung === signal_aspect) {
+            if (current.stellung === signalStellung) {
                results.push(current);
                return true;
             }
@@ -248,7 +249,25 @@ class SignalTemplate {
       return results;
    }
 
-   getAllMenuItems;
+   ///returns an array with all conditions. Used by UI to determent if a Feauture should be displayed
+   getAllVisualElementConditions() {
+      const stack = [...this.elements];
+      const conditions = [];
+      let ve;
+      while (stack.length > 0) {
+         ve = stack.pop();
+         if (ve.conditions) {
+            [].concat(ve.conditions).forEach((c) => {
+               c.split("&&").forEach((c) => conditions.pushUnique(c.split("=")[0].replace("!", "")));
+            });
+         }
+         if (ve.childs) stack.push(...ve.childs);
+      }
+      return conditions;
+   }
+
+   
+
 
    addRule(trigger, setting) {
       this.rules.push([trigger, setting]);
@@ -264,20 +283,7 @@ class SignalTemplate {
 }
 
 function initSignals() {
-   const settingsMenu = {
-      Verwendung: ["Verwendung","Esig,Asig,Zsig,Bksig,Sbk"],
-      Vorsignal: "vr(Vorsignalfunktion)" ,
-      verkürzt: "vr_op.verk(Verkürzt)",
-      wiederholer: "vr_op.wdh(Wiederholer)",
-      Mastschild: ["Mastschild","wrw(weiß-rot-weiß),wgwgw(weiß-gelb-weiß-gelb-weiß)"],
-      Zusatz_oben: "zusatz_oben(Zusatzanzeiger oben)",
-      Zusatz_unten: "zusatz_unten(Zusatzanzeiger unten)" ,       
-      Bezeichnung: {
-         input: "Bezeichnung",
-      },
-   };
-
-   const lightMenu = [["hp=0,hp=1,hp=2","zs3"],["vr=0,vr=1,vr=2","zs3v"],"ersatz=zs1,ersatz=zs7,ersatz=zs8,ersatz=sh1,ersatz=kennlicht",]
+   const lightMenu = [["hp=0,hp=1,hp=2", "zs3"], ["vr=0,vr=1,vr=2", "zs3v"], "ersatz=zs1,ersatz=zs7,ersatz=zs8,ersatz=sh1,ersatz=kennlicht"];
 
    const verw_strecke = ["verwendung.bksig", "verwendung.sbk", "verwendung.esig"];
    const verw_bahnhof = ["verwendung.asig", "verwendung.zsig"];
@@ -473,14 +479,6 @@ function initSignals() {
    t.checkSignalDependency = checkSignalDependencyFunction4HV;
    t.addRule("hp>0 && zs3>6", "hp=1");
    t.addRule("hp>0 && zs3<=6 && zs3>0", "hp=2");
-   t.contextMenu = [].concat(
-      settingsMenu.Verwendung,
-      settingsMenu.Mastschild,
-      settingsMenu.Vorsignal,
-      settingsMenu.verkürzt,
-      settingsMenu.Zusatz,
-      settingsMenu.Bezeichnung
-   );
    t.signalMenu = lightMenu;
    signalTemplates.hv_hp = t;
 
@@ -528,8 +526,7 @@ function initSignals() {
    t.distance_from_track = 4;
    t.checkSignalDependency = checkSignalDependencyFunction4HV;
    t.initialFeatures = ["vr"];
-   t.contextMenu = [].concat(settingsMenu.verkürzt, settingsMenu.wiederholer, settingsMenu.Zusatz);
-   t.signalMenu = ["vr=0,vr=1,vr=2","zs3v"]      
+   t.signalMenu = ["vr=0,vr=1,vr=2", "zs3v"];
    signalTemplates.hv_vr = t;
 
    //KS Hauptsignal
@@ -628,14 +625,7 @@ function initSignals() {
    t.scale = 0.15;
    t.distance_from_track = 15;
    t.initialFeatures = ["hp", "verwendung.asig"];
-   t.contextMenu = [].concat(settingsMenu.Verwendung, settingsMenu.Vorsignal, settingsMenu.verkürzt, settingsMenu.Zusatz, settingsMenu.Bezeichnung);
-   t.signalMenu = [
-      ["hp=0,hp=1(Ks 1),hp=2(Ks 2)", "zs3"],
-      "zs3v",
-      "ersatz=zs1,ersatz=zs7,ersatz=zs8,ersatz=sh1",
-      "verk=1(Verk.)",
-      "zs6=1(Zs 6)",
-   ];
+   t.signalMenu = [["hp=0,hp=1(Ks 1),hp=2(Ks 2)", "zs3"], "zs3v", "ersatz=zs1,ersatz=zs7,ersatz=zs8,ersatz=sh1", "verk=1(Verk.)", "zs6=1(Zs 6)"];
 
    //signal: ist das signal, dessen Stellung wir gerade setzen
    //hp: ist das signal, dessen Stellung wir vorsignalisieren wollen
@@ -734,7 +724,6 @@ function initSignals() {
    t.scale = 0.13;
    t.distance_from_track = 15;
    t.initialFeatures = ["vr"];
-   t.contextMenu = [].concat(settingsMenu.verkürzt, settingsMenu.wiederholer, settingsMenu.Zusatz);
    t.signalMenu = ["hp=1(Ks 1),hp=2(Ks 2)", "zs3v", "ersatz=kennlicht"];
 
    t.checkSignalDependency = signalTemplates.ks.checkSignalDependency;
@@ -747,6 +736,7 @@ function initSignals() {
       "ls",
       [
          "basis",
+         "wrw",
          "lp_r_links",
          "lp_r_rechts",
          "lp_w_oben",
@@ -759,13 +749,12 @@ function initSignals() {
          "schute_w_unten",
          new VisualElement("schild", {
             conditions: "bez",
-            childs: [new TextElement("Bez", { pos: [205, 125], format: "bold 55px condenced", color: "#333", stellung: "#bez" })],
+            childs: [new TextElement("Bez", { pos: [210, 125], format: "bold 55px condenced", color: "#333", stellung: "#bez" })],
          }),
       ],
       "hp=0"
    );
    t.scale = 0.07;
-   t.contextMenu = [].concat(settingsMenu.Bezeichnung);
    t.signalMenu = ["hp=0,hp=1(Sh 1)", "ersatz=kennlicht"];
    signalTemplates.ls = t;
 

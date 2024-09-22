@@ -67,6 +67,17 @@ Array.prototype.random = function () {
    return this[Math.randomInt(this.length - 1)];
 };
 
+//will only add the element if the array does not already contain it.
+Array.prototype.pushUnique = function (newElement) {
+   if (this.indexOf(newElement) === -1) {
+      this.push(newElement);
+   }
+};
+
+function nll(o) {
+   return o == null;
+}
+
 function type(value) {
    if (value === null) {
       return "null";
@@ -787,66 +798,73 @@ const BS = {
    },
 
    createSwitchStructure(mainLabel, subLabels, onchange) {
-      let [text, value] = mainLabel.split("|");
+      let [text, value, enabled] = mainLabel;
+      if (!enabled && subLabels.length == 0) return null;
       let $mainDiv;
+      $mainDiv = ui.div("", [
+         enabled == null || enabled
+            ? ui.div("form-check form-switch", [
+                 $("<input/>", {
+                    class: "form-check-input",
+                    type: "checkbox",
+                    role: "switch",
+                    id: "switch_" + text,
+                 })
+                    .on("change", function () {
+                       const isChecked = $(this).is(":checked");
+                       /* $("input", $mainDiv.children()[1]).prop("disabled", !isChecked); */
+                       if (onchange) onchange($(this).attr("value"), isChecked);
+                    })
+                    .attr("value", value ?? text)
+                    .attr("data-master_switch", ""),
 
-      const $mainInput = $("<input/>", {
-         class: "form-check-input",
-         type: "checkbox",
-         role: "switch",
-         id: "switch_" + text,
-      })
-         .on("change", function () {
-            const isChecked = $(this).is(":checked");
-            $("input", $mainDiv.children()[1]).prop("disabled", !isChecked);
-            if (onchange) onchange($(this).attr("data"), isChecked);
-         })
-         .attr("data", value ?? text);
+                 $("<label/>", {
+                    class: "form-check-label",
+                    for: "switch_" + text,
+                    text: text,
+                 }),
+              ])
+            : $("<label/>", {
+                 text: text,
+              }),
 
-      const $mainLabel = $("<label/>", {
-         class: "form-check-label",
-         for: "switch_" + text,
-         text: text,
-      });
-
-      $mainDiv = ui.div("ps-3 pb-3 border-bottom", [
-         ui.div("form-check form-switch", [$mainInput, $mainLabel]),
          ui.div(
             "ps-3",
-            subLabels.map(function (label) {
-               [text, value] = label.split("|");
-               return ui.div("form-check form-switch", [
-                  $("<input/>", {
-                     class: "form-check-input",
-                     type: "checkbox",
-                     role: "switch",
-                     id: "switch_" + text,
-                     checked: true, // Default to checked as per your example
-                  })
-                     .on("change", function () {
-                        const isChecked = $(this).is(":checked");
-                        if (onchange) onchange($(this).attr("data"), isChecked);
+            subLabels
+               .filter((x) => x[2] == null || x[2] == true)
+               .map(function (label) {
+                  [text, value, enabled] = label;
+                  return ui.div("form-check form-switch", [
+                     $("<input/>", {
+                        class: "form-check-input",
+                        type: "checkbox",
+                        role: "switch",
+                        id: "switch_" + text,
+                        checked: true, // Default to checked as per your example
                      })
-                     .attr("data", value ?? text),
-
-                  $("<label/>", {
-                     class: "form-check-label",
-                     for: "switch_" + text,
-                     text: text,
-                  }),
-               ]);
-            })
+                        .on("change", function () {
+                           const isChecked = $(this).is(":checked");
+                           if (onchange) onchange($(this).attr("value"), isChecked);
+                        })
+                        .attr("value", value ?? text),
+                     $("<label/>", {
+                        class: "form-check-label",
+                        for: "switch_" + text,
+                        text: text,
+                     }),
+                  ]);
+               })
          ),
       ]);
       return $mainDiv;
    },
    createOptionGroup(header, options, inputType = "radio", onchange) {
-      return ui.div("ps-3 pb-3 border-bottom", [
+      return ui.div("", [
          $("<label>").text(header),
          ui.div(
             "ps-3",
             options.map(function (option) {
-               let [text, value] = option.split("|");
+               let [text, value, enabled] = option;
                let id = "input_" + text;
                // Create the div for each form-check-inline
                return ui.div("form-check form-check-inline", [
@@ -856,6 +874,7 @@ const BS = {
                      .attr("name", "OptionGroup_" + header)
                      .attr("type", inputType)
                      .attr("value", value ?? text)
+                     .attr("disabled", enabled != null && !enabled)
                      .on("change", function () {
                         const isChecked = $(this).is(":checked");
                         if (onchange) onchange($(this).attr("value"), isChecked);

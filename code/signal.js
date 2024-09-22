@@ -113,6 +113,7 @@ class Signal {
 
          return antiMatch ? !retValue : retValue;
       }.bind(this);
+
       if (Array.isArray(condition)) {
          return condition.some(this.matchFeature.bind(this));
       } else if (condition.includes("&&")) {
@@ -324,7 +325,7 @@ class Signal {
          if (Array.isArray(data)) {
             let items = data.map((item) => this.createBootstrapMenuItems(item, update)).justNull();
             if (items) {
-               return ui.div("p-3 border-bottom",BS.create_buttonToolbar(items))
+               return ui.div("p-3 border-bottom", BS.create_buttonToolbar(items));
             } else return null;
          } else if (data.type == "group") {
             let buttons = data.items
@@ -436,5 +437,90 @@ const Sig_UI = {
       const items = Array.from({ length: 10 }, (_, i) => `${i}0|${signal}=${i}`);
       items[0] = `aus|${signal}=-1`;
       return BS.create_DropDown(items, text, onChange);
+   },
+   initSignalMenu() {
+      const conditions = selection.object._template.getAllVisualElementConditions();
+      $("#nav-profile").empty();
+      if (selection.object.matchFeature("hp"))
+         $("#nav-profile").append(
+            ui.div(
+               "p-3 border-bottom",
+               BS.create_DropDown(
+                  "Esig,Asig,Zsig,Bksig,Sbk".split(",").map((x) => x + "|verwendung." + x.toLowerCase()),
+                  "Verwendung",
+                  (v) => {
+                     selection.object.setFeature(v);
+                     Sig_UI.syncSignalMenu(selection.object);
+                     renderer.reDrawEverything();
+                     save();
+                  }
+               )
+            )
+         );
+      $("#nav-profile").append(
+         BS.createSwitchStructure(
+            ["Vorsignalfunktion", "vr", conditions.includes("vr")],
+            [
+               ...(conditions.includes("vr_op.verk") ? [["verkürzt", "vr_op.verk"]] : []),
+               ...(conditions.includes("vr_op.wdh") ? [["wiederholer", "vr_op.wdh"]] : []),
+            ],
+            (v, on) => {
+               selection.object.setFeature(v, on);
+               Sig_UI.syncSignalMenu(selection.object);
+               renderer.reDrawEverything();
+               save();
+            }
+         )?.addClass("p-3 border-bottom")
+      );
+      if (conditions.includes("mastschild.wrw") && conditions.includes("mastschild.wgwgw"))
+         $("#nav-profile").append(
+            BS.createOptionGroup(
+               "Mastschild",
+               [
+                  ["W-R-W", "mastschild.wrw"],
+                  ["W-G-W-G-W", "mastschild.wgwgw"],
+               ],
+               "radio",
+               (v, on) => {
+                  selection.object.setFeature(v, on);
+                  Sig_UI.syncSignalMenu(selection.object);
+                  renderer.reDrawEverything();
+                  save();
+               }
+            ).addClass("p-3 border-bottom")
+         );
+      if (conditions.includes("zusatz_unten") || conditions.includes("zusatz_oben")) {
+         const a = [
+            ["unten", "zusatz_unten"],
+            ["oben", "zusatz_oben"],
+         ];
+         a.forEach((x) => x.push(conditions.includes(x[1])));
+
+         $("#nav-profile").append(
+            BS.createOptionGroup("Zusatzanzeiger", a, "checkbox", (v, on) => {
+               selection.object.setFeature(v, on);
+               Sig_UI.syncSignalMenu(selection.object);
+               renderer.reDrawEverything();
+               save();
+            }).addClass("p-3 border-bottom")
+         );
+      }
+   },
+   syncSignalMenu(signal) {
+      //header
+      $("#signalEditMenuHeader .card-title").text(signal._template.title);
+      $("#signalEditMenuHeader .card-text>span").text(signal.title);
+      //feature Menu
+      $("#nav-profile>div a").each(function () {
+         const $a = $(this);
+         $a.toggleClass("active", signal.matchFeature($a.attr("value")));
+      });
+
+      $("#nav-profile>div input").each(function () {
+         const input = $(this);
+         const v = signal.matchFeature(input.attr("value"));
+         input.attr("checked", v ? "checked" : null);
+         if (input.attr("data-master_switch") != null) $("input", input.parent().next()).prop("disabled", !v);
+      });
    },
 };

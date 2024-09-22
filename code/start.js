@@ -38,6 +38,13 @@ const SWITCH_TYPE = {
    CROSSING: 10,
 };
 
+const MENU = {
+   EDIT_SIGNAL: 0,
+   NEW_SIGNAL: 1,
+   EDIT_TRAIN: 2,
+   NEW_TRAIN: 3,
+};
+
 var stage,
    debug_container,
    main_container,
@@ -134,7 +141,6 @@ function init() {
       $("#newItemMenu #collapseThree .accordion-body").append(newItemButton(signalTemplates.lf6));
       $("#newItemMenu #collapseThree .accordion-body").append(newItemButton(signalTemplates.lf7));
       $("#newItemMenu #collapseThree .accordion-body").append(newItemButton(signalTemplates.zs3));
-      //ShowAddSignalMenu();
 
       selectRenderer(false);
       loadRecent();
@@ -219,7 +225,7 @@ function init() {
       selectRenderer(TEXTURE_MODE);
    });
 
-   $("#btnAddSignals").click(() => showMenu("newItemMenu"));
+   $("#btnAddSignals").click(() => showMenu(MENU.NEW_SIGNAL));
 
    $("#btnClear").click(() => {
       tracks = [];
@@ -305,21 +311,50 @@ function init() {
       stage.update();
    });
 
-   document.addEventListener("keydown", (e) => {
-      if (e.code == "Delete") {
-         if (selection.object) {
-            if (selection.type == "Track") [].concat(selection.object).forEach((t) => deleteTrack(t, null));
-            if (selection.type == "Signal") [].concat(selection.object).forEach((s) => removeSignal(s, null));
-            Track.cleanupTracks();
-            Track.connectTracks();
+   $("#btnGrundstellung").click((e) => {
+      if (selection.type == "Signal") {
+         [].concat(selection.object).forEach((s) => {
+            s._signalStellung = {};
+            if (s._template.initialSignalStellung) s._template.initialSignalStellung.forEach((i) => s.set_stellung(i, null, false));
             save();
             renderer.reDrawEverything(true);
             stage.update();
-         }
+         });
       }
    });
 
-   initSignalMenu();
+   $("#btnRemoveSignal").click((e) => {
+      deleteObject();
+   });
+
+   document.addEventListener("keydown", (e) => {
+      if (e.target.tagName === "BODY" && e.code == "Delete") {
+         deleteObject();
+      }
+   });
+
+   $("#signalEditMenuHeader a").on("click", () => {
+      $("#signalEditMenuHeader .card-text").hide();
+      $("#signalEditMenuHeader input")
+         .val(selection.object.getFeature("bez"))
+         .show()
+         .focus()
+         .on("keydown", function (e) {
+            if (e.key === "Enter") {
+               selection.object.setFeature("bez", $(this).val());
+               $("#signalEditMenuHeader .card-text").show();
+               $("#signalEditMenuHeader input").hide();
+               Sig_UI.syncSignalMenu(selection.object);
+               save();
+               renderer.reDrawEverything(true);
+               stage.update();
+            }
+         })
+         .on("blur", () => {
+            $("#signalEditMenuHeader .card-text").show();
+            $("#signalEditMenuHeader input").hide();
+         });
+   });
 
    onResizeWindow();
    toggleEditMode(false);
@@ -328,18 +363,50 @@ function init() {
    myCanvas.focus();
 }
 
-function showMenu(id) {
+function deleteObject() {
+   if (selection.object) {
+      if (selection.type == "Track") [].concat(selection.object).forEach((t) => deleteTrack(t, null));
+      if (selection.type == "Signal") [].concat(selection.object).forEach((s) => removeSignal(s, null));
+      Track.cleanupTracks();
+      Track.connectTracks();
+      save();
+      renderer.reDrawEverything(true);
+      stage.update();
+      selectObject();
+   }
+}
+
+///Shows the menu on the right.
+/// menu==null just hides it.
+function showMenu(menu) {
    var bsOffcanvas = bootstrap.Offcanvas.getOrCreateInstance($("#sidebar"));
-   if (!id) {
+   if (nll(menu)) {
       bsOffcanvas.hide();
       return;
    }
-   const current_menu = $('#sidebar>div:not([style*="display: none"])');
+   const current_id = $('#sidebar>div:not([style*="display: none"])');
+   let div_id;
+   switch (menu) {
+      case MENU.EDIT_SIGNAL:
+         div_id = "signalEditMenu";
+         let body = $("#nav-home");
+         body.empty();
+         body.append(mouseAction.container.signal.getHTML());
+         Sig_UI.initSignalMenu();
+         Sig_UI.syncSignalMenu(selection.object);
+         break;
+      case MENU.NEW_SIGNAL:
+         div_id = "newItemMenu";
+         break;
+
+      default:
+         throw new Error("unknown Menu");
+   }
 
    $("#sidebar > div")
-      .not("#" + id)
+      .not("#" + div_id)
       .hide();
-   $("#sidebar > #" + id).show();
+   $("#sidebar > #" + div_id).show();
 
    bsOffcanvas.show();
    if (bsOffcanvas._isShown) {
@@ -347,45 +414,6 @@ function showMenu(id) {
    } else {
       //bsOffcanvas.hide();
    }
-}
-
-function ShowAddSignalMenu() {
-   var bsOffcanvas = bootstrap.Offcanvas.getOrCreateInstance($("#sidebar"));
-   bsOffcanvas.toggle();
-   /* if (drawing_mode) {
-         bsOffcanvas.show();
-      } else {
-         bsOffcanvas.hide();
-      } */
-}
-
-function initSignalMenu() {
-   $("#nav-profile").append([
-      BS.create_DropDown(
-         "Esig,Asig,Zsig,Bksig,Sbk".split(",").map((x) => x + "|verwendung." + x.toLowerCase()),
-         "Verwendung",
-         (v) => {
-            selection.object.setFeature(v);
-            renderer.reDrawEverything();
-            save();
-         }
-      ),
-      BS.createSwitchStructure("Vorsignalfunktion|vr", ["verkürzt|vr_op.verk", "wiederholer|vr_op.wdh"], (v,on) => {
-         selection.object.setFeature(v,on);
-         renderer.reDrawEverything();
-         save();
-      }),
-      BS.createOptionGroup("Mastschild",["W-R-W|mastschild.wrw", "W-G-W-G-W|mastschild.wgwgw"],"radio", (v,on) => {
-         selection.object.setFeature(v,on);
-         renderer.reDrawEverything();
-         save();
-      }),
-      BS.createOptionGroup("Zusatzanzeiger",["unten|zusatz_unten", "oben|zusatz_oben"], "checkbox", (v,on) => {
-         selection.object.setFeature(v,on);
-         renderer.reDrawEverything();
-         save();
-      }),
-   ]);
 }
 
 function toggleEditMode(mode) {
@@ -410,9 +438,12 @@ function selectObject(object, e) {
    if (!object) {
       selection.object = null;
       selection.type = "";
+      renderer.updateSelection();
+      showMenu();
       return;
    }
    const t = type(object);
+
    if (t != selection.type) {
       selection.object = object;
       selection.type = t;
@@ -420,6 +451,22 @@ function selectObject(object, e) {
       if (e?.nativeEvent?.ctrlKey) selection.object = Array.isArray(selection.object) ? [...selection.object, object] : [selection.object, object];
       else selection.object = object;
    }
+   renderer.updateSelection();
+
+   let menu;
+   switch (t) {
+      case "Signal":
+         if (!Array.isArray(selection.object)) menu = MENU.EDIT_SIGNAL;
+         break;
+      case "Train":
+         menu = MENU.EDIT_TRAIN;
+         break;
+      default:
+         menu = null;
+         break;
+   }
+
+   showMenu(menu);
 }
 
 function clearCanvas() {
@@ -859,52 +906,14 @@ function handleStageMouseUp(e) {
       } else if (mouseAction.action === MOUSE_DOWN_ACTION.NONE && mouseAction.distance() < 4) {
          if (mouseAction.container?.name == "signal") {
             selectObject(mouseAction.container.signal, e);
-            renderer.updateSelection();
-            let body = $("#nav-home");
-            body.empty();
-            body.append(mouseAction.container.signal.getHTML());
-            /* body = $("#signalMenu #collapseSignalEinstelllung .accordion-body");
-            body.empty();
-            body.append(mouseAction.container.signal.getContextMenu()); */
-            showMenu("signalEditMenu");
-            /* if (edit_mode === MODE_PLAY) {
-               let bounds = getGlobalBounds(mouseAction.container);
-
-               let p = stage.localToGlobal(
-                  mouseAction.container.x, // - bounds.height,
-                  mouseAction.container.y
-               );
-               p.y -= bounds.width / 2;
-               if (mouseAction.container.rotation == 270) p.x -= bounds.height;
-
-               let popup = ui.showPopup(
-                  { x: p.x, y: p.y, width: bounds.height, height: bounds.width },
-                  (mouseAction.container.signal._template.title + " " + mouseAction.container.signal.title).trim(),
-                  mouseAction.container.signal.getHTML(),
-                  $(myCanvas)
-               );
-            } else if (edit_mode) {
-               if (!$("#generated_menu").length) {
-                  let context_menu = ui.showContextMenu(
-                     { x: e.rawX, y: e.rawY },
-                     $(myCanvas),
-                     mouseAction.container.signal.getContextMenu(),
-                     mouseAction.container.signal
-                  );
-               }
-            } */
          } else if (mouseAction.container?.name == "track") {
             selectObject(mouseAction.container.track, e);
-            showMenu();
-            renderer.updateSelection();
          } else if (mouseAction.container?.name == "switch") {
             Track.switch_A_Switch(mouseAction.container.sw, local_point.x);
             renderer.reRenderSwitch(mouseAction.container.sw);
             stage.update();
          } else {
             selectObject();
-            showMenu();
-            renderer.updateSelection();
          }
       }
    } else if (mouseAction.action === MOUSE_DOWN_ACTION.SCROLL) {
