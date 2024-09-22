@@ -32,7 +32,7 @@ html, body {
 }
 
 .btn-toolbar {
-    column-gap: 20px;
+    column-gap: 5px;
 }
 
 #CanvasContainer {

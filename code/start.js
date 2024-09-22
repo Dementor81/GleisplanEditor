@@ -56,7 +56,6 @@ var stage,
    drawing_container,
    grid;
 
-var TEXTURE_MODE = false;
 var previousTouch;
 var showGrid = true;
 var edit_mode = false;
@@ -142,7 +141,7 @@ function init() {
       $("#newItemMenu #collapseThree .accordion-body").append(newItemButton(signalTemplates.lf7));
       $("#newItemMenu #collapseThree .accordion-body").append(newItemButton(signalTemplates.zs3));
 
-      selectRenderer(false);
+      selectRenderer(true);
       loadRecent();
    });
 
@@ -219,10 +218,8 @@ function init() {
 
    $(btnDrawTracks).click(() => toggleEditMode());
 
-   $(btnTexture).click((e) => {
-      TEXTURE_MODE = !TEXTURE_MODE;
-      $(btnTexture).toggleClass("active", TEXTURE_MODE);
-      selectRenderer(TEXTURE_MODE);
+   $("#switch_renderer").on("change", (e) => {
+      selectRenderer(!$("#switch_renderer").is(":checked"));
    });
 
    $("#btnAddSignals").click(() => showMenu(MENU.NEW_SIGNAL));
@@ -427,8 +424,11 @@ function toggleEditMode(mode) {
 function selectRenderer(textured) {
    if (textured) {
       renderer = new trackRendering_textured();
+      $("#switch_renderer").prop(":checked",false)
+
    } else {
       renderer = new trackRendering_basic();
+      $("#switch_renderer").prop(":checked",true)
    }
    renderer.reDrawEverything(true);
    stage.update();
