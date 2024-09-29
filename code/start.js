@@ -25,7 +25,7 @@ const MOUSE_DOWN_ACTION = {
    DND_SIGNAL: 4,
    ADD_TRAIN: 5,
    MOVE_TRAIN: 6,
-   DRAWING: 7,
+   DRAWING: 8,
 };
 
 const SWITCH_TYPE = {
@@ -223,6 +223,29 @@ function init() {
    });
 
    $("#btnAddSignals").click(() => showMenu(MENU.NEW_SIGNAL));
+   $("#btnAddTrain").click(() => showMenu(MENU.NEW_TRAIN));
+   $("#newTrain").on("mousedown", (e) => {
+      mouseAction = {
+         action: MOUSE_DOWN_ACTION.ADD_TRAIN,
+      };
+
+      //mouseup beim document anmelden, weil mouseup im stage nicht ausgelöst wird, wenn mousedown nicht auch auf der stage war
+      //little hack, weil handleStageMouseUp ein event von createjs erwartet
+      document.addEventListener("mouseup", (e) => handleStageMouseUp({ nativeEvent: e }), {
+         once: true,
+      });
+
+      stage.addEventListener("stagemousemove", handleMouseMove);
+
+      let local_point = stage.globalToLocal(stage.mouseX, stage.mouseY);
+      mouseAction.container = new createjs.Bitmap("zug.png").set({
+         x: local_point.x,
+         y: local_point.y,
+         scale: 0.5,
+      });
+
+      overlay_container.addChild(mouseAction.container);
+   });
 
    $("#btnClear").click(() => {
       tracks = [];
@@ -321,12 +344,12 @@ function init() {
    });
 
    $("#btnRemoveSignal").click((e) => {
-      deleteObject();
+      deleteSelectedObject();
    });
 
    document.addEventListener("keydown", (e) => {
       if (e.target.tagName === "BODY" && e.code == "Delete") {
-         deleteObject();
+         deleteSelectedObject();
       }
    });
 
@@ -360,7 +383,7 @@ function init() {
    myCanvas.focus();
 }
 
-function deleteObject() {
+function deleteSelectedObject() {
    if (selection.object) {
       if (selection.type == "Track") [].concat(selection.object).forEach((t) => deleteTrack(t, null));
       if (selection.type == "Signal") [].concat(selection.object).forEach((s) => removeSignal(s, null));
@@ -395,7 +418,14 @@ function showMenu(menu) {
       case MENU.NEW_SIGNAL:
          div_id = "newItemMenu";
          break;
+      case MENU.EDIT_TRAIN:
+         div_id = "editTrainMenu";
+         Train.initEditTrainMenu(selection.object);
+         break;
+      case MENU.NEW_TRAIN:
+         div_id = "newTrainMenu";
 
+         break;
       default:
          throw new Error("unknown Menu");
    }
@@ -424,11 +454,10 @@ function toggleEditMode(mode) {
 function selectRenderer(textured) {
    if (textured) {
       renderer = new trackRendering_textured();
-      $("#switch_renderer").prop(":checked",false)
-
+      $("#switch_renderer").prop(":checked", false);
    } else {
       renderer = new trackRendering_basic();
-      $("#switch_renderer").prop(":checked",true)
+      $("#switch_renderer").prop(":checked", true);
    }
    renderer.reDrawEverything(true);
    stage.update();
@@ -555,16 +584,16 @@ function handleStageMouseDown(event) {
       mouseAction.old_point = new Point(event.stageX, event.stageY);
    }
 
-   if ($("#btnAddTrain").hasClass("active")) mouseAction.action = MOUSE_DOWN_ACTION.ADD_TRAIN;
+   //if ($("#btnAddTrain").hasClass("active")) mouseAction.action = MOUSE_DOWN_ACTION.ADD_TRAIN;
 
    //console.log(mouseAction);
    stage.addEventListener("stagemousemove", handleMouseMove);
 }
 
-function getHitTest() {
+function getHitTest(container) {
    let local_point = stage.globalToLocal(stage.mouseX, stage.mouseY);
 
-   return stage.getObjectUnderPoint(local_point.x, local_point.y, 1);
+   return (container?container:stage).getObjectUnderPoint(local_point.x, local_point.y, 1);
 }
 
 function getHitTrackInfo(use_offset) {
@@ -764,6 +793,9 @@ function handleMouseMove(event) {
    } else if (mouseAction.action === MOUSE_DOWN_ACTION.MOVE_TRAIN) {
       Train.moveTrain(mouseAction.container.train, event.nativeEvent.movementX);
       renderer.reDrawEverything();
+   } else if (mouseAction.action === MOUSE_DOWN_ACTION.ADD_TRAIN) {
+      mouseAction.container.x = local_point.x;
+      mouseAction.container.y = local_point.y;
    }
 
    stage.update();
@@ -884,9 +916,11 @@ function handleStageMouseUp(e) {
 
          stage.update();
       } else if (mouseAction.action === MOUSE_DOWN_ACTION.ADD_TRAIN) {
-         if (mouseAction.container?.name == "track") {
+         overlay_container.removeChild(mouseAction.container);
+         const hit = getHitTest(track_container);
+         if (hit.name == "track") {
             const color = ["#ff0000", "#ffff00", "#00ff00", "#0000ff"].random();
-            const track = mouseAction.container.track;
+            const track = hit.track;
             let train, car, car2;
             car = train = Train.addTrain(track, (local_point.x - track.start.x) / track._tmp.cos, color);
             Train.allTrains.push(train);
@@ -899,13 +933,14 @@ function handleStageMouseUp(e) {
             renderer.reDrawEverything();
             stage.update();
             save();
-            $("#btnAddTrain").removeClass("active");
          }
       } else if (mouseAction.action === MOUSE_DOWN_ACTION.MOVE_TRAIN) {
          save();
       } else if (mouseAction.action === MOUSE_DOWN_ACTION.NONE && mouseAction.distance() < 4) {
          if (mouseAction.container?.name == "signal") {
             selectObject(mouseAction.container.signal, e);
+         } else if (mouseAction.container?.name == "train") {
+            selectObject(mouseAction.container.train, e);
          } else if (mouseAction.container?.name == "track") {
             selectObject(mouseAction.container.track, e);
          } else if (mouseAction.container?.name == "switch") {

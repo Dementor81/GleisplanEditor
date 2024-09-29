@@ -64,17 +64,16 @@ class preLoader {
     getSprite(json_file, texture_name) {
         if (texture_name == null || texture_name == "") throw "kein texture_name übergeben";
         if (json_file == null || json_file == "") throw "kein signal_name übergeben";
-        let id = json_file + texture_name;
-        let img = this._loadQueue.getResult(id);
+        const id = json_file + texture_name;
+        const img = this._loadQueue.getResult(id);
         if (img != null) {
             let item = this._loadQueue._loadItemsById[id];
-            let bmp = new createjs.Bitmap(img).set({
+            return new createjs.Bitmap(img).set({
                 name:texture_name,
                 y: item.pos.top,
                 x: item.pos.left,
                 sourceRect: new createjs.Rectangle(item.sourceRect.x, item.sourceRect.y, item.sourceRect.width, item.sourceRect.height),
             });
-            return bmp;
         } else console.log(id + " nicht gefunden, nicht vom preLoader geladen");
 
         return null;

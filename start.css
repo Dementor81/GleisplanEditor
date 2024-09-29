@@ -49,9 +49,14 @@ html, body {
     width: 22rem;
 }
 
-#signalEditMenuHeader{
+.sidebar_menu {
     padding: 1rem;
 }
+
+.sidebar_menu_header {
+    padding-bottom: 1rem;
+}
+
 
 .focus, .btn:focus {
     outline: none !important;
@@ -96,10 +101,12 @@ html, body {
     background-color: #6c757d !important;
     color: #eee !important;
 }
-.newSignalItem{
-    font-size:smaller;
+
+.newSignalItem {
+    font-size: smaller;
 }
-.newItem_image {    
+
+.newItem_image {
     width: 45px;
     height: 45px;
     background-repeat: no-repeat;
@@ -165,7 +172,7 @@ html, body {
     background-color: white;
 }
 
-.webkit-fill-width{
+.webkit-fill-width {
     width: -webkit-fill-available;
 }
 

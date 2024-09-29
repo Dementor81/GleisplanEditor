@@ -12,6 +12,39 @@ class Train {
       return train;
    }
 
+   static initEditTrainMenu(train) {
+      $("#colorInputTrain")
+         .off()
+         .val(train.color)
+         .on("change", function (e) {
+            train.color = $(this).val();
+            renderer.renderAllTrains();
+            stage.update();
+            save();
+         });
+
+      $("#inputZugnummer")
+         .off()
+         .val(train.number)
+         .on("change", function (e) {
+            train.number = $(this).val();
+            renderer.renderAllTrains();
+            stage.update();
+            save();
+         });
+
+      $("#btnRemoveTrain")
+         .off()
+         .click(() => Train.deleteTrain(train));
+   }
+
+   static deleteTrain(train) {
+      this.allTrains.remove(train);
+      renderer.renderAllTrains();
+      stage.update();
+      save();
+   }
+
    static moveTrain(train, movementX) {
       let first_car = train;
 
@@ -81,6 +114,7 @@ class Train {
    _pos = null;
    _coordinates = null;
    _color = "#000000";
+   _number = "";
    trainCoupledBack = null;
 
    get track() {
@@ -104,6 +138,18 @@ class Train {
       return this._color;
    }
 
+   set color(c) {
+      this._color = c;
+      if (this.trainCoupledBack) this.trainCoupledBack.color = c;
+   }
+
+   get number() {
+      return this._number;
+   }
+   set number(n) {
+      this._number = n;
+   }
+
    coupleBack(train) {
       this.trainCoupledBack = train;
    }
@@ -118,6 +164,6 @@ class Train {
    }
 
    stringify() {
-      return { _class: "Train", coordinates: this._coordinates, color: this._color, trainCoupledBack: this.trainCoupledBack };
+      return { _class: "Train", coordinates: this._coordinates, color: this._color, number: this._number, trainCoupledBack: this.trainCoupledBack };
    }
 }
