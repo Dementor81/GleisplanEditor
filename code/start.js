@@ -126,7 +126,7 @@ function init() {
    stage.addChild((overlay_container = create_container("overlay")));
    stage.addChild((drawing_container = create_container("drawing_container")));
 
-   //ShowPreBuildScreen();
+   ShowPreBuildScreen();
 
    pl.start().then(() => {
       $("#newItemMenu #collapse1 .accordion-body").append([
@@ -140,7 +140,7 @@ function init() {
       $("#newItemMenu #collapse5 .accordion-body").append([newItemButton(signalTemplates.zs3), newItemButton(signalTemplates.zs10)]);
 
       selectRenderer(true);
-      loadRecent();
+      //loadRecent();
    });
 
    createjs.Ticker.addEventListener("tick", stage);

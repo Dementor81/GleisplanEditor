@@ -8,12 +8,12 @@ class preLoader {
         this._jsonFiles = [];
         this._loadedItems = 0;
         this.onProgress = (progress) => {};
-        this._loadQueue = new createjs.LoadQueue(true, basefolder, true);
+        this._loadQueue = new createjs.LoadQueue(false, basefolder, false);
         this._loadQueue.setMaxConnections(99);
-        this._loadQueue.on("fileload", (e) => {
+        /* this._loadQueue.on("fileload", (e) => {
             this._loadedItems++;
             this.onProgress(this._loadedItems / this._totalItems);
-        });
+        }); */
     }
 
     get loaded() {
