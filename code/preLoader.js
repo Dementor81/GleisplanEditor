@@ -5,7 +5,7 @@ class preLoader {
         this._promises = [];
         this._basefolder = basefolder;
         if (basefolder.length > 0) this._basefolder += "/";
-        //this._loaderDic = new Map();
+        this._jsonFiles = [];
         this._loadedItems = 0;
         this.onProgress = (progress) => {};
         this._loadQueue = new createjs.LoadQueue(true, basefolder, true);
@@ -21,6 +21,8 @@ class preLoader {
     }
 
     addSpriteSheet(json_file) {
+        if(this._jsonFiles.includes(json_file)) return null;
+        this._jsonFiles.push(json_file);
         let p = new Promise((resolve, reject) => {
             preLoader.getJson(this._basefolder + json_file + ".json" + "?" + VERSION).then((imgCatalog) => {
                 let i = 0;
@@ -30,8 +32,6 @@ class preLoader {
                     img.src = json_file + ".png" + "?" + VERSION;
                     img.id = json_file + img.signal;
                     i++;
-                    //this._loaderDic.set(img.id, img);
-                    //this._loadQueue.loadFile(img.src, false, signal + "/");
                 }
                 this._loadQueue.loadManifest(imgCatalog, false, this._basefolder);
                 resolve();
