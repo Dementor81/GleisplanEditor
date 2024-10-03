@@ -219,7 +219,7 @@ class SignalTemplate {
          else this.elements = [startElements];
       }
 
-      pl.addSpriteSheet(this.#_id, json_file);
+      pl.addSpriteSheet(json_file);
    }
 
    add(element) {
@@ -266,9 +266,6 @@ class SignalTemplate {
       return conditions;
    }
 
-   
-
-
    addRule(trigger, setting) {
       this.rules.push([trigger, setting]);
    }
@@ -283,7 +280,7 @@ class SignalTemplate {
 }
 
 function initSignals() {
-   const lightMenu = [["hp=0,hp=1,hp=2", "zs3"], ["vr=0,vr=1,vr=2", "zs3v"], "ersatz=zs1,ersatz=zs7,ersatz=zs8,ersatz=sh1,ersatz=kennlicht"];
+   const lightMenu = [["hp=0,hp=1,hp=2", "zs3"], ["vr=0,vr=1,vr=2","verk=1(verk)", "zs3v"], "ersatz=zs1,ersatz=zs7,ersatz=zs8,ersatz=sh1,ersatz=kennlicht"];
 
    const verw_strecke = ["verwendung.bksig", "verwendung.sbk", "verwendung.esig"];
    const verw_bahnhof = ["verwendung.asig", "verwendung.zsig"];
@@ -429,7 +426,7 @@ function initSignals() {
 
          new VisualElement(null, {
             childs: ["zs3", new TextElement("zs3", { pos: [115, 80], format: "bold 80px Arial", color: "#eee", stellung: "zs3" })],
-            off: "zs3<=0",
+            off: "zs3<=0||zs3=40",
             conditions: "!zusatz_oben",
          }),
 
@@ -526,7 +523,7 @@ function initSignals() {
    t.distance_from_track = 4;
    t.checkSignalDependency = checkSignalDependencyFunction4HV;
    t.initialFeatures = ["vr"];
-   t.signalMenu = ["vr=0,vr=1,vr=2", "zs3v"];
+   t.signalMenu = ["vr=0,vr=1,vr=2","verk=1(verk)", "zs3v"];
    signalTemplates.hv_vr = t;
 
    //KS Hauptsignal
@@ -758,45 +755,42 @@ function initSignals() {
    t.signalMenu = ["hp=0,hp=1(Sh 1)", "ersatz=kennlicht"];
    signalTemplates.ls = t;
 
-   //ne4
-   signalTemplates.ne4 = new SignalTemplate("ne4", "Ne 4", "basic", [
-      new VisualElement("ne4_g", { conditions: "bauart.groß" }),
-      new VisualElement("ne4_k", { conditions: "bauart.klein" }),
-   ]);
-   signalTemplates.ne4.contextMenu = [
-      {
-         text: "Bauart",
-         childs: [
-            { text: "Groß", option: "bauart.groß" },
-            { text: "klein", option: "bauart.klein" },
-         ],
-      },
-   ];
-   signalTemplates.ne4.initialFeatures = ["bauart.groß"];
+   
+   signalTemplates.ne4 = new SignalTemplate("ne4", "Ne 4", "basis", "ne4");
+   signalTemplates.ne4.scale = 0.20;
+   signalTemplates.ra10 = new SignalTemplate("ra10", "Ne 4", "basis", "ra10");
+   signalTemplates.ra10.scale = 0.20;
 
-   signalTemplates.ne1 = new SignalTemplate("ne1", "Ne 1", "basic", "ne1");
-   signalTemplates.ne1.scale = 1;
+   signalTemplates.ne1 = new SignalTemplate("ne1", "Ne 1", "basis", [
+      "ne1",
+      new TextElement("ne1", { pos: [100, 105], format: "bold 20px Arial", color: "#333", stellung: "#bez" }),
+   ]);
+   signalTemplates.ne1.scale = 0.15;
    signalTemplates.ne1.distance_from_track = 5;
+   signalTemplates.ne2 = new SignalTemplate("ne2", "Ne 2", "basis", "ne2");
+   signalTemplates.ne2.scale = 0.25;
 
    signalTemplates.lf6 = new SignalTemplate(
       "lf6",
       "Lf 6",
-      "basic",
-      ["lf6", new TextElement("lf6", { pos: [30, 8], format: "bold 30px Arial", color: "#333", stellung: "geschw" })],
+      "basis",
+      ["lf6", new TextElement("lf6", { pos: [90, 8], format: "bold 110px Arial", color: "#333", stellung: "geschw" })],
       "geschw=9"
    );
    signalTemplates.lf6.initialFeatures = ["slave"];
    signalTemplates.lf6.signalMenu = ["geschw()"];
+   signalTemplates.lf6.scale = 0.12;
 
    signalTemplates.lf7 = new SignalTemplate(
       "lf7",
       "Lf 7",
-      "basic",
-      ["lf7", new TextElement("lf7", { pos: [20, 10], format: "bold 40px Arial", color: "#333", stellung: "geschw" })],
-      "geschw=6"
+      "basis",
+      ["lf7", new TextElement("lf7", { pos: [50, 20], format: "bold 130px Arial", color: "#333", stellung: "geschw" })],
+      "geschw=9"
    );
    signalTemplates.lf7.initialFeatures = ["master"];
    signalTemplates.lf7.signalMenu = ["geschw()"];
+   signalTemplates.lf7.scale = 0.15;
 
    signalTemplates.lf7.checkSignalDependency = signalTemplates.lf6.checkSignalDependency = function (signal, hp) {
       if (signal._template.id == "lf6" && hp._template.id == "lf7") {
@@ -809,10 +803,13 @@ function initSignals() {
    signalTemplates.zs3 = new SignalTemplate(
       "zs3",
       "Zs 3 (alleinst.)",
-      "basic",
-      ["Zs3_Form", new TextElement("zs3", { pos: [30, 25], format: "bold 25px Arial", stellung: "geschw" })],
-      "geschw=8"
+      "basis",
+      ["zs3", new TextElement("zs3", { pos: [90, 60], format: "bold 110px Arial", stellung: "geschw" })],
+      "geschw=9"
    );
 
    signalTemplates.zs3.signalMenu = ["geschw()"];
+   signalTemplates.zs3.scale = 0.12;
+   signalTemplates.zs10 = new SignalTemplate("zs10", "Zs 10", "basis", "zs10");
+   signalTemplates.zs10.scale = 0.20;
 }

@@ -78,6 +78,15 @@ function nll(o) {
    return o == null;
 }
 
+function findFieldNameForObject(container,ref)  {
+   for (let key of Object.keys(container)) {
+     if (container[key] === ref) {
+       return key;
+     }
+   }
+   return null;
+ }
+
 function type(value) {
    if (value === null) {
       return "null";

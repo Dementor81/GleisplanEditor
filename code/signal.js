@@ -26,7 +26,7 @@ class Signal {
    stringify() {
       return {
          _class: "Signal",
-         _template: this._template.id,
+         _template: findFieldNameForObject(signalTemplates, this._template),
          _signalStellung: this._signalStellung,
          _positioning: {
             km: this._positioning.km,
@@ -341,6 +341,10 @@ class Signal {
             else return null;
          } else if (data.type == "dropdown") {
             return Sig_UI.create_SpeedDropDown(data.command, data.text, update.bind(this));
+         } else if (data.type == "btn") {
+            return ui
+               .create_toggleButton(data.text, data.command)
+               .on("click", (e) => update.bind(this)(data.command, $(e.target).hasClass("active")));
          }
       }
    }
@@ -363,6 +367,13 @@ class Signal {
             if (button.length == 1) {
                const v = this.get(data.command);
                button.text(data.text + (v > 0 ? " Kz " + v : " aus"));
+            }
+         } else if (data.type == "btn") {
+            let button = $("#btn_" + data.text.replace(" ", "_"), popup);
+            if (button.length == 1) {
+               button.toggleClass("active", this.check(data.command));
+               if (data.visual_elements.every((ve) => ve.isAllowed(this))) button.removeAttr("disabled");
+               else button.attr("disabled", "disabled");
             }
          }
       }

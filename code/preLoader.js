@@ -20,7 +20,7 @@ class preLoader {
         return this._loadQueue.loaded;
     }
 
-    addSpriteSheet(signal, json_file) {
+    addSpriteSheet(json_file) {
         let p = new Promise((resolve, reject) => {
             preLoader.getJson(this._basefolder + json_file + ".json" + "?" + VERSION).then((imgCatalog) => {
                 let i = 0;

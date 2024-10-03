@@ -70,6 +70,8 @@ var tracks = [];
 var switches = [];
 
 var signalTemplates = {};
+
+
 var prevent_input = false;
 var scale_changed = true;
 
@@ -133,13 +135,9 @@ function init() {
          newItemButton(signalTemplates.ls),
       ]);
       $("#newItemMenu #collapse2 .accordion-body").append([newItemButton(signalTemplates.hv_vr), newItemButton(signalTemplates.ks_vr)]);
-      $("#newItemMenu #collapse3 .accordion-body").append([
-         newItemButton(signalTemplates.ne4),
-         newItemButton(signalTemplates.ne1),
-         newItemButton(signalTemplates.lf6),
-         newItemButton(signalTemplates.lf7),
-         newItemButton(signalTemplates.zs3),
-      ]);
+      $("#newItemMenu #collapse3 .accordion-body").append([newItemButton(signalTemplates.lf6), newItemButton(signalTemplates.lf7)]);
+      $("#newItemMenu #collapse4 .accordion-body").append([newItemButton(signalTemplates.ne4), newItemButton(signalTemplates.ne1)]);
+      $("#newItemMenu #collapse5 .accordion-body").append([newItemButton(signalTemplates.zs3), newItemButton(signalTemplates.zs10)]);
 
       selectRenderer(true);
       loadRecent();
@@ -444,7 +442,6 @@ const UI = {
       }
    },
 };
-
 
 function toggleEditMode(mode) {
    edit_mode = mode != undefined ? mode : !edit_mode;
