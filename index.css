@@ -1,6 +1,6 @@
 html, body {
     height: 100%;
-    background-color: rgb(110, 110, 110) !important;
+    background-color: rgb(54, 54, 54) !important;
 }
 
 
@@ -16,24 +16,6 @@ html, body {
     font-size: xx-large !important;
 }
 
-#startContainer{
-    width: 35rem;
-    height: 9rem;
-    position: fixed;
-    bottom: -2rem;
-    right: -2rem;
-    background-color: rgb(248 249 250);
-    border-radius: 2rem;
-    padding: 1.5rem 0rem 0rem 3rem;
-    font-size: 2rem !important;
-    box-shadow: 0 .5rem 1rem rgba(0,0,0,.15);
-}
-
-#startContainer .btn{
-    font-size: 1.8rem !important;
-    width: 10rem;
-    margin-left: 2rem;
-}
 
 .main_container{
     width: 100vw;
@@ -47,7 +29,7 @@ html, body {
 }
 
 .content_spacer{
-    padding-top: 15rem;
+    padding-top: 13rem;
 }
 
 .content_spacer:last-child{
@@ -65,14 +47,8 @@ html, body {
     padding: 3rem;
 }
 
-.content img {
-    width: 100%;
-    margin: 2rem 0rem 2rem 0rem;
-  }
 
-  .content p {
-    margin-top: 2rem;
-  }
+
 
 
 /* .main_container div:last-child{

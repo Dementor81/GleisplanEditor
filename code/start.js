@@ -127,19 +127,19 @@ function init() {
    //ShowPreBuildScreen();
 
    pl.start().then(() => {
-      $("#newItemMenu #collapseOne .accordion-body").append([
+      $("#newItemMenu #collapse1 .accordion-body").append([
          newItemButton(signalTemplates.hv_hp),
          newItemButton(signalTemplates.ks),
          newItemButton(signalTemplates.ls),
       ]);
-      $("#newItemMenu #collapseTwo.accordion-body").append(newItemButton(signalTemplates.hv_vr));
-      $("#newItemMenu #collapseTwo .accordion-body").append(newItemButton(signalTemplates.ks_vr));
-      $("#newItemMenu #collapseTwo .accordion-body").append();
-      $("#newItemMenu #collapseThree .accordion-body").append(newItemButton(signalTemplates.ne4));
-      $("#newItemMenu #collapseThree .accordion-body").append(newItemButton(signalTemplates.ne1));
-      $("#newItemMenu #collapseThree .accordion-body").append(newItemButton(signalTemplates.lf6));
-      $("#newItemMenu #collapseThree .accordion-body").append(newItemButton(signalTemplates.lf7));
-      $("#newItemMenu #collapseThree .accordion-body").append(newItemButton(signalTemplates.zs3));
+      $("#newItemMenu #collapse2 .accordion-body").append([newItemButton(signalTemplates.hv_vr), newItemButton(signalTemplates.ks_vr)]);
+      $("#newItemMenu #collapse3 .accordion-body").append([
+         newItemButton(signalTemplates.ne4),
+         newItemButton(signalTemplates.ne1),
+         newItemButton(signalTemplates.lf6),
+         newItemButton(signalTemplates.lf7),
+         newItemButton(signalTemplates.zs3),
+      ]);
 
       selectRenderer(true);
       loadRecent();
@@ -222,8 +222,8 @@ function init() {
       selectRenderer(!$("#switch_renderer").is(":checked"));
    });
 
-   $("#btnAddSignals").click(() => showMenu(MENU.NEW_SIGNAL));
-   $("#btnAddTrain").click(() => showMenu(MENU.NEW_TRAIN));
+   $("#btnAddSignals").click(() => UI.showMenu(MENU.NEW_SIGNAL));
+   $("#btnAddTrain").click(() => UI.showMenu(MENU.NEW_TRAIN));
    $("#newTrain").on("mousedown", (e) => {
       mouseAction = {
          action: MOUSE_DOWN_ACTION.ADD_TRAIN,
@@ -348,7 +348,7 @@ function init() {
    });
 
    document.addEventListener("keydown", (e) => {
-      if (e.target.tagName === "BODY" && e.code == "Delete") {
+      if (e.target.tagName != "INPUT" && e.code == "Delete") {
          deleteSelectedObject();
       }
    });
@@ -396,52 +396,55 @@ function deleteSelectedObject() {
    }
 }
 
-///Shows the menu on the right.
-/// menu==null just hides it.
-function showMenu(menu) {
-   var bsOffcanvas = bootstrap.Offcanvas.getOrCreateInstance($("#sidebar"));
-   if (nll(menu)) {
-      bsOffcanvas.hide();
-      return;
-   }
-   const current_id = $('#sidebar>div:not([style*="display: none"])');
-   let div_id;
-   switch (menu) {
-      case MENU.EDIT_SIGNAL:
-         div_id = "signalEditMenu";
-         let body = $("#nav-home");
-         body.empty();
-         body.append(mouseAction.container.signal.getHTML());
-         Sig_UI.initSignalMenu();
-         Sig_UI.syncSignalMenu(selection.object);
-         break;
-      case MENU.NEW_SIGNAL:
-         div_id = "newItemMenu";
-         break;
-      case MENU.EDIT_TRAIN:
-         div_id = "editTrainMenu";
-         Train.initEditTrainMenu(selection.object);
-         break;
-      case MENU.NEW_TRAIN:
-         div_id = "newTrainMenu";
+const UI = {
+   ///Shows the menu on the right.
+   /// menu==null just hides it.
+   showMenu(menu) {
+      var bsOffcanvas = bootstrap.Offcanvas.getOrCreateInstance($("#sidebar"));
+      if (nll(menu)) {
+         bsOffcanvas.hide();
+         return;
+      }
+      const current_id = $('#sidebar>div:not([style*="display: none"])');
+      let div_id;
+      switch (menu) {
+         case MENU.EDIT_SIGNAL:
+            div_id = "signalEditMenu";
+            let body = $("#nav-home");
+            body.empty();
+            body.append(mouseAction.container.signal.getHTML());
+            Sig_UI.initSignalMenu();
+            Sig_UI.syncSignalMenu(selection.object);
+            break;
+         case MENU.NEW_SIGNAL:
+            div_id = "newItemMenu";
+            break;
+         case MENU.EDIT_TRAIN:
+            div_id = "editTrainMenu";
+            Train.initEditTrainMenu(selection.object);
+            break;
+         case MENU.NEW_TRAIN:
+            div_id = "newTrainMenu";
 
-         break;
-      default:
-         throw new Error("unknown Menu");
-   }
+            break;
+         default:
+            throw new Error("unknown Menu");
+      }
 
-   $("#sidebar > div")
-      .not("#" + div_id)
-      .hide();
-   $("#sidebar > #" + div_id).show();
+      $("#sidebar > div")
+         .not("#" + div_id)
+         .hide();
+      $("#sidebar > #" + div_id).show();
 
-   bsOffcanvas.show();
-   if (bsOffcanvas._isShown) {
-      //bsOffcanvas.show();
-   } else {
-      //bsOffcanvas.hide();
-   }
-}
+      bsOffcanvas.show();
+      if (bsOffcanvas._isShown) {
+         //bsOffcanvas.show();
+      } else {
+         //bsOffcanvas.hide();
+      }
+   },
+};
+
 
 function toggleEditMode(mode) {
    edit_mode = mode != undefined ? mode : !edit_mode;
@@ -468,7 +471,7 @@ function selectObject(object, e) {
       selection.object = null;
       selection.type = "";
       renderer.updateSelection();
-      showMenu();
+      UI.showMenu();
       return;
    }
    const t = type(object);
@@ -495,7 +498,7 @@ function selectObject(object, e) {
          break;
    }
 
-   showMenu(menu);
+   UI.showMenu(menu);
 }
 
 function clearCanvas() {
@@ -593,7 +596,7 @@ function handleStageMouseDown(event) {
 function getHitTest(container) {
    let local_point = stage.globalToLocal(stage.mouseX, stage.mouseY);
 
-   return (container?container:stage).getObjectUnderPoint(local_point.x, local_point.y, 1);
+   return (container ? container : stage).getObjectUnderPoint(local_point.x, local_point.y, 1);
 }
 
 function getHitTrackInfo(use_offset) {
