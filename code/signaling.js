@@ -598,6 +598,8 @@ function initSignals() {
             conditions: "!zusatz_unten",
          }),
 
+         new VisualElement("zs6_licht", { stellung: "zs6=1", off: "hp<=0||zs3>0",conditions: "zusatz_oben", }),
+
          new VisualElement("zs3v_licht", {
             conditions: "zusatz_unten",
             childs: [
@@ -609,7 +611,7 @@ function initSignals() {
                   stellung: "zs3v",
                   off: "hp<=0",
                }),
-               new VisualElement("zs6_licht", { stellung: "zs6=1", off: "hp<=0" }),
+               
             ],
          }),
          new VisualElement("schild", {
@@ -622,7 +624,7 @@ function initSignals() {
    t.scale = 0.15;
    t.distance_from_track = 15;
    t.initialFeatures = ["hp", "verwendung.asig"];
-   t.signalMenu = [["hp=0,hp=1(Ks 1),hp=2(Ks 2)", "zs3"], "zs3v", "ersatz=zs1,ersatz=zs7,ersatz=zs8,ersatz=sh1", "verk=1(Verk.)", "zs6=1(Zs 6)"];
+   t.signalMenu = [["hp=0,hp=1(Ks 1),hp=2(Ks 2)", "zs3"], "zs3v", "ersatz=zs1,ersatz=zs7,ersatz=zs8,ersatz=sh1", "verk=1(Verk)", "zs6=1(Zs 6)"];
 
    //signal: ist das signal, dessen Stellung wir gerade setzen
    //hp: ist das signal, dessen Stellung wir vorsignalisieren wollen

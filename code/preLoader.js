@@ -7,6 +7,7 @@ class preLoader {
         if (basefolder.length > 0) this._basefolder += "/";
         this._jsonFiles = [];
         this._loadedItems = 0;
+        this._totalItems = 0;
         this.onProgress = (progress) => {};
         this._loadQueue = new createjs.LoadQueue(false, basefolder, false);
         this._loadQueue.setMaxConnections(99);
@@ -33,6 +34,7 @@ class preLoader {
                     img.id = json_file + img.signal;
                     i++;
                 }
+                this._totalItems+=imgCatalog.length;
                 this._loadQueue.loadManifest(imgCatalog, false, this._basefolder);
                 resolve();
             });
@@ -42,6 +44,7 @@ class preLoader {
     }
 
     addImage(src, id) {
+        this._totalItems++;
         this._loadQueue.loadFile({ id: id, src: src, type: createjs.LoadQueue.IMAGE }, false, this._basefolder);
     }
 
@@ -49,9 +52,9 @@ class preLoader {
         return new Promise((resolve, reject) => {
             Promise.all(this._promises).then(() => {
                 this._loadQueue.addEventListener("error", (e) => {
-                    console.log(e.title + ":" + e.data.id);
+                    showInfoToast(e.title + ":" + e.data.id);
                 });
-                //this._loadQueue.addEventListener("fileload", () => {  });
+                this._loadQueue.addEventListener("fileload", () => { this._loadedItems++; });
                 this._loadQueue.addEventListener("complete", () => {
                     resolve();
                 });
@@ -89,9 +92,4 @@ class preLoader {
         });
     }
 
-    getPreload(configFile) {
-        let x = this._loaderDic.get(configFile.toLowerCase());
-        if (x == null) throw new Error("Loader for " + configFile + " not found");
-        return x;
-    }
 }

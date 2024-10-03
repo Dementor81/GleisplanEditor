@@ -129,6 +129,8 @@ function init() {
    ShowPreBuildScreen();
 
    pl.start().then(() => {
+      console.log(`Preloader: ${pl._loadedItems}/${pl._totalItems}`  );
+      
       $("#newItemMenu #collapse1 .accordion-body").append([
          newItemButton(signalTemplates.hv_hp),
          newItemButton(signalTemplates.ks),
@@ -136,7 +138,7 @@ function init() {
       ]);
       $("#newItemMenu #collapse2 .accordion-body").append([newItemButton(signalTemplates.hv_vr), newItemButton(signalTemplates.ks_vr)]);
       $("#newItemMenu #collapse3 .accordion-body").append([newItemButton(signalTemplates.lf6), newItemButton(signalTemplates.lf7)]);
-      $("#newItemMenu #collapse4 .accordion-body").append([newItemButton(signalTemplates.ne4), newItemButton(signalTemplates.ne1)]);
+      $("#newItemMenu #collapse4 .accordion-body").append([newItemButton(signalTemplates.ne4), newItemButton(signalTemplates.ne1), newItemButton(signalTemplates.ne2)]);
       $("#newItemMenu #collapse5 .accordion-body").append([newItemButton(signalTemplates.zs3), newItemButton(signalTemplates.zs10)]);
 
       selectRenderer(true);
@@ -333,7 +335,7 @@ function init() {
       if (selection.type == "Signal") {
          [].concat(selection.object).forEach((s) => {
             s._signalStellung = {};
-            if (s._template.initialSignalStellung) s._template.initialSignalStellung.forEach((i) => s.set_stellung(i, null, false));
+            if (s._template.initialSignalStellung) s._template.initialSignalStellung.forEach((i) => s.set_stellung(i, null, true));
             save();
             renderer.reDrawEverything(true);
             stage.update();
