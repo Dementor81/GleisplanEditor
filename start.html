@@ -52,6 +52,9 @@
                   />
                </svg>
             </button>
+            <button id="btnUndo" type="button" class="btn btn-secondary btn-sm" title="Rückgängig">
+               <i class="bi bi-arrow-counterclockwise"></i>
+            </button>
             <button id="btnDraw" type="button" class="btn btn-secondary btn-sm" data-bs-toggle="button" title="Zeichnen">
                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-tools" viewBox="0 0 16 16">
                   <path
@@ -129,78 +132,10 @@
       </div>
       <div id="sidebar" class="offcanvas offcanvas-end border rounded shadow-sm" data-bs-scroll="true" data-bs-backdrop="false">
          <div id="newItemMenu" class="sidebar_menu">
-            <div class="accordion accordion-flush" >
+            <div id="newItemMenuAccordination" class="accordion accordion-flush">
                <div id="newSignalMenuHeader" class="sidebar_menu_header">
                   <h5 class="card-title">Neues Signal</h5>
                   <p class="card-text">Ziehe ein neues Signal an ein Gleis.</p>
-               </div>
-               <div class="accordion-item">
-                  <h4 class="accordion-header" id="headingOne">
-                     <button class="accordion-button user-select-none" type="button" data-bs-toggle="collapse" data-bs-target="#collapse1">
-                        Hauptsignal
-                     </button>
-                  </h4>
-                  <div id="collapse1" class="accordion-collapse collapse show"  data-bs-parent="#newItemMenu">
-                     <div class="accordion-body"></div>
-                  </div>
-               </div>
-               <div class="accordion-item">
-                  <h2 class="accordion-header" id="headingTwo">
-                     <button
-                        class="accordion-button collapsed user-select-none"
-                        type="button"
-                        data-bs-toggle="collapse"
-                        data-bs-target="#collapse2"
-                     >
-                        Vorsignal
-                     </button>
-                  </h2>
-                  <div id="collapse2" class="accordion-collapse collapse"  data-bs-parent="#newItemMenu">
-                     <div class="accordion-body"></div>
-                  </div>
-               </div>
-               <div class="accordion-item">
-                  <h2 class="accordion-header" id="headingThree">
-                     <button
-                        class="accordion-button collapsed user-select-none"
-                        type="button"
-                        data-bs-toggle="collapse"
-                        data-bs-target="#collapse3"
-                     >
-                        Lf-Signale
-                     </button>
-                  </h2>
-                  <div id="collapse3" class="accordion-collapse collapse" data-bs-parent="#newItemMenu">
-                     <div class="accordion-body"></div>
-                  </div>
-               </div><div class="accordion-item">
-                  <h2 class="accordion-header" id="headingThree">
-                     <button
-                        class="accordion-button collapsed user-select-none"
-                        type="button"
-                        data-bs-toggle="collapse"
-                        data-bs-target="#collapse4"
-                     >
-                        Ne-Signale
-                     </button>
-                  </h2>
-                  <div id="collapse4" class="accordion-collapse collapse" data-bs-parent="#newItemMenu">
-                     <div class="accordion-body"></div>
-                  </div>
-               </div><div class="accordion-item">
-                  <h2 class="accordion-header" id="headingThree">
-                     <button
-                        class="accordion-button collapsed user-select-none"
-                        type="button"
-                        data-bs-toggle="collapse"
-                        data-bs-target="#collapse5"
-                     >
-                        Weitere
-                     </button>
-                  </h2>
-                  <div id="collapse5" class="accordion-collapse collapse" data-bs-parent="#newItemMenu">
-                     <div class="accordion-body"></div>
-                  </div>
                </div>
             </div>
          </div>
@@ -237,7 +172,7 @@
             </div>
          </div>
 
-         <div id="signalEditMenu"  class="sidebar_menu">
+         <div id="signalEditMenu" class="sidebar_menu">
             <div id="signalEditMenuHeader" class="sidebar_menu_header">
                <h5 class="card-title">XXX</h5>
                <p class="card-text">

@@ -71,21 +71,23 @@ Array.prototype.random = function () {
 Array.prototype.pushUnique = function (newElement) {
    if (this.indexOf(newElement) === -1) {
       this.push(newElement);
+      return true;
    }
+   return false;
 };
 
 function nll(o) {
    return o == null;
 }
 
-function findFieldNameForObject(container,ref)  {
+function findFieldNameForObject(container, ref) {
    for (let key of Object.keys(container)) {
-     if (container[key] === ref) {
-       return key;
-     }
+      if (container[key] === ref) {
+         return key;
+      }
    }
    return null;
- }
+}
 
 function type(value) {
    if (value === null) {
@@ -770,6 +772,19 @@ const BS = {
          href: "#",
          value: value ?? text,
       });
+   },
+
+   createAccordionItem(title, parent, items) {
+      let id = uuidv4();
+      return ui.div("accordion-item", [
+         $("<h2>", { class: "accordion-header" }).append(
+            $("<button>", { class: "accordion-button collapsed user-select-none", type: "button" })
+               .attr("data-bs-toggle", "collapse")
+               .attr("data-bs-target", "#" + id)
+               .text(title)
+         ),
+         ui.div("accordion-collapse collapse", ui.div("accordion-body", items)).attr("id", id).attr("data-bs-parent", parent),
+      ]);
    },
 
    create_DropDown(items, text, onChange) {

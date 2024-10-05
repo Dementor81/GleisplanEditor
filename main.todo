@@ -15,11 +15,11 @@ Bugs:
     ☐ Züge bleiben auf gelöschten/geänderten phantom Gleisen
 
 Content:
-    ☐ Ne 2
+    ✔ Ne 2 @done(24-10-05 12:13)
     ☐ Ne 3
     ☐ Zs 6 alleinstehend
     ✔ Sperrsignal @done(24-08-18 19:09)
-
+    ☐ KS Signale ohne Knick
 
 
 Detailing:
@@ -33,6 +33,7 @@ Detailing:
 
 CleanUp:
     ☐ swichtes Array entfernen
+    ☐ start.js aufräumen
 
 Features:
     ✔ Signale verketten/automatische vorsignalisierung @started(23-11-21 12:15) @done(24-01-08 11:46) @lasted(6w5d23h31m36s)
@@ -56,13 +57,15 @@ Features:
     ☐ Bahnsteige einzeichen
     ☐ mehere gleise, ganze Bahnhöfe verschieben
     ☐ Signale koopieren, per drag&drop
+    ☐ Wagen verhalten sich korrekt in Bögen
+    ☐ Züge kuppeln
     
 
 Big Features:
     ✔ Gleise markieren und bemalen können @done(24-08-23 21:15)
     ✔ vorgefertigte Gleispläne erstellen und laden @done(24-06-20 19:43)
     ✔ Züge von Hand bewegen @done(24-07-15 16:51)
-    ☐ Rückgängig Funktion
+    ✔ Rückgängig Funktion @done(24-10-05 14:39)
     ☐ Signale als korrekte DIN Signalsymbole zeigen
     ☐ HauptsignaleSignale um zusätzliche Signale (lf,zp usw) erweitern
     ☐ die Verbindung von Signalen durch linien entlang der Gelsie visualisieren

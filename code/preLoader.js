@@ -22,8 +22,8 @@ class preLoader {
     }
 
     addSpriteSheet(json_file) {
-        if(this._jsonFiles.includes(json_file)) return null;
-        this._jsonFiles.push(json_file);
+        if(!this._jsonFiles.pushUnique(json_file))return null;
+        
         let p = new Promise((resolve, reject) => {
             preLoader.getJson(this._basefolder + json_file + ".json" + "?" + VERSION).then((imgCatalog) => {
                 let i = 0;

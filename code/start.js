@@ -12,6 +12,8 @@ const GRID_SIZE_2 = GRID_SIZE / 2;
 const SNAP_2_GRID = 30;
 const MAX_SCALE = 5;
 
+const MOST_UNDO = 20;
+
 const DIRECTION = {
    LEFT_2_RIGTH: 1,
    RIGHT_2_LEFT: -1,
@@ -58,7 +60,7 @@ var stage,
 
 var previousTouch;
 var showGrid = true;
-var edit_mode = false;
+var edit_mode = true;
 var drawing_mode = false;
 var pl;
 var mouseAction = null;
@@ -69,8 +71,9 @@ var renderer;
 var tracks = [];
 var switches = [];
 
-var signalTemplates = {};
+var undoHistory = ['[]'];
 
+var signalTemplates = {};
 
 var prevent_input = false;
 var scale_changed = true;
@@ -129,17 +132,23 @@ function init() {
    ShowPreBuildScreen();
 
    pl.start().then(() => {
-      console.log(`Preloader: ${pl._loadedItems}/${pl._totalItems}`  );
-      
-      $("#newItemMenu #collapse1 .accordion-body").append([
-         newItemButton(signalTemplates.hv_hp),
-         newItemButton(signalTemplates.ks),
-         newItemButton(signalTemplates.ls),
+      console.log(`Preloader: ${pl._loadedItems}/${pl._totalItems}`);
+      const id = "#newItemMenuAccordination";
+      $(id).append([
+         BS.createAccordionItem("Hauptsignale", id, [
+            newItemButton(signalTemplates.hv_hp),
+            newItemButton(signalTemplates.ks),
+            newItemButton(signalTemplates.ls),
+         ]),
+         BS.createAccordionItem("Vorsignale", id, [newItemButton(signalTemplates.hv_vr), newItemButton(signalTemplates.ks_vr)]),
+         BS.createAccordionItem("Lf-Signale", id, [newItemButton(signalTemplates.lf6), newItemButton(signalTemplates.lf7)]),
+         BS.createAccordionItem("Ne-Signale", id, [
+            newItemButton(signalTemplates.ne4),
+            newItemButton(signalTemplates.ne1),
+            newItemButton(signalTemplates.ne2),
+         ]),
+         BS.createAccordionItem("Weitere", id, [newItemButton(signalTemplates.zs3), newItemButton(signalTemplates.zs10)]),
       ]);
-      $("#newItemMenu #collapse2 .accordion-body").append([newItemButton(signalTemplates.hv_vr), newItemButton(signalTemplates.ks_vr)]);
-      $("#newItemMenu #collapse3 .accordion-body").append([newItemButton(signalTemplates.lf6), newItemButton(signalTemplates.lf7)]);
-      $("#newItemMenu #collapse4 .accordion-body").append([newItemButton(signalTemplates.ne4), newItemButton(signalTemplates.ne1), newItemButton(signalTemplates.ne2)]);
-      $("#newItemMenu #collapse5 .accordion-body").append([newItemButton(signalTemplates.zs3), newItemButton(signalTemplates.zs10)]);
 
       selectRenderer(true);
       //loadRecent();
@@ -346,6 +355,9 @@ function init() {
    $("#btnRemoveSignal").click((e) => {
       deleteSelectedObject();
    });
+   $("#btnUndo").click((e) => {
+      undo();
+   });
 
    document.addEventListener("keydown", (e) => {
       if (e.target.tagName != "INPUT" && e.code == "Delete") {
@@ -377,7 +389,7 @@ function init() {
    });
 
    onResizeWindow();
-   toggleEditMode(false);
+   toggleEditMode(edit_mode);
 
    $(window).resize(onResizeWindow);
    myCanvas.focus();
@@ -385,10 +397,13 @@ function init() {
 
 function deleteSelectedObject() {
    if (selection.object) {
-      if (selection.type == "Track") [].concat(selection.object).forEach((t) => deleteTrack(t, null));
+      if (selection.type == "Track") {
+         [].concat(selection.object).forEach((t) => deleteTrack(t, null));
+         Track.cleanupTracks();
+         Track.connectTracks();
+         saveUndoHistory();
+      }
       if (selection.type == "Signal") [].concat(selection.object).forEach((s) => removeSignal(s, null));
-      Track.cleanupTracks();
-      Track.connectTracks();
       save();
       renderer.reDrawEverything(true);
       stage.update();
@@ -893,6 +908,7 @@ function handleStageMouseUp(e) {
             mouseAction.hit_track.track.AddSignal(mouseAction.container.signal);
          }
          save();
+         saveUndoHistory();
          overlay_container.removeAllChildren();
          stage.update();
       } else if (mouseAction.action === MOUSE_DOWN_ACTION.BUILD_TRACK) {
@@ -911,7 +927,7 @@ function handleStageMouseUp(e) {
             Track.cleanupTracks();
             Track.connectTracks();
             renderer.reDrawEverything(true);
-
+            saveUndoHistory();
             save();
          }
          overlay_container.removeAllChildren();
@@ -1060,6 +1076,24 @@ function getSaveString() {
       },
       replacer
    );
+}
+
+function undo() {
+   if (undoHistory.length <= 1) return;
+   undoHistory.pop();
+   const last = undoHistory.lastItem();
+   if (last) {
+      tracks = JSON.parse(last, receiver).clean() || [];
+      Track.connectTracks();
+   } else tracks = [];
+
+   renderer.reDrawEverything(true);
+   stage.update();
+}
+
+function saveUndoHistory() {
+   undoHistory.push(JSON.stringify(tracks, replacer));
+   if (undoHistory.length > MOST_UNDO) undoHistory.shift();
 }
 
 function save() {
