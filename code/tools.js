@@ -391,7 +391,7 @@ const ui = {
       return popup;
    },
 
-   showContextMenu: function (point, parent, items, signal) {
+   /* showContextMenu: function (point, parent, items, signal) {
       const createDropDownItems = function (items, dd) {
          return items.map((item) => {
             if (item.text) {
@@ -435,7 +435,7 @@ const ui = {
                );
             }
          });
-      };
+      }; 
 
       const a = $("<a>", { class: "visually-hidden" }).attr("data-bs-toggle", "dropdown").attr("data-bs-auto-close", "false");
       const ul = $("<ul>", { class: "dropdown-menu" });
@@ -453,7 +453,7 @@ const ui = {
 
       $dummy.css({ position: "absolute", left: point.x + rect.x, top: point.y + rect.y });
       dropdownList.show();
-   },
+   },*/
    div: function (c, i) {
       return $("<div>", { class: c }).append(i);
    },

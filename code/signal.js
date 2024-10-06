@@ -41,18 +41,18 @@ class Signal {
       if (template) {
          this._template = template;
 
-         if (template.initialFeatures)
+         /* if (template.initialFeatures)
             if (Array.isArray(template.initialFeatures)) template.initialFeatures.forEach((i) => this.setFeature(i, true));
             else this.setFeature(template.initialFeatures, true);
-
-         if (template.initialSignalStellung) template.initialSignalStellung.forEach((i) => this.set_stellung(i, null, false));
+ */
+         if (template.initialSignalStellung) template.initialSignalStellung.forEach((i) => this.set_stellung(i, true, false));
       }
    }
 
    get title() {
       let title = "";
-      if (this.matchFeature("hp"))
-         switch (this.getFeature("verwendung")) {
+      if (this.check("HPsig"))
+         switch (this.get("verw")) {
             case "zsig":
                title += "Zsig";
                break;
@@ -73,53 +73,11 @@ class Signal {
                break;
          }
 
-      const bez = this.getFeature("bez");
-      if (bez) title += " " + bez.replace("-", " ");
+      const bez = this.get("bez");
+      if (bez) title += (" " + bez).replace("-", " ");
 
       return title;
-   }
-
-   //features saves how a signal is used (Asig,Esig etc) and if it supports things like Vorsignal or Verkürzte Bremswege
-   //there are two types of features: single worded like "vr" or "verk"
-   //and features which work es a group and are build out of 2 Words like "mastschild.wgwgw"
-   setFeature(o, value) {
-      const splitted = o.split(".");
-      if (splitted.length == 1) {
-         if (value) this._features.set(o, value);
-         else this._features.delete(o);
-      } else if (splitted.length == 2) {
-         if (value == false) this._features.set(splitted[0], null);
-         else this._features.set(splitted[0], splitted[1]);
-      } else throw new Error();
-
-      this._changed = true;
-   }
-
-   getFeature(key) {
-      if (this._features.has(key)) return this._features.get(key);
-      else return null;
-   }
-
-   matchFeature(condition) {
-      if (condition == null || condition.length == 0) return true; // wenn das visualElement keine conditions fordert, ist es immer ein match
-      const match_single = function (singleCondition) {
-         const splitted = singleCondition.split(".");
-         const antiMatch = splitted[0][0] == "!";
-         let retValue;
-         if (antiMatch) splitted[0] = splitted[0].substring(1);
-         if (splitted.length == 1) retValue = this._features.has(splitted[0]);
-         else if (splitted.length == 2) retValue = this._features.get(splitted[0]) == splitted[1];
-         else throw new Error();
-
-         return antiMatch ? !retValue : retValue;
-      }.bind(this);
-
-      if (Array.isArray(condition)) {
-         return condition.some(this.matchFeature.bind(this));
-      } else if (condition.includes("&&")) {
-         return condition.split("&&").every(match_single);
-      } else return match_single(condition);
-   }
+   }   
 
    //Setzt die Signalstellung, 2 Möglichkeiten:
    //set("zs3",60)
@@ -130,16 +88,18 @@ class Signal {
    //set("hp=0,1") der Value hat vorrang vor dem in stellung enthaltenen Value
    //value=false schaltet die Signalstellung auf -1, also aus. Wird vom Menü zum ausschalten einer Signalstellung verwendet
    //chain=false verhindert, dass das Signal versucht das davor und dahinterliegende Signal zu informieren
-   set_stellung(stellung, subkey, chain = true) {
-      if (subkey == undefined) [stellung, subkey] = stellung.split("=");
-      else [stellung] = stellung.split("=");
+   set_stellung(command, overideValue = true, chain = true) {
+      /* if (subkey == undefined) [command, subkey] = command.split("=");
+      else [command] = command.split("="); */
+      let setting, value;
+      [setting, value] = command.split("=");
+      if (overideValue == false) value = null; //false would be better but in javascript hp=0 and hp=false is the same
+      else if (value == undefined) value = overideValue;
 
-      if (this.get(stellung) != subkey) {
-         if (!isNaN(subkey)) {
-            this._signalStellung[stellung] = Number(subkey);
-         } else {
-            this._signalStellung[stellung] = subkey;
-         }
+      if (this.get(setting) != value) {
+         if (value == null) this._signalStellung[setting] = null;
+         else if (!isNaN(value)) this._signalStellung[setting] = Number(value);
+         else this._signalStellung[setting] = value;
 
          this._changed = true;
       }
@@ -148,19 +108,19 @@ class Signal {
       //and the signal indication actualy changed
       if (this._positioning.track && this._changed && chain) {
          let stop = false;
-         if (this.matchFeature(["hp", "master"])) {
+         if (this.check(["HPsig", "master"])) {
             let prevSignal = this;
             do {
                prevSignal = this.search4Signal(prevSignal, DIRECTION.RIGHT_2_LEFT);
                if (prevSignal && prevSignal._template.checkSignalDependency) stop = prevSignal._template.checkSignalDependency(prevSignal, this);
             } while (!stop && prevSignal);
          }
-         if (this.matchFeature(["vr", "slave"]) && this._template.checkSignalDependency) {
+         if (this.check(["VRsig", "slave"]) && this._template.checkSignalDependency) {
             let nextSignal = this;
             do {
                nextSignal = this.search4Signal(nextSignal, DIRECTION.LEFT_2_RIGTH);
                if (nextSignal && nextSignal._template.checkSignalDependency)
-                  stop = nextSignal._template.checkSignalDependency(this, nextSignal, ["hp", "master"]);
+                  stop = nextSignal._template.checkSignalDependency(this, nextSignal, ["HPsig", "master"]);
             } while (!stop && nextSignal);
          }
       }
@@ -181,7 +141,7 @@ class Signal {
    get(stellung) {
       let value = this._signalStellung[stellung];
       if (value != undefined) return value;
-      else return -1;
+      else return null;
    }
 
    static _splitEquation(equation) {
@@ -199,7 +159,7 @@ class Signal {
          }
       }
 
-      if (!ret.operator) throw new Error("Operator not found in equation");
+      if (!ret.operator) return null;
 
       return ret;
    }
@@ -209,7 +169,10 @@ class Signal {
    check(stellung) {
       if (stellung == null) return true;
 
+      if (Array.isArray(stellung)) return stellung.every(this.check.bind(this));
+
       const equation = Signal._splitEquation(stellung);
+      if (equation == null) return this.get(stellung) != null;
 
       switch (equation.operator) {
          case "&&":
@@ -219,6 +182,7 @@ class Signal {
       }
 
       let data = this.get(equation.operands[0].trim());
+      if (data === null) data = "null";
       if (equation.operator == "=") return data == equation.operands[1].trim();
       else {
          const right = Number.parseInt(equation.operands[1].trim());
@@ -248,29 +212,20 @@ class Signal {
       else if (typeof ve == "string") {
          this.addImageElement(ve);
       } else if (ve instanceof TextElement) {
-         if (!ve.pos) throw new Error("TextElement doesnt have a position");
-         if (this.matchFeature(ve.conditions) && ve.isAllowed(this) && ve.isEnabled(this)) {
+         if (!ve.pos()) throw new Error("TextElement doesnt have a position");
+         if (ve.isAllowed(this) && ve.isEnabled(this)) {
             var js_text = new createjs.Text(ve.getText(this), ve.format, ve.color);
-            js_text.x = ve.pos[0];
-            js_text.y = ve.pos[1];
+            [js_text.x, js_text.y] = ve.pos();
             js_text.textAlign = "center";
             js_text.textBaseline = "top";
             js_text.lineHeight = 20;
             this._rendering.container.addChild(js_text);
          }
       } else if (ve instanceof VisualElement) {
-         if (this.matchFeature(ve.conditions))
-            if (ve.isAllowed(this) && ve.isEnabled(this)) {
-               if (ve.image) {
-                  this.addImageElement(ve, ve.blinkt);
-               }
-               if (ve.childs) {
-                  for (let index = 0; index < ve.childs.length; index++) {
-                     const c = ve.childs[index];
-                     this.drawVisualElement(c);
-                  }
-               }
-            }
+         if (ve.isAllowed(this) && ve.isEnabled(this)) {
+            if (ve.image) this.addImageElement(ve, ve.blinkt());
+            ve.childs()?.forEach((c) => this.drawVisualElement(c));
+         }
       } else console.log("unknown type of VisualElement: " + ve);
       return false;
    }
@@ -304,7 +259,7 @@ class Signal {
          const ul = ui.div("d-flex flex-column bd-highlight mb-3");
 
          const updateFunc = function (command, active) {
-            this.set_stellung(command, active ? -1 : undefined);
+            this.set_stellung(command, !active);
             renderer.reDrawEverything();
             stage.update();
             this.checkBootstrapMenu(this._template.signalMenu, ul);
@@ -320,18 +275,24 @@ class Signal {
       return "";
    }
 
-   createBootstrapMenuItems(data, update) {
-      if (data) {
-         if (Array.isArray(data)) {
-            let items = data.map((item) => this.createBootstrapMenuItems(item, update)).justNull();
+   createBootstrapMenuItems(menu_item, update) {
+      if (menu_item) {
+         if (Array.isArray(menu_item)) {
+            let items = menu_item.map((item) => this.createBootstrapMenuItems(item, update)).justNull();
             if (items) {
                return ui.div("p-3 border-bottom", BS.create_buttonToolbar(items));
             } else return null;
-         } else if (data.type == "group") {
-            let buttons = data.items
+         } else if (menu_item.type == "buttonGroup" || menu_item.type == "btn") {
+            let buttons = menu_item.type == "buttonGroup" ? menu_item.items : [menu_item];
+            buttons = buttons
                .filter(
                   (mi) =>
-                     mi.visual_elements != null && mi.visual_elements.length > 0 && mi.visual_elements.every((ve) => this.matchFeature(ve.conditions))
+                     mi.visual_elements?.length > 0 &&
+                     mi.visual_elements.every((ve) => {
+                        const on = ve.on();
+                        if (on == mi.command) return true;
+                        else return this.check(on);
+                     })
                )
                .map((item) =>
                   ui.create_toggleButton(item.text, item.command).on("click", (e) => update.bind(this)(item.command, $(e.target).hasClass("active")))
@@ -339,12 +300,8 @@ class Signal {
                .justNull();
             if (buttons) return ui.create_buttonGroup(buttons);
             else return null;
-         } else if (data.type == "dropdown") {
-            return Sig_UI.create_SpeedDropDown(data.command, data.text, update.bind(this));
-         } else if (data.type == "btn") {
-            return ui
-               .create_toggleButton(data.text, data.command)
-               .on("click", (e) => update.bind(this)(data.command, $(e.target).hasClass("active")));
+         } else if (menu_item.type == "dropdown") {
+            return Sig_UI.create_SpeedDropDown(menu_item.command, menu_item.text, update.bind(this));
          }
       }
    }
@@ -353,7 +310,7 @@ class Signal {
       if (data) {
          if (Array.isArray(data)) {
             data.forEach((item) => this.checkBootstrapMenu(item, popup));
-         } else if (data.type == "group") {
+         } else if (data.type == "buttonGroup") {
             data.items.forEach((item) => {
                let button = $("#btn_" + item.text.replace(" ", "_"), popup);
                if (button.length == 1) {
@@ -425,7 +382,7 @@ class Signal {
       while (track) {
          while (dir == 1 ? index >= 0 && index < track.signals.length : index >= 0) {
             let nextSignal = track.signals[index];
-            if (nextSignal.matchFeature(feature) && check(nextSignal._positioning)) {
+            if (nextSignal.check(feature) && check(nextSignal._positioning)) {
                return nextSignal; //hauptsignal gefunden
             } else index = index + dir;
          }
@@ -451,53 +408,44 @@ const Sig_UI = {
    },
    initSignalMenu() {
       const conditions = selection.object._template.getAllVisualElementConditions();
-      $("#nav-profile").empty();
-      if (selection.object.matchFeature("hp"))
-         $("#nav-profile").append(
+      const update = function (command, isOn) {
+         selection.object.set_stellung(command, isOn);
+         Sig_UI.syncSignalMenu(selection.object);
+         renderer.reDrawEverything();
+         save();
+      };
+      $("#navFeatures").empty();
+      if (selection.object.check("HPsig"))
+         $("#navFeatures").append(
             ui.div(
                "p-3 border-bottom",
                BS.create_DropDown(
-                  "Esig,Asig,Zsig,Bksig,Sbk".split(",").map((x) => x + "|verwendung." + x.toLowerCase()),
+                  "Esig,Asig,Zsig,Bksig,Sbk".split(",").map((x) => x + "|verw=" + x.toLowerCase()),
                   "Verwendung",
-                  (v) => {
-                     selection.object.setFeature(v);
-                     Sig_UI.syncSignalMenu(selection.object);
-                     renderer.reDrawEverything();
-                     save();
-                  }
+                  update
                )
             )
          );
-      $("#nav-profile").append(
+      $("#navFeatures").append(
          BS.createSwitchStructure(
-            ["Vorsignalfunktion", "vr", conditions.includes("vr")],
+            ["Vorsignalfunktion", "VRsig", conditions.includes("VRsig")],
             [
-               ...(conditions.includes("vr_op.verk") ? [["verkürzt", "vr_op.verk"]] : []),
-               ...(conditions.includes("vr_op.wdh") ? [["wiederholer", "vr_op.wdh"]] : []),
+               ...(conditions.includes("vr_op=verk") ? [["verkürzt", "vr_op=verk"]] : []),
+               ...(conditions.includes("vr_op=wdh") ? [["wiederholer", "vr_op=wdh"]] : []),
             ],
-            (v, on) => {
-               selection.object.setFeature(v, on);
-               Sig_UI.syncSignalMenu(selection.object);
-               renderer.reDrawEverything();
-               save();
-            }
+            update
          )?.addClass("p-3 border-bottom")
       );
-      if (conditions.includes("mastschild.wrw") && conditions.includes("mastschild.wgwgw"))
-         $("#nav-profile").append(
+      if (conditions.includes("mastschild=wrw") && conditions.includes("mastschild=wgwgw"))
+         $("#navFeatures").append(
             BS.createOptionGroup(
                "Mastschild",
                [
-                  ["W-R-W", "mastschild.wrw"],
-                  ["W-G-W-G-W", "mastschild.wgwgw"],
+                  ["W-R-W", "mastschild=wrw"],
+                  ["W-G-W-G-W", "mastschild=wgwgw"],
                ],
                "radio",
-               (v, on) => {
-                  selection.object.setFeature(v, on);
-                  Sig_UI.syncSignalMenu(selection.object);
-                  renderer.reDrawEverything();
-                  save();
-               }
+               update
             ).addClass("p-3 border-bottom")
          );
       if (conditions.includes("zusatz_unten") || conditions.includes("zusatz_oben")) {
@@ -507,14 +455,7 @@ const Sig_UI = {
          ];
          a.forEach((x) => x.push(conditions.includes(x[1])));
 
-         $("#nav-profile").append(
-            BS.createOptionGroup("Zusatzanzeiger", a, "checkbox", (v, on) => {
-               selection.object.setFeature(v, on);
-               Sig_UI.syncSignalMenu(selection.object);
-               renderer.reDrawEverything();
-               save();
-            }).addClass("p-3 border-bottom")
-         );
+         $("#navFeatures").append(BS.createOptionGroup("Zusatzanzeiger", a, "checkbox", update).addClass("p-3 border-bottom"));
       }
    },
    syncSignalMenu(signal) {
@@ -522,14 +463,14 @@ const Sig_UI = {
       $("#signalEditMenuHeader .card-title").text(signal._template.title);
       $("#signalEditMenuHeader .card-text>span").text(signal.title);
       //feature Menu
-      $("#nav-profile>div a").each(function () {
+      $("#navFeatures>div a").each(function () {
          const $a = $(this);
-         $a.toggleClass("active", signal.matchFeature($a.attr("value")));
+         $a.toggleClass("active", signal.check($a.attr("value")));
       });
 
-      $("#nav-profile>div input").each(function () {
+      $("#navFeatures>div input").each(function () {
          const input = $(this);
-         const v = signal.matchFeature(input.attr("value"));
+         const v = signal.check(input.attr("value"));
          input.attr("checked", v ? "checked" : null);
          if (input.attr("data-master_switch") != null) $("input", input.parent().next()).prop("disabled", !v);
       });

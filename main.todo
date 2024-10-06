@@ -34,6 +34,7 @@ Detailing:
 CleanUp:
     ☐ swichtes Array entfernen
     ☐ start.js aufräumen
+    ☐ signal.js und signaling.js sauber trennen und aufräumen
 
 Features:
     ✔ Signale verketten/automatische vorsignalisierung @started(23-11-21 12:15) @done(24-01-08 11:46) @lasted(6w5d23h31m36s)

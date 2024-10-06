@@ -79,6 +79,7 @@ class trackRendering_textured {
             this._lastRenderScale = stage.scale;
             if (!dont_optimize) this.cleanUp();
             delete this._rendering;
+            stage.update();
          }
       }
    }

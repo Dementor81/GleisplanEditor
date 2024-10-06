@@ -1,5 +1,17 @@
 "use strict";
 
+const CONDITIONS = (function () {
+   const BKsig = "verw=bksig",
+      SBK = "verw=sbk",
+      Esig = "verw=esig",
+      Asig = "verw=asig",
+      Zsig = "verw=zsig",
+      STRECKE = [BKsig, SBK, Esig],
+      GRENZEN = [BKsig, Esig],
+      BAHNHOF = [Asig, Zsig];
+   return { BKsig, SBK, Esig, Asig, Zsig, STRECKE, GRENZEN, BAHNHOF };
+})();
+
 //Signals are build of Visual elements. Some elements are always been drawn, like the "Mast", others have a varianty of
 //conditions.
 //1st: a VE has conditions, these must match with the Signals features. e.g.: sh1 are only on Zsig and Asig
@@ -8,92 +20,86 @@ class VisualElement {
    #_blinkt = null;
    #_image = null;
    #_pos = 0;
-   #_btn_text = "";
-   #_conditions = null;
    #_enabled = null;
-   #_stellung = [];
+   #_on = [];
    #_off = null;
    #_childs = null;
 
-   constructor(
-      image,
-      { btn_text = null, blinkt = false, pos = null, enabled = null, conditions: conditions = [], stellung = null, off = null, childs = null } = {}
-   ) {
-      this.#_blinkt = blinkt;
-      this.#_btn_text = btn_text;
-      this.#_pos = pos;
+   constructor(image) {
       this.#_image = image;
-      this.#_conditions = conditions;
-      this.#_enabled = enabled;
-      this.#_stellung = stellung;
-      this.#_off = off;
-      this.#_childs = childs;
+   }
+
+   on(condition, logic_op = "||") {
+      if (condition === undefined) return this.#_on;
+      else {
+         if (Array.isArray(condition)) condition = condition.join(logic_op);
+         if (this.#_on == null || !Array.isArray(this.#_on)) this.#_on = condition;
+         else this.#_on.push(condition);
+         return this;
+      }
+   }
+
+   off(condition) {
+      if (condition === undefined) return this.#_off;
+      else {
+         this.#_off = condition;
+         return this;
+      }
+   }
+
+   childs(childs) {
+      if (childs === undefined) return this.#_childs;
+      else {
+         this.#_childs = childs;
+         return this;
+      }
+   }
+
+   blinkt(blinkt) {
+      if (blinkt === undefined) return this.#_blinkt;
+      else {
+         this.#_blinkt = blinkt;
+         return this;
+      }
+   }
+
+   pos(pos) {
+      if (pos === undefined) return this.#_pos;
+      else {
+         this.#_pos = pos;
+         return this;
+      }
    }
 
    get [Symbol.toStringTag]() {
       return this.#_image;
    }
 
-   get switchable() {
-      return this.#_btn_text != null;
-   }
-
-   get blinkt() {
-      return this.#_blinkt;
-   }
-   set blinkt(v) {
-      this.#_blinkt = v;
-   }
-
    get image() {
       return this.#_image;
    }
-   set image(v) {
-      this.#_image = v;
-   }
 
-   get btn_text() {
-      return this.#_btn_text;
-   }
-   get conditions() {
-      return this.#_conditions;
-   }
-   get stellung() {
-      return this.#_stellung;
-   }
-   get off() {
-      return this.#_off;
-   }
-   get childs() {
-      return this.#_childs;
-   }
-
-   get pos() {
-      return this.#_pos;
-   }
-   set pos(v) {
-      this.#_pos = v;
-   }
-
-   //visual elements are enabled if the enabled function returns true and the signalstellung is set on the signal
+   //visual elements are visible if the enabled function returns true and the signalstellung is set on the signal
    //if both are not set, its always enabled
    isEnabled(signal) {
-      return (this.#_enabled == null || this.#_enabled(signal)) && signal.check(this.#_stellung);
+      return (this.#_enabled == null || this.#_enabled(signal)) && signal.check(this.#_on);
    }
 
    isAllowed(signal) {
-      return this.off == null || !signal.check(this.off);
+      return this.off() == null || !signal.check(this.off());
    }
 }
 
 class TextElement extends VisualElement {
    #_format;
    #_color;
+   #_source;
 
-   constructor({ format, color }) {
-      super(arguments[0], arguments[1]);
-      this.#_format = arguments[1].format ?? "bold 25px Arial";
-      this.#_color = arguments[1].color ?? "#eee";
+   constructor(source, format = "bold 25px Arial", color = "#eee") {
+      super();
+      this.#_source = source;
+      this.#_format = format;
+      this.#_color = color;
    }
 
    get format() {
@@ -104,15 +110,7 @@ class TextElement extends VisualElement {
    }
 
    getText(signal) {
-      if (this.stellung[0] == "#") return signal.getFeature(this.stellung.substring(1));
-      else return signal.get(this.stellung);
-   }
-   //setText = (s, text) => s._signalStellung[this.id] = text;
-
-   isEnabled(signal) {
-      if (this.stellung[0] == "#") return true;
-      const val = signal.get(this.stellung);
-      return isNaN(val) || val > 0;
+      return signal.get(this.#_source);
    }
 }
 
@@ -162,57 +160,60 @@ class SignalTemplate {
       return this.#_start;
    }
 
-   set signalMenu(m) {
-      this.#_signalMenu = this.parseSignalCommandMenu(m);
+   ///creates a structed onbject tree that represents a menu from an array of strings
+   ///array: keeps the array
+   ///comma sperated string e.g."hp=0,hp=1,hp=2": buttonGroup
+   ///single string e.g. "verk=1(verk)": btn
+   ///single string without '=' e.g. zs3v: dropdown
+   createSignalCommandMenu(menu_string_array) {
+      let menu_items = menu_string_array.map(
+         function (item) {
+            if (!Array.isArray(item)) item = [item];
+            return item.map(
+               function (str) {
+                  let items = str.split(",").map(
+                     function (str) {
+                        let text, command;
+                        let match = str.match(/\(([^)]*)\)/);
+                        if (match) {
+                           command = str.split("(")[0];
+                           text = match[1];
+                        } else {
+                           command = str;
+                           // 1. Entferne alles vor und inklusive einem "="
+                           text = command.includes("=") ? command.split("=")[1] : command;
+                           if (text.length == 1) text = command.replace("=", " ");
+                           else text = text.replace(/(\d)/, " $1");
+                           // 2. Das erste Zeichen in einen Großbuchstaben verwandeln
+                           text = text.charAt(0).toUpperCase() + text.slice(1);
+                        }
+                        return {
+                           type: command.includes("=") ? "btn" : "dropdown",
+                           text: text,
+                           command: command,
+                           visual_elements: this.getVisualElementsByOnCondition(command),
+                        };
+                     }.bind(this)
+                  );
+
+                  if (items.length > 1)
+                     return {
+                        type: "buttonGroup",
+                        items: items,
+                     };
+                  else return items[0];
+               }.bind(this)
+            );
+         }.bind(this)
+      );
+      this.#_signalMenu = menu_items;
    }
 
-   parseSignalCommandMenu(menu) {
-      let menu_items = menu.map((item) => {
-         if (Array.isArray(item)) return item.map((m) => this.parseSignalCommandMenu_string(m));
-         else return [this.parseSignalCommandMenu_string(item)];
-      });
-      return menu_items;
-   }
-
-   parseSignalCommandMenu_string(str) {
-      let items = str.split(",").map((str) => {
-         let text, command;
-         let match = str.match(/\(([^)]*)\)/);
-         if (match) {
-            command = str.split("(")[0];
-            text = match[1];
-         } else {
-            command = str;
-            // 1. Entferne alles vor und inklusive einem "="
-            text = command.includes("=") ? command.split("=")[1] : command;
-            if (text.length == 1) text = command.replace("=", " ");
-            else text = text.replace(/(\d)/, " $1");
-            // 2. Das erste Zeichen in einen Großbuchstaben verwandeln
-            text = text.charAt(0).toUpperCase() + text.slice(1);
-            // 3. Vor der ersten Ziffer ein Leerzeichen einfügen
-         }
-         return {
-            type: command.includes("=") ? "btn" : "dropdown",
-            text: text,
-            command: command,
-            visual_elements: this.getVisualElementByStellung(command),
-         };
-      });
-
-      if (items.length > 1)
-         return {
-            type: "group",
-            items: items,
-         };
-      else return items[0];
-   }
-
-   constructor(id, title, json_file, startElements, initialSignalStellung, features) {
+   constructor(id, title, json_file, startElements, initialSignalStellung) {
       this.#_id = id;
       this.#_title = title;
       if (initialSignalStellung) this.#_start = Array.isArray(initialSignalStellung) ? initialSignalStellung : [initialSignalStellung];
       this.#_json_file = json_file;
-      this.initialFeatures = features;
 
       if (startElements) {
          if (Array.isArray(startElements)) this.elements = startElements;
@@ -226,25 +227,20 @@ class SignalTemplate {
       this.elements.push(element);
    }
 
-   getVisualElementByStellung(signalStellung) {
+   getVisualElementsByOnCondition(condition) {
       let results = [];
-      const iterateItems = function (current) {
-         if (Array.isArray(current)) return current.some((item) => iterateItems(item));
-         if (current instanceof VisualElement) {
-            if (current.childs !== null && current.childs.some((item) => iterateItems(item))) {
-               results.push(current);
-               return true;
-            }
-
-            if (current.stellung === signalStellung) {
-               results.push(current);
+      function iterateItems(ve) {
+         if (Array.isArray(ve)) return ve.some((item) => iterateItems(item));
+         else if (ve instanceof VisualElement) {
+            if (ve.childs()?.some((item) => iterateItems(item)) || [].concat(ve.on()).some((c) => c === condition)) {
+               results.push(ve);
                return true;
             }
          }
          return false;
-      };
+      }
 
-      this.elements.forEach((e) => iterateItems(e));
+      iterateItems(this.elements);
 
       return results;
    }
@@ -256,12 +252,13 @@ class SignalTemplate {
       let ve;
       while (stack.length > 0) {
          ve = stack.pop();
-         if (ve.conditions) {
-            [].concat(ve.conditions).forEach((c) => {
-               c.split("&&").forEach((c) => conditions.pushUnique(c.split("=")[0].replace("!", "")));
+         if (typeof ve == "object") {
+            [].concat(ve.on()).forEach((c) => {
+               if (c) c.split("&&").forEach((c) => conditions.pushUnique(c.replace("!", "")));
             });
+
+            if (ve.childs()) stack.push(...ve.childs());
          }
-         if (ve.childs) stack.push(...ve.childs);
       }
       return conditions;
    }
@@ -280,29 +277,30 @@ class SignalTemplate {
 }
 
 function initSignals() {
-   const lightMenu = [["hp=0,hp=1,hp=2", "zs3"], ["vr=0,vr=1,vr=2","verk=1(verk)", "zs3v"], "ersatz=zs1,ersatz=zs7,ersatz=zs8,ersatz=sh1,ersatz=kennlicht"];
-
-   const verw_strecke = ["verwendung.bksig", "verwendung.sbk", "verwendung.esig"];
-   const verw_bahnhof = ["verwendung.asig", "verwendung.zsig"];
+   const lightMenu = [
+      ["hp=0,hp=1,hp=2", "zs3"],
+      ["vr=0,vr=1,vr=2", "verk=1(verk)", "zs3v"],
+      "ersatz=zs1,ersatz=zs7,ersatz=zs8,ersatz=sh1,ersatz=kennlicht",
+   ];
 
    //signal: ist das signal, dessen Stellung wir gerade setzen
    //hp: ist das signal, dessen Stellung wir vorsignalisieren wollen
    const checkSignalDependencyFunction4HV = function (signal, hp) {
       //make sure we only handle main signals
-      if (!hp.matchFeature("hp") || !signal.matchFeature("vr")) return;
+      if (!hp.check("HPsig") || !signal.check("vr")) return;
       let stop_propagation = false;
 
       //-1 heißt, die Vorsignalfunktion ist vom User ausgeschaltet
       if (signal.get("vr") != -1) {
          //Das Hauptsignal zeigt nicht Hp 0 oder es ist ein alleinstehndes Vorsignal
-         if (!signal.matchFeature("hp") || signal.get("hp") != 0) {
+         if (!signal.check("HPsig") || signal.get("hp") != 0) {
             switch (hp._template.id) {
                case "Hv77":
                case "hv_hp":
                case "hv_vr":
                   {
                      signal.set_stellung("vr", hp.get("hp") >= 0 ? hp.get("hp") : 0, false);
-                     if (!signal.matchFeature("vr_op.wdh")) stop_propagation = true;
+                     if (!signal.check("vr_op.wdh")) stop_propagation = true;
                   }
                   break;
                case "Hl":
@@ -310,7 +308,7 @@ function initSignals() {
                case "ks_vr":
                   {
                      signal.set_stellung("vr", hp.get("hp") <= 0 ? 0 : 1, false);
-                     if (!signal.matchFeature("vr_op.wdh")) stop_propagation = true;
+                     if (!signal.check("vr_op.wdh")) stop_propagation = true;
                   }
                   break;
             }
@@ -334,152 +332,110 @@ function initSignals() {
       "hv",
       [
          "mast,hp_schirm",
-         new VisualElement("wrw", { conditions: "mastschild.wrw" }),
-         new VisualElement("wgwgw", { conditions: "mastschild.wgwgw" }),
+         new VisualElement("wrw").on("mastschild=wrw"),
+         new VisualElement("wgwgw").on("mastschild=wgwgw"),
 
-         new VisualElement("hp_asig_lichtp", { conditions: verw_bahnhof }),
-         new VisualElement("hp_bk_lichtp_unten", { conditions: verw_strecke }),
-         new VisualElement("hp_bk_lichtp_oben", { conditions: verw_strecke.without("verwendung.sbk") }),
+         new VisualElement("hp_asig_lichtp").on(CONDITIONS.BAHNHOF),
+         new VisualElement("hp_bk_lichtp_unten").on(CONDITIONS.STRECKE),
+         new VisualElement("hp_bk_lichtp_oben").on(CONDITIONS.GRENZEN),
 
-         //new VisualElement("wgwgw", { conditions: "mastschild.wgwgw" }),
+         new VisualElement()
+            .on("hp=0")
+            .childs([
+               new VisualElement("hp_asig_rot_re").on(CONDITIONS.BAHNHOF).off("ersatz=sh1"),
+               new VisualElement("hp_asig_rot_li").on(CONDITIONS.BAHNHOF),
+               new VisualElement("hp_bk_rot_unten_li").on(CONDITIONS.STRECKE),
+            ]),
 
-         new VisualElement(null, {
-            stellung: "hp=0",
+         new VisualElement()
+            .on("hp=1")
+            .off("zs3<=6 && zs3>0") //used by UI to disable the corospoding button
+            .childs([
+               new VisualElement("hp_asig_gr").on(CONDITIONS.BAHNHOF),
+               new VisualElement("hp_bk_gr_unten_re").on(CONDITIONS.SBK),
+               new VisualElement("hp_bk_gr_oben_re").on(CONDITIONS.GRENZEN),
+            ]),
 
-            childs: [
-               new VisualElement("hp_asig_rot_re", { conditions: verw_bahnhof, off: "ersatz=sh1" }),
-               new VisualElement("hp_asig_rot_li", { conditions: verw_bahnhof }),
-               new VisualElement("hp_bk_rot_unten_li", { conditions: verw_strecke }),
-            ],
-         }),
-         new VisualElement(null, {
-            stellung: "hp=1",
+         new VisualElement()
+            .on("hp=2")
+            .off("zs3>6") //used by UI to disable the corospoding button
+            .childs([
+               new VisualElement("hp_asig_gelb,hp_asig_gr").on(CONDITIONS.BAHNHOF),
+               new VisualElement("hp_bk_gelb_unten_re,hp_bk_gr_oben_re").on(CONDITIONS.GRENZEN),
+            ]),
 
-            childs: [
-               new VisualElement("hp_asig_gr", { conditions: verw_bahnhof }),
-               new VisualElement("hp_bk_gr_unten_re", { conditions: "verwendung.sbk" }),
-               new VisualElement("hp_bk_gr_oben_re", { conditions: verw_strecke.without("verwendung.sbk") }),
-            ],
-            off: "zs3<=6 && zs3>0",
-         }),
-         new VisualElement(null, {
-            stellung: "hp=2",
+         new VisualElement("hp_asig_schuten").on(CONDITIONS.BAHNHOF),
+         new VisualElement("hp_bk_schute_unten").on(CONDITIONS.STRECKE),
+         new VisualElement("hp_bk_schute_oben").on(CONDITIONS.GRENZEN),
 
-            childs: [
-               new VisualElement("hp_asig_gelb,hp_asig_gr", { conditions: verw_bahnhof }),
-               new VisualElement("hp_bk_gelb_unten_re,hp_bk_gr_oben_re", { conditions: verw_strecke.without("verwendung.sbk") }),
-            ],
-            off: "zs3>6",
-         }),
-         new VisualElement("hp_asig_schuten", { conditions: verw_bahnhof }),
-         new VisualElement("hp_bk_schute_unten", { conditions: verw_strecke }),
-         new VisualElement("hp_bk_schute_oben", { conditions: verw_strecke.without("verwendung.sbk") }),
-
-         new VisualElement(null, {
-            childs: [
+         new VisualElement()
+            .on("VRsig")
+            .childs([
                "vr_schirm",
                "vr_lichtp",
-               new VisualElement("vr_zusatz_schirm,vr_zusatz_lichtp", { conditions: "vr_op.verk" }),
-               new VisualElement("vr_zusatz_licht", { conditions: "vr_op.verk", stellung: "verk=1", off: "hp=0" }),
-               new VisualElement(null, {
-                  childs: [
-                     new VisualElement("vr_gelb_oben,vr_gelb_unten", { stellung: "vr=0" }),
-                     new VisualElement("vr_grün_oben,vr_grün_unten", { stellung: "vr=1" }),
-                     new VisualElement("vr_gelb_unten,vr_grün_oben", { stellung: "vr=2" }),
-                  ],
-                  off: "hp=0",
-               }),
+               new VisualElement("vr_zusatz_schirm,vr_zusatz_lichtp").on("vr_op=verk"),
+               new VisualElement("vr_zusatz_licht").on("vr_op=verk").on("verk=1").off("hp=0"),
+               new VisualElement()
+                  .off("hp=0")
+                  .childs([
+                     new VisualElement("vr_gelb_oben,vr_gelb_unten").on("vr=0"),
+                     new VisualElement("vr_grün_oben,vr_grün_unten").on("vr=1"),
+                     new VisualElement("vr_gelb_unten,vr_grün_oben").on("vr=2"),
+                  ]),
                "vr_schuten",
-               new VisualElement("vr_zusatz_schute", { conditions: "vr_op.verk" }),
-            ],
-            conditions: "vr",
-         }),
-
-         new VisualElement(null, {
-            childs: [
+               new VisualElement("vr_zusatz_schute").on("vr_op=verk"),
+            ]),
+         new VisualElement()
+            .on(CONDITIONS.BAHNHOF)
+            .childs([
                "hp_asig_kennlicht_lichtp",
-               new VisualElement("hp_asig_kennlicht_licht", { stellung: "ersatz=kennlicht", off: "hp>=0" }),
+               new VisualElement("hp_asig_kennlicht_licht").on("ersatz=kennlicht").off("hp>=0"),
                "hp_asig_kennlicht_schute",
-            ],
-            conditions: verw_bahnhof,
-         }),
+            ]),
 
-         new VisualElement(null, {
-            childs: ["hp_asig_sh1_lichtp", new VisualElement("hp_asig_sh1_licht", { stellung: "ersatz=sh1", off: "hp>0" }), "hp_asig_sh1_schute"],
-            conditions: verw_bahnhof,
-         }),
+         new VisualElement()
+            .on(CONDITIONS.BAHNHOF)
+            .childs(["hp_asig_sh1_lichtp", new VisualElement("hp_asig_sh1_licht").on("ersatz=sh1").off("hp>0"), "hp_asig_sh1_schute"]),
 
-         new VisualElement(null, {
-            childs: ["hp_zs1_lichtp", new VisualElement("hp_zs1_licht", { stellung: "ersatz=zs1", off: "hp>0" }), "hp_zs1_schuten"],
-            conditions: ["verwendung.asig", "verwendung.bksig", "verwendung.sbk"],
-         }),
+         new VisualElement()
+            .on([CONDITIONS.Asig, CONDITIONS.Zsig, CONDITIONS.SBK])
+            .childs(["hp_zs1_lichtp", new VisualElement("hp_zs1_licht").on("ersatz=zs1").off("hp>0"), "hp_zs1_schuten"]),
 
-         new VisualElement(null, {
-            childs: ["hp_zs7_lichtp", new VisualElement("hp_zs7_licht", { stellung: "ersatz=zs7", off: "hp>0" }), "hp_zs7_schuten"],
-            conditions: ["verwendung.esig", "verwendung.zsig"],
-         }),
+         new VisualElement()
+            .on([CONDITIONS.Esig, CONDITIONS.Zsig])
+            .childs(["hp_zs7_lichtp", new VisualElement("hp_zs7_licht").on("ersatz=zs7").off("hp>0"), "hp_zs7_schuten"]),
 
-         new VisualElement(null, {
-            childs: ["hp_zs1_lichtp", new VisualElement("hp_zs1_licht", { stellung: "ersatz=zs8", off: "hp>0", blinkt: true }), "hp_zs1_schuten"],
-            conditions: ["verwendung.asig", "verwendung.bksig"],
-         }),
+         new VisualElement()
+            .on([CONDITIONS.Asig, CONDITIONS.BKsig])
+            .childs(["hp_zs1_lichtp", new VisualElement("hp_zs1_licht").on("ersatz=zs8").off("hp>0").blinkt(true), "hp_zs1_schuten"]),
 
-         new VisualElement(null, {
-            childs: ["zs3", new TextElement("zs3", { pos: [115, 80], format: "bold 80px Arial", color: "#eee", stellung: "zs3" })],
-            off: "zs3<=0||zs3=40",
-            conditions: "!zusatz_oben",
-         }),
+         new VisualElement()
+            .on("zs3>0")
+            .off("zs3=40||zusatz_oben")
+            .childs(["zs3", new TextElement("zs3", "bold 80px Arial").pos([115, 80])]),
 
-         new VisualElement(null, {
-            childs: ["zs3v", new TextElement("zs3v", { pos: [115, 890], format: "bold 80px Arial", color: "#ffde36", stellung: "zs3v" })],
-            off: "zs3v<=0",
-            conditions: "!zusatz_unten",
-         }),
+         new VisualElement()
+            .on("zs3v>0")
+            .off("zusatz_unten")
+            .childs(["zs3v", new TextElement("zs3v", "bold 80px Arial", "#ffde36").pos([115, 890])]),
 
-         new VisualElement("zs3v_licht", {
-            conditions: "zusatz_unten",
-            childs: [
-               new TextElement("zs3v", {
-                  pos: [120, 885],
-                  format: "60px DOT",
-                  color: "#ffde36",
-                  conditions: "zusatz_unten",
-                  stellung: "zs3v",
-                  off: "hp<=0",
-               }),
-            ],
-         }),
+         new VisualElement("zs3_licht").on("zusatz_oben").childs([new TextElement("zs3", "60px DOT").pos([120, 78]).off("hp<=0")]),
+         new VisualElement("zs3v_licht").on("zusatz_unten").childs([new TextElement("zs3v", "60px DOT", "#ffde36").pos([120, 885]).off("hp<=0")]),
 
-         new VisualElement("zs3_licht", {
-            conditions: "zusatz_oben",
-            childs: [
-               new TextElement("zs3", {
-                  pos: [120, 78],
-                  format: "60px DOT",
-                  color: "#eee",
-                  conditions: "zusatz_oben",
-                  stellung: "zs3",
-                  off: "hp<=0",
-               }),
-            ],
-         }),
-         new VisualElement("schild", {
-            conditions: "bez",
-            childs: [new TextElement("Bez", { pos: [116, 1033], format: "bold 55px condenced", color: "#333", stellung: "#bez" })],
-         }),
+         new VisualElement("schild").on("bez").childs([new TextElement("bez", "bold 55px condenced","#333").pos([116, 1033])]),
+         ,
       ],
-      ["hp=0", "vr=0"],
-      ["hp", "verwendung.asig", "mastschild.wrw"]
+      ["hp=0", "vr=0", "HPsig", "verw=asig", "mastschild=wrw"]
    );
    t.scale = 0.15;
-   t.distance_from_track = 4;
+   t.distance_from_track = 5;
    t.checkSignalDependency = checkSignalDependencyFunction4HV;
    t.addRule("hp>0 && zs3>6", "hp=1");
    t.addRule("hp>0 && zs3<=6 && zs3>0", "hp=2");
-   t.signalMenu = lightMenu;
+   t.createSignalCommandMenu(lightMenu);
    signalTemplates.hv_hp = t;
 
-   t = new SignalTemplate(
+   /* t = new SignalTemplate(
       "hv_vr",
       "Hv Vorsignal",
       "hv",
@@ -523,7 +479,7 @@ function initSignals() {
    t.distance_from_track = 4;
    t.checkSignalDependency = checkSignalDependencyFunction4HV;
    t.initialFeatures = ["vr"];
-   t.signalMenu = ["vr=0,vr=1,vr=2","verk=1(verk)", "zs3v"];
+   t.signalMenu = ["vr=0,vr=1,vr=2", "verk=1(verk)", "zs3v"];
    signalTemplates.hv_vr = t;
 
    //KS Hauptsignal
@@ -570,15 +526,15 @@ function initSignals() {
          new VisualElement("möhre", { conditions: "vr" }),
          new VisualElement("hp0", { stellung: "hp=0" }),
          new VisualElement(null, {
-            conditions: ["verwendung.asig", "verwendung.bksig", "verwendung.sbk"],
+            conditions: ["verw.asig", "verw.bksig", "verw.sbk"],
             childs: ["zs1_optik", new VisualElement("zs1", { stellung: "ersatz=zs1", off: "hp>0", blinkt: true })],
          }),
          new VisualElement(null, {
-            conditions: ["verwendung.esig", "verwendung.zsig"],
+            conditions: ["verw.esig", "verw.zsig"],
             childs: ["zs7_optik", new VisualElement("zs7", { stellung: "ersatz=zs7", off: "hp>0" })],
          }),
          new VisualElement(null, {
-            conditions: verw_bahnhof,
+            conditions: CONDITIONS.BAHNHOF,
             childs: ["sh1_optik", "zs1_optik", new VisualElement("zs1,sh1", { stellung: "ersatz=sh1", off: "hp>0" })],
          }),
 
@@ -588,7 +544,7 @@ function initSignals() {
          }),
 
          new VisualElement(null, {
-            conditions: verw_bahnhof,
+            conditions: CONDITIONS.BAHNHOF,
             childs: ["kennlicht_optik", new VisualElement("kennlicht", { stellung: "ersatz=kennlicht", off: "hp>=0" })],
          }),
 
@@ -598,7 +554,7 @@ function initSignals() {
             conditions: "!zusatz_unten",
          }),
 
-         new VisualElement("zs6_licht", { stellung: "zs6=1", off: "hp<=0||zs3>0",conditions: "zusatz_oben", }),
+         new VisualElement("zs6_licht", { stellung: "zs6=1", off: "hp<=0||zs3>0", conditions: "zusatz_oben" }),
 
          new VisualElement("zs3v_licht", {
             conditions: "zusatz_unten",
@@ -611,7 +567,6 @@ function initSignals() {
                   stellung: "zs3v",
                   off: "hp<=0",
                }),
-               
             ],
          }),
          new VisualElement("schild", {
@@ -623,7 +578,7 @@ function initSignals() {
    );
    t.scale = 0.15;
    t.distance_from_track = 15;
-   t.initialFeatures = ["hp", "verwendung.asig"];
+   t.initialFeatures = ["hp", "verw.asig"];
    t.signalMenu = [["hp=0,hp=1(Ks 1),hp=2(Ks 2)", "zs3"], "zs3v", "ersatz=zs1,ersatz=zs7,ersatz=zs8,ersatz=sh1", "verk=1(Verk)", "zs6=1(Zs 6)"];
 
    //signal: ist das signal, dessen Stellung wir gerade setzen
@@ -757,11 +712,10 @@ function initSignals() {
    t.signalMenu = ["hp=0,hp=1(Sh 1)", "ersatz=kennlicht"];
    signalTemplates.ls = t;
 
-   
    signalTemplates.ne4 = new SignalTemplate("ne4", "Ne 4", "basis", "ne4");
-   signalTemplates.ne4.scale = 0.20;
+   signalTemplates.ne4.scale = 0.2;
    signalTemplates.ra10 = new SignalTemplate("ra10", "Ne 4", "basis", "ra10");
-   signalTemplates.ra10.scale = 0.20;
+   signalTemplates.ra10.scale = 0.2;
 
    signalTemplates.ne1 = new SignalTemplate("ne1", "Ne 1", "basis", [
       "ne1",
@@ -813,5 +767,5 @@ function initSignals() {
    signalTemplates.zs3.signalMenu = ["geschw()"];
    signalTemplates.zs3.scale = 0.12;
    signalTemplates.zs10 = new SignalTemplate("zs10", "Zs 10", "basis", "zs10");
-   signalTemplates.zs10.scale = 0.20;
+   signalTemplates.zs10.scale = 0.2; */
 }

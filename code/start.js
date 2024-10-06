@@ -71,7 +71,7 @@ var renderer;
 var tracks = [];
 var switches = [];
 
-var undoHistory = ['[]'];
+var undoHistory = ["[]"];
 
 var signalTemplates = {};
 
@@ -134,24 +134,28 @@ function init() {
    pl.start().then(() => {
       console.log(`Preloader: ${pl._loadedItems}/${pl._totalItems}`);
       const id = "#newItemMenuAccordination";
-      $(id).append([
-         BS.createAccordionItem("Hauptsignale", id, [
-            newItemButton(signalTemplates.hv_hp),
-            newItemButton(signalTemplates.ks),
-            newItemButton(signalTemplates.ls),
-         ]),
-         BS.createAccordionItem("Vorsignale", id, [newItemButton(signalTemplates.hv_vr), newItemButton(signalTemplates.ks_vr)]),
+      try {
+         $(id).append([
+            BS.createAccordionItem("Hauptsignale", id, [
+               newItemButton(signalTemplates.hv_hp),
+               /* newItemButton(signalTemplates.ks),
+            newItemButton(signalTemplates.ls), */
+            ]),
+            /* BS.createAccordionItem("Vorsignale", id, [newItemButton(signalTemplates.hv_vr), newItemButton(signalTemplates.ks_vr)]),
          BS.createAccordionItem("Lf-Signale", id, [newItemButton(signalTemplates.lf6), newItemButton(signalTemplates.lf7)]),
          BS.createAccordionItem("Ne-Signale", id, [
             newItemButton(signalTemplates.ne4),
             newItemButton(signalTemplates.ne1),
             newItemButton(signalTemplates.ne2),
          ]),
-         BS.createAccordionItem("Weitere", id, [newItemButton(signalTemplates.zs3), newItemButton(signalTemplates.zs10)]),
-      ]);
+         BS.createAccordionItem("Weitere", id, [newItemButton(signalTemplates.zs3), newItemButton(signalTemplates.zs10)]), */
+         ]);
 
-      selectRenderer(true);
-      //loadRecent();
+         selectRenderer(true);
+         //loadRecent();
+      } catch (error) {
+         showErrorToast(error);
+      }
    });
 
    createjs.Ticker.addEventListener("tick", stage);
@@ -368,12 +372,12 @@ function init() {
    $("#signalEditMenuHeader a").on("click", () => {
       $("#signalEditMenuHeader .card-text").hide();
       $("#signalEditMenuHeader input")
-         .val(selection.object.getFeature("bez"))
+         .val(selection.object.get("bez"))
          .show()
          .focus()
          .on("keydown", function (e) {
             if (e.key === "Enter") {
-               selection.object.setFeature("bez", $(this).val());
+               selection.object.set_stellung("bez", $(this).val());
                $("#signalEditMenuHeader .card-text").show();
                $("#signalEditMenuHeader input").hide();
                Sig_UI.syncSignalMenu(selection.object);
@@ -1141,6 +1145,8 @@ function loadFromJson(json) {
 }
 
 function newItemButton(template) {
+   if (!template) throw new Error("No template given. Probably there was an error while creating the SignalTemplate");
+
    return ui
       .div("d-flex newSignalItem align-items-center user-select-none", [
          ui.div("flex-shrink-0 newItem_image").css("background-image", "url(" + GetDataURL_FromTemplate(template) + ")"),
