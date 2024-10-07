@@ -138,17 +138,18 @@ function init() {
          $(id).append([
             BS.createAccordionItem("Hauptsignale", id, [
                newItemButton(signalTemplates.hv_hp),
-               /* newItemButton(signalTemplates.ks),
-            newItemButton(signalTemplates.ls), */
+               newItemButton(signalTemplates.ks),
+               newItemButton(signalTemplates.ls),
             ]),
-            /* BS.createAccordionItem("Vorsignale", id, [newItemButton(signalTemplates.hv_vr), newItemButton(signalTemplates.ks_vr)]),
-         BS.createAccordionItem("Lf-Signale", id, [newItemButton(signalTemplates.lf6), newItemButton(signalTemplates.lf7)]),
-         BS.createAccordionItem("Ne-Signale", id, [
-            newItemButton(signalTemplates.ne4),
-            newItemButton(signalTemplates.ne1),
-            newItemButton(signalTemplates.ne2),
-         ]),
-         BS.createAccordionItem("Weitere", id, [newItemButton(signalTemplates.zs3), newItemButton(signalTemplates.zs10)]), */
+
+            BS.createAccordionItem("Vorsignale", id, [newItemButton(signalTemplates.hv_vr), newItemButton(signalTemplates.ks_vr)]),
+            BS.createAccordionItem("Lf-Signale", id, [newItemButton(signalTemplates.lf6), newItemButton(signalTemplates.lf7)]),
+            BS.createAccordionItem("Ne-Signale", id, [
+               newItemButton(signalTemplates.ne4),
+               newItemButton(signalTemplates.ne1),
+               newItemButton(signalTemplates.ne2),
+            ]),
+            BS.createAccordionItem("Weitere", id, [newItemButton(signalTemplates.zs3), newItemButton(signalTemplates.zs10)]),
          ]);
 
          selectRenderer(true);

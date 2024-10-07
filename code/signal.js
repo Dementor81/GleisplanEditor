@@ -108,19 +108,19 @@ class Signal {
       //and the signal indication actualy changed
       if (this._positioning.track && this._changed && chain) {
          let stop = false;
-         if (this.check(["HPsig", "master"])) {
+         if (this.check(["HPsig||master"])) {
             let prevSignal = this;
             do {
                prevSignal = this.search4Signal(prevSignal, DIRECTION.RIGHT_2_LEFT);
                if (prevSignal && prevSignal._template.checkSignalDependency) stop = prevSignal._template.checkSignalDependency(prevSignal, this);
             } while (!stop && prevSignal);
          }
-         if (this.check(["VRsig", "slave"]) && this._template.checkSignalDependency) {
+         if (this.check(["VRsig||slave"]) && this._template.checkSignalDependency) {
             let nextSignal = this;
             do {
                nextSignal = this.search4Signal(nextSignal, DIRECTION.LEFT_2_RIGTH);
                if (nextSignal && nextSignal._template.checkSignalDependency)
-                  stop = nextSignal._template.checkSignalDependency(this, nextSignal, ["HPsig", "master"]);
+                  stop = nextSignal._template.checkSignalDependency(this, nextSignal, ["HPsig||master"]);
             } while (!stop && nextSignal);
          }
       }
@@ -471,7 +471,7 @@ const Sig_UI = {
       $("#navFeatures>div input").each(function () {
          const input = $(this);
          const v = signal.check(input.attr("value"));
-         input.attr("checked", v ? "checked" : null);
+         input.prop("checked", v ? "checked" : null);
          if (input.attr("data-master_switch") != null) $("input", input.parent().next()).prop("disabled", !v);
       });
    },
