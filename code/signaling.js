@@ -220,10 +220,10 @@ class SignalTemplate {
       if (startElements) {
          if (Array.isArray(startElements)) this.elements = startElements;
          else this.elements = [startElements];
-      }
+      } else this.elements = [id];
 
       pl.addSpriteSheet(json_file);
-   }  
+   }
 
    getVisualElementsByOnCondition(condition) {
       let results = [];
@@ -515,7 +515,7 @@ function initSignals() {
             .on("zusatz_unten")
             .childs([new TextElement("zs3v", "85px DOT", "#ffde36").on("zs3v>0").off("hp<=0").pos([90, 520])]),
 
-         new VisualElement("schild").on("bez").childs([new TextElement("bez", "bold 55px condenced","#333").pos([85, 634])]),
+         new VisualElement("schild").on("bez").childs([new TextElement("bez", "bold 55px condenced", "#333").pos([85, 634])]),
       ],
       ["HPsig", CONDITIONS.Asig, "hp=0"]
    );
@@ -628,7 +628,7 @@ function initSignals() {
          "schute_r_rechts",
          "schute_w_oben",
          "schute_w_unten",
-         new VisualElement("schild").on("bez").childs([new TextElement("bez", "bold 55px condenced","#333").pos([210, 125])]),
+         new VisualElement("schild").on("bez").childs([new TextElement("bez", "bold 55px condenced", "#333").pos([210, 125])]),
       ],
       "hp=0"
    );
@@ -636,22 +636,20 @@ function initSignals() {
    t.createSignalCommandMenu(["hp=0,hp=1(Sh 1)", "ersatz=kennlicht(Kennlicht)"]);
    signalTemplates.ls = t;
 
-   signalTemplates.ne4 = new SignalTemplate("ne4", "Ne 4", "basis", "ne4");
+   signalTemplates.ne4 = new SignalTemplate("ne4", "Ne 4", "basis");
    signalTemplates.ne4.scale = 0.2;
-   signalTemplates.ra10 = new SignalTemplate("ra10", "Ne 4", "basis", "ra10");
-   signalTemplates.ra10.scale = 0.2;
 
    signalTemplates.ne1 = new SignalTemplate("ne1", "Ne 1", "basis", ["ne1", new TextElement("ne1", "bold 20px Arial").pos([100, 105])]);
    signalTemplates.ne1.scale = 0.15;
    signalTemplates.ne1.distance_from_track = 5;
-   signalTemplates.ne2 = new SignalTemplate("ne2", "Ne 2", "basis", "ne2");
+   signalTemplates.ne2 = new SignalTemplate("ne2", "Ne 2", "basis");
    signalTemplates.ne2.scale = 0.25;
 
    signalTemplates.lf6 = new SignalTemplate(
       "lf6",
       "Lf 6",
       "basis",
-      ["lf6", new TextElement("geschw", "bold 110px Arial","#333").pos([90, 8])],
+      ["lf6", new TextElement("geschw", "bold 110px Arial", "#333").pos([90, 8])],
       ["slave", "geschw=9"]
    );
    signalTemplates.lf6.createSignalCommandMenu(["geschw()"]);
@@ -661,7 +659,7 @@ function initSignals() {
       "lf7",
       "Lf 7",
       "basis",
-      ["lf7", new TextElement("geschw", "bold 130px Arial","#333").pos([50, 20])],
+      ["lf7", new TextElement("geschw", "bold 130px Arial", "#333").pos([50, 20])],
       ["master", "geschw=9"]
    );
    signalTemplates.lf7.createSignalCommandMenu(["geschw()"]);
@@ -685,6 +683,8 @@ function initSignals() {
 
    signalTemplates.zs3.createSignalCommandMenu(["geschw()"]);
    signalTemplates.zs3.scale = 0.12;
-   signalTemplates.zs10 = new SignalTemplate("zs10", "Zs 10", "basis", "zs10");
+   signalTemplates.zs10 = new SignalTemplate("zs10", "Zs 10", "basis");
    signalTemplates.zs10.scale = 0.2;
+   signalTemplates.ra10 = new SignalTemplate("ra10", "Ra 10", "basis");
+   signalTemplates.ra10.scale = 0.15;
 }

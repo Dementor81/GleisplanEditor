@@ -93,7 +93,7 @@ class Signal {
       else [command] = command.split("="); */
       let setting, value;
       [setting, value] = command.split("=");
-      if (overideValue == false) value = null; //false would be better but in javascript hp=0 and hp=false is the same
+      if (overideValue === false) value = null; //false would be better but in javascript hp=0 and hp=false is the same
       else if (value == undefined) value = overideValue;
 
       if (this.get(setting) != value) {

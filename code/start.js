@@ -149,7 +149,11 @@ function init() {
                newItemButton(signalTemplates.ne1),
                newItemButton(signalTemplates.ne2),
             ]),
-            BS.createAccordionItem("Weitere", id, [newItemButton(signalTemplates.zs3), newItemButton(signalTemplates.zs10)]),
+            BS.createAccordionItem("Weitere", id, [
+               newItemButton(signalTemplates.zs3),
+               newItemButton(signalTemplates.zs10),
+               newItemButton(signalTemplates.ra10),
+            ]),
          ]);
 
          selectRenderer(true);
