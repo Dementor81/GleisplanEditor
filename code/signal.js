@@ -77,7 +77,7 @@ class Signal {
       if (bez) title += (" " + bez).replace("-", " ");
 
       return title;
-   }   
+   }
 
    //Setzt die Signalstellung, 2 Möglichkeiten:
    //set("zs3",60)
@@ -290,7 +290,7 @@ class Signal {
                      mi.visual_elements?.length > 0 &&
                      mi.visual_elements.every((ve) => {
                         const on = ve.on();
-                        if (on == mi.command) return true;
+                        if ((Array.isArray(on) && on.includes(mi.command)) || on == mi.command) return true;
                         else return this.check(on);
                      })
                )

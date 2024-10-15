@@ -499,7 +499,7 @@ function initSignals() {
          new VisualElement().on(CONDITIONS.BAHNHOF).childs(["sh1_optik", "zs1_optik", new VisualElement("zs1,sh1").on("ersatz=sh1").off("hp>0")]),
 
          new VisualElement()
-            .on("vr_op.verk&&VRsig")
+            .on("vr_op=verk&&VRsig")
             .childs(["kennlicht_optik", new VisualElement("kennlicht").on("verk=1").off("hp=0||hp=1&&zs3v<=0")]),
          ,
          new VisualElement().on(CONDITIONS.BAHNHOF).childs(["kennlicht_optik", new VisualElement("kennlicht").on("ersatz=kennlicht").off("hp>=0")]),
