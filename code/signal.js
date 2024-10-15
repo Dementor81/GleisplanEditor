@@ -289,9 +289,13 @@ class Signal {
                   (mi) =>
                      mi.visual_elements?.length > 0 &&
                      mi.visual_elements.every((ve) => {
-                        const on = ve.on();
-                        if ((Array.isArray(on) && on.includes(mi.command)) || on == mi.command) return true;
-                        else return this.check(on);
+                        let on = ve.on();
+                        if (Array.isArray(on)) {
+                           if(on.includes(mi.command))
+                              on = on.toSpliced(on.indexOf(mi.command),1);
+                        } else if (on == mi.command) return true;
+
+                        return this.check(on);
                      })
                )
                .map((item) =>
