@@ -6,7 +6,8 @@ html, body {
 
 
 .navbar{
-    margin-top: 9rem;
+    height: 4rem;
+   /*  margin-top: 9rem; */
     padding: 0px !important;
     padding-left: 2rem  !important;
     box-shadow: 0 .5rem 1rem rgba(0,0,0,.15);
@@ -19,26 +20,15 @@ html, body {
 
 .main_container{
     width: 100vw;
-    height: 100vh;
-   /*  display: flex;
-    flex-direction:  column; */
-    gap: 5rem;
+    height: calc(100% - 4rem);
     margin-left: auto;
     margin-right: auto;
     overflow-y: scroll;
 }
 
-.content_spacer{
-    padding-top: 13rem;
-}
-
-.content_spacer:last-child{
-    padding-top: 15rem;
-    padding-bottom: 15rem;
-}
-
 .content{
-    width: 50vw;
+    margin-top: 5rem;
+    width: 67vw;
     margin-left: auto;
     margin-right: auto;
     background-color: rgb(248 249 250);
@@ -47,6 +37,24 @@ html, body {
     padding: 3rem;
 }
 
+.content:last-child{
+    margin-bottom: 5rem;
+}
+
+.carousel-control-prev{
+    align-items: end!important;
+}
+
+.carousel-control-next{
+    align-items: end!important;
+}
+.carousel-control-prev>span{
+    height: 10rem!important;
+}
+
+.carousel-control-next>span{
+    height: 10rem!important;
+}
 
 
 
