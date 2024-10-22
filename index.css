@@ -5,20 +5,50 @@ html, body {
 
 
 
-.navbar{
+.navbar {
     height: 4rem;
-   /*  margin-top: 9rem; */
+    /*  margin-top: 9rem; */
     padding: 0px !important;
-    padding-left: 2rem  !important;
-    box-shadow: 0 .5rem 1rem rgba(0,0,0,.15);
+    padding-left: 2rem !important;
+    box-shadow: 0 .5rem 1rem rgba(0, 0, 0, .15);
 }
 
-.navbar-brand{
+.navbar-brand {
     font-size: xx-large !important;
 }
 
+#banner {
+    height: 500px;
+    width: 100%;
+    background-image: url('gleisplan.png');
+    background-position: center;
+    /* Center the image */
+    background-repeat: no-repeat;
+    /* Do not repeat the image */
+    background-size: 200%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+}
 
-.main_container{
+#banner div {
+    margin-top: auto;
+    margin-bottom: 3rem;
+    width: 60rem;
+    color: aliceblue;
+    /* height: 20rem; */
+}
+
+#banner h1{
+    font-size: 4vw;
+    font-weight: 600;
+    font-family: "FSKoopman", "Helvetica Neue", Helvetica, "Lucida Grande", sans-serif;
+    font-feature-settings: "liga", "dlig", "kern", "onus";
+}
+
+
+.main_container {
     width: 100vw;
     height: calc(100% - 4rem);
     margin-left: auto;
@@ -26,34 +56,35 @@ html, body {
     overflow-y: scroll;
 }
 
-.content{
+.content {
     margin-top: 5rem;
     width: 67vw;
     margin-left: auto;
     margin-right: auto;
     background-color: rgb(248 249 250);
-    box-shadow: 0 .5rem 1rem rgba(0,0,0,.15);
+    box-shadow: 0 .5rem 1rem rgba(0, 0, 0, .15);
     border-radius: 0.5rem;
     padding: 3rem;
 }
 
-.content:last-child{
+.content:last-child {
     margin-bottom: 5rem;
 }
 
-.carousel-control-prev{
-    align-items: end!important;
+.carousel-control-prev {
+    align-items: end !important;
 }
 
-.carousel-control-next{
-    align-items: end!important;
-}
-.carousel-control-prev>span{
-    height: 10rem!important;
+.carousel-control-next {
+    align-items: end !important;
 }
 
-.carousel-control-next>span{
-    height: 10rem!important;
+.carousel-control-prev>span {
+    height: 10rem !important;
+}
+
+.carousel-control-next>span {
+    height: 10rem !important;
 }
 
 

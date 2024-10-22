@@ -38,9 +38,7 @@
 
       <style type="text/css"></style>
       <script>
-         var offset = 80;
-
-         $(() => {});
+         
       </script>
    </head>
 
@@ -63,7 +61,10 @@
             <div class="navbar-collapse collapse" id="navbarNavAltMarkup">
                <ul class="nav nav-pills">
                   <li class="nav-item">
-                     <a class="nav-link" href="#welcome">Willkommen</a>
+                     <a class="nav-link" href="#banner">Start</a>
+                  </li>
+                  <li class="nav-item">
+                     <a class="nav-link" href="#welcome">Features</a>
                   </li>
                   <li class="nav-item">
                      <a class="nav-link" href="#help">Anleitung</a>
@@ -76,12 +77,25 @@
          </div>
       </nav>
 
-      <div class="main_container" data-bs-spy="scroll" data-bs-target="#mainNavBar" data-bs-root-margin="0px 0px -40%"  data-bs-smooth-Scroll="true" tabindex="0">
+      <div
+         class="main_container"
+         data-bs-spy="scroll"
+         data-bs-target="#mainNavBar"
+         data-bs-root-margin="0px 0px -40%"
+         data-bs-smooth-Scroll="true"
+         tabindex="0"
+      >
+         <div id="banner">
+            <div>
+               <h1>Zeichne eigene Gleispläne</h1>
+               <a href="start.html" type="button" class="btn btn-primary btn-lg"><i class="bi bi-play-fill"></i> Hier geht's los</a>
+            </div>
+         </div>
          <div class="content" id="welcome">
-            <!-- <h1 class="fs-1 fw-bold">Bahn Simulator</h1>
+            <h1 class="fs-1 fw-bold">Features</h1>
                <p  class="fs-4">
-                  Interaktive Gleispläne für den Unterricht
-               </p> -->
+                 Erstelle Interaktive Gleispläne für deinen Unterricht.
+               </p>
             <div id="carouselIntro" class="carousel slide border" data-bs-theme="dark">
                <div class="carousel-indicators">
                   <button
