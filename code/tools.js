@@ -774,16 +774,17 @@ const BS = {
       });
    },
 
-   createAccordionItem(title, parent, items) {
+   createAccordionItem(title, parent, items,open=false) {
       let id = uuidv4();
       return ui.div("accordion-item", [
          $("<h2>", { class: "accordion-header" }).append(
-            $("<button>", { class: "accordion-button collapsed user-select-none", type: "button" })
+            $("<button>", { class: "accordion-button  user-select-none", type: "button" })
                .attr("data-bs-toggle", "collapse")
                .attr("data-bs-target", "#" + id)
                .text(title)
+               .toggleClass("collapsed",!open)
          ),
-         ui.div("accordion-collapse collapse", ui.div("accordion-body", items)).attr("id", id).attr("data-bs-parent", parent),
+         ui.div("accordion-collapse collapse", ui.div("accordion-body", items)).attr("id", id).attr("data-bs-parent", parent).toggleClass("show",open),
       ]);
    },
 

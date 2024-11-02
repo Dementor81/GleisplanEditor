@@ -11,6 +11,7 @@ const GRID_SIZE_2 = GRID_SIZE / 2;
 
 const SNAP_2_GRID = 30;
 const MAX_SCALE = 5;
+const MIN_SCALE = 0.2;
 
 const MOST_UNDO = 20;
 
@@ -145,11 +146,12 @@ function init() {
       const id = "#newItemMenuAccordination";
       try {
          $(id).append([
-            BS.createAccordionItem("Hauptsignale", id, [
-               newItemButton(signalTemplates.hv_hp),
-               newItemButton(signalTemplates.ks),
-               newItemButton(signalTemplates.ls),
-            ]),
+            BS.createAccordionItem(
+               "Hauptsignale",
+               id,
+               [newItemButton(signalTemplates.hv_hp), newItemButton(signalTemplates.ks), newItemButton(signalTemplates.ls)],
+               true
+            ),
 
             BS.createAccordionItem("Vorsignale", id, [newItemButton(signalTemplates.hv_vr), newItemButton(signalTemplates.ks_vr)]),
             BS.createAccordionItem("Lf-Signale", id, [newItemButton(signalTemplates.lf6), newItemButton(signalTemplates.lf7)]),
@@ -184,28 +186,20 @@ function init() {
          myCanvas.prevent_input = true;
          let point = new createjs.Point(stage.mouseX, stage.mouseY);
          let localPoint = stage.globalToLocal(point.x, point.y);
-
-         let old = stage.scale;
+         let old_scale = stage.scale;
          let step = event.deltaY / (1000 / stage.scale);
-
          stage.scale -= step;
+         stage.scale = Math.min(Math.max(MIN_SCALE, stage.scale), MAX_SCALE);
 
-         stage.scale = Math.min(Math.max(0.2, stage.scale), MAX_SCALE);
-
-         if (stage.scale != old) {
+         if (stage.scale != old_scale) {
             //if we reached MIN or MAX, the scale value doesnt change anymore
             // Find where the original point is now
             let globalPoint = stage.localToGlobal(localPoint.x, localPoint.y);
             // Move the map by the difference
             stage.x -= globalPoint.x - point.x;
             stage.y -= globalPoint.y - point.y;
-
             drawGrid();
-            //if (stage.scale > old)
-            {
-               renderer.reDrawEverything();
-            }
-
+            renderer.reDrawEverything();
             stage.update();
             save();
          }
@@ -257,6 +251,7 @@ function init() {
       tracks = [];
       switches = [];
       Train.allTrains = [];
+      GenericObject.all_objects = [];
 
       save();
       renderer.reDrawEverything(true); //just to make sure, something accidently not deleted we be drawn to the stage.
@@ -1000,6 +995,7 @@ function handleStageMouseUp(e) {
             custom_mouse_mode = CUSTOM_MOUSE_ACTION.NONE;
             UI.activate_custom_mouse_mode();
             stage.update();
+            saveUndoHistory();
             save();
          }
       } else if (mouseAction.action === MOUSE_DOWN_ACTION.NONE && mouseAction.distance() < 4) {
@@ -1132,8 +1128,10 @@ function undo() {
    undoHistory.pop();
    const last = undoHistory.lastItem();
    if (last) {
-      tracks = JSON.parse(last, receiver).clean() || [];
+      const loaded = JSON.parse(last, receiver)
+      tracks = loaded.tracks?.clean() || [];
       Track.connectTracks();
+      if (loaded.objects) GenericObject.all_objects = loaded.objects;
    } else tracks = [];
 
    renderer.reDrawEverything(true);
@@ -1141,7 +1139,7 @@ function undo() {
 }
 
 function saveUndoHistory() {
-   undoHistory.push(JSON.stringify(tracks, replacer));
+   undoHistory.push(JSON.stringify({tracks:tracks,objects:GenericObject.all_objects}, replacer));
    if (undoHistory.length > MOST_UNDO) undoHistory.shift();
 }
 
@@ -1188,6 +1186,8 @@ function loadFromJson(json) {
    drawGrid();
    renderer.reDrawEverything(true);
    stage.update();
+   undoHistory = [];
+   saveUndoHistory();
 }
 
 function newItemButton(template) {
