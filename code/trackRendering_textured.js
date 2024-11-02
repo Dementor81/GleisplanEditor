@@ -176,8 +176,6 @@ class trackRendering_textured {
       container.addChild(text)
    }
 
-   
-
    renderAllTracks(c, force) {
       tracks.forEach((t) => {
          if (this.TrackVisible(t)) {
@@ -186,7 +184,7 @@ class trackRendering_textured {
                t.signals.forEach((signal) => {
                   const c = signal_container.addChild(createSignalContainer(signal));
                   if (selection.isSelectedObject(signal)) c.shadow = new createjs.Shadow("#ff0000", 0, 0, 3);
-                  alignSignalWithTrack(c);
+                  alignSignalContainerWithTrack(c);
                   this.handleCachingSignal(c);
                });
             } else if (this._rendering.lodChanged) {

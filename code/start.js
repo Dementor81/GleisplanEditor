@@ -618,10 +618,7 @@ function drawGrid(repaint = true) {
 function handleStageMouseDown(event) {
    //console.log("handleStageMouseDown", event);
 
-   //console.log(main_container.mouseX + "/" + main_container.mouseY);
-
    let hittest = getHitTest();
-   //console.log(hittest);
 
    //console.log(hittest ? hittest : "nothing hit");
 
@@ -657,13 +654,7 @@ function getHitTest(container) {
    return (container ? container : stage).getObjectUnderPoint(local_point.x, local_point.y, 1);
 }
 
-function getHitTrackInfo(use_offset) {
-   let local_point = stage.globalToLocal(stage.mouseX, stage.mouseY);
-   if (mouseAction.offset && use_offset) {
-      let p = mouseAction.container.localToLocal(mouseAction.offset.x, mouseAction.offset.y, stage);
-      local_point.x -= p.x - mouseAction.container.x;
-      local_point.y -= p.y - mouseAction.container.y;
-   }
+function getHitInfoForSignalPositioning(testPoint) {
    let circleShape = overlay_container.getChildByName("circle");
    if (circleShape == null) {
       circleShape = new createjs.Shape();
@@ -674,9 +665,9 @@ function getHitTrackInfo(use_offset) {
          .drawCircle(0, 0, GRID_SIZE / 2);
       overlay_container.addChild(circleShape);
    }
-   circleShape.x = local_point.x;
-   circleShape.y = local_point.y;
-   let circle = { x: local_point.x, y: local_point.y, radius: GRID_SIZE / 2 };
+   circleShape.x = testPoint.x;
+   circleShape.y = testPoint.y;
+   let circle = { x: testPoint.x, y: testPoint.y, radius: GRID_SIZE / 2 };
    let result;
    let track, box;
    for (let index = 0; index < tracks.length; index++) {
@@ -688,7 +679,7 @@ function getHitTrackInfo(use_offset) {
         drawPoint(box.bottomRight, "bottomRight", "#000", 3);
         drawPoint(box.bottomLeft, "bottomLeft", "#000", 3);  */
 
-      if (isPointInsideBox(local_point, box, track._tmp.rad))
+      if (isPointInsideBox(testPoint, box, track._tmp.rad))
          if ((result = LineIsInCircle(track, circle))) {
             result.track = track;
             result.above = result.point.y > circle.y;
@@ -720,30 +711,22 @@ function createSignalContainer(signal) {
    return c;
 }
 
-function alignSignalWithTrack(signal_shape, pos) {
-   if (!pos) pos = signal_shape.signal._positioning;
-
+function alignSignalContainerWithTrack(c) {
+   const pos = c.signal._positioning;
    //koordinaten anhand des Strecken KM suchen
-   let coordinates;
-   if (pos.point) coordinates = pos.point;
-   else coordinates = geometry.add(pos.track.getPointfromKm(pos.km), pos.track.start);
-
-   const template = signal_shape.signal._template;
-
+   const coordinates = geometry.add(pos.track.getPointfromKm(pos.km), pos.track.start);
    let p;
    if (pos.above) {
-      signal_shape.rotation = 270 + pos.track._tmp.deg;
-      p = geometry.perpendicular(coordinates, pos.track._tmp.deg, -renderer.SIGNAL_DISTANCE_FROM_TRACK - template.distance_from_track);
+      c.rotation = 270 + pos.track._tmp.deg;
+      p = geometry.perpendicular(coordinates, pos.track._tmp.deg, -renderer.SIGNAL_DISTANCE_FROM_TRACK - c.signal._template.distance_from_track);
    } else {
-      signal_shape.rotation = 90 + pos.track._tmp.deg;
-      p = geometry.perpendicular(coordinates, pos.track._tmp.deg, renderer.SIGNAL_DISTANCE_FROM_TRACK + template.distance_from_track);
+      c.rotation = 90 + pos.track._tmp.deg;
+      p = geometry.perpendicular(coordinates, pos.track._tmp.deg, renderer.SIGNAL_DISTANCE_FROM_TRACK + c.signal._template.distance_from_track);
    }
+   if (pos.flipped) c.rotation += 180;
 
-   signal_shape.x = p.x;
-   signal_shape.y = p.y;
-   if (pos.flipped) {
-      signal_shape.rotation += 180;
-   }
+   c.x = p.x;
+   c.y = p.y;
 }
 
 function startDragAndDropSignal(mouseX, mouseY) {
@@ -797,10 +780,6 @@ function handleMouseMove(event) {
                   myCanvas.style.cursor = "move";
 
                   mouseAction.action = MOUSE_DOWN_ACTION.MOVE_OBJECT;
-                  const o = mouseAction.container.object;
-                  o.pos(local_point);
-                  mouseAction.container.x = local_point.x;
-                  mouseAction.container.y = local_point.y;
                } else {
                   mouseAction.lineShape = new createjs.Shape();
                   overlay_container.addChild(mouseAction.lineShape);
@@ -831,37 +810,7 @@ function handleMouseMove(event) {
       mouseAction.container.x = local_point.x;
       mouseAction.container.y = local_point.y;
    } else if (mouseAction.action === MOUSE_DOWN_ACTION.DND_SIGNAL) {
-      //searches for a hit in 2 steps:
-      //1st: at the mouse position and if it finds a track there
-      //it 2nd searches for the track at the signal´s base
-      let hitInformation = getHitTrackInfo(false);
-      if (hitInformation) {
-         hitInformation.flipped = event.nativeEvent.altKey;
-
-         alignSignalWithTrack(mouseAction.container, hitInformation);
-         mouseAction.hit_track = hitInformation = getHitTrackInfo(true);
-         if (hitInformation) {
-            mouseAction.container.signal._positioning = {
-               track: hitInformation.track,
-               km: hitInformation.km,
-               above: hitInformation.above,
-               flipped: event.nativeEvent.altKey,
-            };
-            alignSignalWithTrack(mouseAction.container);
-         }
-      }
-
-      if (hitInformation == null || mouseAction.hit_track == null) {
-         mouseAction.hit_track = null;
-         mouseAction.container.rotation = 0;
-         if (mouseAction.offset) {
-            let p = mouseAction.container.localToLocal(mouseAction.offset.x, mouseAction.offset.y, stage);
-            local_point.x -= p.x - mouseAction.container.x;
-            local_point.y -= p.y - mouseAction.container.y;
-         }
-         mouseAction.container.x = local_point.x;
-         mouseAction.container.y = local_point.y;
-      }
+      dragnDropSignal(local_point, event.nativeEvent.altKey);
    } else if (mouseAction.action === MOUSE_DOWN_ACTION.BUILD_TRACK) {
       setTrackAnchorPoints();
       drawBluePrintTrack();
@@ -879,6 +828,29 @@ function handleMouseMove(event) {
    }
 
    stage.update();
+}
+
+function dragnDropSignal(local_point, flipped) {
+   let hitInformation = getHitInfoForSignalPositioning(local_point);
+   if (hitInformation) {
+      mouseAction.hit_track = hitInformation;
+      mouseAction.container.signal._positioning = {
+         track: hitInformation.track,
+         km: hitInformation.km,
+         above: hitInformation.above,
+         flipped: flipped,
+      };
+      alignSignalContainerWithTrack(mouseAction.container);
+   } else {
+      mouseAction.container.rotation = 0;
+      if (mouseAction.offset) {
+         let p = mouseAction.container.localToLocal(mouseAction.offset.x, mouseAction.offset.y, stage);
+         local_point.x -= p.x - mouseAction.container.x;
+         local_point.y -= p.y - mouseAction.container.y;
+      }
+      mouseAction.container.x = local_point.x;
+      mouseAction.container.y = local_point.y;
+   }
 }
 
 function drawBluePrintTrack() {
@@ -1017,7 +989,7 @@ function handleStageMouseUp(e) {
             stage.update();
             save();
          }
-      } else if (mouseAction.action.is(MOUSE_DOWN_ACTION.MOVE_TRAIN,MOUSE_DOWN_ACTION.MOVE_OBJECT)) {
+      } else if (mouseAction.action.is(MOUSE_DOWN_ACTION.MOVE_TRAIN, MOUSE_DOWN_ACTION.MOVE_OBJECT)) {
          save();
       } else if (mouseAction.action === MOUSE_DOWN_ACTION.CUSTOM) {
          if (custom_mouse_mode == CUSTOM_MOUSE_ACTION.TEXT) {
@@ -1230,6 +1202,7 @@ function newItemButton(template) {
          mouseAction = {
             action: MOUSE_DOWN_ACTION.DND_SIGNAL,
             template: template,
+            //offset:new Point(0,0),
          };
 
          //mouseup beim document anmelden, weil mouseup im stage nicht ausgelöst wird, wenn mousedown nicht auch auf der stage war
