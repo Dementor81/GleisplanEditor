@@ -10,7 +10,7 @@ class GenericObject {
    static all_objects = [];
 
    static FromObject(o) {
-      return new GenericObject().pos(o.pos).size(o.size).type(o.type).content(o.content);
+      return new GenericObject().pos(o.pos).size(o.size.width,o.size.height).type(o.type).content(o.content);
    }
 
    static removeObject(o) {
@@ -18,6 +18,7 @@ class GenericObject {
       renderer.renderAllGenericObjects();
       stage.update();
       save();
+      saveUndoHistory();
    }
 
    static initEditMenu(o) {
@@ -26,7 +27,9 @@ class GenericObject {
          case GenericObject.OBJECT_TYPE.text:
             header_text = "Text";
             break;
-
+            case GenericObject.OBJECT_TYPE.plattform:
+               header_text = "Bahnsteig";
+               break;
          default:
             break;
       }
@@ -64,7 +67,7 @@ class GenericObject {
    }
 
    #_pos = { x: 0, y: 0 };
-   #_size = { x: 0, y: 0 };
+   #_size = { width: 0, height: 0 };
    #_type = GenericObject.OBJECT_TYPE.none;
    #_content = "";
 
@@ -78,9 +81,10 @@ class GenericObject {
       return this;
    }
 
-   size(s) {
-      if (s === undefined) return this.#_size;
-      this.#_size = s;
+   size(w,h) {
+      if (w === undefined) return this.#_size;
+      this.#_size.width = w;
+      this.#_size.height = h;
       return this;
    }
 

@@ -56,7 +56,7 @@ Features:
     ☐ Rules erweitern, dass sie auch Features abfragen und aktivieren können
     ☐ Verwednung schaltet automatisch mehrere Feature um (Mastschild + Zusatzsignale)
     ✔ Textfelder für Beschriftung von Gleisen hinzufügen @done(24-11-02 12:50)
-    ☐ Bahnsteige einzeichen 
+    ✔ Bahnsteige einzeichen @done(24-11-02 18:59)
     ☐ mehere gleise, ganze Bahnhöfe verschieben
     ☐ Signale koopieren, per drag&drop
     ☐ Wagen verhalten sich korrekt in Bögen

@@ -452,6 +452,7 @@ const UI = {
                   x: local_point.x,
                   y: local_point.y,
                   scale: 0.5,
+                  regY: 96 / 2,
                });
 
                overlay_container.addChild(mouseAction.container);
@@ -459,8 +460,12 @@ const UI = {
             break;
          case MENU.NEW_OBJECT:
             div_id = "newObjectMenu";
-            $("#btnAddTtext").click(() => {
-               custom_mouse_mode = $("#btnAddTtext").hasClass("active") ? CUSTOM_MOUSE_ACTION.TEXT : CUSTOM_MOUSE_ACTION.NONE;
+            $("#btnAddText").click(() => {
+               custom_mouse_mode = $("#btnAddText").hasClass("active") ? CUSTOM_MOUSE_ACTION.TEXT : CUSTOM_MOUSE_ACTION.NONE;
+               UI.activate_custom_mouse_mode();
+            });
+            $("#btnAddPlatform").click(() => {
+               custom_mouse_mode = $("#btnAddPlatform").hasClass("active") ? CUSTOM_MOUSE_ACTION.PLATTFORM : CUSTOM_MOUSE_ACTION.NONE;
                UI.activate_custom_mouse_mode();
             });
             break;
@@ -628,7 +633,7 @@ function handleStageMouseDown(event) {
       },
    };
 
-   if (custom_mouse_mode) {
+   if (custom_mouse_mode == CUSTOM_MOUSE_ACTION.DRAWING) {
       const color = document.querySelector('input[name="DrawingColor"]:checked').value;
       const width = document.querySelector('input[name="DrawingWidth"]:checked').value;
 
@@ -797,11 +802,28 @@ function handleMouseMove(event) {
          mouseAction.shape.graphics.mt(mouseAction.startPoint.x, mouseAction.startPoint.y).lt(local_point.x, local_point.y);
          mouseAction.startPoint.x = local_point.x;
          mouseAction.startPoint.y = local_point.y;
+      } else if (custom_mouse_mode == CUSTOM_MOUSE_ACTION.PLATTFORM) {
+         overlay_container.removeAllChildren();
+         overlay_container.addChild((mouseAction.shape = new createjs.Shape()));
+         mouseAction.shape.graphics
+            .beginStroke("#111111")
+            .drawRect(
+               mouseAction.startPoint.x,
+               mouseAction.startPoint.y,
+               local_point.x - mouseAction.startPoint.x,
+               local_point.y - mouseAction.startPoint.y
+            );
+         stage.update();
       }
    }
    if (mouseAction.action === MOUSE_DOWN_ACTION.MOVE_OBJECT) {
       const o = mouseAction.container.object;
       o.pos(local_point);
+      if (mouseAction.offset) {
+         let p = mouseAction.container.localToLocal(mouseAction.offset.x, mouseAction.offset.y, stage);
+         local_point.x -= p.x - mouseAction.container.x;
+         local_point.y -= p.y - mouseAction.container.y;
+      }
       mouseAction.container.x = local_point.x;
       mouseAction.container.y = local_point.y;
    } else if (mouseAction.action === MOUSE_DOWN_ACTION.DND_SIGNAL) {
@@ -968,7 +990,7 @@ function handleStageMouseUp(e) {
       } else if (mouseAction.action === MOUSE_DOWN_ACTION.ADD_TRAIN) {
          overlay_container.removeChild(mouseAction.container);
          const hit = getHitTest(track_container);
-         if (hit.name == "track") {
+         if (hit?.name == "track") {
             const color = ["#ff0000", "#ffff00", "#00ff00", "#0000ff"].random();
             const track = hit.track;
             let train, car, car2;
@@ -989,6 +1011,20 @@ function handleStageMouseUp(e) {
       } else if (mouseAction.action === MOUSE_DOWN_ACTION.CUSTOM) {
          if (custom_mouse_mode == CUSTOM_MOUSE_ACTION.TEXT) {
             const o = new GenericObject(GenericObject.OBJECT_TYPE.text).pos(local_point).content("Text");
+            GenericObject.all_objects.push(o);
+            selectObject(o);
+            renderer.renderAllGenericObjects();
+            custom_mouse_mode = CUSTOM_MOUSE_ACTION.NONE;
+            UI.activate_custom_mouse_mode();
+            stage.update();
+            saveUndoHistory();
+            save();
+         } else if (custom_mouse_mode == CUSTOM_MOUSE_ACTION.PLATTFORM) {
+            overlay_container.removeAllChildren();
+            const o = new GenericObject(GenericObject.OBJECT_TYPE.plattform)
+               .content("Bahnsteig")
+               .pos(mouseAction.startPoint)
+               .size(local_point.x - mouseAction.startPoint.x, local_point.y - mouseAction.startPoint.y);
             GenericObject.all_objects.push(o);
             selectObject(o);
             renderer.renderAllGenericObjects();
@@ -1128,7 +1164,7 @@ function undo() {
    undoHistory.pop();
    const last = undoHistory.lastItem();
    if (last) {
-      const loaded = JSON.parse(last, receiver)
+      const loaded = JSON.parse(last, receiver);
       tracks = loaded.tracks?.clean() || [];
       Track.connectTracks();
       if (loaded.objects) GenericObject.all_objects = loaded.objects;
@@ -1139,7 +1175,7 @@ function undo() {
 }
 
 function saveUndoHistory() {
-   undoHistory.push(JSON.stringify({tracks:tracks,objects:GenericObject.all_objects}, replacer));
+   undoHistory.push(JSON.stringify({ tracks: tracks, objects: GenericObject.all_objects }, replacer));
    if (undoHistory.length > MOST_UNDO) undoHistory.shift();
 }
 
