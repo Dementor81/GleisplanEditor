@@ -19,6 +19,7 @@ class trackRendering_basic {
 
       this.renderAllTracks();
       this.renderAllSwitches();
+      this.renderAllGenericObjects();
       stage.update();
    }
 
@@ -51,6 +52,38 @@ class trackRendering_basic {
          }
       });
       stage.update();
+   }
+
+   renderAllGenericObjects() {
+      object_container.removeAllChildren();
+      GenericObject.all_objects.forEach((o) => {
+         const c = new createjs.Container();
+         c.name = "object";
+         c.object = o;
+         c.mouseChildren = false;
+         c.x = o.pos().x;
+         c.y = o.pos().y;
+
+         if (o.type() === GenericObject.OBJECT_TYPE.text) this.renderTextObject(o, c);
+         else throw new Error("Unknown Object");
+         
+
+         object_container.addChild(c);
+      });
+   }
+
+   renderTextObject(text_object, container) {
+      var text = new createjs.Text(text_object.content(), "20px Arial", "#000000");      
+      text.textBaseline = "alphabetic";
+      const height = text.getMeasuredHeight()
+      const width = text.getMeasuredWidth()
+
+      const hit = new createjs.Shape();
+      hit.graphics.beginFill("#000").mt(0, 0).lt(width, 0).lt(width, -height).lt(0, -height).lt(0, 0);
+
+      text.hitArea = hit;
+
+      container.addChild(text)
    }
 
    renderTrack(container, track) {
