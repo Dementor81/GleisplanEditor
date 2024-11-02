@@ -30,6 +30,7 @@ Detailing:
     ✔ Skalierung überarbeiten, Gleise dichter zusammen, dafür Weichen überarbeiten @started(24-05-30 08:52) @done(24-06-01 19:53) @lasted(2d11h1m49s)
     ☐ Navbar überarbeiten
     ☐ "Neues Signal" Menü überarbeiten
+    ☐ Zeichnen Leiste überarbeiten, Dicke per Zahl setzen
 
 CleanUp:
     ☐ swichtes Array entfernen
@@ -55,11 +56,12 @@ Features:
     ☐ Rules erweitern, dass sie auch Features abfragen und aktivieren können
     ☐ Verwednung schaltet automatisch mehrere Feature um (Mastschild + Zusatzsignale)
     ☐ Textfelder für Beschriftung von Gleisen hinzufügen
-    ☐ Bahnsteige einzeichen
+    ☐ Bahnsteige einzeichen 
     ☐ mehere gleise, ganze Bahnhöfe verschieben
     ☐ Signale koopieren, per drag&drop
     ☐ Wagen verhalten sich korrekt in Bögen
     ☐ Züge kuppeln
+
     
 
 Big Features:

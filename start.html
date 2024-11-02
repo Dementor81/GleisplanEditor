@@ -24,6 +24,7 @@
       <script src="code/signaling.js?03"></script>
 
       <script src="code/tools.js?02"></script>
+      <script src="code/generic_object.js?01"></script>
       <script src="code/train.js?02"></script>
       <script src="code/track.js?02"></script>
       <script src="code/signal.js?03"></script>
@@ -125,6 +126,14 @@
                <img src="train-front.svg" width="16" height="16" />
                Züge
             </button>
+            <button id="btnAddObject" type="button" class="btn btn-secondary btn-sm" title="Objekt hinzufügen">
+               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-boxes" viewBox="0 0 16 16">
+                  <path
+                     d="M7.752.066a.5.5 0 0 1 .496 0l3.75 2.143a.5.5 0 0 1 .252.434v3.995l3.498 2A.5.5 0 0 1 16 9.07v4.286a.5.5 0 0 1-.252.434l-3.75 2.143a.5.5 0 0 1-.496 0l-3.502-2-3.502 2.001a.5.5 0 0 1-.496 0l-3.75-2.143A.5.5 0 0 1 0 13.357V9.071a.5.5 0 0 1 .252-.434L3.75 6.638V2.643a.5.5 0 0 1 .252-.434zM4.25 7.504 1.508 9.071l2.742 1.567 2.742-1.567zM7.5 9.933l-2.75 1.571v3.134l2.75-1.571zm1 3.134 2.75 1.571v-3.134L8.5 9.933zm.508-3.996 2.742 1.567 2.742-1.567-2.742-1.567zm2.242-2.433V3.504L8.5 5.076V8.21zM7.5 8.21V5.076L4.75 3.504v3.134zM5.258 2.643 8 4.21l2.742-1.567L8 1.076zM15 9.933l-2.75 1.571v3.134L15 13.067zM3.75 14.638v-3.134L1 9.933v3.134z"
+                  />
+               </svg>
+               Objekte
+            </button>
          </div>
       </div>
       <div id="CanvasContainer">
@@ -139,6 +148,7 @@
                </div>
             </div>
          </div>
+
          <div id="newTrainMenu" class="sidebar_menu">
             <div id="newTrainMenuHeader" class="sidebar_menue_header">
                <h5 class="card-title">Neuer Zug</h5>
@@ -202,6 +212,45 @@
                <div class="tab-pane" id="navFeatures" role="tabpanel"></div>
             </div>
          </div>
+
+         <div id="newObjectMenu" class="sidebar_menu">
+            <div id="newObjectMenuHeader" class="sidebar_menue_header">
+               <h5 class="card-title">Weitere Elemente</h5>
+               <p class="card-text">Wähle weitere Elemente aus, um sie im Gleisplan hinzuzufügen</p>
+            </div>
+            <button id="btnAddTtext" type="button" class="btn btn-secondary" data-bs-toggle="button" title="Text hinzufügen">
+               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-card-text" viewBox="0 0 16 16">
+                  <path
+                     d="M14.5 3a.5.5 0 0 1 .5.5v9a.5.5 0 0 1-.5.5h-13a.5.5 0 0 1-.5-.5v-9a.5.5 0 0 1 .5-.5zm-13-1A1.5 1.5 0 0 0 0 3.5v9A1.5 1.5 0 0 0 1.5 14h13a1.5 1.5 0 0 0 1.5-1.5v-9A1.5 1.5 0 0 0 14.5 2z"
+                  />
+                  <path
+                     d="M3 5.5a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5M3 8a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9A.5.5 0 0 1 3 8m0 2.5a.5.5 0 0 1 .5-.5h6a.5.5 0 0 1 0 1h-6a.5.5 0 0 1-.5-.5"
+                  />
+               </svg>
+               Beschriftung
+            </button>
+         </div>
+
+         <div id="editObjectMenu" class="sidebar_menu">
+            <div class="sidebar_menu_header">
+               <h5 class="card-title">Zug</h5>
+            </div>
+            <div class="row g-3 align-items-center">
+               <div class="col-auto">
+                  <label for="inputContent" class="col-form-label">Text:</label>
+               </div>
+               <div class="col-auto">
+                  <input type="text" id="inputContent" class="form-control form-control-sm" />
+               </div>
+            </div>
+            <!-- <div>
+               <label for="colorInput" class="form-label">Farbe</label>
+               <input type="color" class="form-control form-control-color" id="colorInput" value="#563d7c" title="Choose your color" />
+            </div> -->
+            <div class="btn-group m-3 webkit-fill-width" role="group">
+               <button id="btnRemoveObject" type="button" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i> Entfernen</button>
+            </div>
+         </div>
       </div>
       <div class="modal fade" id="loadModal" tabindex="-1" aria-hidden="true">
          <div class="modal-dialog modal-dialog-scrollable modal-dialog-centered modal-lg modal-fullscreen-lg-down">
@@ -220,7 +269,7 @@
                         <div class="card">
                            <div class="card-header">Zweigleisig Streck</div>
                            <div class="card-body">
-                              <p class="card-text">Mehere Bahnhöfe an einer zweigleisigen Strecke.</p>
+                              <p class="card-text">Ein Bahnhof an einer zweigleisigen Strecke.</p>
                            </div>
                            <div class="card-footer d-grid" style="background-color: white; border-top: none">
                               <button href="#" id="btnLoad2Gleisig" class="btn btn-sm btn-primary">Start</button>
@@ -286,7 +335,7 @@
                                  d="M0 2a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V2Zm15 0a1 1 0 0 0-1-1H2a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V2Z"
                               />
                            </svg>
-                           &nbsp;Ohne Vorgaben
+                           &nbsp;Leer
                         </div>
                         <div class="card-body">
                            <p class="card-text">Öffnet einen leeren Zeichenbereich.</p>

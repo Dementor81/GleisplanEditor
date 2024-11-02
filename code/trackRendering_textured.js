@@ -76,6 +76,7 @@ class trackRendering_textured {
             this.renderAllTracks(track_container, force);
             this.renderAllSwitches(track_container, force);
             this.renderAllTrains();
+            this.renderAllGenericObjects();
             this._lastRenderScale = stage.scale;
             if (!dont_optimize) this.cleanUp();
             delete this._rendering;
@@ -142,6 +143,40 @@ class trackRendering_textured {
       container.addChild(s);
       if (car.trainCoupledBack) this.renderCar(car.trainCoupledBack, container);
    }
+
+   renderAllGenericObjects() {
+      object_container.removeAllChildren();
+      GenericObject.all_objects.forEach((o) => {
+         const c = new createjs.Container();
+         c.name = "object";
+         c.object = o;
+         c.mouseChildren = false;
+         c.x = o.pos().x;
+         c.y = o.pos().y;
+
+         if (o.type() === GenericObject.OBJECT_TYPE.text) this.renderTextObject(o, c);
+         else throw new Error("Unknown Object");
+         
+
+         object_container.addChild(c);
+      });
+   }
+
+   renderTextObject(text_object, container) {
+      var text = new createjs.Text(text_object.content(), "20px Arial", "#000000");      
+      text.textBaseline = "alphabetic";
+      const height = text.getMeasuredHeight()
+      const width = text.getMeasuredWidth()
+
+      const hit = new createjs.Shape();
+      hit.graphics.beginFill("#000").mt(0, 0).lt(width, 0).lt(width, -height).lt(0, -height).lt(0, 0);
+
+      text.hitArea = hit;
+
+      container.addChild(text)
+   }
+
+   
 
    renderAllTracks(c, force) {
       tracks.forEach((t) => {
@@ -270,7 +305,7 @@ class trackRendering_textured {
          if (selection.isSelectedObject(c.track)) this.#isSelected(c);
          else c.shadow = null;
       });
-      signal_container.children.forEach((c)=> {
+      signal_container.children.forEach((c) => {
          if (c.signal) {
             if (selection.isSelectedObject(c.signal)) this.#isSelected(c);
             else c.shadow = null;
