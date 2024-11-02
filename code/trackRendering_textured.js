@@ -187,14 +187,6 @@ class trackRendering_textured {
       text.x = plattform.size().width / 2;
       text.y = plattform.size().height / 2;
 
-      /* const height = text.getMeasuredHeight();
-      const width = text.getMeasuredWidth();
-
-      const hit = new createjs.Shape();
-      hit.graphics.beginFill("#000").mt(0, 0).lt(width, 0).lt(width, -height).lt(0, -height).lt(0, 0);
-
-      text.hitArea = hit; */
-
       container.addChild(text);
    }
 

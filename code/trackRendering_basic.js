@@ -65,6 +65,7 @@ class trackRendering_basic {
          c.y = o.pos().y;
 
          if (o.type() === GenericObject.OBJECT_TYPE.text) this.renderTextObject(o, c);
+         else if (o.type() === GenericObject.OBJECT_TYPE.plattform) this.renderPlattformObject(o, c);
          else throw new Error("Unknown Object");
          
 
@@ -84,6 +85,20 @@ class trackRendering_basic {
       text.hitArea = hit;
 
       container.addChild(text)
+   }
+
+   renderPlattformObject(plattform, container) {
+      const shape = new createjs.Shape();
+      container.addChild(shape);
+      shape.graphics.beginStroke("#111111").beginFill("#333333").drawRect(0, 0, plattform.size().width, plattform.size().height);
+
+      var text = new createjs.Text(plattform.content(), "20px Arial", "#eee");
+      text.textBaseline = "middle";
+      text.textAlign = "center";
+      text.x = plattform.size().width / 2;
+      text.y = plattform.size().height / 2;
+
+      container.addChild(text);
    }
 
    renderTrack(container, track) {
