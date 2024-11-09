@@ -17,7 +17,7 @@ Bugs:
 Content:
     ✔ Ne 2 @done(24-10-05 12:13)
     ☐ Ne 3
-    ☐ Zs 6 alleinstehend
+    ✔ Zs 6 alleinstehend @done(24-11-09 17:28)
     ✔ Sperrsignal @done(24-08-18 19:09)
     ☐ KS Signale ohne Knick
 
@@ -62,6 +62,8 @@ Features:
     ☐ Wagen verhalten sich korrekt in Bögen
     ☐ Züge kuppeln
     ☐ Wenn Signale übereinander liegen, dann die Reihenfolge sicherstellen
+    ☐ Behmalungen automatisch an einem Gleis ausrichten
+    ☐ Behmalungen Radieren können
 
     
 
@@ -76,6 +78,7 @@ Big Features:
     ☐ Signale in einem eigenen Fenster vergrößern (wie beim SignalSim)
     ☐ Weichen selbst zeichen und beim Stellen Weichenzunge bewegen
     ☐ Bilder hinzufügen
+    ☐ Raster verdichten, so dass komplexere Anlagen möglich sind, Gleise aber immer ein Bestimmte Rasterweite entfernt sind
 
 
 
