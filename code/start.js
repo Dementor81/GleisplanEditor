@@ -149,7 +149,7 @@ function init() {
             BS.createAccordionItem(
                "Hauptsignale",
                id,
-               [newItemButton(signalTemplates.hv_hp), newItemButton(signalTemplates.ks), newItemButton(signalTemplates.ls)],
+               [newItemButton(signalTemplates.hv_hp), newItemButton(signalTemplates.ks), newItemButton(signalTemplates.ls), newItemButton(signalTemplates.zusatzSignal)],
                true
             ),
 
@@ -162,6 +162,7 @@ function init() {
             ]),
             BS.createAccordionItem("Weitere", id, [
                newItemButton(signalTemplates.zs3),
+               newItemButton(signalTemplates.zs6),
                newItemButton(signalTemplates.zs10),
                newItemButton(signalTemplates.ra10),
             ]),

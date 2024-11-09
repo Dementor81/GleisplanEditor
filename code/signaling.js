@@ -687,4 +687,23 @@ function initSignals() {
    signalTemplates.zs10.scale = 0.2;
    signalTemplates.ra10 = new SignalTemplate("ra10", "Ra 10", "basis");
    signalTemplates.ra10.scale = 0.15;
+
+   signalTemplates.zs3 = new SignalTemplate(
+      "zs3",
+      "Zs 3 (alleinst.)",
+      "basis",
+      ["zs3", new TextElement("geschw", "bold 110px Arial").pos([90, 60])],
+      "geschw=9"
+   );
+
+   signalTemplates.zs6 = new SignalTemplate("zs6", "Zs 6", "basis", ["zs6_blech_mast", "zs6_blech"]);
+   signalTemplates.zs6.scale = 0.2;
+
+   signalTemplates.zusatzSignal = new SignalTemplate("zusatz", "Zusatzanzeiger", "basis", [
+      "zusatzanzeiger",
+      new VisualElement("zs6_licht").on("zs6=1"),
+      new TextElement("zs3", "85px DOT").pos([70, 40]).off("zs6=1").on("zs3>0"),
+   ]);
+   signalTemplates.zusatzSignal.scale = 0.15;
+   signalTemplates.zusatzSignal.createSignalCommandMenu([["zs6=1(Zs 6)"],"zs3()"]);
 }

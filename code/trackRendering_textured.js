@@ -163,7 +163,7 @@ class trackRendering_textured {
    }
 
    renderTextObject(text_object, container) {
-      var text = new createjs.Text(text_object.content(), "20px Arial", "#000000");
+      var text = new createjs.Text(text_object.content(), "24px Arial", "#000000");
       text.textBaseline = "alphabetic";
       const height = text.getMeasuredHeight();
       const width = text.getMeasuredWidth();
@@ -181,7 +181,7 @@ class trackRendering_textured {
       container.addChild(shape);
       shape.graphics.beginStroke("#111111").beginFill("#333333").drawRect(0, 0, plattform.size().width, plattform.size().height);
 
-      var text = new createjs.Text(plattform.content(), "20px Arial", "#eee");
+      var text = new createjs.Text(plattform.content(), "16px Arial", "#eee");
       text.textBaseline = "middle";
       text.textAlign = "center";
       text.x = plattform.size().width / 2;
