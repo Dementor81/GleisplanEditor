@@ -219,96 +219,97 @@ function isPointInsideBox(point, box, rotationAngle) {
 
    return isInsideX && isInsideY;
 }
-
-function createBoxFromLine(startPoint, endPoint, unit, size) {
-   // Calculate the perpendicular vector (swapping x and y components and negating one of them)
-   const perpendicularX = -unit.y * size;
-   const perpendicularY = unit.x * size;
-   return {
-      bottomLeft: {
-         x: startPoint.x + perpendicularX,
-         y: startPoint.y + perpendicularY,
-      },
-      bottomRight: {
-         x: endPoint.x + perpendicularX,
-         y: endPoint.y + perpendicularY,
-      },
-      topRight: {
-         x: endPoint.x - perpendicularX,
-         y: endPoint.y - perpendicularY,
-      },
-      topLeft: {
-         x: startPoint.x - perpendicularX,
-         y: startPoint.y - perpendicularY,
-      },
-   };
-}
-
-function boundingBox(points) {
-   if (!Array.isArray(points) || points.length === 0) {
-      return null; // Wenn das Array leer oder kein Array ist, gib null zurück
-   }
-
-   // Initialisiere die Grenzwerte für x und y
-   let minX = points[0].x;
-   let maxX = points[0].x;
-   let minY = points[0].y;
-   let maxY = points[0].y;
-
-   // Durchlaufe alle Punkte im Array
-   for (const point of points) {
-      minX = Math.min(minX, point.x);
-      maxX = Math.max(maxX, point.x);
-      minY = Math.min(minY, point.y);
-      maxY = Math.max(maxY, point.y);
-   }
-
-   // Berechne Breite und Höhe der Bounding Box
-   const width = maxX - minX;
-   const height = maxY - minY;
-
-   // Erstelle das Bounding-Box-Objekt
-   const boundingBoxObj = {
-      x: minX,
-      y: minY,
-      width,
-      height,
-   };
-
-   return boundingBoxObj;
-}
-
-function LineIsInCircle(line, circle) {
-   // Find the distance between the line start and end points
-   const lineDeltaX = line.end.x - line.start.x;
-   const lineDeltaY = line.end.y - line.start.y;
-   const lineLength = line._tmp.length;
-   const lineUnitVector = line._tmp.unit;
-
-   // Find the closest point on the line to the circle
-   const u = ((circle.x - line.start.x) * lineUnitVector.x + (circle.y - line.start.y) * lineUnitVector.y) / lineLength;
-
-   let closestPointOnLine;
-   if (u < 0) {
-      closestPointOnLine = line.start;
-   } else if (u > 1) {
-      closestPointOnLine = line.end;
-   } else {
-      closestPointOnLine = {
-         x: line.start.x + u * lineUnitVector.x * lineLength,
-         y: line.start.y + u * lineUnitVector.y * lineLength,
-      };
-   }
-
-   // Check if the closest point on the line is within the circle
-   const distanceToCircle = Math.sqrt(Math.pow(closestPointOnLine.x - circle.x, 2) + Math.pow(closestPointOnLine.y - circle.y, 2));
-   if (distanceToCircle <= circle.radius)
+const TOOLS = {
+   createBoxFromLine(startPoint, endPoint, unit, size) {
+      // Calculate the perpendicular vector (swapping x and y components and negating one of them)
+      const perpendicularX = -unit.y * size;
+      const perpendicularY = unit.x * size;
       return {
-         point: closestPointOnLine,
-         km: u * lineLength,
+         bottomLeft: {
+            x: startPoint.x + perpendicularX,
+            y: startPoint.y + perpendicularY,
+         },
+         bottomRight: {
+            x: endPoint.x + perpendicularX,
+            y: endPoint.y + perpendicularY,
+         },
+         topRight: {
+            x: endPoint.x - perpendicularX,
+            y: endPoint.y - perpendicularY,
+         },
+         topLeft: {
+            x: startPoint.x - perpendicularX,
+            y: startPoint.y - perpendicularY,
+         },
       };
-   return null;
-}
+   },
+
+   boundingBox(points) {
+      if (!Array.isArray(points) || points.length === 0) {
+         return null; // Wenn das Array leer oder kein Array ist, gib null zurück
+      }
+
+      // Initialisiere die Grenzwerte für x und y
+      let minX = points[0].x;
+      let maxX = points[0].x;
+      let minY = points[0].y;
+      let maxY = points[0].y;
+
+      // Durchlaufe alle Punkte im Array
+      for (const point of points) {
+         minX = Math.min(minX, point.x);
+         maxX = Math.max(maxX, point.x);
+         minY = Math.min(minY, point.y);
+         maxY = Math.max(maxY, point.y);
+      }
+
+      // Berechne Breite und Höhe der Bounding Box
+      const width = maxX - minX;
+      const height = maxY - minY;
+
+      // Erstelle das Bounding-Box-Objekt
+      const boundingBoxObj = {
+         x: minX,
+         y: minY,
+         width,
+         height,
+      };
+
+      return boundingBoxObj;
+   },
+
+   LineIsInCircle(line, circle) {
+      // Find the distance between the line start and end points
+      const lineDeltaX = line.end.x - line.start.x;
+      const lineDeltaY = line.end.y - line.start.y;
+      const lineLength = line._tmp.length;
+      const lineUnitVector = line._tmp.unit;
+
+      // Find the closest point on the line to the circle
+      const u = ((circle.x - line.start.x) * lineUnitVector.x + (circle.y - line.start.y) * lineUnitVector.y) / lineLength;
+
+      let closestPointOnLine;
+      if (u < 0) {
+         closestPointOnLine = line.start;
+      } else if (u > 1) {
+         closestPointOnLine = line.end;
+      } else {
+         closestPointOnLine = {
+            x: line.start.x + u * lineUnitVector.x * lineLength,
+            y: line.start.y + u * lineUnitVector.y * lineLength,
+         };
+      }
+
+      // Check if the closest point on the line is within the circle
+      const distanceToCircle = Math.sqrt(Math.pow(closestPointOnLine.x - circle.x, 2) + Math.pow(closestPointOnLine.y - circle.y, 2));
+      if (distanceToCircle <= circle.radius)
+         return {
+            point: closestPointOnLine,
+            km: u * lineLength,
+         };
+      return null;
+   },
+};
 
 function deg2rad(deg) {
    return deg * (Math.PI / 180);
@@ -774,7 +775,7 @@ const BS = {
       });
    },
 
-   createAccordionItem(title, parent, items,open=false) {
+   createAccordionItem(title, parent, items, open = false) {
       let id = uuidv4();
       return ui.div("accordion-item", [
          $("<h2>", { class: "accordion-header" }).append(
@@ -782,9 +783,13 @@ const BS = {
                .attr("data-bs-toggle", "collapse")
                .attr("data-bs-target", "#" + id)
                .text(title)
-               .toggleClass("collapsed",!open)
+               .toggleClass("collapsed", !open)
          ),
-         ui.div("accordion-collapse collapse", ui.div("accordion-body", items)).attr("id", id).attr("data-bs-parent", parent).toggleClass("show",open),
+         ui
+            .div("accordion-collapse collapse", ui.div("accordion-body", items))
+            .attr("id", id)
+            .attr("data-bs-parent", parent)
+            .toggleClass("show", open),
       ]);
    },
 

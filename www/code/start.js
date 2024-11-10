@@ -149,7 +149,12 @@ function init() {
             BS.createAccordionItem(
                "Hauptsignale",
                id,
-               [newItemButton(signalTemplates.hv_hp), newItemButton(signalTemplates.ks), newItemButton(signalTemplates.ls), newItemButton(signalTemplates.zusatzSignal)],
+               [
+                  newItemButton(signalTemplates.hv_hp),
+                  newItemButton(signalTemplates.ks),
+                  newItemButton(signalTemplates.ls),
+                  newItemButton(signalTemplates.zusatzSignal),
+               ],
                true
             ),
 
@@ -656,36 +661,18 @@ function getHitTest(container) {
 }
 
 function getHitInfoForSignalPositioning(testPoint) {
-   let circleShape = overlay_container.getChildByName("circle");
-   if (circleShape == null) {
-      circleShape = new createjs.Shape();
-      circleShape.name = "circle";
-      circleShape.graphics
-         .setStrokeStyle(1)
-         .beginStroke("#e00")
-         .drawCircle(0, 0, GRID_SIZE / 2);
-      overlay_container.addChild(circleShape);
-   }
-   circleShape.x = testPoint.x;
-   circleShape.y = testPoint.y;
    let circle = { x: testPoint.x, y: testPoint.y, radius: GRID_SIZE / 2 };
-   let result;
-   let track, box;
-   for (let index = 0; index < tracks.length; index++) {
-      track = tracks[index];
-      box = createBoxFromLine(track.start, track.end, track._tmp.unit, GRID_SIZE_2);
-      debug_container.removeAllChildren();
-      /* drawPoint(box.topLeft, "topLeft", "#000", 3);
-        drawPoint(box.topRight, "topRight", "#000", 3);
-        drawPoint(box.bottomRight, "bottomRight", "#000", 3);
-        drawPoint(box.bottomLeft, "bottomLeft", "#000", 3);  */
-
-      if (isPointInsideBox(testPoint, box, track._tmp.rad))
-         if ((result = LineIsInCircle(track, circle))) {
-            result.track = track;
-            result.above = result.point.y > circle.y;
-            return result;
-         }
+   let box, result;
+   for (const track of tracks) {
+      if (testPoint.x.between(track.start.x, track.end.x)) {
+         box = TOOLS.createBoxFromLine(track.start, track.end, track._tmp.unit, GRID_SIZE_2);
+         if (isPointInsideBox(testPoint, box, track._tmp.rad))
+            if ((result = TOOLS.LineIsInCircle(track, circle))) {
+               result.track = track;
+               result.above = result.point.y > circle.y;
+               return result;
+            }
+      }
    }
 }
 
@@ -860,6 +847,7 @@ function dragnDropSignal(local_point, flipped) {
       };
       alignSignalContainerWithTrack(mouseAction.container);
    } else {
+      mouseAction.hit_track = null;
       mouseAction.container.rotation = 0;
       if (mouseAction.offset) {
          let p = mouseAction.container.localToLocal(mouseAction.offset.x, mouseAction.offset.y, stage);
@@ -868,6 +856,22 @@ function dragnDropSignal(local_point, flipped) {
       }
       mouseAction.container.x = local_point.x;
       mouseAction.container.y = local_point.y;
+   }
+   draw_SignalPositionLine();
+}
+
+function draw_SignalPositionLine() {
+   let shape = overlay_container.getChildByName("SignalPositionLine");
+   if (shape) overlay_container.removeChild(shape);
+
+   if (mouseAction.hit_track) {
+      const track = mouseAction.hit_track.track;
+      const km = mouseAction.hit_track.km;
+      const point = geometry.add(track.getPointfromKm(km), track.start);
+      shape = new createjs.Shape();
+      shape.name = "SignalPositionLine";
+      shape.graphics.setStrokeStyle(1).beginStroke("#e00").mt(mouseAction.container.x, mouseAction.container.y).lt(point.x, point.y).es();
+      overlay_container.addChild(shape);
    }
 }
 

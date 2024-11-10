@@ -90,7 +90,7 @@ class trackRendering_basic {
    renderPlattformObject(plattform, container) {
       const shape = new createjs.Shape();
       container.addChild(shape);
-      shape.graphics.beginStroke("#111111").beginFill("#333333").drawRect(0, 0, plattform.size().width, plattform.size().height);
+      shape.graphics.beginStroke("#111111").beginFill("#444").drawRect(0, 0, plattform.size().width, plattform.size().height);
 
       var text = new createjs.Text(plattform.content(), "20px Arial", "#eee");
       text.textBaseline = "middle";

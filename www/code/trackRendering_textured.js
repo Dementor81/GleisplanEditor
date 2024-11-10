@@ -179,7 +179,7 @@ class trackRendering_textured {
    renderPlattformObject(plattform, container) {
       const shape = new createjs.Shape();
       container.addChild(shape);
-      shape.graphics.beginStroke("#111111").beginFill("#333333").drawRect(0, 0, plattform.size().width, plattform.size().height);
+      shape.graphics.beginStroke("#111111").beginFill("#444").drawRect(0, 0, plattform.size().width, plattform.size().height);
 
       var text = new createjs.Text(plattform.content(), "16px Arial", "#eee");
       text.textBaseline = "middle";
@@ -191,22 +191,23 @@ class trackRendering_textured {
    }
 
    renderAllTracks(c, force) {
-      tracks.forEach((t) => {
+      for (const t of tracks) {
          if (this.TrackVisible(t)) {
             if (force || !t.rendered) {
                this.renderTrack(c, t);
-               t.signals.forEach((signal) => {
+               for (const signal of t.signals) {
                   const c = signal_container.addChild(createSignalContainer(signal));
                   if (selection.isSelectedObject(signal)) c.shadow = new createjs.Shadow("#ff0000", 0, 0, 3);
                   alignSignalContainerWithTrack(c);
                   this.handleCachingSignal(c);
-               });
+               }
             } else if (this._rendering.lodChanged) {
                const c2 = c.children.find((c) => c.track == t);
                this.updateTrack(c2, t);
             }
          }
-      });
+      }
+
       if (!force) {
          signal_container.children.forEach((c) => {
             if (c.signal._changed) {
@@ -259,7 +260,7 @@ class trackRendering_textured {
 
       //bounds_points.forEach((p) => drawPoint(p, track_container));
 
-      const bounds = boundingBox(bounds_points);
+      const bounds = TOOLS.boundingBox(bounds_points);
       track_container.setBounds(bounds.x, bounds.y, bounds.width, bounds.height);
 
       if (!this._rendering.dont_optimize) track_container.cache(bounds.x, bounds.y, bounds.width, bounds.height, MAX_SCALE + 2);
