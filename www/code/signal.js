@@ -1,13 +1,19 @@
 "use strict";
 
 class Signal {
+   static removeSignal(s) {
+      const track = tracks.find((t) => t.signals.includes(s));
+      if (track) track.removeSignal(s);
+   }
+
+
+
    static FromObject(o) {
       let s = new Signal();
 
       s._template = signalTemplates[o._template];
       s._signalStellung = o._signalStellung;
       s._positioning = o._positioning;
-      s._features = new Map(JSON.parse(o.features));
       return s;
    }
 
@@ -19,7 +25,6 @@ class Signal {
       above: false,
       flipped: false,
    };
-   _features = new Map();
    _changed = false;
    _dontCache = false;
 
@@ -33,18 +38,12 @@ class Signal {
             above: this._positioning.above,
             flipped: this._positioning.flipped,
          },
-         features: JSON.stringify(Array.from(this._features.entries())),
       };
    }
 
    constructor(template) {
       if (template) {
-         this._template = template;
-
-         /* if (template.initialFeatures)
-            if (Array.isArray(template.initialFeatures)) template.initialFeatures.forEach((i) => this.setFeature(i, true));
-            else this.setFeature(template.initialFeatures, true);
- */
+         this._template = template;        
          if (template.initialSignalStellung) template.initialSignalStellung.forEach((i) => this.set_stellung(i, true, false));
       }
    }
@@ -263,7 +262,7 @@ class Signal {
             renderer.reDrawEverything();
             stage.update();
             this.checkBootstrapMenu(this._template.signalMenu, ul);
-            save();
+            STORAGE.save();
          };
 
          ul.append(this._template.signalMenu.map((data) => this.createBootstrapMenuItems(data, updateFunc)));
@@ -416,7 +415,7 @@ const Sig_UI = {
          selection.object.set_stellung(command, isOn);
          Sig_UI.syncSignalMenu(selection.object);
          renderer.reDrawEverything();
-         save();
+         STORAGE.save();
       };
       $("#navFeatures").empty();
       if (selection.object.check("HPsig"))

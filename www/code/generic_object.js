@@ -17,8 +17,8 @@ class GenericObject {
       this.all_objects.remove(o);
       renderer.renderAllGenericObjects();
       stage.update();
-      save();
-      saveUndoHistory();
+      STORAGE.save();
+      STORAGE.saveUndoHistory();
    }
 
    static initEditMenu(o) {
@@ -41,7 +41,7 @@ class GenericObject {
          .on("change", function (e) {
             
             stage.update();
-            save();
+            STORAGE.save();
          }); */
 
       $("#inputContent")
@@ -51,7 +51,7 @@ class GenericObject {
             o.content($(this).val());
             renderer.renderAllGenericObjects();
             stage.update();
-            save();
+            STORAGE.save();
          });
 
       $("#btnRemoveObject")

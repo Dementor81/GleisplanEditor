@@ -30,7 +30,7 @@ class trackRendering_textured {
          function (r) {
             const toBeRemoved = track_container.children.filter((c) => c.track && !this.TrackVisible(c.track));
             toBeRemoved.forEach((c) => {
-               const signalsToBeRemoved = signal_container.children.filter((cs) => cs.signal._positioning.track == c.track);
+               const signalsToBeRemoved = signal_container.children.filter((cs) => cs.data._positioning.track == c.track);
                signalsToBeRemoved.forEach((cs) => {
                   signal_container.removeChild(cs);
                });
@@ -56,6 +56,7 @@ class trackRendering_textured {
             this.reDrawEverything(force, dont_optimize);
          }, 500);
       else {
+         
          if (this._rendering == undefined) {
             this._rendering = { dont_optimize: dont_optimize };
             if (force) {
@@ -72,7 +73,7 @@ class trackRendering_textured {
                   this._rendering.lodChanged = true;
                }
             }
-
+            
             this.renderAllTracks(track_container, force);
             this.renderAllSwitches(track_container, force);
             this.renderAllTrains();
@@ -191,9 +192,10 @@ class trackRendering_textured {
    }
 
    renderAllTracks(c, force) {
-      for (const t of tracks) {
+      for (const t of tracks) {         
          if (this.TrackVisible(t)) {
             if (force || !t.rendered) {
+               
                this.renderTrack(c, t);
                for (const signal of t.signals) {
                   const c = signal_container.addChild(createSignalContainer(signal));
@@ -210,8 +212,8 @@ class trackRendering_textured {
 
       if (!force) {
          signal_container.children.forEach((c) => {
-            if (c.signal._changed) {
-               c.signal.draw(c);
+            if (c.data._changed) {
+               c.data.draw(c);
                this.handleCachingSignal(c);
             }
          });
@@ -219,7 +221,7 @@ class trackRendering_textured {
    }
 
    handleCachingSignal(c) {
-      if (!c.signal._dontCache && !this._rendering.dont_optimize) {
+      if (!c.data._dontCache && !this._rendering.dont_optimize) {
          if (c.bitmapCache) c.uncache(); // c.updateCache(); //we cant just update the cache, cause maybe the bounds have changed
          //else {
          const bounds = c.getBounds();
@@ -319,8 +321,8 @@ class trackRendering_textured {
          else c.shadow = null;
       });
       signal_container.children.forEach((c) => {
-         if (c.signal) {
-            if (selection.isSelectedObject(c.signal)) this.#isSelected(c);
+         if (c.data) {
+            if (selection.isSelectedObject(c.data)) this.#isSelected(c);
             else c.shadow = null;
          }
       });

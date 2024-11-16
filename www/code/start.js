@@ -1,7 +1,6 @@
 "use strict";
 
 const VERSION = "0.43";
-const EXCLUDE_JSON = [];
 
 const MODE_PLAY = 1;
 const MODE_EDIT = 2;
@@ -139,7 +138,7 @@ function init() {
    stage.addChild((overlay_container = create_container("overlay")));
    stage.addChild((drawing_container = create_container("drawing_container")));
 
-   ShowPreBuildScreen();
+   UI.ShowPreBuildScreen();
 
    pl.start().then(() => {
       console.log(`Preloader: ${pl._loadedItems}/${pl._totalItems}`);
@@ -149,28 +148,18 @@ function init() {
             BS.createAccordionItem(
                "Hauptsignale",
                id,
-               [
-                  newItemButton(signalTemplates.hv_hp),
-                  newItemButton(signalTemplates.ks),
-                  newItemButton(signalTemplates.ls),
-                  newItemButton(signalTemplates.zusatzSignal),
-               ],
+               UI.newItemButtons(signalTemplates.hv_hp, signalTemplates.ks, signalTemplates.ls, signalTemplates.zusatzSignal),
                true
             ),
 
-            BS.createAccordionItem("Vorsignale", id, [newItemButton(signalTemplates.hv_vr), newItemButton(signalTemplates.ks_vr)]),
-            BS.createAccordionItem("Lf-Signale", id, [newItemButton(signalTemplates.lf6), newItemButton(signalTemplates.lf7)]),
-            BS.createAccordionItem("Ne-Signale", id, [
-               newItemButton(signalTemplates.ne4),
-               newItemButton(signalTemplates.ne1),
-               newItemButton(signalTemplates.ne2),
-            ]),
-            BS.createAccordionItem("Weitere", id, [
-               newItemButton(signalTemplates.zs3),
-               newItemButton(signalTemplates.zs6),
-               newItemButton(signalTemplates.zs10),
-               newItemButton(signalTemplates.ra10),
-            ]),
+            BS.createAccordionItem("Vorsignale", id, UI.newItemButtons(signalTemplates.hv_vr, signalTemplates.ks_vr)),
+            BS.createAccordionItem("Lf-Signale", id, UI.newItemButtons(signalTemplates.lf6, signalTemplates.lf7)),
+            BS.createAccordionItem("Ne-Signale", id, UI.newItemButtons(signalTemplates.ne4, signalTemplates.ne1, signalTemplates.ne2)),
+            BS.createAccordionItem(
+               "Weitere",
+               id,
+               UI.newItemButtons(signalTemplates.zs3, signalTemplates.zs6, signalTemplates.zs10, signalTemplates.ra10)
+            ),
          ]);
 
          selectRenderer(true);
@@ -204,10 +193,10 @@ function init() {
             // Move the map by the difference
             stage.x -= globalPoint.x - point.x;
             stage.y -= globalPoint.y - point.y;
-            drawGrid();
+            RENDERING.drawGrid();
             renderer.reDrawEverything();
             stage.update();
-            save();
+            STORAGE.save();
          }
          myCanvas.prevent_input = false;
       }
@@ -216,7 +205,7 @@ function init() {
       myCanvas.addEventListener("touchstart", (event) => {
          if (event.touches.length === 1) {
             let touch = event.touches[0];
-            startTrackDrawing(stage.globalToLocal(touch.clientX, touch.clientY));
+            //startTrackDrawing(stage.globalToLocal(touch.clientX, touch.clientY));
          }
 
          /* console.log("touch:" + event.touches.length);
@@ -227,7 +216,7 @@ function init() {
       });
 
       myCanvas.addEventListener("touchmove", (event) => {
-         if (event.touches.length === 2) {
+         if (event.touches.length === 1) {
             let touch = event.touches[0];
 
             if (previousTouch) {
@@ -235,7 +224,8 @@ function init() {
                stage.x += touch.clientX - previousTouch.clientX;
                stage.y += touch.clientY - previousTouch.clientY;
 
-               drawGrid();
+               RENDERING.drawGrid(false);
+               renderer.reDrawEverything();
             }
 
             previousTouch = touch;
@@ -254,24 +244,11 @@ function init() {
    $("#btnAddObject").click(() => UI.showMenu(MENU.NEW_OBJECT));
 
    $("#btnClear").click(() => {
-      tracks = [];
-      switches = [];
-      Train.allTrains = [];
-      GenericObject.all_objects = [];
-
-      save();
-      renderer.reDrawEverything(true); //just to make sure, something accidently not deleted we be drawn to the stage.
-      stage.update();
+      RENDERING.clear();
    });
 
    $("#btnCenter").click(() => {
-      stage.scale = 1;
-      stage.x = 0;
-      stage.y = 0;
-      save();
-      drawGrid();
-      renderer.reDrawEverything();
-      stage.update();
+      RENDERING.center();
    });
 
    $("#btnImage").click((e) => {
@@ -343,7 +320,7 @@ function init() {
          [].concat(selection.object).forEach((s) => {
             s._signalStellung = {};
             if (s._template.initialSignalStellung) s._template.initialSignalStellung.forEach((i) => s.set_stellung(i, null, true));
-            save();
+            STORAGE.save();
             renderer.reDrawEverything(true);
             stage.update();
          });
@@ -375,7 +352,7 @@ function init() {
                $("#signalEditMenuHeader .card-text").show();
                $("#signalEditMenuHeader input").hide();
                Sig_UI.syncSignalMenu(selection.object);
-               save();
+               STORAGE.save();
                renderer.reDrawEverything(true);
                stage.update();
             }
@@ -396,25 +373,91 @@ function init() {
 function deleteSelectedObject() {
    if (selection.object) {
       if (selection.type == "Track") {
-         [].concat(selection.object).forEach((t) => deleteTrack(t, null));
+         [].concat(selection.object).forEach((t) => tracks.remove(t));
          Track.cleanupTracks();
          Track.connectTracks();
-         saveUndoHistory();
+         STORAGE.saveUndoHistory();
       }
-      if (selection.type == "Signal") [].concat(selection.object).forEach((s) => removeSignal(s, null));
-      save();
+      if (selection.type == "Signal") [].concat(selection.object).forEach((s) => Signal.removeSignal(s, null));
+      STORAGE.save();
       renderer.reDrawEverything(true);
       stage.update();
       selectObject();
    }
 }
 
+function undo() {
+   STORAGE.restoreLastUndoStep();
+   renderer.reDrawEverything(true);
+   stage.update();
+}
+
+const RENDERING = {
+   clear() {
+      tracks = [];
+      switches = [];
+      Train.allTrains = [];
+      GenericObject.all_objects = [];
+
+      STORAGE.save();
+      renderer.reDrawEverything(true); //just to make sure, something accidently not deleted we be drawn to the stage.
+      stage.update();
+   },
+   center(){
+      stage.scale = 1;
+      stage.x = 0;
+      stage.y = 0;
+      STORAGE.save();
+      RENDERING.drawGrid();
+      renderer.reDrawEverything();
+      stage.update();
+   },
+   drawGrid(repaint = true) {
+      if (!grid) {
+         grid = new createjs.Shape();
+         grid.name = "grid";
+         grid.mouseEnabled = false;
+         stage.addChildAt(grid, 0);
+         grid.graphics.setStrokeStyle(1, "round");
+      }
+      grid.visible = showGrid;
+      if (showGrid) {
+         if (repaint) {
+            grid.graphics.c().setStrokeStyle(1, "round").setStrokeDash([5, 5], 2).beginStroke("#ccc");
+   
+            const bounds = stage.canvas.getBoundingClientRect();
+            const scale = stage.scale;
+            const size = {
+               width: bounds.width / scale,
+               height: bounds.height / scale,
+            };
+            let x = 0;
+            while (x < size.width) {
+               grid.graphics.moveTo(x, -GRID_SIZE).lineTo(x, size.height);
+               x += GRID_SIZE;
+            }
+   
+            let y = 0;
+            while (y < size.height) {
+               grid.graphics.moveTo(-GRID_SIZE, y).lineTo(size.width, y);
+               y += GRID_SIZE;
+            }
+            grid.cache(-GRID_SIZE, -GRID_SIZE, size.width + GRID_SIZE * scale, size.height + GRID_SIZE * scale, scale);
+         }
+         const scaled_grid_size = GRID_SIZE * stage.scale;
+         grid.x = Math.floor(stage.x / scaled_grid_size) * -GRID_SIZE;
+         grid.y = Math.floor(stage.y / scaled_grid_size) * -GRID_SIZE;
+      }
+   },
+   
+};
+
 const UI = {
    ///Shows the menu on the right.
    /// menu==null just hides it.
    showMenu(menu) {
       var bsOffcanvas = bootstrap.Offcanvas.getOrCreateInstance($("#sidebar"));
-      $("input,button", bsOffcanvas._element).off().removeClass("active");
+      $("input,button", bsOffcanvas._element).off();
 
       if (nll(menu)) {
          bsOffcanvas.hide();
@@ -427,7 +470,7 @@ const UI = {
             div_id = "signalEditMenu";
             let body = $("#nav-home");
             body.empty();
-            body.append(mouseAction.container.signal.getHTML());
+            body.append(selection.object.getHTML());
             Sig_UI.initSignalMenu();
             Sig_UI.syncSignalMenu(selection.object);
             break;
@@ -505,12 +548,88 @@ const UI = {
             myCanvas.style.cursor = "auto";
       }
    },
+
+   ShowPreBuildScreen() {
+      if (localStorage.getItem("bahnhof_last1") == null) $(btnLoadRecent).attr("disabled", "disabled");
+      $(btnStartFromZero).click(UI.hideStartScreen);
+      $(btnLoadRecent).click(() => {
+         STORAGE.loadRecent();
+         UI.hideStartScreen();
+         RENDERING.drawGrid();
+         renderer.reDrawEverything(true);
+         STORAGE.saveUndoHistory();
+      });
+      $(btnLoad2Gleisig).on("click", () => {
+         STORAGE.loadPrebuildbyName("ktm_2").then(() => {
+            UI.hideStartScreen();
+            RENDERING.drawGrid();
+            renderer.reDrawEverything(true);
+            STORAGE.saveUndoHistory();
+         });
+      });
+      /*$(btnLoadFromFile).click(() => { loadSignalsFromFile(); hideStartScreen(); });
+       loadPrebuilds(); */
+      let m = bootstrap.Modal.getOrCreateInstance(loadModal);
+      m._element.addEventListener(
+         "hidden.bs.modal",
+         (x) => {
+            bootstrap.Modal.getOrCreateInstance(x.target).dispose();
+            $(btnStartFromZero).off("click");
+            $(btnLoadRecent).off("click");
+            $(btnLoadFromFile).off("click");
+         },
+         { once: true }
+      );
+      m.show();
+   },
+
+   hideStartScreen() {
+      bootstrap.Modal.getInstance(loadModal).hide();
+   },
+
+   newItemButtons(...templates) {
+      return templates.map((t) =>
+         ui
+            .div("d-flex newSignalItem align-items-center user-select-none", [
+               ui
+                  .div("flex-shrink-0 newItem_image")
+                  .css("background-image", "url(" + UI.GetDataURL_FromTemplate(t) + ")")
+                  .css("background-size", t.previewsize ?? 45),
+               ui.div("flex-grow-5 ms-2", t.title),
+            ])
+            .on("mousedown", (e) => {
+               mouseAction = {
+                  action: MOUSE_DOWN_ACTION.DND_SIGNAL,
+                  template: t,
+               };
+
+               //mouseup beim document anmelden, weil mouseup im stage nicht ausgelöst wird, wenn mousedown nicht auch auf der stage war
+               //little hack, weil handleStageMouseUp ein event von createjs erwartet
+               document.addEventListener("mouseup", (e) => handleStageMouseUp({ nativeEvent: e }), {
+                  once: true,
+               });
+               stage.addEventListener("stagemousemove", handleMouseMove);
+               startDragAndDropSignal(e.offsetX, e.offsetY);
+            })
+      );
+   },
+
+   GetDataURL_FromTemplate(template) {
+      const tmpStage = new createjs.Stage($("<canvas>").attr({ width: 450, height: 450 })[0]);
+      tmpStage.scale = template.scale;
+      new Signal(template).draw(tmpStage, true);
+      tmpStage.update();
+      const sig_bounds = tmpStage.getBounds();
+      if (sig_bounds == null) throw Error(template.title + " has no visual Element visible");
+      tmpStage.cache(sig_bounds.x, sig_bounds.y, sig_bounds.width, sig_bounds.height, 0.5);
+      return tmpStage.bitmapCache.getCacheDataURL();
+   },
 };
 
 function toggleEditMode(mode) {
    edit_mode = mode != undefined ? mode : !edit_mode;
    showGrid = edit_mode;
-   drawGrid();
+   RENDERING.drawGrid();
    stage.update();
    $(btnDrawTracks).toggleClass("active", edit_mode);
 }
@@ -565,61 +684,16 @@ function selectObject(object, e) {
    UI.showMenu(menu);
 }
 
-function clearCanvas() {
-   drawing_container.removeAllChildren();
-   debug_container.removeAllChildren();
-   track_container.removeAllChildren();
-   signal_container.removeAllChildren();
-   overlay_container.removeAllChildren();
-   train_container.removeAllChildren();
-   ui_container.removeAllChildren();
-   stage.update();
-}
+
 
 function onResizeWindow() {
    $(myCanvas).attr("height", $(CanvasContainer).height() - 5);
    $(myCanvas).attr("width", $(CanvasContainer).width());
-   drawGrid();
+   RENDERING.drawGrid();
    stage.update();
 }
 
-function drawGrid(repaint = true) {
-   if (!grid) {
-      grid = new createjs.Shape();
-      grid.name = "grid";
-      grid.mouseEnabled = false;
-      stage.addChildAt(grid, 0);
-      grid.graphics.setStrokeStyle(1, "round");
-   }
-   grid.visible = showGrid;
-   if (showGrid) {
-      if (repaint) {
-         grid.graphics.c().setStrokeStyle(1, "round").setStrokeDash([5, 5], 2).beginStroke("#ccc");
 
-         const bounds = stage.canvas.getBoundingClientRect();
-         const scale = stage.scale;
-         const size = {
-            width: bounds.width / scale,
-            height: bounds.height / scale,
-         };
-         let x = 0;
-         while (x < size.width) {
-            grid.graphics.moveTo(x, -GRID_SIZE).lineTo(x, size.height);
-            x += GRID_SIZE;
-         }
-
-         let y = 0;
-         while (y < size.height) {
-            grid.graphics.moveTo(-GRID_SIZE, y).lineTo(size.width, y);
-            y += GRID_SIZE;
-         }
-         grid.cache(-GRID_SIZE, -GRID_SIZE, size.width + GRID_SIZE * scale, size.height + GRID_SIZE * scale, scale);
-      }
-      const scaled_grid_size = GRID_SIZE * stage.scale;
-      grid.x = Math.floor(stage.x / scaled_grid_size) * -GRID_SIZE;
-      grid.y = Math.floor(stage.y / scaled_grid_size) * -GRID_SIZE;
-   }
-}
 
 function handleStageMouseDown(event) {
    //console.log("handleStageMouseDown", event);
@@ -646,10 +720,7 @@ function handleStageMouseDown(event) {
       drawing_container.addChild((mouseAction.shape = new createjs.Shape()));
       mouseAction.shape.graphics.setStrokeStyle(width, "round", "round").beginStroke(color);
       mouseAction.old_point = new Point(event.stageX, event.stageY);
-   }
-
-   //if ($("#btnAddTrain").hasClass("active")) mouseAction.action = MOUSE_DOWN_ACTION.ADD_TRAIN;
-
+   }   
    //console.log(mouseAction);
    stage.addEventListener("stagemousemove", handleMouseMove);
 }
@@ -679,7 +750,7 @@ function getHitInfoForSignalPositioning(testPoint) {
 function createSignalContainer(signal) {
    let c = new createjs.Container();
    c.name = "signal";
-   c.signal = signal;
+   c.data = signal;
    c.mouseChildren = false;
    c.snapToPixel = true;
    c.scale = signal._template.scale;
@@ -700,16 +771,16 @@ function createSignalContainer(signal) {
 }
 
 function alignSignalContainerWithTrack(c) {
-   const pos = c.signal._positioning;
+   const pos = c.data._positioning;
    //koordinaten anhand des Strecken KM suchen
    const coordinates = geometry.add(pos.track.getPointfromKm(pos.km), pos.track.start);
    let p;
    if (pos.above) {
       c.rotation = 270 + pos.track._tmp.deg;
-      p = geometry.perpendicular(coordinates, pos.track._tmp.deg, -renderer.SIGNAL_DISTANCE_FROM_TRACK - c.signal._template.distance_from_track);
+      p = geometry.perpendicular(coordinates, pos.track._tmp.deg, -renderer.SIGNAL_DISTANCE_FROM_TRACK - c.data._template.distance_from_track);
    } else {
       c.rotation = 90 + pos.track._tmp.deg;
-      p = geometry.perpendicular(coordinates, pos.track._tmp.deg, renderer.SIGNAL_DISTANCE_FROM_TRACK + c.signal._template.distance_from_track);
+      p = geometry.perpendicular(coordinates, pos.track._tmp.deg, renderer.SIGNAL_DISTANCE_FROM_TRACK + c.data._template.distance_from_track);
    }
    if (pos.flipped) c.rotation += 180;
 
@@ -728,10 +799,6 @@ function startDragAndDropSignal(mouseX, mouseY) {
    }
 
    overlay_container.addChild(mouseAction.container);
-   /* let circle = new createjs.Shape();
-    circle.name = "circle";
-    circle.graphics.setStrokeStyle(1).beginStroke("#e00").drawCircle(0, 0, GRID_SIZE / 2);
-    mouseAction.container.addChild(circle); */
    stage.update();
 }
 
@@ -762,7 +829,7 @@ function handleMouseMove(event) {
                if (mouseAction.container?.name == "signal") {
                   myCanvas.style.cursor = "move";
                   mouseAction.action = MOUSE_DOWN_ACTION.DND_SIGNAL;
-                  mouseAction.container.signal._positioning.track.removeSignal(mouseAction.container.signal);
+                  mouseAction.container.data._positioning.track.removeSignal(mouseAction.container.data);
                   startDragAndDropSignal();
                } else if (mouseAction.container?.name == "object") {
                   myCanvas.style.cursor = "move";
@@ -822,7 +889,7 @@ function handleMouseMove(event) {
    } else if (mouseAction.action === MOUSE_DOWN_ACTION.SCROLL) {
       stage.x += event.nativeEvent.movementX;
       stage.y += event.nativeEvent.movementY;
-      drawGrid(false);
+      RENDERING.drawGrid(false);
       renderer.reDrawEverything();
    } else if (mouseAction.action === MOUSE_DOWN_ACTION.MOVE_TRAIN) {
       Train.moveTrain(mouseAction.container.train, event.nativeEvent.movementX);
@@ -839,7 +906,7 @@ function dragnDropSignal(local_point, flipped) {
    let hitInformation = getHitInfoForSignalPositioning(local_point);
    if (hitInformation) {
       mouseAction.hit_track = hitInformation;
-      mouseAction.container.signal._positioning = {
+      mouseAction.container.data._positioning = {
          track: hitInformation.track,
          km: hitInformation.km,
          above: hitInformation.above,
@@ -887,11 +954,6 @@ function drawBluePrintTrack() {
       mouseAction.lineShape.graphics.lt(co.x, co.y);
    }
 
-   /* debug_container.removeAllChildren();
-    for (let index = 1; index < mouseAction.ankerPoints.length; index++) {
-        const co = mouseAction.ankerPoints[index];
-        drawPoint(co, index);
-    } */
 }
 
 function setTrackAnchorPoints() {
@@ -932,23 +994,6 @@ function setTrackAnchorPoints() {
    }
 }
 
-function getGlobalBounds(container) {
-   let tl = container.localToGlobal(0, 0);
-   let bounds = container.getBounds();
-   let tr = container.localToGlobal(bounds.width, 0);
-   let br = container.localToGlobal(bounds.width, bounds.height);
-   let bl = container.localToGlobal(0, bounds.height);
-
-   let minX = Math.min(tl.x, tr.x, br.x, bl.x);
-   let minY = Math.min(tl.y, tr.y, br.y, bl.y);
-   let w = Math.max(tl.x, tr.x, br.x, bl.x) - minX;
-   let h = Math.max(tl.y, tr.y, br.y, bl.y) - minY;
-
-   if (container.rotation.is(90, 270)) {
-      return new createjs.Rectangle(minX, minY, h, w);
-   } else return new createjs.Rectangle(minX, minY, w, h);
-}
-
 function handleStageMouseUp(e) {
    //console.log("handleStageMouseUp", e);
 
@@ -964,10 +1009,10 @@ function handleStageMouseUp(e) {
 
          if (mouseAction.hit_track) {
             signal_container.addChild(mouseAction.container);
-            mouseAction.hit_track.track.AddSignal(mouseAction.container.signal);
+            mouseAction.hit_track.track.AddSignal(mouseAction.container.data);
          }
-         save();
-         saveUndoHistory();
+         STORAGE.save();
+         STORAGE.saveUndoHistory();
          overlay_container.removeAllChildren();
          stage.update();
       } else if (mouseAction.action === MOUSE_DOWN_ACTION.BUILD_TRACK) {
@@ -979,15 +1024,15 @@ function handleStageMouseUp(e) {
                const p2 = mouseAction.ankerPoints.length > i + 1 ? mouseAction.ankerPoints[i + 1] : null;
                //steigung ändert sich, also track erstellen
                if (!p2 || geometry.slope(p0, p1) != geometry.slope(p1, p2)) {
-                  checkAndCreateTrack(tmpPoint, p1);
+                  Track.checkAndCreateTrack(tmpPoint, p1);
                   tmpPoint = p1;
                }
             }
             Track.cleanupTracks();
             Track.connectTracks();
             renderer.reDrawEverything(true);
-            saveUndoHistory();
-            save();
+            STORAGE.saveUndoHistory();
+            STORAGE.save();
          }
          overlay_container.removeAllChildren();
 
@@ -1009,10 +1054,11 @@ function handleStageMouseUp(e) {
             Train.moveTrain(train, 0);
             renderer.reDrawEverything();
             stage.update();
-            save();
+            STORAGE.save();
          }
       } else if (mouseAction.action.is(MOUSE_DOWN_ACTION.MOVE_TRAIN, MOUSE_DOWN_ACTION.MOVE_OBJECT)) {
-         save();
+         STORAGE.save();
+         STORAGE.saveUndoHistory();
       } else if (mouseAction.action === MOUSE_DOWN_ACTION.CUSTOM) {
          if (custom_mouse_mode == CUSTOM_MOUSE_ACTION.TEXT) {
             const o = new GenericObject(GenericObject.OBJECT_TYPE.text).pos(local_point).content("Text");
@@ -1022,8 +1068,8 @@ function handleStageMouseUp(e) {
             custom_mouse_mode = CUSTOM_MOUSE_ACTION.NONE;
             UI.activate_custom_mouse_mode();
             stage.update();
-            saveUndoHistory();
-            save();
+            STORAGE.saveUndoHistory();
+            STORAGE.save();
          } else if (custom_mouse_mode == CUSTOM_MOUSE_ACTION.PLATTFORM) {
             overlay_container.removeAllChildren();
             const o = new GenericObject(GenericObject.OBJECT_TYPE.plattform)
@@ -1036,12 +1082,12 @@ function handleStageMouseUp(e) {
             custom_mouse_mode = CUSTOM_MOUSE_ACTION.NONE;
             UI.activate_custom_mouse_mode();
             stage.update();
-            saveUndoHistory();
-            save();
+            STORAGE.saveUndoHistory();
+            STORAGE.save();
          }
       } else if (mouseAction.action === MOUSE_DOWN_ACTION.NONE && mouseAction.distance() < 4) {
          if (mouseAction.container?.name == "signal") {
-            selectObject(mouseAction.container.signal, e);
+            selectObject(mouseAction.container.data, e);
          } else if (mouseAction.container?.name == "train") {
             selectObject(mouseAction.container.train, e);
          } else if (mouseAction.container?.name == "track") {
@@ -1057,228 +1103,122 @@ function handleStageMouseUp(e) {
          }
       }
    } else if (mouseAction.action === MOUSE_DOWN_ACTION.SCROLL) {
-      save();
+      STORAGE.save();
    }
 }
 
-function deleteTrack(track) {
-   tracks.remove(track);
-}
+const STORAGE = {
+   MIN_STORAGE_VERSION: 0.43,
+   STORAGE_IDENT: "bahnhof_last1",
 
-function removeSignal(s) {
-   const track = tracks.find((t) => t.signals.includes(s));
-   if (track) track.removeSignal(s);
-}
+   receiver(key, value) {
+      if (value?._class) {
+         const myClass = eval(value._class + ".FromObject")(value);
+         if (myClass == null) showErrorToast(new Error("error loading " + key));
+         return myClass;
+      } else return value;
+   },
 
-function checkAndCreateTrack(p1, p2) {
-   if (deepEqual(p1, p2)) return;
+   replacer(key, value) {
+      return typeof value?.stringify === "function" ? value.stringify() : value;
+   },
 
-   if (p1.x > p2.x) {
-      const hlp = p1;
-      p1 = p2;
-      p2 = hlp;
-   }
-   const slope = geometry.slope(p1, p2);
+   getSaveString() {
+      return (
+         VERSION +
+         ";" +
+         JSON.stringify(
+            {
+               tracks: tracks,
+               trains: Train.allTrains,
+               objects: GenericObject.all_objects,
+               settings: {
+                  zoom: stage.scale,
+                  scrollX: stage.x,
+                  scrollY: stage.y,
+               },
+            },
+            STORAGE.replacer
+         )
+      );
+   },
 
-   //if (tracks.some((track) => geometry.within(track.start, track.end, p1) && geometry.within(track.start, track.end, p2))) return;
+   restoreLastUndoStep() {
+      if (undoHistory.length <= 1) return;
+      undoHistory.pop();
+      const last = undoHistory.lastItem();
+      if (last) {
+         loadFromJson(last);
+      } else tracks = [];
+   },
 
-   const tracksWithSameSlope = tracks.filter((track) => track._tmp.slope == slope);
-   let track;
-   tracksWithSameSlope
-      .filter((t) => geometry.within(t.start, t.end, p1))
-      .forEach((t) => {
-         if (t.end.x > p1.x) p1 = t.end;
-      });
-
-   tracksWithSameSlope
-      .filter((t) => geometry.within(t.start, t.end, p2))
-      .forEach((t) => {
-         if (t.start.x < p2.x) p2 = t.start;
-      });
-
-   if ((track = tracksWithSameSlope.find((t) => geometry.within(t.start, t.end, p2)))) {
-      p2 = track.start;
-   }
-
-   if (p1.x > p2.x) return;
-
-   if ((track = tracksWithSameSlope.find((t) => geometry.within(p1, p2, t.start) && geometry.within(p1, p2, t.end)))) {
-      checkAndCreateTrack(p1, track.start);
-      checkAndCreateTrack(track.end, p2);
-      return;
-   }
-
-   const line = { start: p1, end: p2 };
-   const intersecting_tracks = tracks
-      .filter((t) => slope != t._tmp.slope && slope + t._tmp.slope != 0) //filter all track with same slope or 90° angles
-      .map((t) => [t, geometry.getIntersectionPoint(line, t)]) //get all intersection points
-      .filter((item) => item[1] != null) //removes items with no intersection
-      .sort((a, b) => a[1].x - b[1].x); // sort by x
-   intersecting_tracks.forEach((item) => {
-      // split tracks
-      let t = item[0];
-      let intersection = item[1];
-      if (!t.start.equals(intersection) && !t.end.equals(intersection)) {
-         tracks = tracks.concat(Track.splitTrack(t, intersection));
-         deleteTrack(t, false);
+   loadFromJson(json) {
+      let loaded = JSON.parse(json, STORAGE.receiver);
+      if (loaded.settings) {
+         stage.x = loaded.settings.scrollX;
+         stage.y = loaded.settings.scrollY;
+         stage.scale = loaded.settings.zoom;
       }
-   });
-
-   if (intersecting_tracks?.length > 0) {
-      let intersection;
-      intersecting_tracks.forEach((item) => {
-         if (item) {
-            intersection = item[1];
-            if (!intersection.equals(p1)) createTrack(p1, intersection);
-            p1 = intersection;
-         }
-      });
-      if (!intersection.equals(p2)) createTrack(p1, p2); //last bit, from the last intersection to the end
-   } else createTrack(p1, p2);
-}
-
-function createTrack(start, end) {
-   tracks.push(new Track(start, end));
-}
-
-function replacer(key, value) {
-   if (value != null && typeof value.stringify === "function") {
-      return value.stringify();
-   } else {
-      if (EXCLUDE_JSON.includes(key)) return undefined;
-      else return value;
-   }
-}
-
-function getSaveString() {
-   return JSON.stringify(
-      {
-         tracks: tracks,
-         trains: Train.allTrains,
-         objects: GenericObject.all_objects,
-         zoom: stage.scale,
-         scrollX: stage.x,
-         scrollY: stage.y,
-      },
-      replacer
-   );
-}
-
-function undo() {
-   if (undoHistory.length <= 1) return;
-   undoHistory.pop();
-   const last = undoHistory.lastItem();
-   if (last) {
-      const loaded = JSON.parse(last, receiver);
-      tracks = loaded.tracks?.clean() || [];
-      Track.connectTracks();
       if (loaded.objects) GenericObject.all_objects = loaded.objects;
-   } else tracks = [];
+      tracks = loaded.tracks?.clean() || []; //when something went wront while loading track, we filter all nulls
 
-   renderer.reDrawEverything(true);
-   stage.update();
-}
+      Track.connectTracks();
+      Train.allTrains = loaded.trains?.clean() || []; ////when something went wront while loading trains, we filter all nulls
+      Train.allTrains.forEach((t) => t.restore());
+      Train.allTrains = Train.allTrains.filter((t) => t.track != null);
+   },
 
-function saveUndoHistory() {
-   undoHistory.push(JSON.stringify({ tracks: tracks, objects: GenericObject.all_objects }, replacer));
-   if (undoHistory.length > MOST_UNDO) undoHistory.shift();
-}
+   saveUndoHistory() {
+      undoHistory.push(JSON.stringify({ tracks: tracks, objects: GenericObject.all_objects }, STORAGE.replacer));
+      if (undoHistory.length > MOST_UNDO) undoHistory.shift();
+   },
 
-function save() {
-   localStorage.setItem("bahnhof_last1", `0.17;${getSaveString()}`);
-}
+   save() {
+      localStorage.setItem(STORAGE.STORAGE_IDENT, STORAGE.getSaveString());
+   },
 
-function loadRecent() {
-   try {
-      const x = localStorage.getItem("bahnhof_last1");
-      if (x != null) {
-         const indexOfFirst = x.indexOf(";");
-         if (indexOfFirst > -1) {
-            const loaded_version = parseFloat(x.substring(0, indexOfFirst));
-            if (loaded_version >= 0.17) loadFromJson(x.slice(indexOfFirst + 1));
-            else console.error(`stored version ${loaded_version} to old`);
+   loadRecent() {
+      try {
+         const x = localStorage.getItem(STORAGE.STORAGE_IDENT);
+         if (x != null) {
+            const indexOfFirst = x.indexOf(";");
+            if (indexOfFirst > -1) {
+               const loaded_version = parseFloat(x.substring(0, indexOfFirst));
+               if (loaded_version >= STORAGE.MIN_STORAGE_VERSION) STORAGE.loadFromJson(x.slice(indexOfFirst + 1));
+               else console.error(`stored version ${loaded_version} to old`);
+            } else throw new Error("Version Tag is missing");
          }
+      } catch (error) {
+         showErrorToast(error);
       }
-   } catch (error) {
-      showErrorToast(error);
-   }
-}
+   },
 
-function receiver(key, value) {
-   if (value?._class) {
-      const myClass = eval(value._class + ".FromObject")(value);
-      if (myClass == null) showErrorToast(new Error("error loading " + key));
-      return myClass;
-   } else return value;
-}
+   loadPrebuildbyName(name) {
+      return new Promise((resolve, reject) => {
+         let xmlhttp = new XMLHttpRequest();
+         xmlhttp.onreadystatechange = function () {
+            if (this.readyState == 4 && this.status == 200) {
+               let i;
+               let xmlDoc = this.responseXML;
 
-function loadFromJson(json) {
-   let loaded = JSON.parse(json, receiver);
-   stage.x = loaded.scrollX;
-   stage.y = loaded.scrollY;
-   stage.scale = loaded.zoom;
-   if (loaded.objects) GenericObject.all_objects = loaded.objects;
-   tracks = loaded.tracks?.clean() || []; //when something went wront while loading track, we filter all nulls
-   Track.connectTracks();
-   Train.allTrains = loaded.trains?.clean() || []; ////when something went wront while loading trains, we filter all nulls
-   Train.allTrains.forEach((t) => t.restore());
-   Train.allTrains = Train.allTrains.filter((t) => t.track != null);
-
-   drawGrid();
-   renderer.reDrawEverything(true);
-   stage.update();
-   undoHistory = [];
-   saveUndoHistory();
-}
-
-function newItemButton(template) {
-   if (!template) throw new Error("No template given. Probably there was an error while creating the SignalTemplate");
-
-   return ui
-      .div("d-flex newSignalItem align-items-center user-select-none", [
-         ui.div("flex-shrink-0 newItem_image").css("background-image", "url(" + GetDataURL_FromTemplate(template) + ")"),
-         ui.div("flex-grow-5 ms-2", template.title),
-      ])
-      .on("mousedown", (e) => {
-         mouseAction = {
-            action: MOUSE_DOWN_ACTION.DND_SIGNAL,
-            template: template,
-            //offset:new Point(0,0),
+               let x = xmlDoc.getElementsByTagName("setup");
+               for (i = 0; i < x.length; i++) {
+                  if (x[i].getElementsByTagName("title")[0].textContent == name) {
+                     STORAGE.loadFromJson(x[i].getElementsByTagName("json")[0].childNodes[0].wholeText.trim());
+                     resolve();
+                  }
+               }
+            }
          };
-
-         //mouseup beim document anmelden, weil mouseup im stage nicht ausgelöst wird, wenn mousedown nicht auch auf der stage war
-         //little hack, weil handleStageMouseUp ein event von createjs erwartet
-         document.addEventListener("mouseup", (e) => handleStageMouseUp({ nativeEvent: e }), {
-            once: true,
-         });
-
-         stage.addEventListener("stagemousemove", handleMouseMove);
-
-         startDragAndDropSignal(e.offsetX, e.offsetY);
+         xmlhttp.open("GET", "prebuilds.xml" + "?" + Math.floor(Math.random() * 100), true);
+         xmlhttp.send();
       });
-}
+   },
+};
 
-function GetDataURL_FromTemplate(template) {
-   let signal = new Signal(template);
 
-   let c = $("<canvas>").attr({ width: 450, height: 450 });
-   $(document.body).append(c);
 
-   let s = new createjs.Stage(c[0]);
-   s.scale = template.scale;
-   signal.draw(s, true);
-   s.update();
-   let sig_bounds = s.getBounds();
-
-   if (sig_bounds == null) throw Error(template.title + " has no visual Element visible");
-   s.cache(sig_bounds.x, sig_bounds.y, sig_bounds.width, sig_bounds.height, template.scale);
-
-   let data_url = s.bitmapCache.getCacheDataURL();
-   c.remove();
-   return data_url;
-}
-
-function drawPoint(point, displayObject, label = "", color = "#000", size = 1) {
+/* function drawPoint(point, displayObject, label = "", color = "#000", size = 1) {
    const s = new createjs.Shape();
    s.graphics.setStrokeStyle(1).beginStroke(color).beginFill(color).drawCircle(0, 0, size);
    s.x = point.x; //+ track.start.x;
@@ -1293,54 +1233,4 @@ function drawPoint(point, displayObject, label = "", color = "#000", size = 1) {
       text.textBaseline = "alphabetic";
       debug_container.addChild(text);
    }
-}
-
-function hideStartScreen() {
-   bootstrap.Modal.getInstance(loadModal).hide();
-}
-
-function ShowPreBuildScreen() {
-   if (localStorage.getItem("bahnhof_last1") == null) $(btnLoadRecent).attr("disabled", "disabled");
-   $(btnStartFromZero).click(hideStartScreen);
-   $(btnLoadRecent).click(() => {
-      loadRecent();
-      hideStartScreen();
-   });
-   $(btnLoad2Gleisig).on("click", () => {
-      loadPrebuildbyName("ktm_2");
-      hideStartScreen();
-   });
-   /*$(btnLoadFromFile).click(() => { loadSignalsFromFile(); hideStartScreen(); });
-    loadPrebuilds(); */
-   let m = bootstrap.Modal.getOrCreateInstance(loadModal);
-   m._element.addEventListener(
-      "hidden.bs.modal",
-      (x) => {
-         bootstrap.Modal.getOrCreateInstance(x.target).dispose();
-         $(btnStartFromZero).off("click");
-         $(btnLoadRecent).off("click");
-         $(btnLoadFromFile).off("click");
-      },
-      { once: true }
-   );
-   m.show();
-}
-
-function loadPrebuildbyName(name) {
-   let xmlhttp = new XMLHttpRequest();
-   xmlhttp.onreadystatechange = function () {
-      if (this.readyState == 4 && this.status == 200) {
-         let i;
-         let xmlDoc = this.responseXML;
-
-         let x = xmlDoc.getElementsByTagName("setup");
-         for (i = 0; i < x.length; i++) {
-            if (x[i].getElementsByTagName("title")[0].textContent == name) {
-               loadFromJson(x[i].getElementsByTagName("json")[0].childNodes[0].wholeText.trim());
-            }
-         }
-      }
-   };
-   xmlhttp.open("GET", "prebuilds.xml" + "?" + Math.floor(Math.random() * 100), true);
-   xmlhttp.send();
-}
+} */

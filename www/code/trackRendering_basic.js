@@ -46,8 +46,8 @@ class trackRendering_basic {
          }
       });
       signal_container.children.forEach(function (c) {
-         if (c.signal) {
-            if (selection.isSelectedObject(c.signal)) c.shadow = new createjs.Shadow("#ff0000", 0, 0, 3);
+         if (c.data) {
+            if (selection.isSelectedObject(c.data)) c.shadow = new createjs.Shadow("#ff0000", 0, 0, 3);
             else c.shadow = null;
          }
       });

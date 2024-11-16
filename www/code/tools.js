@@ -412,7 +412,7 @@ const ui = {
                      dd.hide();
                      renderer.reDrawEverything();
                      stage.update();
-                     save();
+                     STORAGE.save();
                   });
                }
                li.append(a);
@@ -429,7 +429,7 @@ const ui = {
                      }).on("input", (e) => {
                         signal.setFeature("bez", e.target.value);
                         renderer.reDrawEverything();
-                        save();
+                        STORAGE.save();
                      }),
                      $("<label>", { for: id, text: item.input }),
                   ])

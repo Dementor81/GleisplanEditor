@@ -20,7 +20,7 @@ class Train {
             train.color = $(this).val();
             renderer.renderAllTrains();
             stage.update();
-            save();
+            STORAGE.save();
          });
 
       $("#inputZugnummer")
@@ -30,7 +30,7 @@ class Train {
             train.number = $(this).val();
             renderer.renderAllTrains();
             stage.update();
-            save();
+            STORAGE.save();
          });
 
       $("#btnRemoveTrain")
@@ -42,7 +42,7 @@ class Train {
       this.allTrains.remove(train);
       renderer.renderAllTrains();
       stage.update();
-      save();
+      STORAGE.save();
    }
 
    static moveTrain(train, movementX) {

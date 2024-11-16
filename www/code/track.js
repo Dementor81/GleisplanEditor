@@ -2,7 +2,7 @@
 
 class Track {
    static findTrackbySignal(s) {
-      return tracks.find((t) => t.signals.find((o) => o.signal == s) != undefined);
+      return tracks.find((t) => t.signals.find((o) => o.data == s) != undefined);
    }
    static findTrackByPoint(p) {      
       return tracks.find(track=>geometry.pointOnLine(track.start, track.end, p))
@@ -42,6 +42,77 @@ class Track {
          s._positioning.km += cut_km;
          track1.AddSignal(s);
       });
+   }
+
+   static checkAndCreateTrack(p1, p2) {
+      if (deepEqual(p1, p2)) return;
+   
+      if (p1.x > p2.x) {
+         const hlp = p1;
+         p1 = p2;
+         p2 = hlp;
+      }
+      const slope = geometry.slope(p1, p2);
+   
+      //if (tracks.some((track) => geometry.within(track.start, track.end, p1) && geometry.within(track.start, track.end, p2))) return;
+   
+      const tracksWithSameSlope = tracks.filter((track) => track._tmp.slope == slope);
+      let track;
+      tracksWithSameSlope
+         .filter((t) => geometry.within(t.start, t.end, p1))
+         .forEach((t) => {
+            if (t.end.x > p1.x) p1 = t.end;
+         });
+   
+      tracksWithSameSlope
+         .filter((t) => geometry.within(t.start, t.end, p2))
+         .forEach((t) => {
+            if (t.start.x < p2.x) p2 = t.start;
+         });
+   
+      if ((track = tracksWithSameSlope.find((t) => geometry.within(t.start, t.end, p2)))) {
+         p2 = track.start;
+      }
+   
+      if (p1.x > p2.x) return;
+   
+      if ((track = tracksWithSameSlope.find((t) => geometry.within(p1, p2, t.start) && geometry.within(p1, p2, t.end)))) {
+         Track.checkAndCreateTrack(p1, track.start);
+         Track.checkAndCreateTrack(track.end, p2);
+         return;
+      }
+   
+      const line = { start: p1, end: p2 };
+      const intersecting_tracks = tracks
+         .filter((t) => slope != t._tmp.slope && slope + t._tmp.slope != 0) //filter all track with same slope or 90° angles
+         .map((t) => [t, geometry.getIntersectionPoint(line, t)]) //get all intersection points
+         .filter((item) => item[1] != null) //removes items with no intersection
+         .sort((a, b) => a[1].x - b[1].x); // sort by x
+      intersecting_tracks.forEach((item) => {
+         // split tracks
+         let t = item[0];
+         let intersection = item[1];
+         if (!t.start.equals(intersection) && !t.end.equals(intersection)) {
+            tracks = tracks.concat(Track.splitTrack(t, intersection));
+            tracks.remove(t);
+         }
+      });
+   
+      if (intersecting_tracks?.length > 0) {
+         let intersection;
+         intersecting_tracks.forEach((item) => {
+            if (item) {
+               intersection = item[1];
+               if (!intersection.equals(p1)) Track.createTrack(p1, intersection);
+               p1 = intersection;
+            }
+         });
+         if (!intersection.equals(p2)) Track.createTrack(p1, p2); //last bit, from the last intersection to the end
+      } else Track.createTrack(p1, p2);
+   }
+
+   static createTrack(start, end) {
+      tracks.push(new Track(start, end));
    }
 
    static createSwitch(location, tracks) {
@@ -131,7 +202,7 @@ class Track {
 
          if (connected_tracks.length == 1 && connected_tracks[0].rad == track.rad) {
             Track.joinTrack(track, connected_tracks[0]);
-            deleteTrack(connected_tracks[0], false);
+            tracks.remove(connected_tracks[0]);
          } else i++;
       }
    }

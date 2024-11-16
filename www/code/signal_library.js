@@ -152,6 +152,7 @@ function initSignals() {
        ["hp=0", "vr=0", "HPsig", "verw=asig", "mastschild=wrw"]
     );
     t.scale = 0.15;
+    t.previewsize = 20;
     t.distance_from_track = 5;
     t.checkSignalDependency = checkSignalDependencyFunction4HV;
     t.addRule("hp>0 && zs3>6", "hp=1");
@@ -368,12 +369,15 @@ function initSignals() {
  
     signalTemplates.ne4 = new SignalTemplate("ne4", "Ne 4", "basis");
     signalTemplates.ne4.scale = 0.2;
+    signalTemplates.ne4.previewsize = 10;
+
  
     signalTemplates.ne1 = new SignalTemplate("ne1", "Ne 1", "basis", ["ne1", new TextElement("ne1", "bold 20px Arial").pos([100, 105])]);
     signalTemplates.ne1.scale = 0.15;
     signalTemplates.ne1.distance_from_track = 5;
     signalTemplates.ne2 = new SignalTemplate("ne2", "Ne 2", "basis");
     signalTemplates.ne2.scale = 0.25;
+    signalTemplates.ne2.previewsize = 20;
  
     signalTemplates.lf6 = new SignalTemplate(
        "lf6",
@@ -412,28 +416,22 @@ function initSignals() {
     );
  
     signalTemplates.zs3.createSignalCommandMenu(["geschw()"]);
-    signalTemplates.zs3.scale = 0.12;
+    signalTemplates.zs3.scale = 0.15;
     signalTemplates.zs10 = new SignalTemplate("zs10", "Zs 10", "basis");
     signalTemplates.zs10.scale = 0.2;
     signalTemplates.ra10 = new SignalTemplate("ra10", "Ra 10", "basis");
     signalTemplates.ra10.scale = 0.15;
- 
-    signalTemplates.zs3 = new SignalTemplate(
-       "zs3",
-       "Zs 3 (alleinst.)",
-       "basis",
-       ["zs3", new TextElement("geschw", "bold 110px Arial").pos([90, 60])],
-       "geschw=9"
-    );
- 
+    
     signalTemplates.zs6 = new SignalTemplate("zs6", "Zs 6", "basis", ["zs6_blech_mast", "zs6_blech"]);
     signalTemplates.zs6.scale = 0.2;
  
     signalTemplates.zusatzSignal = new SignalTemplate("zusatz", "Zusatzanzeiger", "basis", [
        "zusatzanzeiger",
        new VisualElement("zs6_licht").on("zs6=1"),
-       new TextElement("zs3", "85px DOT").pos([70, 40]).off("zs6=1").on("zs3>0"),
-    ]);
+       new TextElement("zs3", "85px DOT").pos([70, 40]).off("zs6=1").on("zs3>0")
+    ],
+       "zs6=1");
     signalTemplates.zusatzSignal.scale = 0.15;
     signalTemplates.zusatzSignal.createSignalCommandMenu([["zs6=1(Zs 6)"],"zs3()"]);
+    signalTemplates.zusatzSignal.previewsize = 30;
  }
