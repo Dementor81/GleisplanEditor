@@ -383,7 +383,7 @@ function initSignals() {
        "lf6",
        "Lf 6",
        "basis",
-       ["lf6", new TextElement("geschw", "bold 110px Arial", "#333").pos([90, 8])],
+       ["lf6", new TextElement("geschw", "bold 110px Arial", "#333").pos([98, 8])],
        ["slave", "geschw=9"]
     );
     signalTemplates.lf6.createSignalCommandMenu(["geschw()"]);
@@ -393,11 +393,12 @@ function initSignals() {
        "lf7",
        "Lf 7",
        "basis",
-       ["lf7", new TextElement("geschw", "bold 130px Arial", "#333").pos([50, 20])],
+       ["lf7", new TextElement("geschw", "bold 130px Arial", "#333").pos([55, 20])],
        ["master", "geschw=9"]
     );
     signalTemplates.lf7.createSignalCommandMenu(["geschw()"]);
     signalTemplates.lf7.scale = 0.15;
+    signalTemplates.lf7.previewsize = 30;
  
     signalTemplates.lf7.checkSignalDependency = signalTemplates.lf6.checkSignalDependency = function (signal, hp) {
        if (signal._template.id == "lf6" && hp._template.id == "lf7") {
@@ -417,13 +418,17 @@ function initSignals() {
  
     signalTemplates.zs3.createSignalCommandMenu(["geschw()"]);
     signalTemplates.zs3.scale = 0.15;
+
     signalTemplates.zs10 = new SignalTemplate("zs10", "Zs 10", "basis");
     signalTemplates.zs10.scale = 0.2;
+    signalTemplates.zs10.previewsize = 15;
+    
     signalTemplates.ra10 = new SignalTemplate("ra10", "Ra 10", "basis");
     signalTemplates.ra10.scale = 0.15;
     
     signalTemplates.zs6 = new SignalTemplate("zs6", "Zs 6", "basis", ["zs6_blech_mast", "zs6_blech"]);
     signalTemplates.zs6.scale = 0.2;
+    signalTemplates.zs6.previewsize = 30;
  
     signalTemplates.zusatzSignal = new SignalTemplate("zusatz", "Zusatzanzeiger", "basis", [
        "zusatzanzeiger",
