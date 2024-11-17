@@ -13,6 +13,7 @@ Bugs:
     ✔ lf6 lf7 signalisieren sich nicht automatisch vor @done(24-07-15 17:46)
     ☐ lange bezeichnungen sprengen das schild, Text muss sich autom. verkleinern
     ☐ Züge bleiben auf gelöschten/geänderten phantom Gleisen
+    ☐ manchmal werden Signale verdoppelt
 
 Content:
     ✔ Ne 2 @done(24-10-05 12:13)
@@ -28,14 +29,15 @@ Detailing:
     ✔ settingsmenü mit häckchen als markierung @done(24-06-07 20:33)
     ✔ Weichenstellung im Screenshot ausblenden @done(24-06-13 16:40)
     ✔ Skalierung überarbeiten, Gleise dichter zusammen, dafür Weichen überarbeiten @started(24-05-30 08:52) @done(24-06-01 19:53) @lasted(2d11h1m49s)
-    ☐ Navbar überarbeiten
-    ☐ "Neues Signal" Menü überarbeiten
+    ✔ Navbar überarbeiten @done(24-11-17 12:57)
+    ✔ "Neues Signal" Menü überarbeiten @done(24-11-17 12:57)
     ☐ Zeichnen Leiste überarbeiten, Dicke per Zahl setzen
 
-CleanUp:
+Intern:
     ☐ swichtes Array entfernen
     ☐ start.js aufräumen
     ☐ signal.js und signaling.js sauber trennen und aufräumen
+    ☐ auf TypeScript umbauen
 
 Features:
     ✔ Signale verketten/automatische vorsignalisierung @started(23-11-21 12:15) @done(24-01-08 11:46) @lasted(6w5d23h31m36s)

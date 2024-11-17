@@ -43,54 +43,47 @@
          <p style="font-family: condenced">dummy to load font face</p>
       </div>
 
-      <div id="toolbar" class="navbar-dark rounded-pill">
-         <a id="navbarBrand" class="navbar-brand" href="start.html"><img src="logo.svg" alt="" width="70" height="70" />Gleisplan Editor</a>
-         <div class="btn-toolbar" style="padding-left: 2rem">
-            <button id="btnDrawTracks" type="button" class="btn btn-secondary btn-sm active" title="Gleise und Signale zeichnen">
-               Baumodus
-               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-tools" viewBox="0 0 16 16">
-                  <path
-                     d="M9.972 2.508a.5.5 0 0 0-.16-.556l-.178-.129a5.009 5.009 0 0 0-2.076-.783C6.215.862 4.504 1.229 2.84 3.133H1.786a.5.5 0 0 0-.354.147L.146 4.567a.5.5 0 0 0 0 .706l2.571 2.579a.5.5 0 0 0 .708 0l1.286-1.29a.5.5 0 0 0 .146-.353V5.57l8.387 8.873A.5.5 0 0 0 14 14.5l1.5-1.5a.5.5 0 0 0 .017-.689l-9.129-8.63c.747-.456 1.772-.839 3.112-.839a.5.5 0 0 0 .472-.334z"
-                  />
-               </svg>
-            </button>
-            <button id="btnUndo" type="button" class="btn btn-secondary btn-sm" title="Rückgängig">
+      <div id="toolbar" class="navbar-dark rounded-pill navbar-expand-lg ">
+         <a id="navbarBrand" class="navbar-brand" href="start.html"><img src="logo.svg" alt="Logo" width="80" height="80" />Bahn Baukasten</a>
+         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarTogglerDemo02" aria-controls="navbarTogglerDemo02" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+          </button>
+         
+            <div class="btn-group" role="group">
+               <input type="radio" class="btn-check" name="btnEditMode" id="btnDrawTracks" autocomplete="off" checked />
+               <label class="btn btn-secondary btn-nav" for="btnDrawTracks"><i class="bi bi-tools"></i><span>Bearbeiten</span></label>
+
+               <input type="radio" class="btn-check" name="btnEditMode" id="btnPlay" autocomplete="off" />
+               <label class="btn btn-secondary btn-nav" for="btnPlay"><i class="bi bi-play-fill"></i><span>Fahren</span></label>
+            </div>            
+            <span class="nav-spacer"></span>
+            <button id="btnUndo" type="button" class="btn btn-secondary btn-nav" title="Rückgängig">
                <i class="bi bi-arrow-counterclockwise"></i>
             </button>
-            <button id="btnDraw" type="button" class="btn btn-secondary btn-sm" data-bs-toggle="button" title="Zeichnen">
-               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-tools" viewBox="0 0 16 16">
-                  <path
-                     d="M12.146.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1 0 .708l-10 10a.5.5 0 0 1-.168.11l-5 2a.5.5 0 0 1-.65-.65l2-5a.5.5 0 0 1 .11-.168l10-10zM11.207 2.5 13.5 4.793 14.793 3.5 12.5 1.207 11.207 2.5zm1.586 3L10.5 3.207 4 9.707V10h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.293l6.5-6.5zm-9.761 5.175-.106.106-1.528 3.821 3.821-1.528.106-.106A.5.5 0 0 1 5 12.5V12h-.5a.5.5 0 0 1-.5-.5V11h-.5a.5.5 0 0 1-.468-.325z"
-                  />
-               </svg>
+            <button id="btnDraw" type="button" class="btn btn-secondary btn-nav" data-bs-toggle="button" title="Zeichnen">
+               <i class="bi bi-brush"></i>
             </button>
-            <button id="btnClear" type="button" class="btn btn-secondary btn-sm" title="alles entfernen">
+            <button id="btnClear" type="button" class="btn btn-secondary btn-nav" title="alles entfernen">
                <i class="bi bi-trash"></i>
             </button>
-            <button id="btnCenter" type="button" class="btn btn-secondary btn-sm" title="Ansicht zentrieren">
+            <button id="btnCenter" type="button" class="btn btn-secondary btn-nav" title="Ansicht zentrieren">
                <i class="bi bi-bullseye"></i>
             </button>
-            <button id="btnImage" type="button" class="btn btn-secondary btn-sm" title="Ansicht als Bild herunterladen">
+            <button id="btnImage" type="button" class="btn btn-secondary btn-nav" title="Ansicht als Bild herunterladen">
                <i class="bi bi-camera"></i>
             </button>
+            <span class="nav-spacer"></span>
             <div class="dropdown">
                <button
-                  class="btn btn-secondary dropdown-toggle btn-sm"
+                  class="btn btn-secondary dropdown-toggle btn-nav"
                   type="button"
                   id="btnOptions"
                   data-bs-toggle="dropdown"
                   data-bs-auto-close="outside"
                   title="weitere Optionen"
                >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-gear" viewBox="0 0 16 16">
-                     <path
-                        d="M8 4.754a3.246 3.246 0 1 0 0 6.492 3.246 3.246 0 0 0 0-6.492zM5.754 8a2.246 2.246 0 1 1 4.492 0 2.246 2.246 0 0 1-4.492 0z"
-                     />
-                     <path
-                        d="M9.796 1.343c-.527-1.79-3.065-1.79-3.592 0l-.094.319a.873.873 0 0 1-1.255.52l-.292-.16c-1.64-.892-3.433.902-2.54 2.541l.159.292a.873.873 0 0 1-.52 1.255l-.319.094c-1.79.527-1.79 3.065 0 3.592l.319.094a.873.873 0 0 1 .52 1.255l-.16.292c-.892 1.64.901 3.434 2.541 2.54l.292-.159a.873.873 0 0 1 1.255.52l.094.319c.527 1.79 3.065 1.79 3.592 0l.094-.319a.873.873 0 0 1 1.255-.52l.292.16c1.64.893 3.434-.902 2.54-2.541l-.159-.292a.873.873 0 0 1 .52-1.255l.319-.094c1.79-.527 1.79-3.065 0-3.592l-.319-.094a.873.873 0 0 1-.52-1.255l.16-.292c.893-1.64-.902-3.433-2.541-2.54l-.292.159a.873.873 0 0 1-1.255-.52l-.094-.319zm-2.633.283c.246-.835 1.428-.835 1.674 0l.094.319a1.873 1.873 0 0 0 2.693 1.115l.291-.16c.764-.415 1.6.42 1.184 1.185l-.159.292a1.873 1.873 0 0 0 1.116 2.692l.318.094c.835.246.835 1.428 0 1.674l-.319.094a1.873 1.873 0 0 0-1.115 2.693l.16.291c.415.764-.42 1.6-1.185 1.184l-.291-.159a1.873 1.873 0 0 0-2.693 1.116l-.094.318c-.246.835-1.428.835-1.674 0l-.094-.319a1.873 1.873 0 0 0-2.692-1.115l-.292.16c-.764.415-1.6-.42-1.184-1.185l.159-.291A1.873 1.873 0 0 0 1.945 8.93l-.319-.094c-.835-.246-.835-1.428 0-1.674l.319-.094A1.873 1.873 0 0 0 3.06 4.377l-.16-.292c-.415-.764.42-1.6 1.185-1.184l.292.159a1.873 1.873 0 0 0 2.692-1.115l.094-.319z"
-                     />
-                  </svg>
-                  Optionen
+                  <i class="bi bi-sliders"></i>
+                  <span>Optionen</span>
                </button>
                <div class="dropdown-menu" id="DropDownOptions" style="min-width: 14rem">
                   <span class="dropdown-item-text">
@@ -104,37 +97,53 @@
                   >
                </div>
             </div>
-         </div>
+         
          <div class="d-flex ms-auto" style="gap: 10px; padding-right: 1rem">
-            <button id="btnAddSignals" type="button" class="btn btn-secondary btn-sm" title="Signale hinzufügen">
-               <i class="bi bi-plus"></i>
-               <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="16"
-                  height="16"
-                  fill="currentColor"
-                  class="bi bi-sign-stop-lights-fill"
-                  viewBox="0 0 16 16"
+            <div class="dropdown">
+               <button
+                  class="btn btn-primary rounded-pill"
+                  type="button"
+                  id="btnAdd"
+                  data-bs-toggle="dropdown"
+                  title="Sachen hinzufügen"
                >
-                  <path d="M8 6a1 1 0 1 0 0-2 1 1 0 0 0 0 2Zm0 3a1 1 0 1 0 0-2 1 1 0 0 0 0 2Zm1 2a1 1 0 1 1-2 0 1 1 0 0 1 2 0Z" />
-                  <path
-                     d="M9.05.435c-.58-.58-1.52-.58-2.1 0L.436 6.95c-.58.58-.58 1.519 0 2.098l6.516 6.516c.58.58 1.519.58 2.098 0l6.516-6.516c.58-.58.58-1.519 0-2.098L9.05.435ZM6 4a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4Z"
-                  />
-               </svg>
-               Signale
-            </button>
-            <button id="btnAddTrain" type="button" class="btn btn-secondary btn-sm" title="Zug hinzufügen">
-               <img src="train-front.svg" width="16" height="16" />
-               Züge
-            </button>
-            <button id="btnAddObject" type="button" class="btn btn-secondary btn-sm" title="Objekt hinzufügen">
-               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-boxes" viewBox="0 0 16 16">
-                  <path
-                     d="M7.752.066a.5.5 0 0 1 .496 0l3.75 2.143a.5.5 0 0 1 .252.434v3.995l3.498 2A.5.5 0 0 1 16 9.07v4.286a.5.5 0 0 1-.252.434l-3.75 2.143a.5.5 0 0 1-.496 0l-3.502-2-3.502 2.001a.5.5 0 0 1-.496 0l-3.75-2.143A.5.5 0 0 1 0 13.357V9.071a.5.5 0 0 1 .252-.434L3.75 6.638V2.643a.5.5 0 0 1 .252-.434zM4.25 7.504 1.508 9.071l2.742 1.567 2.742-1.567zM7.5 9.933l-2.75 1.571v3.134l2.75-1.571zm1 3.134 2.75 1.571v-3.134L8.5 9.933zm.508-3.996 2.742 1.567 2.742-1.567-2.742-1.567zm2.242-2.433V3.504L8.5 5.076V8.21zM7.5 8.21V5.076L4.75 3.504v3.134zM5.258 2.643 8 4.21l2.742-1.567L8 1.076zM15 9.933l-2.75 1.571v3.134L15 13.067zM3.75 14.638v-3.134L1 9.933v3.134z"
-                  />
-               </svg>
-               Objekte
-            </button>
+                  <i class="bi bi-plus-circle"></i>
+               </button>
+
+               <ul class="dropdown-menu">
+                  <li>
+                     <a class="dropdown-item" id="btnAddSignals" href="#"
+                        ><svg
+                           xmlns="http://www.w3.org/2000/svg"
+                           width="16"
+                           height="16"
+                           fill="currentColor"
+                           class="bi bi-sign-stop-lights-fill"
+                           viewBox="0 0 16 16"
+                        >
+                           <path d="M8 6a1 1 0 1 0 0-2 1 1 0 0 0 0 2Zm0 3a1 1 0 1 0 0-2 1 1 0 0 0 0 2Zm1 2a1 1 0 1 1-2 0 1 1 0 0 1 2 0Z" />
+                           <path
+                              d="M9.05.435c-.58-.58-1.52-.58-2.1 0L.436 6.95c-.58.58-.58 1.519 0 2.098l6.516 6.516c.58.58 1.519.58 2.098 0l6.516-6.516c.58-.58.58-1.519 0-2.098L9.05.435ZM6 4a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4Z"
+                           />
+                        </svg>
+                        Signale</a
+                     >
+                  </li>
+                  <li>
+                     <a class="dropdown-item" id="btnAddTrain" href="#"><img src="train-front.svg" width="16" height="16" /> Züge</a>
+                  </li>
+                  <li>
+                     <a class="dropdown-item" id="btnAddObject" href="#"
+                        ><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-boxes" viewBox="0 0 16 16">
+                           <path
+                              d="M7.752.066a.5.5 0 0 1 .496 0l3.75 2.143a.5.5 0 0 1 .252.434v3.995l3.498 2A.5.5 0 0 1 16 9.07v4.286a.5.5 0 0 1-.252.434l-3.75 2.143a.5.5 0 0 1-.496 0l-3.502-2-3.502 2.001a.5.5 0 0 1-.496 0l-3.75-2.143A.5.5 0 0 1 0 13.357V9.071a.5.5 0 0 1 .252-.434L3.75 6.638V2.643a.5.5 0 0 1 .252-.434zM4.25 7.504 1.508 9.071l2.742 1.567 2.742-1.567zM7.5 9.933l-2.75 1.571v3.134l2.75-1.571zm1 3.134 2.75 1.571v-3.134L8.5 9.933zm.508-3.996 2.742 1.567 2.742-1.567-2.742-1.567zm2.242-2.433V3.504L8.5 5.076V8.21zM7.5 8.21V5.076L4.75 3.504v3.134zM5.258 2.643 8 4.21l2.742-1.567L8 1.076zM15 9.933l-2.75 1.571v3.134L15 13.067zM3.75 14.638v-3.134L1 9.933v3.134z"
+                           />
+                        </svg>
+                        Objekte</a
+                     >
+                  </li>
+               </ul>
+            </div>
          </div>
       </div>
       <div id="CanvasContainer">
@@ -283,7 +292,7 @@
                               <p class="card-text">Mehere Bahnhöfe an einer zweigleisigen Strecke.</p>
                            </div>
                            <div class="card-footer d-grid" style="background-color: white; border-top: none">
-                              <button href="#" id="btnLoad2Gleisig" class="btn btn-sm btn-primary">Start</button>
+                              <button href="#" id="btnLoad2Gleisig" data="2gleisig" class="btn btn-sm btn-primary">Start</button>
                            </div>
                         </div>
                      </div>
@@ -294,7 +303,7 @@
                               <p class="card-text">Mehere Bahnhöfe an einer eingleisigen Strecke.</p>
                            </div>
                            <div class="card-footer d-grid" style="background-color: white; border-top: none">
-                              <button class="btn btn-sm btn-primary" disabled>Start</button>
+                              <button class="btn btn-sm btn-primary"  id="btnLoad1Gleisig" data="1gleisig" >Start</button>
                            </div>
                         </div>
                      </div>

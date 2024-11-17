@@ -1,7 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <prebuilds>
     <setup>
-        <title>ktm_2</title>
+        <title>1gleisig</title>
+        <description>kleine Nebenbahn</description>
+        <json><![CDATA[{"tracks":[{"_class":"Track","start":{"x":500,"y":600},"end":{"x":600,"y":500},"signals":[]},{"_class":"Track","start":{"x":600,"y":500},"end":{"x":1400,"y":500},"signals":[{"_class":"Signal","_template":"hv_hp","_signalStellung":{"hp":0,"vr":0,"HPsig":1,"verw":"asig","mastschild":"wrw","zs3":6},"_positioning":{"km":120.4273724021672,"above":true,"flipped":false}}]},{"_class":"Track","start":{"x":500,"y":600},"end":{"x":1500,"y":600},"signals":[{"_class":"Signal","_template":"hv_hp","_signalStellung":{"hp":0,"vr":0,"HPsig":1,"verw":"asig","mastschild":"wrw"},"_positioning":{"km":844.2408369456869,"above":false,"flipped":false}}]},{"_class":"Track","start":{"x":1500,"y":600},"end":{"x":2400,"y":600},"signals":[{"_class":"Signal","_template":"ra10","_signalStellung":{},"_positioning":{"km":246.7070996720022,"above":true,"flipped":true}},{"_class":"Signal","_template":"hv_hp","_signalStellung":{"hp":0,"vr":0,"HPsig":1,"verw":"esig","mastschild":"wrw","VRsig":1,"zs3":6},"_positioning":{"km":508.63794002077975,"above":true,"flipped":false}}]},{"_class":"Track","start":{"x":1400,"y":500},"end":{"x":1500,"y":600},"signals":[]},{"_class":"Track","start":{"x":-400,"y":600},"end":{"x":500,"y":600},"signals":[{"_class":"Signal","_template":"hv_hp","_signalStellung":{"hp":0,"vr":0,"HPsig":1,"verw":"esig","mastschild":"wrw","VRsig":1},"_positioning":{"km":412.1887001970256,"above":false,"flipped":false}},{"_class":"Signal","_template":"ra10","_signalStellung":{},"_positioning":{"km":652.4638411468886,"above":false,"flipped":true}}]}],"trains":[],"objects":[],"settings":{"zoom":0.969721624463094,"scrollX":-125.81964615515335,"scrollY":-81.87022171265369}}]]></json>
+    </setup>
+    <setup>
+        <title>2gleisig</title>
         <description>großer Bahnhof mit HV Kompaktsignalen</description>
         <json>
             <![CDATA[
@@ -9,5 +14,5 @@
 ]]>
         </json>
     </setup>
-    
+
 </prebuilds>

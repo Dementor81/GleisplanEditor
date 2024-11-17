@@ -233,7 +233,7 @@ function init() {
       });
    }
 
-   $(btnDrawTracks).click(() => toggleEditMode());
+   $("#btnDrawTracks,#btnPlay").click(() => toggleEditMode());
 
    $("#switch_renderer").on("change", (e) => {
       selectRenderer(!$("#switch_renderer").is(":checked"));
@@ -403,7 +403,7 @@ const RENDERING = {
       renderer.reDrawEverything(true); //just to make sure, something accidently not deleted we be drawn to the stage.
       stage.update();
    },
-   center(){
+   center() {
       stage.scale = 1;
       stage.x = 0;
       stage.y = 0;
@@ -424,7 +424,7 @@ const RENDERING = {
       if (showGrid) {
          if (repaint) {
             grid.graphics.c().setStrokeStyle(1, "round").setStrokeDash([5, 5], 2).beginStroke("#ccc");
-   
+
             const bounds = stage.canvas.getBoundingClientRect();
             const scale = stage.scale;
             const size = {
@@ -436,7 +436,7 @@ const RENDERING = {
                grid.graphics.moveTo(x, -GRID_SIZE).lineTo(x, size.height);
                x += GRID_SIZE;
             }
-   
+
             let y = 0;
             while (y < size.height) {
                grid.graphics.moveTo(-GRID_SIZE, y).lineTo(size.width, y);
@@ -449,7 +449,6 @@ const RENDERING = {
          grid.y = Math.floor(stage.y / scaled_grid_size) * -GRID_SIZE;
       }
    },
-   
 };
 
 const UI = {
@@ -559,8 +558,9 @@ const UI = {
          renderer.reDrawEverything(true);
          STORAGE.saveUndoHistory();
       });
-      $(btnLoad2Gleisig).on("click", () => {
-         STORAGE.loadPrebuildbyName("ktm_2").then(() => {
+      $("#btnLoad2Gleisig,#btnLoad1Gleisig").on("click", (e) => {
+         const name = $(e.target).attr("data");
+         STORAGE.loadPrebuildbyName(name).then(() => {
             UI.hideStartScreen();
             RENDERING.drawGrid();
             renderer.reDrawEverything(true);
@@ -627,11 +627,11 @@ const UI = {
 };
 
 function toggleEditMode(mode) {
-   edit_mode = mode != undefined ? mode : !edit_mode;
+   edit_mode = mode != undefined ? mode : $(btnDrawTracks).is(":checked");
    showGrid = edit_mode;
    RENDERING.drawGrid();
    stage.update();
-   $(btnDrawTracks).toggleClass("active", edit_mode);
+   if (mode != undefined) $(btnDrawTracks).prop(":checked", edit_mode);
 }
 
 function selectRenderer(textured) {
@@ -684,16 +684,12 @@ function selectObject(object, e) {
    UI.showMenu(menu);
 }
 
-
-
 function onResizeWindow() {
    $(myCanvas).attr("height", $(CanvasContainer).height() - 5);
    $(myCanvas).attr("width", $(CanvasContainer).width());
    RENDERING.drawGrid();
    stage.update();
 }
-
-
 
 function handleStageMouseDown(event) {
    //console.log("handleStageMouseDown", event);
@@ -720,7 +716,7 @@ function handleStageMouseDown(event) {
       drawing_container.addChild((mouseAction.shape = new createjs.Shape()));
       mouseAction.shape.graphics.setStrokeStyle(width, "round", "round").beginStroke(color);
       mouseAction.old_point = new Point(event.stageX, event.stageY);
-   }   
+   }
    //console.log(mouseAction);
    stage.addEventListener("stagemousemove", handleMouseMove);
 }
@@ -953,7 +949,6 @@ function drawBluePrintTrack() {
       const co = mouseAction.ankerPoints[index];
       mouseAction.lineShape.graphics.lt(co.x, co.y);
    }
-
 }
 
 function setTrackAnchorPoints() {
@@ -1215,8 +1210,6 @@ const STORAGE = {
       });
    },
 };
-
-
 
 /* function drawPoint(point, displayObject, label = "", color = "#000", size = 1) {
    const s = new createjs.Shape();
