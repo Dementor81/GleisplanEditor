@@ -34,7 +34,7 @@ html, body {
 }
 
 #navbarBrand{
-    font-size: x-large !important;
+    font-size: xx-large !important;
 
 }
 
@@ -53,7 +53,7 @@ html, body {
 }
 
 .nav-spacer{
-    width: 1rem;
+    min-width: 1rem;
 }
 
 .btn.rounded-pill{
@@ -161,7 +161,7 @@ html, body {
     padding: 0px !important;
 }
 
-#navFeatures .dropdown-item {
+#navFeatures,#nav-home .dropdown-item {
     padding-left: 40px !important;
 }
 
