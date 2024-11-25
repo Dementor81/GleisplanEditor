@@ -469,7 +469,7 @@ const UI = {
             div_id = "signalEditMenu";
             let body = $("#nav-home");
             body.empty();
-            body.append(selection.object.getHTML());
+            body.append(Sig_UI.getHTML(selection.object));
             Sig_UI.initSignalMenu();
             Sig_UI.syncSignalMenu(selection.object);
             break;

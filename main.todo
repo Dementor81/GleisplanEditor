@@ -14,13 +14,17 @@ Bugs:
     ☐ lange bezeichnungen sprengen das schild, Text muss sich autom. verkleinern
     ☐ Züge bleiben auf gelöschten/geänderten phantom Gleisen
     ☐ manchmal werden Signale verdoppelt
+    ☐ navbar funktioniert bei kleinen Bildschirmen nicht
 
 Content:
     ✔ Ne 2 @done(24-10-05 12:13)
     ☐ Ne 3
+    ☐ Ne 5
+    ☐ Ne 14
     ✔ Zs 6 alleinstehend @done(24-11-09 17:28)
     ✔ Sperrsignal @done(24-08-18 19:09)
     ☐ KS Signale ohne Knick
+    ☐ lf 1,2 & 3
 
 
 Detailing:
@@ -56,17 +60,19 @@ Features:
     ✔ visualisieren, wo genau ein Signal am Gleis angeheftet ist (vllt mit kleiner roten Linie) @done(24-11-10 15:15)
     ☐ einzelne Signalfunktionen ativieren und deaktivieren können (zb z1, z7, zp 9)
     ☐ Rules erweitern, dass sie auch Features abfragen und aktivieren können
-    ☐ Verwednung schaltet automatisch mehrere Feature um (Mastschild + Zusatzsignale)
+    ☐ Verwendung schaltet automatisch mehrere Feature um (Mastschild + Zusatzsignale)
     ✔ Textfelder für Beschriftung von Gleisen hinzufügen @done(24-11-02 12:50)
     ✔ Bahnsteige einzeichen @done(24-11-02 18:59)
-    ☐ mehere gleise, ganze Bahnhöfe verschieben
-    ☐ Signale koopieren, per drag&drop
+    ☐ mehrere Gleise, ganze Bahnhöfe verschieben
+    ☐ Auswahlrahmen ziehen
+    ☐ Signale kopieren, per drag&drop
     ☐ Wagen verhalten sich korrekt in Bögen
     ☐ Züge kuppeln
     ☐ Wenn Signale übereinander liegen, dann die Reihenfolge sicherstellen
     ☐ Bemahlungen automatisch an einem Gleis ausrichten
     ☐ Bemahlungen Radieren können
     ☐ Prellbock am gleisende ein/ausblenden
+    ☐ weiteres Performance Update
 
     
 
@@ -81,7 +87,7 @@ Big Features:
     ☐ Signale in einem eigenen Fenster vergrößern (wie beim SignalSim)
     ☐ Weichen selbst zeichen und beim Stellen Weichenzunge bewegen
     ☐ Bilder hinzufügen
-    ☐ Raster verdichten, so dass komplexere Anlagen möglich sind, Gleise aber immer ein Bestimmte Rasterweite entfernt sind
+    ☐ Raster verdichten, so dass komplexere Anlagen möglich sind, Gleise aber immer eine bestimmte Rasterweite entfernt sind
 
 
 

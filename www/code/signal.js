@@ -6,8 +6,6 @@ class Signal {
       if (track) track.removeSignal(s);
    }
 
-
-
    static FromObject(o) {
       let s = new Signal();
 
@@ -43,7 +41,7 @@ class Signal {
 
    constructor(template) {
       if (template) {
-         this._template = template;        
+         this._template = template;
          if (template.initialSignalStellung) template.initialSignalStellung.forEach((i) => this.set_stellung(i, true, false));
       }
    }
@@ -111,7 +109,8 @@ class Signal {
             let prevSignal = this;
             do {
                prevSignal = this.search4Signal(prevSignal, DIRECTION.RIGHT_2_LEFT);
-               if (prevSignal && prevSignal._template.checkSignalDependency) stop = prevSignal._template.checkSignalDependency(prevSignal, this);
+               if (prevSignal && prevSignal._template.checkSignalDependency)
+                  stop = prevSignal._template.checkSignalDependency(prevSignal, this);
             } while (!stop && prevSignal);
          }
          if (this.check(["VRsig||slave"]) && this._template.checkSignalDependency) {
@@ -253,100 +252,6 @@ class Signal {
       }
    }
 
-   getHTML() {
-      if (this._template.signalMenu?.length) {
-         const ul = ui.div("d-flex flex-column bd-highlight mb-3");
-
-         const updateFunc = function (command, active) {
-            this.set_stellung(command, !active);
-            renderer.reDrawEverything();
-            stage.update();
-            this.checkBootstrapMenu(this._template.signalMenu, ul);
-            STORAGE.save();
-         };
-
-         ul.append(this._template.signalMenu.map((data) => this.createBootstrapMenuItems(data, updateFunc)));
-
-         this.syncHTML(ul);
-
-         return ul;
-      }
-      return "";
-   }
-
-   createBootstrapMenuItems(menu_item, update) {
-      if (menu_item) {
-         if (Array.isArray(menu_item)) {
-            let items = menu_item.map((item) => this.createBootstrapMenuItems(item, update)).justNull();
-            if (items) {
-               return ui.div("p-3 border-bottom", BS.create_buttonToolbar(items));
-            } else return null;
-         } else if (menu_item.type == "buttonGroup" || menu_item.type == "btn") {
-            let buttons = menu_item.type == "buttonGroup" ? menu_item.items : [menu_item];
-            buttons = buttons
-               .filter(
-                  (mi) =>
-                     mi.visual_elements?.length > 0 &&
-                     mi.visual_elements.every((ve) => {
-                        let on = ve.on();
-                        if (Array.isArray(on)) {
-                           if(on.includes(mi.command))
-                              on = on.toSpliced(on.indexOf(mi.command),1);
-                        } else if (on == mi.command) return true;
-
-                        return this.check(on);
-                     })
-               )
-               .map((item) =>
-                  ui.create_toggleButton(item.text, item.command).on("click", (e) => update.bind(this)(item.command, $(e.target).hasClass("active")))
-               )
-               .justNull();
-            if (buttons) return ui.create_buttonGroup(buttons);
-            else return null;
-         } else if (menu_item.type == "dropdown") {
-            return Sig_UI.create_SpeedDropDown(menu_item.command, menu_item.text, update.bind(this));
-         }
-      }
-   }
-
-   checkBootstrapMenu(data, popup) {
-      if (data) {
-         if (Array.isArray(data)) {
-            data.forEach((item) => this.checkBootstrapMenu(item, popup));
-         } else if (data.type == "buttonGroup") {
-            data.items.forEach((item) => {
-               let button = $("#btn_" + item.text.replace(" ", "_"), popup);
-               if (button.length == 1) {
-                  button.toggleClass("active", this.check(item.command));
-                  if (item.visual_elements.every((ve) => ve.isAllowed(this))) button.removeAttr("disabled");
-                  else button.attr("disabled", "disabled");
-               }
-            });
-         } else if (data.type == "dropdown") {
-            let button = $("#btn_" + data.text.replace(" ", "_"), popup);
-            if (button.length == 1) {
-               const v = this.get(data.command);
-               button.text(data.text + (v > 0 ? " Kz " + v : " aus"));
-            }
-         } else if (data.type == "btn") {
-            let button = $("#btn_" + data.text.replace(" ", "_"), popup);
-            if (button.length == 1) {
-               button.toggleClass("active", this.check(data.command));
-               if (data.visual_elements.every((ve) => ve.isAllowed(this))) button.removeAttr("disabled");
-               else button.attr("disabled", "disabled");
-            }
-         }
-      }
-   }
-
-   syncHTML(popup) {
-      this.checkBootstrapMenu(this._template.signalMenu, popup);
-   }
-
-   getContextMenu() {
-      return this._template.contextMenu;
-   }
-
    search4Signal(signal, dir, feature) {
       if (signal._positioning.above != signal._positioning.flipped) dir *= -1;
 
@@ -372,7 +277,11 @@ class Signal {
         1   	1	    1   	1	    1 
         the hack is, that wehen all above and flipped are added, the number is even if they belong together*/
       const check = function (pos) {
-         return (Number(signal._positioning.above) + Number(signal._positioning.flipped) + Number(pos.flipped) + Number(pos.above)) % 2 == 0;
+         return (
+            (Number(signal._positioning.above) + Number(signal._positioning.flipped) + Number(pos.flipped) + Number(pos.above)) %
+               2 ==
+            0
+         );
       };
 
       const getTrackAtBranch = function (sw, track) {
@@ -477,5 +386,92 @@ const Sig_UI = {
          input.prop("checked", v ? "checked" : null);
          if (input.attr("data-master_switch") != null) $("input", input.parent().next()).prop("disabled", !v);
       });
+   },
+
+   getHTML(signal) {
+      if (signal._template.signalMenu?.length) {
+         const ul = ui.div("d-flex flex-column bd-highlight mb-3");
+
+         const updateFunc = function (command, active) {
+            signal.set_stellung(command, !active);
+            renderer.reDrawEverything();
+            stage.update();
+            Sig_UI.checkBootstrapMenu(signal,signal._template.signalMenu, ul);
+            STORAGE.save();
+         };
+
+         ul.append(signal._template.signalMenu.map((data) => Sig_UI.createBootstrapMenuItems(signal, data, updateFunc)));
+
+         Sig_UI.checkBootstrapMenu(signal,signal._template.signalMenu, ul);
+
+         return ul;
+      }
+      return "";
+   },
+
+   createBootstrapMenuItems(signal, menu_item, update) {
+      if (menu_item) {
+         if (Array.isArray(menu_item)) {
+            let items = menu_item.map((item) => Sig_UI.createBootstrapMenuItems(signal, item, update)).justNull();
+            if (items) {
+               return ui.div("p-3 border-bottom", BS.create_buttonToolbar(items));
+            } else return null;
+         } else if (menu_item.type == "buttonGroup" || menu_item.type == "btn") {
+            let buttons = menu_item.type == "buttonGroup" ? menu_item.items : [menu_item];
+            buttons = buttons
+               .filter(
+                  (mi) =>
+                     mi.visual_elements?.length > 0 &&
+                     mi.visual_elements.every((ve) => {
+                        let on = ve.on();
+                        if (Array.isArray(on)) {
+                           if (on.includes(mi.command)) on = on.toSpliced(on.indexOf(mi.command), 1);
+                        } else if (on == mi.command) return true;
+
+                        return signal.check(on);
+                     })
+               )
+               .map((item) =>
+                  ui
+                     .create_toggleButton(item.text, item.command)
+                     .on("click", (e) => update.bind(signal)(item.command, $(e.target).hasClass("active")))
+               )
+               .justNull();
+            if (buttons) return ui.create_buttonGroup(buttons);
+            else return null;
+         } else if (menu_item.type == "dropdown") {
+            return Sig_UI.create_SpeedDropDown(menu_item.command, menu_item.text, update.bind(signal));
+         }
+      }
+   },
+
+   checkBootstrapMenu(signal,data, popup) {
+      if (data) {
+         if (Array.isArray(data)) {
+            data.forEach((item) => Sig_UI.checkBootstrapMenu(signal,item, popup));
+         } else if (data.type == "buttonGroup") {
+            data.items.forEach((item) => {
+               let button = $("#btn_" + item.text.replace(" ", "_"), popup);
+               if (button.length == 1) {
+                  button.toggleClass("active", signal.check(item.command));
+                  if (item.visual_elements.every((ve) => ve.isAllowed(signal))) button.removeAttr("disabled");
+                  else button.attr("disabled", "disabled");
+               }
+            });
+         } else if (data.type == "dropdown") {
+            let button = $("#btn_" + data.text.replace(" ", "_"), popup);
+            if (button.length == 1) {
+               const v = signal.get(data.command);
+               button.text(data.text + (v > 0 ? " Kz " + v : " aus"));
+            }
+         } else if (data.type == "btn") {
+            let button = $("#btn_" + data.text.replace(" ", "_"), popup);
+            if (button.length == 1) {
+               button.toggleClass("active", signal.check(data.command));
+               if (data.visual_elements.every((ve) => ve.isAllowed(signal))) button.removeAttr("disabled");
+               else button.attr("disabled", "disabled");
+            }
+         }
+      }
    },
 };

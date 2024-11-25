@@ -161,7 +161,7 @@ html, body {
     padding: 0px !important;
 }
 
-#navFeatures,#nav-home .dropdown-item {
+#navFeatures .dropdown-item,#nav-home .dropdown-item {
     padding-left: 40px !important;
 }
 
@@ -182,6 +182,11 @@ html, body {
     padding-top: 2px;
     display: block;
     float: left;
+}
+
+.dropdown-item span{
+    vertical-align: middle;
+    margin-left: 10px;
 }
 
 #drawingPanel {
