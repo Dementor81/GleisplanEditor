@@ -212,12 +212,15 @@ class Signal {
       } else if (ve instanceof TextElement) {
          if (!ve.pos()) throw new Error("TextElement doesnt have a position");
          if (ve.isAllowed(this) && ve.isEnabled(this)) {
-            var js_text = new createjs.Text(ve.getText(this), ve.format, ve.color);
-            [js_text.x, js_text.y] = ve.pos();
-            js_text.textAlign = "center";
-            js_text.textBaseline = "top";
-            js_text.lineHeight = 20;
-            this._rendering.container.addChild(js_text);
+            let txt = ve.getText(this);
+            if (txt == null) return false;
+            if (typeof txt == "string") txt = txt.replace("-", "\n");
+            const displayObject = new createjs.Text(txt, ve.format, ve.color);
+            [displayObject.x, displayObject.y] = ve.pos();
+            displayObject.textAlign = "center";
+            let current_bounds = displayObject.getBounds();
+            
+            this._rendering.container.addChild(displayObject);
          }
       } else if (ve instanceof VisualElement) {
          if (ve.isAllowed(this) && ve.isEnabled(this)) {
@@ -396,13 +399,13 @@ const Sig_UI = {
             signal.set_stellung(command, !active);
             renderer.reDrawEverything();
             stage.update();
-            Sig_UI.checkBootstrapMenu(signal,signal._template.signalMenu, ul);
+            Sig_UI.checkBootstrapMenu(signal, signal._template.signalMenu, ul);
             STORAGE.save();
          };
 
          ul.append(signal._template.signalMenu.map((data) => Sig_UI.createBootstrapMenuItems(signal, data, updateFunc)));
 
-         Sig_UI.checkBootstrapMenu(signal,signal._template.signalMenu, ul);
+         Sig_UI.checkBootstrapMenu(signal, signal._template.signalMenu, ul);
 
          return ul;
       }
@@ -445,10 +448,10 @@ const Sig_UI = {
       }
    },
 
-   checkBootstrapMenu(signal,data, popup) {
+   checkBootstrapMenu(signal, data, popup) {
       if (data) {
          if (Array.isArray(data)) {
-            data.forEach((item) => Sig_UI.checkBootstrapMenu(signal,item, popup));
+            data.forEach((item) => Sig_UI.checkBootstrapMenu(signal, item, popup));
          } else if (data.type == "buttonGroup") {
             data.items.forEach((item) => {
                let button = $("#btn_" + item.text.replace(" ", "_"), popup);

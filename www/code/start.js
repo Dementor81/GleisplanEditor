@@ -584,6 +584,7 @@ const UI = {
    },
 
    hideStartScreen() {
+      $("myCanvas").focus();
       bootstrap.Modal.getInstance(loadModal).hide();
    },
 

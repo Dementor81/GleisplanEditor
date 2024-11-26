@@ -22,13 +22,21 @@ class trackRendering_textured {
    }
 
    cleanUp() {
-      if (this._idleCallback) cancelIdleCallback(this._idleCallback);
+      if (this._idleCallback) {
+         if (window.requestIdleCallback) cancelIdleCallback(this._idleCallback);
+         else clearTimeout(this._idleCallback);
+      }
 
-      const rIC = requestIdleCallback ?? setTimeout;
+      const myIdleCallback =
+         window.requestIdleCallback ||
+         function (callback) {
+            return setTimeout(callback, 1);
+         };
 
-      this._idleCallback = rIC(
+      this._idleCallback = myIdleCallback(
          function (r) {
-            const toBeRemoved = track_container.children.filter((c) => c.track && !this.TrackVisible(c.track));
+            const bounds = this.calcCanvasSize();
+            const toBeRemoved = track_container.children.filter((c) => c.track && !this.TrackVisible(c.track, bounds));
             toBeRemoved.forEach((c) => {
                const signalsToBeRemoved = signal_container.children.filter((cs) => cs.data._positioning.track == c.track);
                signalsToBeRemoved.forEach((cs) => {
@@ -44,6 +52,14 @@ class trackRendering_textured {
       );
    }
 
+   calcCanvasSize() {
+      const width = (stage.canvas.width + GRID_SIZE * 2) / stage.scaleX,
+         height = (stage.canvas.height + GRID_SIZE * 2) / stage.scaleY,
+         x = (-stage.x - GRID_SIZE) / stage.scaleX,
+         y = (-stage.y - GRID_SIZE) / stage.scaleY;
+      return { left: x, top: y, right: x + width, bottom: y + height };
+   }
+
    ///force=false means, each element decides if it needs to be redrawn. If something global changed,
    ///like the scale, force needs to be true.
    /// dont_optimize parameter disables the optimasation to only handle and draw elements inside the viewport
@@ -56,9 +72,10 @@ class trackRendering_textured {
             this.reDrawEverything(force, dont_optimize);
          }, 500);
       else {
-         
          if (this._rendering == undefined) {
             this._rendering = { dont_optimize: dont_optimize };
+            this._rendering.screen_rectangle = this.calcCanvasSize();
+
             if (force) {
                track_container.removeAllChildren();
                signal_container.removeAllChildren();
@@ -73,7 +90,7 @@ class trackRendering_textured {
                   this._rendering.lodChanged = true;
                }
             }
-            
+
             this.renderAllTracks(track_container, force);
             this.renderAllSwitches(track_container, force);
             this.renderAllTrains();
@@ -91,7 +108,8 @@ class trackRendering_textured {
       this.bumperImg = pl.getImage("bumper");
       this.schwellenHöhe = this.schwellenImg.height * trackRendering_textured.TRACK_SCALE;
       this.schwellenHöhe_2 = this.schwellenHöhe / 2;
-      this.schwellenBreite = (this.schwellenImg.width / trackRendering_textured.SCHWELLEN_VARIANTEN) * trackRendering_textured.TRACK_SCALE;
+      this.schwellenBreite =
+         (this.schwellenImg.width / trackRendering_textured.SCHWELLEN_VARIANTEN) * trackRendering_textured.TRACK_SCALE;
       this.schwellenGap = this.schwellenBreite * 1;
       this.rail_offset = this.schwellenHöhe / 4.7;
 
@@ -192,10 +210,9 @@ class trackRendering_textured {
    }
 
    renderAllTracks(c, force) {
-      for (const t of tracks) {         
-         if (this.TrackVisible(t)) {
+      for (const t of tracks) {
+         if (this.TrackVisible(t, this._rendering.screen_rectangle)) {
             if (force || !t.rendered) {
-               
                this.renderTrack(c, t);
                for (const signal of t.signals) {
                   const c = signal_container.addChild(createSignalContainer(signal));
@@ -251,7 +268,8 @@ class trackRendering_textured {
 
       const bounds_points = this.drawStraightTrack(track_container, track);
 
-      if (type(track.switchAtTheEnd) == "Track") bounds_points.push(...this.drawCurvedTrack(track_container, track, track.switchAtTheEnd));
+      if (type(track.switchAtTheEnd) == "Track")
+         bounds_points.push(...this.drawCurvedTrack(track_container, track, track.switchAtTheEnd));
 
       if (selection.isSelectedObject(track)) this.#isSelected(track_container);
 
@@ -603,29 +621,29 @@ class trackRendering_textured {
 
    PointVisible(p1) {
       if (this._rendering?.dont_optimize) return true;
-      const width = stage.canvas.width / stage.scaleX,
-         height = stage.canvas.height / stage.scaleY,
-         x = -stage.x / stage.scaleX,
-         y = -stage.y / stage.scaleY;
+      const screen_rectangle = this._rendering.screen_rectangle;
 
-      return p1.x.between(x, x + width) && p1.y.between(y, y + height);
+      return (
+         p1.x.between(screen_rectangle.left, screen_rectangle.right) &&
+         p1.y.between(screen_rectangle.top, screen_rectangle.bottom)
+      );
    }
 
-   TrackVisible(track) {
+   TrackVisible(track, screen_rectangle) {
       if (this._rendering?.dont_optimize) return true;
-      const width = stage.canvas.width / stage.scaleX,
-         height = stage.canvas.height / stage.scaleY,
-         x = -stage.x / stage.scaleX,
-         y = -stage.y / stage.scaleY;
-      const screen_rectangle = { left: x, top: y, right: x + width, bottom: y + height };
 
-      const isInside = (point, rect) => point.x > rect.left && point.x < rect.right && point.y > rect.top && point.y < rect.bottom;
+      const isInside = (point, rect) =>
+         point.x > rect.left && point.x < rect.right && point.y > rect.top && point.y < rect.bottom;
 
+      //first the easy part, if either on of its end points is visible
       if (isInside(track.start, screen_rectangle) || isInside(track.end, screen_rectangle)) return true; //
 
+      //now we have to make sure, if the track is going through the whole screen
+      //we check, if the track intersects one of the screen borders
+
       //left
-      let p1 = { x: x, y: y },
-         p2 = { x: x, y: screen_rectangle.bottom };
+      let p1 = { x: screen_rectangle.left, y: screen_rectangle.top },
+         p2 = { x: screen_rectangle.left, y: screen_rectangle.bottom };
       if (geometry.doLineSegmentsIntersect(p1, p2, track.start, track.end)) return true;
       //bottom
       p1 = p2;
@@ -633,12 +651,12 @@ class trackRendering_textured {
       if (geometry.doLineSegmentsIntersect(p1, p2, track.start, track.end)) return true;
       //right
       p1 = p2;
-      p2 = { x: screen_rectangle.right, y: y };
+      p2 = { x: screen_rectangle.right, y: screen_rectangle.top };
       if (geometry.doLineSegmentsIntersect(p1, p2, track.start, track.end)) return true;
-      //top
-      p1 = p2;
+      //top we do not need to check all borders
+      /* p1 = p2;
       p2 = { x: x, y: y };
-      if (geometry.doLineSegmentsIntersect(p1, p2, track.start, track.end)) return true;
+      if (geometry.doLineSegmentsIntersect(p1, p2, track.start, track.end)) return true; */
 
       return false;
    }
