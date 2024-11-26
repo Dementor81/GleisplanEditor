@@ -120,7 +120,11 @@ function initSignals() {
 
          new VisualElement()
             .on(CONDITIONS.BAHNHOF)
-            .childs(["hp_asig_sh1_lichtp", new VisualElement("hp_asig_sh1_licht").on("ersatz=sh1").off("hp>0"), "hp_asig_sh1_schute"]),
+            .childs([
+               "hp_asig_sh1_lichtp",
+               new VisualElement("hp_asig_sh1_licht").on("ersatz=sh1").off("hp>0"),
+               "hp_asig_sh1_schute",
+            ]),
 
          new VisualElement()
             .on([CONDITIONS.Asig, CONDITIONS.Zsig, CONDITIONS.SBK])
@@ -132,28 +136,37 @@ function initSignals() {
 
          new VisualElement()
             .on([CONDITIONS.Asig, CONDITIONS.BKsig])
-            .childs(["hp_zs1_lichtp", new VisualElement("hp_zs1_licht").on("ersatz=zs8").off("hp>0").blinkt(true), "hp_zs1_schuten"]),
+            .childs([
+               "hp_zs1_lichtp",
+               new VisualElement("hp_zs1_licht").on("ersatz=zs8").off("hp>0").blinkt(true),
+               "hp_zs1_schuten",
+            ]),
 
          new VisualElement()
             .on("zs3>0")
             .off("zs3=40||zusatz_oben")
-            .childs(["zs3", new TextElement("zs3", "bold 80px Arial").pos([115, 80])]),
+            .childs(["zs3", new TextElement("zs3", [80, "Arial", 1]).pos([115, 80])]),
 
          new VisualElement()
             .on("zs3v>0")
             .off("zusatz_unten")
-            .childs(["zs3v", new TextElement("zs3v", "bold 80px Arial", "#ffde36").pos([115, 890])]),
+            .childs(["zs3v", new TextElement("zs3v", [80, "Arial", 1], "#ffde36").pos([115, 890])]),
 
-         new VisualElement("zs3_licht").on("zusatz_oben").childs([new TextElement("zs3", "60px DOT").pos([120, 78]).on("zs3>0").off("hp<=0")]),
+         new VisualElement("zs3_licht")
+            .on("zusatz_oben")
+            .childs([new TextElement("zs3", [60,"DOT"]).pos([120, 78]).on("zs3>0").off("hp<=0")]),
          new VisualElement("zs3v_licht")
             .on("zusatz_unten")
-            .childs([new TextElement("zs3v", "60px DOT", "#ffde36").pos([120, 885]).on("zs3v>0").off("hp<=0")]),
+            .childs([new TextElement("zs3v", [60,"DOT"], "#ffde36").pos([120, 885]).on("zs3v>0").off("hp<=0")]),
          new VisualElement()
             .on([CONDITIONS.Asig, CONDITIONS.BKsig])
             .on("zs6=1")
             .off("zs3v>0")
-            .childs([new VisualElement("zs6_blech_unten").off("zusatz_unten"), new VisualElement("zs6_licht_unten").on("zusatz_unten").on("hp>0")]),
-         new VisualElement("schild").on("bez").childs([new TextElement("bez", "bold 55px condenced", "#333").pos([116, 1033])]),
+            .childs([
+               new VisualElement("zs6_blech_unten").off("zusatz_unten"),
+               new VisualElement("zs6_licht_unten").on("zusatz_unten").on("hp>0"),
+            ]),
+         new VisualElement("schild").on("bez").childs([new TextElement("bez", [55,"condenced",1], "#333").pos([116, 1033]).bounds([52,63])]),
          ,
       ],
       ["hp=0", "vr=0", "HPsig", "verw=asig", "mastschild=wrw"]
@@ -187,8 +200,10 @@ function initSignals() {
          new VisualElement()
             .on("zs3v>0")
             .off("zusatz_unten")
-            .childs(["zs3v", new TextElement("zs3v", "bold 80px Arial", "#ffde36").pos([115, 890])]),
-         new VisualElement("zs3v_licht").on("zusatz_unten").childs([new TextElement("zs3v", "60px DOT", "#ffde36").pos([120, 885]).on("zs3v>0")]),
+            .childs(["zs3v", new TextElement("zs3v", [80, "Arial", 1], "#ffde36").pos([115, 890])]),
+         new VisualElement("zs3v_licht")
+            .on("zusatz_unten")
+            .childs([new TextElement("zs3v", [60,"DOT"], "#ffde36").pos([120, 885]).on("zs3v>0")]),
       ],
       ["vr=0", "VRsig"]
    );
@@ -204,12 +219,14 @@ function initSignals() {
       "Ks Hauptsignal",
       "ks",
       [
-         new VisualElement("zs3_licht").on("zusatz_oben").childs([new TextElement("zs3", "85px DOT").pos([90, 40]).on("zs3>0").off("hp<=0")]),
+         new VisualElement("zs3_licht")
+            .on("zusatz_oben")
+            .childs([new TextElement("zs3", [85,"DOT"]).pos([90, 40]).on("zs3>0").off("hp<=0")]),
 
          new VisualElement()
             .on("zs3>0")
             .off("!zusatz_oben")
-            .childs(["zs3", new TextElement("zs3", "bold 80px Arial").pos([85, 80])]),
+            .childs(["zs3", new TextElement("zs3", [80, "Arial", 1]).pos([85, 80])]),
          "mast",
          "schirm_hp",
          "wrw",
@@ -232,28 +249,34 @@ function initSignals() {
             .on([CONDITIONS.Asig, CONDITIONS.BKsig, CONDITIONS.SBK])
             .childs(["zs1_optik", new VisualElement("zs1").on("ersatz=zs1").off("hp>0").blinkt(true)]),
 
-         new VisualElement().on([CONDITIONS.Esig, CONDITIONS.Zsig]).childs(["zs7_optik", new VisualElement("zs7").on("ersatz=zs7").off("hp>0")]),
+         new VisualElement()
+            .on([CONDITIONS.Esig, CONDITIONS.Zsig])
+            .childs(["zs7_optik", new VisualElement("zs7").on("ersatz=zs7").off("hp>0")]),
          ,
-         new VisualElement().on(CONDITIONS.BAHNHOF).childs(["sh1_optik", "zs1_optik", new VisualElement("zs1,sh1").on("ersatz=sh1").off("hp>0")]),
+         new VisualElement()
+            .on(CONDITIONS.BAHNHOF)
+            .childs(["sh1_optik", "zs1_optik", new VisualElement("zs1,sh1").on("ersatz=sh1").off("hp>0")]),
 
          new VisualElement()
             .on("vr_op=verk&&VRsig")
             .childs(["kennlicht_optik", new VisualElement("kennlicht").on("verk=1").off("hp=0||hp=1&&zs3v<=0")]),
          ,
-         new VisualElement().on(CONDITIONS.BAHNHOF).childs(["kennlicht_optik", new VisualElement("kennlicht").on("ersatz=kennlicht").off("hp>=0")]),
+         new VisualElement()
+            .on(CONDITIONS.BAHNHOF)
+            .childs(["kennlicht_optik", new VisualElement("kennlicht").on("ersatz=kennlicht").off("hp>=0")]),
 
          new VisualElement()
             .on("zs3v>0")
             .off("zusatz_unten")
-            .childs(["zs3v", new TextElement("zs3v", "bold 80px Arial", "#ffde36").pos([85, 490])]),
+            .childs(["zs3v", new TextElement("zs3v", [80, "Arial", 1], "#ffde36").pos([85, 490])]),
 
          new VisualElement("zs6_licht").on("zs6=1").on("zusatz_oben").off("hp<=0||zs3>0"),
 
          new VisualElement("zs3v_licht")
             .on("zusatz_unten")
-            .childs([new TextElement("zs3v", "85px DOT", "#ffde36").on("zs3v>0").off("hp<=0").pos([90, 520])]),
+            .childs([new TextElement("zs3v", [85,"DOT"], "#ffde36").on("zs3v>0").off("hp<=0").pos([90, 520])]),
 
-         new VisualElement("schild").on("bez").childs([new TextElement("bez", "bold 55px condenced", "#333").pos([85, 634])]),
+         new VisualElement("schild").on("bez").childs([new TextElement("bez", [55,"condenced",1], "#333").pos([85, 634])]),
       ],
       ["HPsig", CONDITIONS.Asig, "hp=0"]
    );
@@ -321,7 +344,9 @@ function initSignals() {
          "schirm_vr",
          new VisualElement("ks2_vr").on("hp=2"),
 
-         new VisualElement().on("hp=1").childs([new VisualElement("ks1_vr").on("zs3v>0").blinkt(true), new VisualElement("ks1_vr").off("zs3v>0")]),
+         new VisualElement()
+            .on("hp=1")
+            .childs([new VisualElement("ks1_vr").on("zs3v>0").blinkt(true), new VisualElement("ks1_vr").off("zs3v>0")]),
 
          new VisualElement().on("vr_op.wdh").childs(["sh1_optik", new VisualElement("verk").off("hp=0||hp=1&&zs3v<=0")]),
 
@@ -332,11 +357,11 @@ function initSignals() {
          new VisualElement()
             .on("zs3v>0")
             .off("zusatz_unten")
-            .childs(["zs3v", new TextElement("zs3v", "bold 80px Arial", "#ffde36").pos([85, 490])]),
+            .childs(["zs3v", new TextElement("zs3v", [80, "Arial", 1], "#ffde36").pos([85, 490])]),
 
          new VisualElement("zs3v_licht")
             .on("zusatz_unten")
-            .childs([new TextElement("zs3v", "85px DOT", "#ffde36").on("zs3v>0").off("hp<=0").pos([90, 520])]),
+            .childs([new TextElement("zs3v", [85,"DOT"], "#ffde36").on("zs3v>0").off("hp<=0").pos([90, 520])]),
       ],
       ["VRsig", "hp=2"]
    );
@@ -366,7 +391,7 @@ function initSignals() {
          "schute_r_rechts",
          "schute_w_oben",
          "schute_w_unten",
-         new VisualElement("schild").on("bez").childs([new TextElement("bez", "bold 55px condenced", "#333").pos([210, 125])]),
+         new VisualElement("schild").on("bez").childs([new TextElement("bez", [55,"condenced",1], "#333").pos([210, 125])]),
       ],
       "hp=0"
    );
@@ -378,7 +403,10 @@ function initSignals() {
    signalTemplates.ne4.scale = 0.2;
    signalTemplates.ne4.previewsize = 10;
 
-   signalTemplates.ne1 = new SignalTemplate("ne1", "Ne 1", "basis", ["ne1", new TextElement("ne1", "bold 20px Arial").pos([100, 105])]);
+   signalTemplates.ne1 = new SignalTemplate("ne1", "Ne 1", "basis", [
+      "ne1",
+      new TextElement("ne1", [20, "Arial", 1]).pos([100, 105]),
+   ]);
    signalTemplates.ne1.scale = 0.15;
    signalTemplates.ne1.distance_from_track = 5;
    signalTemplates.ne2 = new SignalTemplate("ne2", "Ne 2", "basis");
@@ -389,7 +417,7 @@ function initSignals() {
       "lf6",
       "Lf 6",
       "basis",
-      ["lf6", new TextElement("geschw", "bold 110px Arial", "#333").pos([98, 8])],
+      ["lf6", new TextElement("geschw", [110, "Arial", 1], "#333").pos([98, 8])],
       ["slave", "geschw=9"]
    );
    signalTemplates.lf6.createSignalCommandMenu(["geschw()"]);
@@ -399,7 +427,7 @@ function initSignals() {
       "lf7",
       "Lf 7",
       "basis",
-      ["lf7", new TextElement("geschw", "bold 130px Arial", "#333").pos([55, 20])],
+      ["lf7", new TextElement("geschw", [130, "Arial", 1], "#333").pos([55, 20])],
       ["master", "geschw=9"]
    );
    signalTemplates.lf7.createSignalCommandMenu(["geschw()"]);
@@ -418,7 +446,7 @@ function initSignals() {
       "zs3",
       "Zs 3 (alleinst.)",
       "basis",
-      ["zs3", new TextElement("geschw", "bold 110px Arial").pos([90, 60])],
+      ["zs3", new TextElement("geschw",[120, "Arial", 1]).pos([90, 60])],
       "geschw=9"
    );
 
@@ -440,7 +468,11 @@ function initSignals() {
       "zusatz",
       "Zusatzanzeiger",
       "basis",
-      ["zusatzanzeiger", new VisualElement("zs6_licht").on("zs6=1"), new TextElement("zs3", "85px DOT").pos([70, 40]).off("zs6=1").on("zs3>0")],
+      [
+         "zusatzanzeiger",
+         new VisualElement("zs6_licht").on("zs6=1"),
+         new TextElement("zs3", [85,"DOT"]).pos([70, 40]).off("zs6=1").on("zs3>0"),
+      ],
       "zs6=1"
    );
    signalTemplates.zusatzSignal.scale = 0.15;

@@ -98,19 +98,22 @@ class TextElement extends VisualElement {
    #_source;
    #_width_height;
 
-   constructor(source, format = "bold 25px Arial", color = "#eee") {
+   constructor(source, format = ["25","Arial","bold"], color = "#eee") {
       super();
       this.#_source = source;
       this.#_format = format;
       this.#_color = color;
    }
 
+   
    get format() {
       return this.#_format;
    }
+
    get color() {
       return this.#_color;
    }
+
 
    //must be an array containing max width and height
    bounds(width_height){

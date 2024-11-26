@@ -212,14 +212,26 @@ class Signal {
       } else if (ve instanceof TextElement) {
          if (!ve.pos()) throw new Error("TextElement doesnt have a position");
          if (ve.isAllowed(this) && ve.isEnabled(this)) {
+            const formatString = (f) => `${f[2] ? "bold" : ""} ${f[0]}px ${f[1]}`;
+
             let txt = ve.getText(this);
             if (txt == null) return false;
             if (typeof txt == "string") txt = txt.replace("-", "\n");
-            const displayObject = new createjs.Text(txt, ve.format, ve.color);
+            let ar = clone(ve.format);
+            const displayObject = new createjs.Text(txt, formatString(ar), ve.color);
             [displayObject.x, displayObject.y] = ve.pos();
             displayObject.textAlign = "center";
-            let current_bounds = displayObject.getBounds();
-            
+
+            let current_bounds, max_bounds;
+            do {
+               current_bounds = displayObject.getBounds();
+               max_bounds = ve.bounds();
+               if (max_bounds && (current_bounds.width > max_bounds[0] || current_bounds.height > max_bounds[1])) {
+                  ar[0] -= 5;
+                  displayObject.font = formatString(ar);
+                  displayObject.lineHeight = ar[0] + 5;
+               } else break;
+            } while (true);
             this._rendering.container.addChild(displayObject);
          }
       } else if (ve instanceof VisualElement) {
