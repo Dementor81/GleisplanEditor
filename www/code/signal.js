@@ -229,7 +229,7 @@ class Signal {
                if (max_bounds && (current_bounds.width > max_bounds[0] || current_bounds.height > max_bounds[1])) {
                   ar[0] -= 5;
                   displayObject.font = formatString(ar);
-                  displayObject.lineHeight = ar[0] + 5;
+                  displayObject.lineHeight = ar[0];
                } else break;
             } while (true);
             this._rendering.container.addChild(displayObject);

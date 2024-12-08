@@ -11,10 +11,11 @@ Bugs:
     ✔ Vorsignalisierung KS und KS/HV @done(24-06-13 16:40)
     ✔ bounds werden bei Strecken mit bögen falsch gesetzt @done(24-07-06 12:50)
     ✔ lf6 lf7 signalisieren sich nicht automatisch vor @done(24-07-15 17:46)
-    ☐ lange bezeichnungen sprengen das schild, Text muss sich autom. verkleinern
+    ✔ lange bezeichnungen sprengen das schild, Text muss sich autom. verkleinern @done(24-12-08 15:36)
     ☐ Züge bleiben auf gelöschten/geänderten phantom Gleisen
     ☐ manchmal werden Signale verdoppelt
     ☐ navbar funktioniert bei kleinen Bildschirmen nicht
+    ☐ züge sehr schnell über weichen bewegen, macht sie kaputt
 
 Content:
     ✔ Ne 2 @done(24-10-05 12:13)
@@ -88,6 +89,7 @@ Big Features:
     ☐ Weichen selbst zeichen und beim Stellen Weichenzunge bewegen
     ☐ Bilder hinzufügen
     ☐ Raster verdichten, so dass komplexere Anlagen möglich sind, Gleise aber immer eine bestimmte Rasterweite entfernt sind
+    ☐ Strecken auch von oben nach unten bauen
 
 
 

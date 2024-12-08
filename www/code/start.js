@@ -7,6 +7,8 @@ const MODE_EDIT = 2;
 
 const GRID_SIZE = 100;
 const GRID_SIZE_2 = GRID_SIZE / 2;
+const GRID_SUB_STEPS = 4;
+const GRID_SUB_SIZE = GRID_SIZE/GRID_SUB_STEPS;
 
 const SNAP_2_GRID = 30;
 const MAX_SCALE = 5;
@@ -835,7 +837,7 @@ function handleMouseMove(event) {
                } else {
                   mouseAction.lineShape = new createjs.Shape();
                   overlay_container.addChild(mouseAction.lineShape);
-                  setTrackAnchorPoints();
+                  addTrackAnchorPoint(local_point);
                   mouseAction.action = MOUSE_DOWN_ACTION.BUILD_TRACK;
                }
             } else {
@@ -881,7 +883,7 @@ function handleMouseMove(event) {
    } else if (mouseAction.action === MOUSE_DOWN_ACTION.DND_SIGNAL) {
       dragnDropSignal(local_point, event.nativeEvent.altKey);
    } else if (mouseAction.action === MOUSE_DOWN_ACTION.BUILD_TRACK) {
-      setTrackAnchorPoints();
+      addTrackAnchorPoint(local_point);
       drawBluePrintTrack();
    } else if (mouseAction.action === MOUSE_DOWN_ACTION.SCROLL) {
       stage.x += event.nativeEvent.movementX;
@@ -952,8 +954,7 @@ function drawBluePrintTrack() {
    }
 }
 
-function setTrackAnchorPoints() {
-   let local_point = stage.globalToLocal(stage.mouseX, stage.mouseY);
+function addTrackAnchorPoint(local_point) {
 
    const ankerPoints = mouseAction.ankerPoints;
 
@@ -977,7 +978,7 @@ function setTrackAnchorPoints() {
             if (i >= 0) {
                //bis zu diesem Punkt alle vorhandenen Punkte löschen und den aktuellen Punkt versuchen neu einzutragen
                ankerPoints.splice(i);
-               setTrackAnchorPoints();
+               addTrackAnchorPoint(local_point);
             } else {
                //checks for the right slope
                //no other straight or 45° and the previous slope and current slope musst not create a 90° angle
@@ -1144,7 +1145,7 @@ const STORAGE = {
       undoHistory.pop();
       const last = undoHistory.lastItem();
       if (last) {
-         loadFromJson(last);
+         STORAGE.loadFromJson(last);
       } else tracks = [];
    },
 
