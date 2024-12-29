@@ -1,65 +1,95 @@
 <!DOCTYPE html>
-<html lang="de">
-   <head>
-      <meta charset="utf-8" />
-      <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
-      <meta http-equiv="Cache-control" content="no-cache, no-store, must-revalidate" />
-      <meta http-equiv="Pragma" content="no-cache" />
-      <link rel="shortcut icon" type="image/ico" href="favicon.ico" />
-      <title>Gleisplan</title>
-      <link rel="stylesheet" href="start.css" />
-      <link
-         href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
-         rel="stylesheet"
-         integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH"
-         crossorigin="anonymous"
-      />
-      <script
-         src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
-         integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
-         crossorigin="anonymous"
-      ></script>
-      <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
-      <script
-         src="https://code.jquery.com/jquery-3.7.1.min.js"
-         integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo="
-         crossorigin="anonymous"
-      ></script>
-      <script src="https://code.createjs.com/1.0.0/createjs.min.js"></script>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Rail Track with Sleepers</title>
+</head>
+<body>
+  <canvas id="railCanvas" width="800" height="600" style="border: 1px solid black;"></canvas>
+  <script>
+    const canvas = document.getElementById('railCanvas');
+    const ctx = canvas.getContext('2d');
 
-      <style type="text/css"></style>
-      <script>
-         "use strict";
+    // Define points for the track
+    const track1Start = { x: 100, y: 300 };
+    const track1End = { x: 300, y: 220 };
+    const track2Start = { x: 320, y: 240 };
+    const track2End = { x: 500, y: 400 };
 
-         $(() => {
-            init();
-         });
+    const controlPoint = {
+      x: track1End.x + (track2Start.x - track1End.x) / 2,
+      y: Math.min(track1End.y, track2Start.y) - 50,
+    };
 
-         function init() {
-            $("#svgContainer").load("raw%20signal%20images/HV.svg", function () {
-               $("#zs1_licht").hide();
-            });
-         }
+    // Function to get a point on the quadratic curve
+    function getPointOnCurve(t, p0, cp, p1) {
+      const x = (1 - t) * (1 - t) * p0.x + 2 * (1 - t) * t * cp.x + t * t * p1.x;
+      const y = (1 - t) * (1 - t) * p0.y + 2 * (1 - t) * t * cp.y + t * t * p1.y;
+      return { x, y };
+    }
 
-         function hideElement(elementId) {
-            const element = document.getElementById(elementId);
-            if (element) {
-               element.style.display = "none"; // Hides the element
-            }
-         }
+    // Function to get the tangent to the curve at a point
+    function getTangentOnCurve(t, p0, cp, p1) {
+      const x = 2 * (1 - t) * (cp.x - p0.x) + 2 * t * (p1.x - cp.x);
+      const y = 2 * (1 - t) * (cp.y - p0.y) + 2 * t * (p1.y - cp.y);
+      return { x, y };
+    }
 
-         // Function to show an element by changing the display property
-         function showElement(elementId) {
-            const element = document.getElementById(elementId);
-            if (element) {
-               element.style.display = "block"; // Shows the element
-            }
-         }
-      </script>
-   </head>
+    // Function to draw sleepers
+    function drawSleepers(p0, cp, p1, count, length) {
+      for (let i = 0; i <= count; i++) {
+        const t = i / count; // Parameter along the curve
+        const point = getPointOnCurve(t, p0, cp, p1);
+        const tangent = getTangentOnCurve(t, p0, cp, p1);
 
-   <body>
-    <div id="svgContainer"></div>
-      
-   </body>
+        // Perpendicular to tangent
+        const magnitude = Math.sqrt(tangent.x * tangent.x + tangent.y * tangent.y);
+        const unitTangent = { x: tangent.x / magnitude, y: tangent.y / magnitude };
+        const perp = { x: -unitTangent.y, y: unitTangent.x };
+
+        const start = {
+          x: point.x + perp.x * (length / 2),
+          y: point.y + perp.y * (length / 2),
+        };
+        const end = {
+          x: point.x - perp.x * (length / 2),
+          y: point.y - perp.y * (length / 2),
+        };
+
+        ctx.beginPath();
+        ctx.moveTo(start.x, start.y);
+        ctx.lineTo(end.x, end.y);
+        ctx.strokeStyle = 'brown';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+      }
+    }
+
+    // Draw the tracks
+    ctx.beginPath();
+    ctx.moveTo(track1Start.x, track1Start.y);
+    ctx.lineTo(track1End.x, track1End.y);
+    ctx.strokeStyle = 'blue';
+    ctx.lineWidth = 4;
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(track2Start.x, track2Start.y);
+    ctx.lineTo(track2End.x, track2End.y);
+    ctx.strokeStyle = 'red';
+    ctx.lineWidth = 4;
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(track1End.x, track1End.y);
+    ctx.quadraticCurveTo(controlPoint.x, controlPoint.y, track2Start.x, track2Start.y);
+    ctx.strokeStyle = 'green';
+    ctx.lineWidth = 4;
+    ctx.stroke();
+
+    // Draw the sleepers on the curve
+    drawSleepers(track1End, controlPoint, track2Start, 20, 20); // 20 sleepers, each 20px long
+  </script>
+</body>
 </html>

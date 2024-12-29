@@ -266,10 +266,10 @@ class trackRendering_textured {
       track_container.track = track;
       track_container.mouseChildren = false;
 
-      const bounds_points = this.drawStraightTrack(track_container, track);
+      const bounds_points = this.drawStraightTrack2(track_container, track);
 
       if (type(track.switchAtTheEnd) == "Track")
-         bounds_points.push(...this.drawCurvedTrack(track_container, track, track.switchAtTheEnd));
+         bounds_points.push(...this.drawCurvedTrack2(track_container, track, track.switchAtTheEnd));
 
       if (selection.isSelectedObject(track)) this.#isSelected(track_container);
 
@@ -283,7 +283,7 @@ class trackRendering_textured {
       const bounds = TOOLS.boundingBox(bounds_points);
       track_container.setBounds(bounds.x, bounds.y, bounds.width, bounds.height);
 
-      if (!this._rendering.dont_optimize) track_container.cache(bounds.x, bounds.y, bounds.width, bounds.height, MAX_SCALE + 2);
+      //if (!this._rendering.dont_optimize) track_container.cache(bounds.x, bounds.y, bounds.width, bounds.height, MAX_SCALE + 2);
 
       container.addChild(track_container);
       track.rendered = true;
@@ -321,12 +321,12 @@ class trackRendering_textured {
 
    updateTrack(container, track) {
       container.removeAllChildren();
-      this.drawStraightTrack(container, track);
+      this.drawStraightTrack2(container, track);
 
-      if (type(track.switchAtTheEnd) == "Track") this.drawCurvedTrack(container, track, track.switchAtTheEnd);
+      if (type(track.switchAtTheEnd) == "Track") this.drawCurvedTrack2(container, track, track.switchAtTheEnd);
       this.drawBumper(track, container);
 
-      container.updateCache();
+      //container.updateCache();
    }
 
    #isSelected(c) {
@@ -408,6 +408,28 @@ class trackRendering_textured {
       ];
    }
 
+   drawStraightTrack2(container, track) {
+      let endPoint = geometry.sub(track.end, track.start),
+         startPoint = new Point(0, 0);
+
+      const rail_shape = new createjs.Shape();
+      rail_shape.snapToPixel = true;
+
+      if (track.switchAtTheStart) startPoint = geometry.multiply(track.unit, GRID_SIZE_2);
+
+      if (track.switchAtTheEnd) endPoint = track.along(endPoint, GRID_SIZE_2);
+
+      if (geometry.distance(startPoint, endPoint) > 1) {
+         rail_shape.hitArea = this.createHitArea(startPoint, endPoint, track.deg);
+
+         this.drawSchwellen(track, startPoint, endPoint, container);
+         container.addChild(rail_shape);
+         this.drawStraightRail(rail_shape.graphics, track, startPoint, endPoint);
+      }
+
+      return this.calcBoundPoints(startPoint, endPoint, this.schwellenHöhe_2, track.rad, track.rad);
+   }
+
    drawStraightRail(g, track, startPoint, endPoint) {
       let points = this.calcBoundPoints(startPoint, endPoint, this.schwellenHöhe_2 - this.rail_offset, track.rad, track.rad);
 
@@ -423,104 +445,53 @@ class trackRendering_textured {
       }
    }
 
-   drawStraightTrack(container, track) {
-      let endPoint = geometry.sub(track.end, track.start),
-         startPoint = new Point(0, 0);
+   drawCurvedTrack2(container, track, nextTrack) {
+      const rail_distance = this.schwellenHöhe_2 - this.rail_offset;
+      const pc = geometry.sub(track.end, track.start); //local centerpoint of the curve
+      const p1 = geometry.add(pc, geometry.multiply(track.unit, -GRID_SIZE_2)), //startpoint
+         p2 = geometry.add(pc, geometry.multiply(nextTrack.unit, GRID_SIZE_2)); //endpoint
 
-      const rail_shape = new createjs.Shape();
-      rail_shape.snapToPixel = true;
+      //start and endpoint of each rail
+      const p1r1 = geometry.add(p1, geometry.perpendicularX(geometry.multiply(track.unit, rail_distance))),
+         p1r2 = geometry.add(p1, geometry.perpendicularX(geometry.multiply(track.unit, -rail_distance))),
+         p2r1 = geometry.add(p2, geometry.perpendicularX(geometry.multiply(nextTrack.unit, rail_distance))),
+         p2r2 = geometry.add(p2, geometry.perpendicularX(geometry.multiply(nextTrack.unit, -rail_distance)));
 
-      if (track.switchAtTheStart) startPoint = track.unit.multiply(this.main_x1);
-      else startPoint = geometry.add(startPoint, track.unit.multiply(-GRID_SIZE_2));
-      if (track.switchAtTheEnd) endPoint = geometry.add(endPoint, track.unit.multiply(-this.main_x1));
-      else endPoint = geometry.add(endPoint, track.unit.multiply(GRID_SIZE_2));
-      if (geometry.distance(startPoint, endPoint) > 1) {
-         rail_shape.hitArea = this.createHitArea(startPoint, endPoint, track.deg);
+      //controlpoint of each rail
+      const cpr1 = geometry.getIntersectionPointX(p1r1, track.unit, p2r1, nextTrack.unit);
+      const cpr2 = geometry.getIntersectionPointX(p1r2, track.unit, p2r2, nextTrack.unit);
+      const cp = geometry.getIntersectionPointX(p1, track.unit, p2, nextTrack.unit);
 
-         this.drawSchwellen(track, startPoint, endPoint, container);
-         container.addChild(rail_shape);
-         this.drawStraightRail(rail_shape.graphics, track, startPoint, endPoint);
-      }
+      // Function to get a point on the quadratic curve
+      function getPointOnCurve(t, p0, cp, p1) {
+         return {
+            x: (1 - t) * (1 - t) * p0.x + 2 * (1 - t) * t * cp.x + t * t * p1.x,
+            y: (1 - t) * (1 - t) * p0.y + 2 * (1 - t) * t * cp.y + t * t * p1.y,
+         };
+      }     
 
-      return this.calcBoundPoints(startPoint, endPoint, this.schwellenHöhe_2, track.rad, track.rad);
-   }
+      function getDegreeOfTangentOnCurve(t, p0, cp, p1) {
+         const dx = 2 * (1 - t) * (cp.x - p0.x) + 2 * t * (p1.x - cp.x);
+         const dy = 2 * (1 - t) * (cp.y - p0.y) + 2 * t * (p1.y - cp.y);       
+         return (Math.atan2(dy, dx) * 180) / Math.PI;
+       }
 
-   calcValuesForCurvedTrack(track1, track2) {
-      //get the horizontal and the diagonal track
-      const horizontalTrack = track1.deg == 0 ? track1 : track2;
-      const diagonalTrack = track1.deg == 0 ? track2 : track1;
-      //calculate the point on the horizontal Track, where the curve ends
-      //the centerpoint is always above or below the horizontal track
-      const p1 = horizontalTrack.along(track1.end, this.main_x1);
+      const regX = this.schwellenBreite / 2 / trackRendering_textured.TRACK_SCALE,
+         regY = this.schwellenHöhe_2 / trackRendering_textured.TRACK_SCALE;
+      let random;
+      for (let i = 0; i < 10; i++) {
+         const t = i / 10 + 0.04; // Parameter along the curve
+         const pointOnCurve = getPointOnCurve(t, p1, cp, p2);
+         const angle = getDegreeOfTangentOnCurve(t, p1, cp, p2);
 
-      //centerpoint is above or below the P1 point
-      const centerpoint = { x: p1.x, y: p1.y - trackRendering_textured.CURVE_RADIUS * Math.sign(track1.deg - track2.deg) };
-
-      //get the angle of diagonal track
-      let deg = findAngle(track1.end, diagonalTrack.start.equals(track1.end) ? diagonalTrack.end : diagonalTrack.start);
-
-      //some magic to get the angle for drawArc
-      deg += track1.deg + track2.deg > 0 ? 225 : 90;
-
-      //change the reference Point (we draw in local system but calculated in globalsystem)
-      return { centerpoint: geometry.sub(centerpoint, track1.start), deg: deg };
-   }
-
-   drawCurvedTrack(container, track, nextTrack) {
-      const values = this.calcValuesForCurvedTrack(track, nextTrack);
-      this.DrawSleepersInCircle(container, values.centerpoint, values.deg);
-
-      const shape = new createjs.Shape();
-      shape.snapToPixel = true;
-      container.addChild(shape);
-
-      const top = trackRendering_textured.CURVE_RADIUS - this.schwellenHöhe_2 + this.rail_offset,
-         bottom = trackRendering_textured.CURVE_RADIUS + this.schwellenHöhe_2 - this.rail_offset;
-
-      const rad = deg2rad(values.deg);
-      const rad2 = rad + π / 4;
-      trackRendering_textured.RAILS.forEach((r) => {
-         shape.graphics.setStrokeStyle(r[0]).beginStroke(r[1]);
-         shape.graphics.arc(values.centerpoint.x, values.centerpoint.y, top, rad, rad2);
-         shape.graphics.beginStroke(r[1]);
-         shape.graphics.arc(values.centerpoint.x, values.centerpoint.y, bottom, rad, rad2);
-         shape.graphics.endStroke();
-      });
-
-      return [
-         geometry.pointOnArc(trackRendering_textured.CURVE_RADIUS - this.schwellenHöhe_2, rad, values.centerpoint),
-         geometry.pointOnArc(trackRendering_textured.CURVE_RADIUS - this.schwellenHöhe_2, rad2, values.centerpoint),
-         geometry.pointOnArc(trackRendering_textured.CURVE_RADIUS + this.schwellenHöhe_2, rad, values.centerpoint),
-         geometry.pointOnArc(trackRendering_textured.CURVE_RADIUS + this.schwellenHöhe_2, rad2, values.centerpoint),
-      ];
-   }
-
-   drawArc(rail_shape, centerpoint, radius, start_deg, color, thickness) {
-      rail_shape.graphics
-         .setStrokeStyle(thickness)
-         .beginStroke(color)
-         .arc(centerpoint.x, centerpoint.y, radius, deg2rad(start_deg), deg2rad(start_deg + 45));
-   }
-
-   DrawSleepersInCircle(container, centerpoint, deg) {
-      const radius = trackRendering_textured.CURVE_RADIUS,
-         l = (π / 4) * radius,
-         anzSchwellen = Math.floor(l / (this.schwellenBreite + this.schwellenGap));
-
-      const startAngle = deg2rad(deg),
-         endAngle = startAngle + π / 4;
-
-      const step = (endAngle - startAngle) / anzSchwellen;
-      let rad = startAngle + step / 4,
-         random;
-
-      for (let i = 0; i < anzSchwellen; i++) {
          random = Math.randomInt(trackRendering_textured.SCHWELLEN_VARIANTEN - 1);
 
          container.addChild(
             new createjs.Bitmap(this.schwellenImg).set({
-               x: centerpoint.x + Math.cos(rad) * (radius + this.schwellenHöhe_2),
-               y: centerpoint.y + Math.sin(rad) * (radius + this.schwellenHöhe_2),
+               x: pointOnCurve.x,
+               y: pointOnCurve.y,
+               regY: regY,
+               regX: regX,
                scale: trackRendering_textured.TRACK_SCALE,
                sourceRect: new createjs.Rectangle(
                   (random * this.schwellenImg.width) / trackRendering_textured.SCHWELLEN_VARIANTEN,
@@ -528,12 +499,23 @@ class trackRendering_textured {
                   this.schwellenImg.width / trackRendering_textured.SCHWELLEN_VARIANTEN,
                   this.schwellenImg.height
                ),
-               rotation: (rad * 180) / Math.PI + 90,
+               rotation: angle,
             })
          );
-
-         rad += step;
       }
+
+      const shape = new createjs.Shape();
+      shape.snapToPixel = true;
+      container.addChild(shape);
+      trackRendering_textured.RAILS.forEach((r) => {
+         shape.graphics.setStrokeStyle(r[0]).beginStroke(r[1]);
+         shape.graphics.mt(p1r1.x, p1r1.y).quadraticCurveTo(cpr1.x, cpr1.y, p2r1.x, p2r1.y);
+         shape.graphics.beginStroke(r[1]);
+         shape.graphics.mt(p1r2.x, p1r2.y).quadraticCurveTo(cpr2.x, cpr2.y, p2r2.x, p2r2.y);
+         shape.graphics.endStroke();
+      });
+
+      return [p1r1, p1r2, p2r1, p2r2];
    }
 
    renderAllSwitches(c, force) {

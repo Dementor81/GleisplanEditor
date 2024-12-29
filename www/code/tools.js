@@ -161,7 +161,9 @@ function deepEqual(x, y) {
    const ok = Object.keys,
       tx = typeof x,
       ty = typeof y;
-   return x && y && tx === "object" && tx === ty ? ok(x).length === ok(y).length && ok(x).every((key) => deepEqual(x[key], y[key])) : x === y;
+   return x && y && tx === "object" && tx === ty
+      ? ok(x).length === ok(y).length && ok(x).every((key) => deepEqual(x[key], y[key]))
+      : x === y;
 }
 
 function clone(obj) {
@@ -301,7 +303,9 @@ const TOOLS = {
       }
 
       // Check if the closest point on the line is within the circle
-      const distanceToCircle = Math.sqrt(Math.pow(closestPointOnLine.x - circle.x, 2) + Math.pow(closestPointOnLine.y - circle.y, 2));
+      const distanceToCircle = Math.sqrt(
+         Math.pow(closestPointOnLine.x - circle.x, 2) + Math.pow(closestPointOnLine.y - circle.y, 2)
+      );
       if (distanceToCircle <= circle.radius)
          return {
             point: closestPointOnLine,
@@ -520,7 +524,8 @@ const geometry = {
    },
    getIntersectionPoint: function (line1, line2) {
       const denominator =
-         (line2.end.y - line2.start.y) * (line1.end.x - line1.start.x) - (line2.end.x - line2.start.x) * (line1.end.y - line1.start.y);
+         (line2.end.y - line2.start.y) * (line1.end.x - line1.start.x) -
+         (line2.end.x - line2.start.x) * (line1.end.y - line1.start.y);
 
       // If the denominator is 0, the lines are parallel and don't intersect
       if (denominator === 0) {
@@ -528,10 +533,12 @@ const geometry = {
       }
 
       const ua =
-         ((line2.end.x - line2.start.x) * (line1.start.y - line2.start.y) - (line2.end.y - line2.start.y) * (line1.start.x - line2.start.x)) /
+         ((line2.end.x - line2.start.x) * (line1.start.y - line2.start.y) -
+            (line2.end.y - line2.start.y) * (line1.start.x - line2.start.x)) /
          denominator;
       const ub =
-         ((line1.end.x - line1.start.x) * (line1.start.y - line2.start.y) - (line1.end.y - line1.start.y) * (line1.start.x - line2.start.x)) /
+         ((line1.end.x - line1.start.x) * (line1.start.y - line2.start.y) -
+            (line1.end.y - line1.start.y) * (line1.start.x - line2.start.x)) /
          denominator;
 
       // If ua or ub is less than 0 or greater than 1, the intersection point is outside of the segments
@@ -544,6 +551,31 @@ const geometry = {
       const intersectionY = line1.start.y + ua * (line1.end.y - line1.start.y);
 
       return new Point(intersectionX, intersectionY);
+   },
+   getIntersectionPointX: function (p1, d1, p2, d2) {
+      // Decompose the inputs into their components
+      /* const [p1.x, p1.y] = p1; // Origin of the first vector
+    const [d1.x, d1.y] = d1; // Direction of the first vector
+    const [p2.x, p2.y] = p2; // Origin of the second vector
+    const [d2.x, d2.y] = d2; // Direction of the second vector */
+
+      // Solve for t and s using the equations:
+      // p1.x + t * d1.x = p2.x + s * d2.x
+      // p1.y + t * d1.y = p2.y + s * d2.y
+      const denominator = d1.x * d2.y - d1.y * d2.x;
+
+      if (denominator === 0) {
+         return null; // Vectors are parallel or collinear
+      }
+
+      // Compute parameters t and s
+      const t = ((p2.x - p1.x) * d2.y - (p2.y - p1.y) * d2.x) / denominator;
+      const s = ((p2.x - p1.x) * d1.y - (p2.y - p1.y) * d1.x) / denominator;
+
+      // Compute the intersection point using either vector
+      const intersection = { x: p1.x + t * d1.x, y: p1.y + t * d1.y };
+
+      return intersection;
    },
    pointOnLine: function (point1, point2, targetPoint) {
       // Extract coordinates from the objects
@@ -606,6 +638,14 @@ const geometry = {
       return {
          y: p.y + Math.sin(deg2rad(deg + 90)) * distance,
          x: p.x + Math.cos(deg2rad(deg + 90)) * distance,
+      };
+   },
+
+   //calculates a point which is perpendicular to the given vector
+   perpendicularX: function (v) {
+      return {
+         y: v.x,
+         x: -v.y,
       };
    },
 
@@ -924,7 +964,9 @@ const BS = {
    },
 
    createAndAppendZs3(listGroup, signal, label) {
-      listGroup.append(this.create_ListGroupItem([this.create_label(label), this.createButtonContainer(this.create_Zs3DropDown(signal))]));
+      listGroup.append(
+         this.create_ListGroupItem([this.create_label(label), this.createButtonContainer(this.create_Zs3DropDown(signal))])
+      );
    },
 };
 

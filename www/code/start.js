@@ -8,9 +8,9 @@ const MODE_EDIT = 2;
 const GRID_SIZE = 100;
 const GRID_SIZE_2 = GRID_SIZE / 2;
 const GRID_SUB_STEPS = 4;
-const GRID_SUB_SIZE = GRID_SIZE/GRID_SUB_STEPS;
+const GRID_SUB_SIZE = GRID_SIZE / GRID_SUB_STEPS;
 
-const SNAP_2_GRID = 30;
+const SNAP_2_GRID = 10;
 const MAX_SCALE = 5;
 const MIN_SCALE = 0.2;
 
@@ -156,7 +156,11 @@ function init() {
 
             BS.createAccordionItem("Vorsignale", id, UI.newItemButtons(signalTemplates.hv_vr, signalTemplates.ks_vr)),
             BS.createAccordionItem("Lf-Signale", id, UI.newItemButtons(signalTemplates.lf6, signalTemplates.lf7)),
-            BS.createAccordionItem("Ne-Signale", id, UI.newItemButtons(signalTemplates.ne4, signalTemplates.ne1, signalTemplates.ne2)),
+            BS.createAccordionItem(
+               "Ne-Signale",
+               id,
+               UI.newItemButtons(signalTemplates.ne4, signalTemplates.ne1, signalTemplates.ne2)
+            ),
             BS.createAccordionItem(
                "Weitere",
                id,
@@ -321,7 +325,8 @@ function init() {
       if (selection.type == "Signal") {
          [].concat(selection.object).forEach((s) => {
             s._signalStellung = {};
-            if (s._template.initialSignalStellung) s._template.initialSignalStellung.forEach((i) => s.set_stellung(i, null, true));
+            if (s._template.initialSignalStellung)
+               s._template.initialSignalStellung.forEach((i) => s.set_stellung(i, null, true));
             STORAGE.save();
             renderer.reDrawEverything(true);
             stage.update();
@@ -515,7 +520,9 @@ const UI = {
                UI.activate_custom_mouse_mode();
             });
             $("#btnAddPlatform").click(() => {
-               custom_mouse_mode = $("#btnAddPlatform").hasClass("active") ? CUSTOM_MOUSE_ACTION.PLATTFORM : CUSTOM_MOUSE_ACTION.NONE;
+               custom_mouse_mode = $("#btnAddPlatform").hasClass("active")
+                  ? CUSTOM_MOUSE_ACTION.PLATTFORM
+                  : CUSTOM_MOUSE_ACTION.NONE;
                UI.activate_custom_mouse_mode();
             });
             break;
@@ -663,7 +670,8 @@ function selectObject(object, e) {
       selection.object = object;
       selection.type = t;
    } else {
-      if (e?.nativeEvent?.ctrlKey) selection.object = Array.isArray(selection.object) ? [...selection.object, object] : [selection.object, object];
+      if (e?.nativeEvent?.ctrlKey)
+         selection.object = Array.isArray(selection.object) ? [...selection.object, object] : [selection.object, object];
       else selection.object = object;
    }
    renderer.updateSelection();
@@ -776,10 +784,18 @@ function alignSignalContainerWithTrack(c) {
    let p;
    if (pos.above) {
       c.rotation = 270 + pos.track._tmp.deg;
-      p = geometry.perpendicular(coordinates, pos.track._tmp.deg, -renderer.SIGNAL_DISTANCE_FROM_TRACK - c.data._template.distance_from_track);
+      p = geometry.perpendicular(
+         coordinates,
+         pos.track._tmp.deg,
+         -renderer.SIGNAL_DISTANCE_FROM_TRACK - c.data._template.distance_from_track
+      );
    } else {
       c.rotation = 90 + pos.track._tmp.deg;
-      p = geometry.perpendicular(coordinates, pos.track._tmp.deg, renderer.SIGNAL_DISTANCE_FROM_TRACK + c.data._template.distance_from_track);
+      p = geometry.perpendicular(
+         coordinates,
+         pos.track._tmp.deg,
+         renderer.SIGNAL_DISTANCE_FROM_TRACK + c.data._template.distance_from_track
+      );
    }
    if (pos.flipped) c.rotation += 180;
 
@@ -936,7 +952,12 @@ function draw_SignalPositionLine() {
       const point = geometry.add(track.getPointfromKm(km), track.start);
       shape = new createjs.Shape();
       shape.name = "SignalPositionLine";
-      shape.graphics.setStrokeStyle(1).beginStroke("#e00").mt(mouseAction.container.x, mouseAction.container.y).lt(point.x, point.y).es();
+      shape.graphics
+         .setStrokeStyle(1)
+         .beginStroke("#e00")
+         .mt(mouseAction.container.x, mouseAction.container.y)
+         .lt(point.x, point.y)
+         .es();
       overlay_container.addChild(shape);
    }
 }
@@ -955,20 +976,29 @@ function drawBluePrintTrack() {
 }
 
 function addTrackAnchorPoint(local_point) {
-
    const ankerPoints = mouseAction.ankerPoints;
 
-   const current = new Point(Math.round(local_point.x / GRID_SIZE) * GRID_SIZE, Math.round(local_point.y / GRID_SIZE) * GRID_SIZE);
+   const current = new Point(
+      Math.round(local_point.x / GRID_SIZE) * GRID_SIZE,
+      Math.round(local_point.y / GRID_SIZE) * GRID_SIZE
+   );
 
    if (ankerPoints == null || ankerPoints.length == 0) {
       mouseAction.ankerPoints = [current];
    } else {
+      if (geometry.distance(local_point, current) > SNAP_2_GRID) {
+         /* if (ankerPoints.length > 1) {
+            ankerPoints.pop();
+         } */
+         return;
+      }
+
       const last = ankerPoints.lastItem();
       //if (!local_point.x.closeToBy(GRID_SIZE, SNAP_2_GRID) || !local_point.y.closeToBy(GRID_SIZE, SNAP_2_GRID)) return;
       if (!last.equals(current)) {
          const slope = geometry.slope(last, current);
          if (ankerPoints.length == 1) {
-            if (slope.is(1, 0, -1)) ankerPoints.push(current);
+            if (slope.between(1, -1)) ankerPoints.push(current);
          } else {
             let direction = Math.sign(ankerPoints[1].x - ankerPoints[0].x);
             //haben wir den Punkt schon eingetragen?
@@ -982,7 +1012,7 @@ function addTrackAnchorPoint(local_point) {
             } else {
                //checks for the right slope
                //no other straight or 45° and the previous slope and current slope musst not create a 90° angle
-               if (slope.is(1, 0, -1) && (slope == 0 || slope + geometry.slope(last, ankerPoints[ankerPoints.length - 2]) != 0)) {
+               if (slope.between(1, -1) && (slope == 0 || slope + geometry.slope(last, ankerPoints[ankerPoints.length - 2]) != 0)) {
                   ankerPoints.push(current);
                }
             }
@@ -1213,11 +1243,11 @@ const STORAGE = {
    },
 };
 
-/* function drawPoint(point, displayObject, label = "", color = "#000", size = 1) {
+function drawPoint(point, displayObject, label = "", color = "#000", size = 1) {
    const s = new createjs.Shape();
    s.graphics.setStrokeStyle(1).beginStroke(color).beginFill(color).drawCircle(0, 0, size);
-   s.x = point.x; //+ track.start.x;
-   s.y = point.y; //+ track.start.y;
+   s.x = point.x; 
+   s.y = point.y; 
 
    displayObject.addChild(s);
 
@@ -1226,6 +1256,6 @@ const STORAGE = {
       text.x = s.x;
       text.y = s.y - 5;
       text.textBaseline = "alphabetic";
-      debug_container.addChild(text);
+      displayObject.addChild(text);
    }
-} */
+}
