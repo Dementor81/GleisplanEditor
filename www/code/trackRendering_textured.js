@@ -83,7 +83,6 @@ class trackRendering_textured {
                train_container.removeAllChildren();
                this.calcRenderValues();
                tracks.forEach((t) => (t.rendered = false));
-               switches.forEach((sw) => (sw.rendered = false));
             } else {
                //if we passed the LOD in either direction we have to rerender the tracks
                if (this.LOD.between(this._lastRenderScale, stage.scale)) {
@@ -92,7 +91,6 @@ class trackRendering_textured {
             }
 
             this.renderAllTracks(track_container, force);
-            this.renderAllSwitches(track_container, force);
             this.renderAllTrains();
             this.renderAllGenericObjects();
             this._lastRenderScale = stage.scale;
@@ -111,6 +109,7 @@ class trackRendering_textured {
       this.schwellenBreite =
          (this.schwellenImg.width / trackRendering_textured.SCHWELLEN_VARIANTEN) * trackRendering_textured.TRACK_SCALE;
       this.schwellenGap = this.schwellenBreite * 1;
+      this.schwellenIntervall = this.schwellenBreite + this.schwellenGap;
       this.rail_offset = this.schwellenHöhe / 4.7;
 
       this.TRAIN_HEIGHT = this.schwellenHöhe - this.rail_offset;
@@ -266,10 +265,25 @@ class trackRendering_textured {
       track_container.track = track;
       track_container.mouseChildren = false;
 
+      const switch_container = new createjs.Container();
+      switch_container.name = "switch";
+      switch_container.mouseChildren = false;
+
       const bounds_points = this.drawStraightTrack2(track_container, track);
 
-      if (type(track.switchAtTheEnd) == "Track")
+      if (track.switchAtTheEnd == null) {
+         //draw longer track for bumper
+      } else if (type(track.switchAtTheEnd) == "Track")
          bounds_points.push(...this.drawCurvedTrack2(track_container, track, track.switchAtTheEnd));
+      else if (track == track.switchAtTheEnd.t1) {
+         switch_container.data = track.switchAtTheEnd;
+         this.renderSwitch2(switch_container, track.switchAtTheEnd);
+      }
+
+      if (track == track.switchAtTheStart?.t1) {
+         switch_container.data = track.switchAtTheStart;
+         this.renderSwitch2(switch_container, track.switchAtTheStart);
+      }
 
       if (selection.isSelectedObject(track)) this.#isSelected(track_container);
 
@@ -286,6 +300,7 @@ class trackRendering_textured {
       //if (!this._rendering.dont_optimize) track_container.cache(bounds.x, bounds.y, bounds.width, bounds.height, MAX_SCALE + 2);
 
       container.addChild(track_container);
+      container.addChild(switch_container);
       track.rendered = true;
    }
 
@@ -359,9 +374,9 @@ class trackRendering_textured {
       y += sin * (this.schwellenGap / 2);
 
       let l = geometry.distance(startPoint, endPoint);
-      let tmp = l / (this.schwellenBreite + this.schwellenGap);
+      let tmp = l / this.schwellenIntervall;
       let anzSchwellen = Math.floor(tmp);
-      let custom_gap = ((tmp - anzSchwellen) * (this.schwellenBreite + this.schwellenGap)) / anzSchwellen + this.schwellenGap;
+      let custom_gap = ((tmp - anzSchwellen) * this.schwellenIntervall) / anzSchwellen + this.schwellenGap;
 
       for (let i = 0; i < anzSchwellen; i++) {
          if (stage.scale < this.LOD) {
@@ -417,7 +432,7 @@ class trackRendering_textured {
 
       if (track.switchAtTheStart) startPoint = geometry.multiply(track.unit, GRID_SIZE_2);
 
-      if (track.switchAtTheEnd) endPoint = track.along(endPoint, GRID_SIZE_2);
+      if (track.switchAtTheEnd) endPoint = endPoint.add(geometry.multiply(track.unit, -GRID_SIZE_2));
 
       if (geometry.distance(startPoint, endPoint) > 1) {
          rail_shape.hitArea = this.createHitArea(startPoint, endPoint, track.deg);
@@ -426,6 +441,14 @@ class trackRendering_textured {
          container.addChild(rail_shape);
          this.drawStraightRail(rail_shape.graphics, track, startPoint, endPoint);
       }
+
+      /* const text = new createjs.Text(track.id, "Italic 10px Arial", "black");
+      const p = geometry.perpendicular(track.along(track.start, track.length / 2), track.deg, 15);
+
+      text.x = p.x;
+      text.y = p.y;
+      text.textBaseline = "alphabetic";
+      ui_container.addChild(text); */
 
       return this.calcBoundPoints(startPoint, endPoint, this.schwellenHöhe_2, track.rad, track.rad);
    }
@@ -468,13 +491,13 @@ class trackRendering_textured {
             x: (1 - t) * (1 - t) * p0.x + 2 * (1 - t) * t * cp.x + t * t * p1.x,
             y: (1 - t) * (1 - t) * p0.y + 2 * (1 - t) * t * cp.y + t * t * p1.y,
          };
-      }     
+      }
 
       function getDegreeOfTangentOnCurve(t, p0, cp, p1) {
          const dx = 2 * (1 - t) * (cp.x - p0.x) + 2 * t * (p1.x - cp.x);
-         const dy = 2 * (1 - t) * (cp.y - p0.y) + 2 * t * (p1.y - cp.y);       
+         const dy = 2 * (1 - t) * (cp.y - p0.y) + 2 * t * (p1.y - cp.y);
          return (Math.atan2(dy, dx) * 180) / Math.PI;
-       }
+      }
 
       const regX = this.schwellenBreite / 2 / trackRendering_textured.TRACK_SCALE,
          regY = this.schwellenHöhe_2 / trackRendering_textured.TRACK_SCALE;
@@ -516,13 +539,6 @@ class trackRendering_textured {
       });
 
       return [p1r1, p1r2, p2r1, p2r2];
-   }
-
-   renderAllSwitches(c, force) {
-      switches.forEach((sw) => {
-         if (this.PointVisible(sw.location) && (force || !sw.rendered)) this.renderSwitch(c, sw);
-         //if (sw.type.is(SWITCH_TYPE.CROSSING)) return;
-      });
    }
 
    calcSwitchValues(sw) {
@@ -572,11 +588,144 @@ class trackRendering_textured {
       this.renderSwitchUI(sw);
    }
 
+   drawSleepersOnSwitch(container, sw) {
+      // Function to get a point on the quadratic curve
+      function getPointOnCurve(t, p0, cp, p1) {
+         return new Point(
+            (1 - t) * (1 - t) * p0.x + 2 * (1 - t) * t * cp.x + t * t * p1.x,
+            (1 - t) * (1 - t) * p0.y + 2 * (1 - t) * t * cp.y + t * t * p1.y
+         );
+      }
+
+      let points = [];
+
+      let tracks = [sw.t1, sw.t2, sw.t3, sw.t4].filter((t) => t);
+      const flipped = sw.type.is(SWITCH_TYPE.FROM_RIGHT, SWITCH_TYPE.TO_RIGHT) ? -1 : 1;
+      const mirrored = sw.type.is(SWITCH_TYPE.FROM_LEFT, SWITCH_TYPE.FROM_RIGHT) ? -1 : 1;
+
+      tracks.forEach((track, i) => {
+         let p = track.along(sw.location, i == 0 ? GRID_SIZE_2 - this.schwellenGap / 2 : GRID_SIZE_2); //den ersten Punkt etwas verschieben, damit die Schwellen besser ans vorherige Gleis passen
+         let p1 = geometry.add(p, geometry.perpendicularX(geometry.multiply(track.unit, this.schwellenHöhe_2 * flipped))),
+            p2 = geometry.add(p, geometry.perpendicularX(geometry.multiply(track.unit, -this.schwellenHöhe_2 * flipped)));
+
+         points.push([p, p1, p2]);
+      });
+
+      const cp = geometry.getIntersectionPointX(points[0][2], tracks[0].unit, points[2][2], tracks[2].unit);
+
+      const length = geometry.distance(points[0][1], points[1][1])+this.schwellenGap/2; //length of the straight part + half of the gap, to minimize the gap the to next track
+      const length2 = geometry.distance(points[0][2], points[2][2])+this.schwellenGap/2;//almost the length of the curve
+
+      const amount = Math.floor(length / this.schwellenIntervall);
+      const new_intervall = this.schwellenIntervall + (length % this.schwellenIntervall) / amount; //new intervall to minimize the gap and using the leftover from the division
+      let p1, p2, p3, p4;
+      let shape;
+      shape = new createjs.Shape();
+      container.addChild(shape);
+      shape.graphics.beginFill("#7d573f");
+      for (let i = 0; i < amount; i++) {
+         const t = (this.schwellenIntervall * i) / length2;
+         console.log(t);
+
+         if (t < 1) {
+            p1 = getPointOnCurve(t, points[0][2], cp, points[2][2]);
+            p2 = p1.add(geometry.multiply(tracks[0].unit, this.schwellenBreite * mirrored));
+            /* p3 = geometry.getIntersectionPointX(p2, geometry.perpendicularX(tracks[0].unit), points[0][1], tracks[0].unit);
+         p4 = p3.add(geometry.multiply(tracks[0].unit, -this.schwellenBreite*mirrored)); */
+            p3 = points[0][1].add(
+               geometry.multiply(tracks[0].unit, (new_intervall * i + this.schwellenBreite) * mirrored)
+            );
+            p4 = points[0][1].add(geometry.multiply(tracks[0].unit, new_intervall * i * mirrored));
+         } else {
+            const v = new V2(p3.sub(p2));
+            
+            
+            p3 = points[0][1].add(
+               geometry.multiply(tracks[0].unit, (new_intervall * i + this.schwellenBreite) * mirrored)
+            );
+            p4 = points[0][1].add(geometry.multiply(tracks[0].unit, new_intervall * i * mirrored));
+
+
+            p2 = geometry.getIntersectionPointX(
+               p3,
+               v.unit(),
+               points[2][2],
+               geometry.perpendicularX(tracks[2].unit)
+            );
+            p1 = p2.add(geometry.multiply(tracks[0].unit, -this.schwellenBreite * mirrored));
+         }
+         shape.graphics.mt(p1.x, p1.y).lt(p2.x, p2.y).lt(p3.x, p3.y).lt(p4.x, p4.y).lt(p1.x, p1.y);
+      }
+      shape.graphics.endFill();
+   }
+
+   renderSwitch2(container, sw) {
+      this.drawSleepersOnSwitch(container, sw);
+      //drawPoint(sw.location, container, sw.type);
+      const rail_distance = this.schwellenHöhe_2 - this.rail_offset;
+
+      const points = [];
+
+      const tracks = [sw.t1, sw.t2, sw.t3, sw.t4].filter((t) => t);
+
+      const flipped = sw.type.is(SWITCH_TYPE.FROM_RIGHT, SWITCH_TYPE.TO_RIGHT) ? -1 : 1;
+
+      tracks.forEach((track, i) => {
+         let p = track.along(sw.location, GRID_SIZE_2);
+         let p1 = geometry.add(p, geometry.perpendicularX(geometry.multiply(track.unit, rail_distance * flipped))),
+            p2 = geometry.add(p, geometry.perpendicularX(geometry.multiply(track.unit, -rail_distance * flipped)));
+
+         points.push([p, p1, p2]);
+
+         drawPoint(p, container, "p" + i);
+      });
+
+      const mirrored = sw.type.is(SWITCH_TYPE.FROM_LEFT, SWITCH_TYPE.FROM_RIGHT) ? -1 : 1;
+
+      if (points.length == 3) {
+         const shape = new createjs.Shape();
+         shape.snapToPixel = true;
+         container.addChild(shape);
+         const cp = geometry.getIntersectionPointX(points[0][2], tracks[0].unit, points[2][2], tracks[2].unit);
+         const hp = geometry.getIntersectionPointX(points[1][2], tracks[1].unit, points[2][1], tracks[2].unit);
+         const cp2 = geometry.getIntersectionPointX(points[0][1], tracks[0].unit, hp, tracks[2].unit);
+
+         const p1 = Point.fromPoint(hp).add(tracks[2].unit.multiply(-3 * mirrored));
+         const p2 = p1.add(geometry.multiply(tracks[1].unit, 10 * mirrored));
+         const p3 = Point.fromPoint(hp).add(tracks[1].unit.multiply(-3 * mirrored));
+         const p4 = p3.add(geometry.multiply(tracks[2].unit, 10 * mirrored));
+
+         trackRendering_textured.RAILS.forEach((r) => {
+            shape.graphics.setStrokeStyle(r[0]).beginStroke(r[1]);
+            //gebogener zweig oben
+            shape.graphics.mt(points[0][2].x, points[0][2].y).quadraticCurveTo(cp.x, cp.y, points[2][2].x, points[2][2].y);
+            //gebogener zweig unten
+            shape.graphics
+               .mt(points[0][1].x, points[0][1].y)
+               .quadraticCurveTo(cp2.x - 1 * flipped, cp2.y - 1 * flipped, p1.x, p1.y)
+               .lt(p2.x, p2.y);
+
+            //herzstück
+            shape.graphics.mt(points[1][2].x, points[1][2].y).lt(hp.x, hp.y).lt(points[2][1].x, points[2][1].y);
+            //gerade verbindung unten
+            shape.graphics.mt(points[0][1].x, points[0][1].y).lt(points[1][1].x, points[1][1].y);
+            //obere backschiene
+            shape.graphics
+               .mt(p4.x, p4.y)
+               .lt(p3.x, p3.y)
+               .lt(points[0][2].x, points[0][2].y + 2 * flipped);
+            shape.graphics.endStroke();
+         });
+      }
+
+      //this.renderSwitchUI(sw);
+   }
+
    reRenderSwitch(sw) {
       const s = ui_container.children.find((c) => c.sw == sw);
       if (s) s.parent.removeChild(s);
 
-      this.renderSwitchUI(sw);
+      //this.renderSwitchUI(sw);
    }
 
    renderSwitchUI(sw) {

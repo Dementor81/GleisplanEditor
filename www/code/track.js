@@ -4,8 +4,8 @@ class Track {
    static findTrackbySignal(s) {
       return tracks.find((t) => t.signals.find((o) => o.data == s) != undefined);
    }
-   static findTrackByPoint(p) {      
-      return tracks.find(track=>geometry.pointOnLine(track.start, track.end, p))
+   static findTrackByPoint(p) {
+      return tracks.find((track) => geometry.pointOnLine(track.start, track.end, p));
    }
 
    static counter = 0;
@@ -46,16 +46,16 @@ class Track {
 
    static checkAndCreateTrack(p1, p2) {
       if (deepEqual(p1, p2)) return;
-   
+
       if (p1.x > p2.x) {
          const hlp = p1;
          p1 = p2;
          p2 = hlp;
       }
       const slope = geometry.slope(p1, p2);
-   
+
       //if (tracks.some((track) => geometry.within(track.start, track.end, p1) && geometry.within(track.start, track.end, p2))) return;
-   
+
       const tracksWithSameSlope = tracks.filter((track) => track._tmp.slope == slope);
       let track;
       tracksWithSameSlope
@@ -63,25 +63,25 @@ class Track {
          .forEach((t) => {
             if (t.end.x > p1.x) p1 = t.end;
          });
-   
+
       tracksWithSameSlope
          .filter((t) => geometry.within(t.start, t.end, p2))
          .forEach((t) => {
             if (t.start.x < p2.x) p2 = t.start;
          });
-   
+
       if ((track = tracksWithSameSlope.find((t) => geometry.within(t.start, t.end, p2)))) {
          p2 = track.start;
       }
-   
+
       if (p1.x > p2.x) return;
-   
+
       if ((track = tracksWithSameSlope.find((t) => geometry.within(p1, p2, t.start) && geometry.within(p1, p2, t.end)))) {
          Track.checkAndCreateTrack(p1, track.start);
          Track.checkAndCreateTrack(track.end, p2);
          return;
       }
-   
+
       const line = { start: p1, end: p2 };
       const intersecting_tracks = tracks
          .filter((t) => slope != t._tmp.slope && slope + t._tmp.slope != 0) //filter all track with same slope or 90° angles
@@ -97,7 +97,7 @@ class Track {
             tracks.remove(t);
          }
       });
-   
+
       if (intersecting_tracks?.length > 0) {
          let intersection;
          intersecting_tracks.forEach((item) => {
@@ -115,30 +115,34 @@ class Track {
       tracks.push(new Track(start, end));
    }
 
+   /**
+    * Creates a switch object based on the provided location and tracks.
+    *
+    * @param {Object} location - The location of the switch.
+    * @param {Array} tracks - An array of track objects.
+    * @returns {Object} The created switch object.
+    * @throws {Error} If the tracks do not have 2 different angles.
+    */
    static createSwitch(location, tracks) {
       const sw = {
          location: location,
          t1: null,
          t2: null,
          t3: null,
-         //t4: null //only available if its a dkw
          type: 0,
-         branch: null, // one of the tracks
-         from: null, //normal switch: always t1, on dkw switchable
+         branch: null,
+         from: null,
       };
 
-      const groupedByRad = Object.values(groupBy(tracks, "_tmp.rad"));
-      if (groupedByRad.length != 2) return; // throw new Error("Wrong switch connection! found " + groupedByRad.length + " different slopes");
+      const groupedByRad = tracks.groupBy("rad");
+      if (groupedByRad.length !== 2) throw new Error("Switches must have 2 different angles");
 
-      //sort each group by its x coordinate
-      groupedByRad.forEach((a) => a.sort((t1, t2) => t1.start.x - t2.start.x));
-      //sort the groups by the number of tracks in it. this way, the branch is always in the 2nd group.
-      groupedByRad.sort((a, b) => b.length - a.length);
+      //sorts the tracks by x,so the first track is the one on the left
+      groupedByRad.forEach((group) => group.sort((a, b) => a.start.x - b.start.x));
 
-      //cause we have sorted by the number of tracks, t3 is always the branch
       sw.t3 = groupedByRad[1][0];
-
-      sw.type = ((findAngle(location, sw.t3.end.equals(location) ? sw.t3.start : sw.t3.end, groupedByRad[0][0].rad) / 45) % 8) + 1;
+      const angle = findAngle(location, sw.t3.end.equals(location) ? sw.t3.start : sw.t3.end, groupedByRad[0][0].rad);
+      sw.type = Math.ceil(angle%360/90);
 
       if (sw.type == SWITCH_TYPE.FROM_LEFT || sw.type == SWITCH_TYPE.FROM_RIGHT) {
          sw.t1 = groupedByRad[0][1];
@@ -147,26 +151,20 @@ class Track {
          sw.t1 = groupedByRad[0][0];
          sw.t2 = groupedByRad[0][1];
       }
-      //stellt die Weiche standardmäßig ins Hauptgleis
+
       sw.branch = sw.t2;
       sw.from = sw.t1;
 
-      if (tracks.length == 4) {
+      if (tracks.length === 4) {
          sw.type = SWITCH_TYPE.DKW;
          sw.t4 = groupedByRad[1][1];
       }
-
-      sw.t1.addSwitch(sw);
-      sw.t2.addSwitch(sw);
-      if (sw.t3) sw.t3.addSwitch(sw);
-      if (sw.t4) sw.t4.addSwitch(sw);
 
       return sw;
    }
 
    static connectTracks() {
       tracks.forEach((track) => (track._tmp.switches = [])); //delets all swichtes
-      switches = [];
       let sw;
       const end_points = [];
       //iterate over all tracks
@@ -178,7 +176,10 @@ class Track {
             end_points.push(location);
             //searches for every track wich starts or end at that point, filters tracks wich would combine to a 90° angle
             const connected_tracks = tracks.filter(
-               (t) => t != track && (t.start.equals(location) || t.end.equals(location)) && (t._tmp.deg == 0 || t._tmp.deg + track._tmp.deg != 0)
+               (t) =>
+                  t != track &&
+                  (t.start.equals(location) || t.end.equals(location)) &&
+                  (t._tmp.deg == 0 || t._tmp.deg + track._tmp.deg != 0)
             );
 
             if (connected_tracks.length == 1) {
@@ -186,7 +187,8 @@ class Track {
                connected_tracks[0]._tmp.switches[0] = track;
             } else if (connected_tracks.length.between(2, 3)) {
                connected_tracks.push(track);
-               if ((sw = Track.createSwitch(location, connected_tracks))) switches.push(sw);
+               sw = Track.createSwitch(location, connected_tracks);
+               [sw.t1, sw.t2, sw.t3, sw.t4].forEach((track) => track && track.addSwitch(sw));
             }
          }
       }

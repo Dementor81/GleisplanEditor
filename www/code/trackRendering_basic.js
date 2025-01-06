@@ -18,7 +18,6 @@ class trackRendering_basic {
       ui_container.removeAllChildren();
 
       this.renderAllTracks();
-      this.renderAllSwitches();
       this.renderAllGenericObjects();
       stage.update();
    }
@@ -67,24 +66,23 @@ class trackRendering_basic {
          if (o.type() === GenericObject.OBJECT_TYPE.text) this.renderTextObject(o, c);
          else if (o.type() === GenericObject.OBJECT_TYPE.plattform) this.renderPlattformObject(o, c);
          else throw new Error("Unknown Object");
-         
 
          object_container.addChild(c);
       });
    }
 
    renderTextObject(text_object, container) {
-      var text = new createjs.Text(text_object.content(), "20px Arial", "#000000");      
+      var text = new createjs.Text(text_object.content(), "20px Arial", "#000000");
       text.textBaseline = "alphabetic";
-      const height = text.getMeasuredHeight()
-      const width = text.getMeasuredWidth()
+      const height = text.getMeasuredHeight();
+      const width = text.getMeasuredWidth();
 
       const hit = new createjs.Shape();
       hit.graphics.beginFill("#000").mt(0, 0).lt(width, 0).lt(width, -height).lt(0, -height).lt(0, 0);
 
       text.hitArea = hit;
 
-      container.addChild(text)
+      container.addChild(text);
    }
 
    renderPlattformObject(plattform, container) {
@@ -122,18 +120,22 @@ class trackRendering_basic {
       shape.graphics.setStrokeStyle(trackRendering_basic.STROKE, "round").beginStroke(trackRendering_basic.TRACK_COLOR);
       shape.color = shape.graphics.command;
       shape.graphics.moveTo(track.start.x, track.start.y).lineTo(track.end.x, track.end.y);
-      if (!track._tmp.switches[0]) {
+      if (!track.switchAtTheStart) {
          //prellbock beim start
          p1 = geometry.perpendicular(track.start, track._tmp.deg, -trackRendering_basic.BUMPER_SIZE);
          p2 = geometry.perpendicular(track.start, track._tmp.deg, trackRendering_basic.BUMPER_SIZE);
          shape.graphics.moveTo(p1.x, p1.y).lineTo(p2.x, p2.y);
       }
 
-      if (!track._tmp.switches[1]) {
+      if (!track.switchAtTheEnd) {
          //prellbock beim ende
          p1 = geometry.perpendicular(track.end, track._tmp.deg, -trackRendering_basic.BUMPER_SIZE);
          p2 = geometry.perpendicular(track.end, track._tmp.deg, trackRendering_basic.BUMPER_SIZE);
          shape.graphics.moveTo(p1.x, p1.y).lineTo(p2.x, p2.y);
+      } else {
+         if (track == track.switchAtTheEnd.t1) {
+            this.renderSwitch(track.switchAtTheEnd);
+         }
       }
       if (selection.isSelectedObject(track)) this.isSelected(shape);
 
@@ -155,32 +157,30 @@ class trackRendering_basic {
       return shape;
    }
 
-   renderAllSwitches() {
-      switches.forEach((sw) => {
-         if (!sw.t1 || !sw.t2 || !sw.t3 || (sw.type == SWITCH_TYPE.DKW && !sw.t4)) {
-            console.log(sw);
-            throw new Error("switch is falty");
-         }
-         let switch_shape = new createjs.Shape();
-         switch_shape.name = "switch";
-         switch_shape.sw = sw;
-         track_container.addChild(switch_shape);
+   renderSwitch(sw) {
+      if (!sw.t1 || !sw.t2 || !sw.t3 || (sw.type == SWITCH_TYPE.DKW && !sw.t4)) {
+         console.log(sw);
+         throw new Error("switch is falty");
+      }
+      let switch_shape = new createjs.Shape();
+      switch_shape.name = "switch";
+      switch_shape.sw = sw;
+      track_container.addChild(switch_shape);
 
-         let p1, p2;
+      let p1, p2;
 
-         p1 = sw.t2.along(sw.location, trackRendering_basic.SWITCH_SIZE);
-         p2 = sw.t3.along(sw.location, trackRendering_basic.SWITCH_SIZE);
+      p1 = sw.t2.along(sw.location, trackRendering_basic.SWITCH_SIZE);
+      p2 = sw.t3.along(sw.location, trackRendering_basic.SWITCH_SIZE);
+      this.drawTriangle(switch_shape, "black", sw.location, p1, p2);
+
+      if (sw.type == SWITCH_TYPE.DKW) {
+         p1 = sw.t1.along(sw.location, trackRendering_basic.SWITCH_SIZE);
+         p2 = sw.t4.along(sw.location, trackRendering_basic.SWITCH_SIZE);
+
          this.drawTriangle(switch_shape, "black", sw.location, p1, p2);
+      }
 
-         if (sw.type == SWITCH_TYPE.DKW) {
-            p1 = sw.t1.along(sw.location, trackRendering_basic.SWITCH_SIZE);
-            p2 = sw.t4.along(sw.location, trackRendering_basic.SWITCH_SIZE);
-
-            this.drawTriangle(switch_shape, "black", sw.location, p1, p2);
-         }
-
-         this.renderSwitchUI(sw);
-      });
+      this.renderSwitchUI(sw);
    }
 
    reRenderSwitch(sw) {

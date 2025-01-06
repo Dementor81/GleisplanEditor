@@ -1,6 +1,6 @@
 Bugs:
     ✔ Signalmenü verdeckt das Signal @done(23-11-21 13:57)
-    ✔ entfernen von Gleisen entfernt die Weiche nicht @done(23-12-13 11:14)
+    ✔ entfernen von Gleisen entfernt die Weiche nicht @done(25-01-01 14:12)
     ✔ Drag'n Drop der signale, vor allem am Gleisende buggy @done(23-12-13 11:14)
     ✔ Textured Renderer aktualisieren, geht aktuell nicht @done(24-02-03 17:35)
     ✔ es lass sich 90° kurven zeichnen @done(24-06-01 15:18)
@@ -39,7 +39,7 @@ Detailing:
     ☐ Zeichnen Leiste überarbeiten, Dicke per Zahl setzen
 
 Intern:
-    ☐ swichtes Array entfernen
+    ✔ swichtes Array entfernen @done(25-01-01 14:12)
     ☐ start.js aufräumen
     ☐ signal.js und signaling.js sauber trennen und aufräumen
     ☐ auf TypeScript umbauen

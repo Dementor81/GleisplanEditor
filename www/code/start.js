@@ -42,10 +42,10 @@ const CUSTOM_MOUSE_ACTION = {
 
 const SWITCH_TYPE = {
    NONE: 0,
-   TO_RIGHT: 2, //45°
-   FROM_RIGHT: 4, //135°
-   FROM_LEFT: 6, //225°
-   TO_LEFT: 8, //315°
+   TO_RIGHT: 1, //45°
+   FROM_RIGHT: 2, //135°
+   FROM_LEFT: 3, //225°
+   TO_LEFT: 4, //315°
    DKW: 9,
    CROSSING: 10,
 };
@@ -82,7 +82,6 @@ var loadQueue;
 var renderer;
 
 var tracks = [];
-var switches = [];
 
 var undoHistory = ["[]"];
 
@@ -257,6 +256,10 @@ function init() {
       RENDERING.center();
    });
 
+   $("#btnRedraw").click(() => {
+      renderer.reDrawEverything(true);
+   });
+
    $("#btnImage").click((e) => {
       let backup = { x: stage.x, y: stage.y, scale: stage.scale };
 
@@ -402,7 +405,6 @@ function undo() {
 const RENDERING = {
    clear() {
       tracks = [];
-      switches = [];
       Train.allTrains = [];
       GenericObject.all_objects = [];
 

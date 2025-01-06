@@ -76,6 +76,29 @@ Array.prototype.pushUnique = function (newElement) {
    return false;
 };
 
+Array.prototype.groupBy = function (propertyPath) {
+   // `data` is an array of objects, `key` is the key (or property accessor) to group by
+   // reduce runs this anonymous function on each element of `data` (the `item` parameter,
+   // returning the `storage` parameter at the end
+
+   return Object.values(
+      this.reduce(function (storage, item) {
+         let property = propertyPath.split(".").reduce((acc, key) => acc[key], item);
+         // get the first instance of the key by which we're grouping
+         let group = property;
+
+         // set `storage` for this instance of group to the outer scope (if not empty) or initialize it
+         storage[group] = storage[group] || [];
+
+         // add this item to its group within `storage`
+         storage[group].push(item);
+
+         // return the updated storage to the reduce function, which will then loop through the next
+         return storage;
+      }, {})
+   ).sort((a, b) => b.length - a.length); // {} is the initial value of the storage
+};
+
 function nll(o) {
    return o == null;
 }
@@ -126,27 +149,6 @@ function type(value) {
 function swap(current, value1, value2) {
    return current === value1 ? value2 : value1;
 }
-
-var groupBy = function (data, propertyPath) {
-   // `data` is an array of objects, `key` is the key (or property accessor) to group by
-   // reduce runs this anonymous function on each element of `data` (the `item` parameter,
-   // returning the `storage` parameter at the end
-
-   return data.reduce(function (storage, item) {
-      let property = propertyPath.split(".").reduce((acc, key) => acc[key], item);
-      // get the first instance of the key by which we're grouping
-      var group = property;
-
-      // set `storage` for this instance of group to the outer scope (if not empty) or initialize it
-      storage[group] = storage[group] || [];
-
-      // add this item to its group within `storage`
-      storage[group].push(item);
-
-      // return the updated storage to the reduce function, which will then loop through the next
-      return storage;
-   }, {}); // {} is the initial value of the storage
-};
 
 //returns a copy where the given item is missing
 Array.prototype.without = function (item) {
@@ -552,31 +554,25 @@ const geometry = {
 
       return new Point(intersectionX, intersectionY);
    },
-   getIntersectionPointX: function (p1, d1, p2, d2) {
-      // Decompose the inputs into their components
-      /* const [p1.x, p1.y] = p1; // Origin of the first vector
-    const [d1.x, d1.y] = d1; // Direction of the first vector
-    const [p2.x, p2.y] = p2; // Origin of the second vector
-    const [d2.x, d2.y] = d2; // Direction of the second vector */
 
+   getIntersectionPointX: function (p1, d1, p2, d2) {
       // Solve for t and s using the equations:
       // p1.x + t * d1.x = p2.x + s * d2.x
       // p1.y + t * d1.y = p2.y + s * d2.y
       const denominator = d1.x * d2.y - d1.y * d2.x;
 
-      if (denominator === 0) {
-         return null; // Vectors are parallel or collinear
-      }
+      if (denominator === 0) return null; // Vectors are parallel or collinear
 
       // Compute parameters t and s
       const t = ((p2.x - p1.x) * d2.y - (p2.y - p1.y) * d2.x) / denominator;
       const s = ((p2.x - p1.x) * d1.y - (p2.y - p1.y) * d1.x) / denominator;
 
       // Compute the intersection point using either vector
-      const intersection = { x: p1.x + t * d1.x, y: p1.y + t * d1.y };
+      const intersection = new Point(p1.x + t * d1.x, p1.y + t * d1.y);
 
       return intersection;
    },
+
    pointOnLine: function (point1, point2, targetPoint) {
       // Extract coordinates from the objects
       let x1 = point1.x,
@@ -670,11 +666,11 @@ const geometry = {
    },
 
    add: function (v1, v2) {
-      return { x: v1.x + v2.x, y: v1.y + v2.y };
+      return new Point(v1.x + v2.x, v1.y + v2.y);
    },
 
    sub: function (v1, v2) {
-      return { x: v1.x - v2.x, y: v1.y - v2.y };
+      return new Point(v1.x - v2.x, v1.y - v2.y);
    },
 
    flipY: (v) => ({ x: v.x, y: v.y * -1 }),
@@ -734,12 +730,28 @@ class V2 {
    multiply(s) {
       return new V2(geometry.multiply(this, s));
    }
+
+   unit() {
+      return new V2(geometry.unit(this));
+   }
 }
 
 class Point {
+   static fromPoint(p) {
+      return new Point(p.x, p.y);
+   }
+
    constructor(x, y) {
       this.x = x;
       this.y = y;
+   }
+
+   add(v) {
+      return new Point(this.x + v.x, this.y + v.y);
+   }
+
+   sub(v) {
+      return new Point(this.x - v.x, this.y - v.y);
    }
 
    equals(p) {
