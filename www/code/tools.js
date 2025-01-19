@@ -44,7 +44,7 @@ Array.prototype.justNull = function () {
    else return this;
 };
 
-Array.prototype.lastItem = function () {
+Array.prototype.last = function () {
    if (this.length > 0) {
       return this[this.length - 1];
    } else return null;
@@ -555,6 +555,7 @@ const geometry = {
       return new Point(intersectionX, intersectionY);
    },
 
+   //returns the intersection point of 2 lines, regardless of their length
    getIntersectionPointX: function (p1, d1, p2, d2) {
       // Solve for t and s using the equations:
       // p1.x + t * d1.x = p2.x + s * d2.x
@@ -573,6 +574,19 @@ const geometry = {
       return intersection;
    },
 
+   /**
+    * Checks if a target point lies on the line segment defined by two points.
+    * @param {Object} point1 - The first point of the line segment.
+    * @param {number} point1.x - The x-coordinate of the first point.
+    * @param {number} point1.y - The y-coordinate of the first point.
+    * @param {Object} point2 - The second point of the line segment.
+    * @param {number} point2.x - The x-coordinate of the second point.
+    * @param {number} point2.y - The y-coordinate of the second point.
+    * @param {Object} targetPoint - The point to check.
+    * @param {number} targetPoint.x - The x-coordinate of the target point.
+    * @param {number} targetPoint.y - The y-coordinate of the target point.
+    * @returns {boolean} True if the target point lies on the line segment, false otherwise.
+    */
    pointOnLine: function (point1, point2, targetPoint) {
       // Extract coordinates from the objects
       let x1 = point1.x,
@@ -581,6 +595,8 @@ const geometry = {
          y2 = point2.y;
       let px = targetPoint.x,
          py = targetPoint.y;
+
+      //if(x1==px && y1==py || x2==px && y2 == py) return false;
 
       // Calculate parameters for the parametric equations
       let tX = px == x1 && x1 == x2 ? 0 : (px - x1) / (x2 - x1);
@@ -592,6 +608,28 @@ const geometry = {
       } else {
          return false; // Point is outside the line segment
       }
+   },
+   areSegmentsOverlapping2D: function (p1, p2, p3, p4) {
+
+      if (p1.x === p3.x && p1.y === p3.y && p2.x === p4.x && p2.y === p4.y) return true;
+
+      if ((p2.x === p3.x && p2.y === p3.y) || (p1.x === p4.x && p1.y === p4.y)) return false;
+
+      // Check if the segments are parallel
+      const slopeCheck = (p2.y - p1.y) * (p4.x - p3.x) === (p4.y - p3.y) * (p2.x - p1.x);
+
+      // Check if they lie on the same line
+      const colinearCheck = (p3.y - p1.y) * (p2.x - p1.x) === (p3.x - p1.x) * (p2.y - p1.y);
+
+      if (!slopeCheck || !colinearCheck) {
+         return false; // Not parallel or not colinear
+      }
+
+      // Check for overlap in projections (dominant axis)
+      const overlapX = Math.max(p1.x, p2.x) >= Math.min(p3.x, p4.x) && Math.max(p3.x, p4.x) >= Math.min(p1.x, p2.x);
+      const overlapY = Math.max(p1.y, p2.y) >= Math.min(p3.y, p4.y) && Math.max(p3.y, p4.y) >= Math.min(p1.y, p2.y);
+
+      return overlapX && overlapY;
    },
    //returns true if 2 line, described by 4 points intersect, each other
    doLineSegmentsIntersect: function (p1, q1, p2, q2) {
@@ -676,12 +714,36 @@ const geometry = {
    flipY: (v) => ({ x: v.x, y: v.y * -1 }),
 
    round: (v) => ({ x: Math.round(v.x), y: Math.round(v.y) }),
+
+   calculateAngle: function (reference, point1, point2) {
+      // Calculate vectors
+      const v1 = { x: point1.x - reference.x, y: point1.y - reference.y };
+      const v2 = { x: point2.x - reference.x, y: point2.y - reference.y };
+
+      // Dot product
+      const dotProduct = v1.x * v2.x + v1.y * v2.y;
+
+      // Magnitudes
+      const magnitudeV1 = Math.sqrt(v1.x ** 2 + v1.y ** 2);
+      const magnitudeV2 = Math.sqrt(v2.x ** 2 + v2.y ** 2);
+
+      // Cosine of the angle
+      const cosTheta = dotProduct / (magnitudeV1 * magnitudeV2);
+
+      // Angle in radians
+      const theta = Math.acos(cosTheta);
+
+      // Convert to degrees (optional)
+      return theta * (180 / Math.PI); // Return the angle in degrees
+   },
 };
 
 //sw=switch location
 //rad= angle of track_1 in rad
 //c= end of the track_2 to find angle
-function findAngle(sw, c, rad = 0) {
+function findAngle(sw, node, rad = 0) {
+   let c = node.equals(sw) ? node._tmp.prev : node;
+
    let atan = Math.atan2(c.y - sw.y, c.x - sw.x) - rad;
    if (atan < 0) atan += 2 * π; //macht aus neg Winkeln durch addition von 360° positive winkel
 

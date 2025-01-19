@@ -139,7 +139,7 @@ function init() {
    stage.addChild((overlay_container = create_container("overlay")));
    stage.addChild((drawing_container = create_container("drawing_container")));
 
-   UI.ShowPreBuildScreen();
+   //UI.ShowPreBuildScreen();
 
    pl.start().then(() => {
       console.log(`Preloader: ${pl._loadedItems}/${pl._totalItems}`);
@@ -167,7 +167,7 @@ function init() {
             ),
          ]);
 
-         selectRenderer(true);
+         selectRenderer(false);
          //loadRecent();
       } catch (error) {
          showErrorToast(error);
@@ -384,7 +384,6 @@ function deleteSelectedObject() {
    if (selection.object) {
       if (selection.type == "Track") {
          [].concat(selection.object).forEach((t) => tracks.remove(t));
-         Track.cleanupTracks();
          Track.connectTracks();
          STORAGE.saveUndoHistory();
       }
@@ -465,7 +464,7 @@ const UI = {
    /// menu==null just hides it.
    showMenu(menu) {
       var bsOffcanvas = bootstrap.Offcanvas.getOrCreateInstance($("#sidebar"));
-      $("input,button", bsOffcanvas._element).off();
+      $("input,button", bsOffcanvas._element).off().removeClass("active");
 
       if (nll(menu)) {
          bsOffcanvas.hide();
@@ -839,37 +838,8 @@ function handleMouseMove(event) {
    //console.log(local_point, { x: stage.mouseX, y: stage.mouseY });
 
    if (mouseAction.action === MOUSE_DOWN_ACTION.NONE) {
-      //wie weit wurde die maus seit mousedown bewegt
-      if (mouseAction.distance() > 4) {
-         if (event.nativeEvent.buttons == 1) {
-            if (edit_mode) {
-               if (mouseAction.container?.name == "signal") {
-                  myCanvas.style.cursor = "move";
-                  mouseAction.action = MOUSE_DOWN_ACTION.DND_SIGNAL;
-                  mouseAction.container.data._positioning.track.removeSignal(mouseAction.container.data);
-                  startDragAndDropSignal();
-               } else if (mouseAction.container?.name == "object") {
-                  myCanvas.style.cursor = "move";
-
-                  mouseAction.action = MOUSE_DOWN_ACTION.MOVE_OBJECT;
-               } else {
-                  mouseAction.lineShape = new createjs.Shape();
-                  overlay_container.addChild(mouseAction.lineShape);
-                  addTrackAnchorPoint(local_point);
-                  mouseAction.action = MOUSE_DOWN_ACTION.BUILD_TRACK;
-               }
-            } else {
-               if (mouseAction.container?.name == "train") {
-                  mouseAction.action = MOUSE_DOWN_ACTION.MOVE_TRAIN;
-               }
-            }
-         } else if (event.nativeEvent.buttons == 2) {
-            //stage.addEventListener("stagemousemove", handleMouseMove);
-            mouseAction.action = MOUSE_DOWN_ACTION.SCROLL;
-         }
-      }
-   }
-   if (mouseAction.action === MOUSE_DOWN_ACTION.CUSTOM) {
+      determineMouseAction(event, local_point);
+   } else if (mouseAction.action === MOUSE_DOWN_ACTION.CUSTOM) {
       if (custom_mouse_mode == CUSTOM_MOUSE_ACTION.DRAWING) {
          mouseAction.shape.graphics.mt(mouseAction.startPoint.x, mouseAction.startPoint.y).lt(local_point.x, local_point.y);
          mouseAction.startPoint.x = local_point.x;
@@ -887,8 +857,7 @@ function handleMouseMove(event) {
             );
          stage.update();
       }
-   }
-   if (mouseAction.action === MOUSE_DOWN_ACTION.MOVE_OBJECT) {
+   } else if (mouseAction.action === MOUSE_DOWN_ACTION.MOVE_OBJECT) {
       const o = mouseAction.container.object;
       o.pos(local_point);
       if (mouseAction.offset) {
@@ -901,7 +870,13 @@ function handleMouseMove(event) {
    } else if (mouseAction.action === MOUSE_DOWN_ACTION.DND_SIGNAL) {
       dragnDropSignal(local_point, event.nativeEvent.altKey);
    } else if (mouseAction.action === MOUSE_DOWN_ACTION.BUILD_TRACK) {
-      addTrackAnchorPoint(local_point);
+      const grid_snap_point = getSnapPoint(local_point);
+
+      if (geometry.distance(local_point, grid_snap_point) <= SNAP_2_GRID) {
+         if (Track.isValidTrackNodePoint(local_point)) {
+            addTrackAnchorPoint(grid_snap_point);
+         }
+      }
       drawBluePrintTrack();
    } else if (mouseAction.action === MOUSE_DOWN_ACTION.SCROLL) {
       stage.x += event.nativeEvent.movementX;
@@ -917,6 +892,41 @@ function handleMouseMove(event) {
    }
 
    stage.update();
+}
+
+function getSnapPoint(local_point) {
+   return new Point(Math.round(local_point.x / GRID_SIZE) * GRID_SIZE, Math.round(local_point.y / GRID_SIZE) * GRID_SIZE);
+}
+
+function determineMouseAction(event, local_point) {
+   //wie weit wurde die maus seit mousedown bewegt
+   if (mouseAction.distance() > 4) {
+      if (event.nativeEvent.buttons == 1) {
+         if (edit_mode) {
+            if (mouseAction.container?.name == "signal") {
+               myCanvas.style.cursor = "move";
+               mouseAction.action = MOUSE_DOWN_ACTION.DND_SIGNAL;
+               mouseAction.container.data._positioning.track.removeSignal(mouseAction.container.data);
+               startDragAndDropSignal();
+            } else if (mouseAction.container?.name == "object") {
+               myCanvas.style.cursor = "move";
+
+               mouseAction.action = MOUSE_DOWN_ACTION.MOVE_OBJECT;
+            } else {
+               mouseAction.action = MOUSE_DOWN_ACTION.BUILD_TRACK;
+               addTrackAnchorPoint(local_point);
+               overlay_container.addChild((mouseAction.lineShape = new createjs.Shape()));
+            }
+         } else {
+            if (mouseAction.container?.name == "train") {
+               mouseAction.action = MOUSE_DOWN_ACTION.MOVE_TRAIN;
+            }
+         }
+      } else if (event.nativeEvent.buttons == 2) {
+         //stage.addEventListener("stagemousemove", handleMouseMove);
+         mouseAction.action = MOUSE_DOWN_ACTION.SCROLL;
+      }
+   }
 }
 
 function dragnDropSignal(local_point, flipped) {
@@ -965,25 +975,36 @@ function draw_SignalPositionLine() {
 }
 
 function drawBluePrintTrack() {
-   if (mouseAction.ankerPoints == null || mouseAction.ankerPoints.length == 0) return;
-   mouseAction.lineShape.graphics
-      .c()
-      .setStrokeStyle(trackRendering_basic.STROKE)
-      .beginStroke("blue")
-      .moveTo(mouseAction.ankerPoints[0].x, mouseAction.ankerPoints[0].y);
-   for (let index = 1; index < mouseAction.ankerPoints.length; index++) {
-      const co = mouseAction.ankerPoints[index];
-      mouseAction.lineShape.graphics.lt(co.x, co.y);
+   if (mouseAction.nodes == null) return;
+   const g = mouseAction.lineShape.graphics;
+   g.c().setStrokeStyle(trackRendering_basic.STROKE).beginStroke("blue").moveTo(mouseAction.nodes[0].x, mouseAction.nodes[0].y);
+
+   for (let index = 1; index < mouseAction.nodes.length; index++) {
+      const node = mouseAction.nodes[index];
+      g.lt(node.x, node.y);
    }
+
+   const last = mouseAction.nodes.last();
+   const p = stage.globalToLocal(stage.mouseX, stage.mouseY);
+   g.beginStroke("red").moveTo(last.x, last.y).lt(p.x, p.y).endStroke();
 }
 
-function addTrackAnchorPoint(local_point) {
-   const ankerPoints = mouseAction.ankerPoints;
+function addTrackAnchorPoint(current) {
+   if (mouseAction.nodes == null) {
+      mouseAction.nodes = [getSnapPoint(current)];
+      return;
+   }
+   
+   //wenn der letzte Punkt gleich dem aktuellen ist, dann nichts tun
+   if (mouseAction.nodes.last()?.equals(current)) return;
+   //wenn der Startpunkt gleich dem aktuellen ist, dann Track zurücksetzen
+   if (mouseAction.nodes.first().equals(current)) {
+      track.nodes = [];
+      return;
+   }
 
-   const current = new Point(
-      Math.round(local_point.x / GRID_SIZE) * GRID_SIZE,
-      Math.round(local_point.y / GRID_SIZE) * GRID_SIZE
-   );
+   mouseAction.nodes.push(current);
+   return;
 
    if (ankerPoints == null || ankerPoints.length == 0) {
       mouseAction.ankerPoints = [current];
@@ -995,7 +1016,7 @@ function addTrackAnchorPoint(local_point) {
          return;
       }
 
-      const last = ankerPoints.lastItem();
+      const last = ankerPoints.last();
       //if (!local_point.x.closeToBy(GRID_SIZE, SNAP_2_GRID) || !local_point.y.closeToBy(GRID_SIZE, SNAP_2_GRID)) return;
       if (!last.equals(current)) {
          const slope = geometry.slope(last, current);
@@ -1014,7 +1035,10 @@ function addTrackAnchorPoint(local_point) {
             } else {
                //checks for the right slope
                //no other straight or 45° and the previous slope and current slope musst not create a 90° angle
-               if (slope.between(1, -1) && (slope == 0 || slope + geometry.slope(last, ankerPoints[ankerPoints.length - 2]) != 0)) {
+               if (
+                  slope.between(1, -1) &&
+                  (slope == 0 || slope + geometry.slope(last, ankerPoints[ankerPoints.length - 2]) != 0)
+               ) {
                   ankerPoints.push(current);
                }
             }
@@ -1025,114 +1049,108 @@ function addTrackAnchorPoint(local_point) {
 
 function handleStageMouseUp(e) {
    //console.log("handleStageMouseUp", e);
+   try {
+      stage.removeEventListener("stagemousemove", handleMouseMove);
+      myCanvas.style.cursor = "auto";
+      if (mouseAction == null) return;
 
-   stage.removeEventListener("stagemousemove", handleMouseMove);
-   myCanvas.style.cursor = "auto";
-   if (mouseAction == null) return;
+      let local_point = stage.globalToLocal(stage.mouseX, stage.mouseY);
+      //left button
+      if (e.nativeEvent.which == 1) {
+         if (mouseAction.action === MOUSE_DOWN_ACTION.DND_SIGNAL) {
+            overlay_container.removeChild(mouseAction.container);
 
-   let local_point = stage.globalToLocal(stage.mouseX, stage.mouseY);
-   //left button
-   if (e.nativeEvent.which == 1) {
-      if (mouseAction.action === MOUSE_DOWN_ACTION.DND_SIGNAL) {
-         overlay_container.removeChild(mouseAction.container);
-
-         if (mouseAction.hit_track) {
-            signal_container.addChild(mouseAction.container);
-            mouseAction.hit_track.track.AddSignal(mouseAction.container.data);
-         }
-         STORAGE.save();
-         STORAGE.saveUndoHistory();
-         overlay_container.removeAllChildren();
-         stage.update();
-      } else if (mouseAction.action === MOUSE_DOWN_ACTION.BUILD_TRACK) {
-         if (mouseAction.ankerPoints.length > 1) {
-            let tmpPoint = mouseAction.ankerPoints[0];
-            for (let i = 1; i < mouseAction.ankerPoints.length; i++) {
-               const p0 = mouseAction.ankerPoints[i - 1];
-               const p1 = mouseAction.ankerPoints[i];
-               const p2 = mouseAction.ankerPoints.length > i + 1 ? mouseAction.ankerPoints[i + 1] : null;
-               //steigung ändert sich, also track erstellen
-               if (!p2 || geometry.slope(p0, p1) != geometry.slope(p1, p2)) {
-                  Track.checkAndCreateTrack(tmpPoint, p1);
-                  tmpPoint = p1;
-               }
+            if (mouseAction.hit_track) {
+               signal_container.addChild(mouseAction.container);
+               mouseAction.hit_track.track.AddSignal(mouseAction.container.data);
             }
-            Track.cleanupTracks();
-            Track.connectTracks();
-            renderer.reDrawEverything(true);
+            STORAGE.save();
             STORAGE.saveUndoHistory();
-            STORAGE.save();
-         }
-         overlay_container.removeAllChildren();
-
-         stage.update();
-      } else if (mouseAction.action === MOUSE_DOWN_ACTION.ADD_TRAIN) {
-         overlay_container.removeChild(mouseAction.container);
-         const hit = getHitTest(track_container);
-         if (hit?.name == "track") {
-            const color = ["#ff0000", "#ffff00", "#00ff00", "#0000ff"].random();
-            const track = hit.track;
-            let train, car, car2;
-            car = train = Train.addTrain(track, (local_point.x - track.start.x) / track._tmp.cos, color);
-            Train.allTrains.push(train);
-            for (let index = 0; index <= 2; index++) {
-               car2 = Train.addTrain(track, (local_point.x - track.start.x) / track._tmp.cos, color);
-               car.coupleBack(car2);
-               car = car2;
-            }
-            Train.moveTrain(train, 0);
-            renderer.reDrawEverything();
-            stage.update();
-            STORAGE.save();
-         }
-      } else if (mouseAction.action.is(MOUSE_DOWN_ACTION.MOVE_TRAIN, MOUSE_DOWN_ACTION.MOVE_OBJECT)) {
-         STORAGE.save();
-         STORAGE.saveUndoHistory();
-      } else if (mouseAction.action === MOUSE_DOWN_ACTION.CUSTOM) {
-         if (custom_mouse_mode == CUSTOM_MOUSE_ACTION.TEXT) {
-            const o = new GenericObject(GenericObject.OBJECT_TYPE.text).pos(local_point).content("Text");
-            GenericObject.all_objects.push(o);
-            selectObject(o);
-            renderer.renderAllGenericObjects();
-            custom_mouse_mode = CUSTOM_MOUSE_ACTION.NONE;
-            UI.activate_custom_mouse_mode();
-            stage.update();
-            STORAGE.saveUndoHistory();
-            STORAGE.save();
-         } else if (custom_mouse_mode == CUSTOM_MOUSE_ACTION.PLATTFORM) {
             overlay_container.removeAllChildren();
-            const o = new GenericObject(GenericObject.OBJECT_TYPE.plattform)
-               .content("Bahnsteig")
-               .pos(mouseAction.startPoint)
-               .size(local_point.x - mouseAction.startPoint.x, local_point.y - mouseAction.startPoint.y);
-            GenericObject.all_objects.push(o);
-            selectObject(o);
-            renderer.renderAllGenericObjects();
-            custom_mouse_mode = CUSTOM_MOUSE_ACTION.NONE;
-            UI.activate_custom_mouse_mode();
             stage.update();
-            STORAGE.saveUndoHistory();
+         } else if (mouseAction.action === MOUSE_DOWN_ACTION.BUILD_TRACK) {
+            if (mouseAction.nodes.length > 0) {
+               Track.checkNodesAndCreateTracks(mouseAction.nodes);
+               Track.connectTracks();
+               renderer.reDrawEverything(true);
+               STORAGE.saveUndoHistory();
+               STORAGE.save();
+            }
+         } else if (mouseAction.action === MOUSE_DOWN_ACTION.ADD_TRAIN) {
+            overlay_container.removeChild(mouseAction.container);
+            const hit = getHitTest(track_container);
+            if (hit?.name == "track") {
+               const color = ["#ff0000", "#ffff00", "#00ff00", "#0000ff"].random();
+               const track = hit.track;
+               let train, car, car2;
+               car = train = Train.addTrain(track, (local_point.x - track.start.x) / track._tmp.cos, color);
+               Train.allTrains.push(train);
+               for (let index = 0; index <= 2; index++) {
+                  car2 = Train.addTrain(track, (local_point.x - track.start.x) / track._tmp.cos, color);
+                  car.coupleBack(car2);
+                  car = car2;
+               }
+               Train.moveTrain(train, 0);
+               renderer.reDrawEverything();
+               stage.update();
+               STORAGE.save();
+            }
+         } else if (mouseAction.action.is(MOUSE_DOWN_ACTION.MOVE_TRAIN, MOUSE_DOWN_ACTION.MOVE_OBJECT)) {
             STORAGE.save();
+            STORAGE.saveUndoHistory();
+         } else if (mouseAction.action === MOUSE_DOWN_ACTION.CUSTOM) {
+            if (custom_mouse_mode == CUSTOM_MOUSE_ACTION.TEXT) {
+               const o = new GenericObject(GenericObject.OBJECT_TYPE.text).pos(local_point).content("Text");
+               GenericObject.all_objects.push(o);
+               selectObject(o);
+               renderer.renderAllGenericObjects();
+               custom_mouse_mode = CUSTOM_MOUSE_ACTION.NONE;
+               UI.activate_custom_mouse_mode();
+               stage.update();
+               STORAGE.saveUndoHistory();
+               STORAGE.save();
+            } else if (custom_mouse_mode == CUSTOM_MOUSE_ACTION.PLATTFORM) {
+               overlay_container.removeAllChildren();
+               const o = new GenericObject(GenericObject.OBJECT_TYPE.plattform)
+                  .content("Bahnsteig")
+                  .pos(mouseAction.startPoint)
+                  .size(local_point.x - mouseAction.startPoint.x, local_point.y - mouseAction.startPoint.y);
+               GenericObject.all_objects.push(o);
+               selectObject(o);
+               renderer.renderAllGenericObjects();
+               custom_mouse_mode = CUSTOM_MOUSE_ACTION.NONE;
+               UI.activate_custom_mouse_mode();
+               stage.update();
+               STORAGE.saveUndoHistory();
+               STORAGE.save();
+            }
+         } else if (mouseAction.action === MOUSE_DOWN_ACTION.NONE && mouseAction.distance() < 4) {
+            if (mouseAction.container?.name == "signal") {
+               selectObject(mouseAction.container.data, e);
+            } else if (mouseAction.container?.name == "train") {
+               selectObject(mouseAction.container.train, e);
+            } else if (mouseAction.container?.name == "track") {
+               selectObject(mouseAction.container.track, e);
+               console.log(mouseAction.container.track.nodes.first()._tmp.deg);
+            } else if (mouseAction.container?.name == "object") {
+               selectObject(mouseAction.container.object, e);
+            } else if (mouseAction.container?.name == "switch") {
+               Track.switch_A_Switch(mouseAction.container.sw, local_point.x);
+               renderer.reRenderSwitch(mouseAction.container.sw);
+               stage.update();
+            } else {
+               selectObject();
+            }
          }
-      } else if (mouseAction.action === MOUSE_DOWN_ACTION.NONE && mouseAction.distance() < 4) {
-         if (mouseAction.container?.name == "signal") {
-            selectObject(mouseAction.container.data, e);
-         } else if (mouseAction.container?.name == "train") {
-            selectObject(mouseAction.container.train, e);
-         } else if (mouseAction.container?.name == "track") {
-            selectObject(mouseAction.container.track, e);
-         } else if (mouseAction.container?.name == "object") {
-            selectObject(mouseAction.container.object, e);
-         } else if (mouseAction.container?.name == "switch") {
-            Track.switch_A_Switch(mouseAction.container.sw, local_point.x);
-            renderer.reRenderSwitch(mouseAction.container.sw);
-            stage.update();
-         } else {
-            selectObject();
-         }
+      } else if (mouseAction.action === MOUSE_DOWN_ACTION.SCROLL) {
+         STORAGE.save();
       }
-   } else if (mouseAction.action === MOUSE_DOWN_ACTION.SCROLL) {
-      STORAGE.save();
+   } catch (error) {
+      showErrorToast(error);
+   } finally {
+      mouseAction = null;
+      overlay_container.removeAllChildren();
+      stage.update();
    }
 }
 
@@ -1175,7 +1193,7 @@ const STORAGE = {
    restoreLastUndoStep() {
       if (undoHistory.length <= 1) return;
       undoHistory.pop();
-      const last = undoHistory.lastItem();
+      const last = undoHistory.last();
       if (last) {
          STORAGE.loadFromJson(last);
       } else tracks = [];
@@ -1198,12 +1216,12 @@ const STORAGE = {
    },
 
    saveUndoHistory() {
-      undoHistory.push(JSON.stringify({ tracks: tracks, objects: GenericObject.all_objects }, STORAGE.replacer));
-      if (undoHistory.length > MOST_UNDO) undoHistory.shift();
+      /* undoHistory.push(JSON.stringify({ tracks: tracks, objects: GenericObject.all_objects }, STORAGE.replacer));
+      if (undoHistory.length > MOST_UNDO) undoHistory.shift(); */
    },
 
    save() {
-      localStorage.setItem(STORAGE.STORAGE_IDENT, STORAGE.getSaveString());
+      /* localStorage.setItem(STORAGE.STORAGE_IDENT, STORAGE.getSaveString()); */
    },
 
    loadRecent() {
@@ -1248,8 +1266,8 @@ const STORAGE = {
 function drawPoint(point, displayObject, label = "", color = "#000", size = 1) {
    const s = new createjs.Shape();
    s.graphics.setStrokeStyle(1).beginStroke(color).beginFill(color).drawCircle(0, 0, size);
-   s.x = point.x; 
-   s.y = point.y; 
+   s.x = point.x;
+   s.y = point.y;
 
    displayObject.addChild(s);
 

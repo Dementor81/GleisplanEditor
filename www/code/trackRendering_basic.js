@@ -25,11 +25,11 @@ class trackRendering_basic {
    renderAllTracks() {
       tracks.forEach((t) => {
          this.renderTrack(track_container, t);
-         t.signals.forEach((signal) => {
+         /* t.signals.forEach((signal) => {
             let c = signal_container.addChild(createSignalContainer(signal));
             alignSignalContainerWithTrack(c);
             if (selection.isSelectedObject(signal)) c.shadow = new createjs.Shadow("#ff0000", 0, 0, 3);
-         });
+         }); */
       });
    }
 
@@ -104,33 +104,49 @@ class trackRendering_basic {
       shape.name = "track";
       shape.track = track;
 
-      let hit = new createjs.Shape();
-
+      let p1, p2;
+      /*       let hit = new createjs.Shape();
       let p1 = geometry.perpendicular(track.start, track._tmp.deg, -trackRendering_basic.HIT_TEST_DISTANCE);
       let p2 = geometry.perpendicular(track.start, track._tmp.deg, trackRendering_basic.HIT_TEST_DISTANCE);
       let p3 = geometry.perpendicular(track.end, track._tmp.deg, trackRendering_basic.HIT_TEST_DISTANCE);
       const p4 = geometry.perpendicular(track.end, track._tmp.deg, -trackRendering_basic.HIT_TEST_DISTANCE);
 
       hit.graphics.beginFill("#000").mt(p1.x, p1.y).lt(p2.x, p2.y).lt(p3.x, p3.y).lt(p4.x, p4.y).lt(p1.x, p1.y);
-      shape.hitArea = hit;
+      shape.hitArea = hit; */
 
       //container.addChild(hit);
       container.addChild(shape);
+      const g = shape.graphics;
 
-      shape.graphics.setStrokeStyle(trackRendering_basic.STROKE, "round").beginStroke(trackRendering_basic.TRACK_COLOR);
-      shape.color = shape.graphics.command;
-      shape.graphics.moveTo(track.start.x, track.start.y).lineTo(track.end.x, track.end.y);
+      g.setStrokeStyle(trackRendering_basic.STROKE, "round").beginStroke(trackRendering_basic.TRACK_COLOR);
+      shape.color = g.command;
+      g.moveTo(track.start.x, track.start.y);
+      const text = new createjs.Text(track.id, "Italic 10px Arial", "black");      
+      text.textBaseline = "alphabetic";
+      ui_container.addChild(text);
+      for (let index = 0; index < track.nodes.length; index++) {
+         const node = track.nodes[index];
+         g.lineTo(node.x, node.y);
+
+         if (index === Math.floor(track.nodes.length / 2)) {
+            text.x = node._tmp.prev.x + (node.x - node._tmp.prev.x)/2 + 10;
+            text.y = node._tmp.prev.y + (node.y - node._tmp.prev.y)/2 + 10;
+         }
+      }
+
       if (!track.switchAtTheStart) {
          //prellbock beim start
-         p1 = geometry.perpendicular(track.start, track._tmp.deg, -trackRendering_basic.BUMPER_SIZE);
-         p2 = geometry.perpendicular(track.start, track._tmp.deg, trackRendering_basic.BUMPER_SIZE);
+         p1 = geometry.perpendicular(track.start, track.nodes.first()._tmp.deg, -trackRendering_basic.BUMPER_SIZE);
+         p2 = geometry.perpendicular(track.start, track.nodes.first()._tmp.deg, trackRendering_basic.BUMPER_SIZE);
          shape.graphics.moveTo(p1.x, p1.y).lineTo(p2.x, p2.y);
+      } else if (track == track.switchAtTheStart.t1) {
+         this.renderSwitch(track.switchAtTheStart);
       }
 
       if (!track.switchAtTheEnd) {
          //prellbock beim ende
-         p1 = geometry.perpendicular(track.end, track._tmp.deg, -trackRendering_basic.BUMPER_SIZE);
-         p2 = geometry.perpendicular(track.end, track._tmp.deg, trackRendering_basic.BUMPER_SIZE);
+         p1 = geometry.perpendicular(track.end, track.nodes.last()._tmp.deg, -trackRendering_basic.BUMPER_SIZE);
+         p2 = geometry.perpendicular(track.end, track.nodes.last()._tmp.deg, trackRendering_basic.BUMPER_SIZE);
          shape.graphics.moveTo(p1.x, p1.y).lineTo(p2.x, p2.y);
       } else {
          if (track == track.switchAtTheEnd.t1) {
@@ -139,20 +155,12 @@ class trackRendering_basic {
       }
       if (selection.isSelectedObject(track)) this.isSelected(shape);
 
-      /* const text = new createjs.Text(track.id, "Italic 10px Arial", "black");
-        const p = geometry.perpendicular(track.along(track.start, track.length / 2), track.deg, 15);
-
-        text.x = p.x;
-        text.y = p.y;
-        text.textBaseline = "alphabetic";
-        ui_container.addChild(text); */
-
-      shape.setBounds(
+      /* shape.setBounds(
          track.start.x - trackRendering_basic.HIT_TEST_DISTANCE,
          track.start.y - trackRendering_basic.HIT_TEST_DISTANCE,
          track.end.x - track.start.x + trackRendering_basic.HIT_TEST_DISTANCE * 2,
          track.end.y - track.start.y + trackRendering_basic.HIT_TEST_DISTANCE * 2
-      );
+      ); */
 
       return shape;
    }
@@ -160,7 +168,7 @@ class trackRendering_basic {
    renderSwitch(sw) {
       if (!sw.t1 || !sw.t2 || !sw.t3 || (sw.type == SWITCH_TYPE.DKW && !sw.t4)) {
          console.log(sw);
-         throw new Error("switch is falty");
+         throw new Error("switch is faulty, cause one of the branches is null");
       }
       let switch_shape = new createjs.Shape();
       switch_shape.name = "switch";
