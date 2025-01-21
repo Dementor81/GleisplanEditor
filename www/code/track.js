@@ -26,15 +26,15 @@ class Track {
 
       track.nodes.forEach((node) => {
          if (!cut) {
-            if (geometry.pointOnLine(node._tmp.prev, node, split_point)) {
+            if (geometry.pointOnLine(node.start, node.end, split_point)) {
                cut = true;
-               nodes_1.push(Point.fromPoint(split_point));
+               nodes_1.push(new TrackNode(nodes_1.last(), split_point));
                //only add the split point if we split in the middle of a node
-               if (!split_point.equals(node)) nodes_2.push(Point.fromPoint(node));
+               if (!split_point.equals(node.end)) nodes_2.push(new TrackNode(nodes_2.last(), node.end));
             } else {
-               nodes_1.push(Point.fromPoint(node));
+               nodes_1.push(new TrackNode(nodes_1.last(), node.end));
             }
-         } else nodes_2.push(Point.fromPoint(node));
+         } else nodes_2.push(new TrackNode(nodes_2.last(), node.end));
       });
 
       if (!cut) throw new Error("The split point is not on the track");
@@ -95,23 +95,27 @@ class Track {
 
       const new_tracks = [];
 
-      if (nodes.first().x > nodes.last().x) {
+      //reverse the nidex array if the user drawed it from right to left
+      if (nodes.first().x > nodes.last().end.x) {
          nodes.reverse();
+         for (let i = 1; i < nodes.length; i++) {
+            const n1 = nodes[i];
+            n1.chain(nodes[i - 1]);
+         }
       }
 
       let prev,
          current_node = null,
          processed_nodes = [];
 
-      //iterate over all nodes and calculate the temp values and removes unnessesary nodes
+      //iterate over all nodes and removes unnessesary nodes, nodes where the slope does not change
       while (nodes.length > 0) {
          current_node = nodes.shift();
 
-         Track.calcTempValues4Nodes(prev, current_node);
          if (processed_nodes.length > 1) {
-            if (prev._tmp.slope === current_node._tmp.slope) {
+            if (prev.slope === current_node.slope) {
                processed_nodes.pop();
-               Track.calcTempValues4Nodes(processed_nodes.last(), current_node);
+               current_node.chain(processed_nodes.last());
             }
          }
          processed_nodes.push(current_node);
@@ -121,6 +125,8 @@ class Track {
       let tmp;
       //adds the first node to the tmp_nodes array as the start node of the new track
       let tmp_nodes = [processed_nodes.shift()];
+
+      //now we check every node if it overlaps another already existing part of another track
       while (processed_nodes.length > 0) {
          current_node = processed_nodes.shift();
 
@@ -130,8 +136,8 @@ class Track {
             tracks.forEach((track) => {
                track.nodes.forEach((node) => {
                   if (
-                     node._tmp.slope === current_node._tmp.slope &&
-                     geometry.areSegmentsOverlapping2D(node._tmp.prev, node, current_node._tmp.prev, current_node)
+                     node.slope === current_node.slope &&
+                     geometry.areSegmentsOverlapping2D(node.start, node.end, current_node.start, current_node.end)
                   ) {
                      foundNodes.push(node);
                   }
@@ -143,13 +149,12 @@ class Track {
          //if no node was found, add the current node to the tmp_nodes array
          if (!overlapping_nodes) tmp_nodes.push(current_node);
          else {
-            let p1 = Point.fromPoint(current_node._tmp.prev);
+            let p1 = Point.fromPoint(current_node.start);
             overlapping_nodes.forEach((overlapping_node) => {
                //if the current node's start is not on the found node, it must be infront of it
                //therefore we need to create a new track from the start of the current node to the start of the found node
-               if (!geometry.pointOnLine(overlapping_node._tmp.prev, overlapping_node, p1)) {
-                  tmp = Point.fromPoint(overlapping_node._tmp.prev);
-                  Track.calcTempValues4Nodes(tmp_nodes.last(), tmp);
+               if (!geometry.pointOnLine(overlapping_node.start, overlapping_node.end, p1)) {
+                  tmp = new TrackNode(tmp_nodes.last(), overlapping_node.start);
                   tmp_nodes.push(tmp);
                }
 
@@ -158,11 +163,7 @@ class Track {
                if (tmp_nodes.length >= 2) {
                   new_tracks.push(Track.createTrack(tmp_nodes));
                }
-               tmp_nodes = [];
-
-               p1 = Point.fromPoint(overlapping_node);
-               Track.calcTempValues4Nodes(tmp_nodes.last(), p1);
-               tmp_nodes.push(p1);
+               tmp_nodes = [(p1 = Point.fromPoint(overlapping_node.end))];
             });
 
             /*const overlapping_node = overlapping_nodes.last();
@@ -171,11 +172,13 @@ class Track {
                tmp = new Point(overlapping_node.x, overlapping_node.y);
                tmp_nodes.push(tmp);
             } */
-
-            if (!current_node.equals(tmp_nodes.last())) {
-               Track.calcTempValues4Nodes(tmp_nodes.last(), current_node);
-               tmp_nodes.push(current_node);
-            }
+         }
+         if (
+            !current_node.end.equals(tmp_nodes.last()) &&
+            !geometry.pointOnLine(overlapping_nodes.last().start, overlapping_nodes.last().end, current_node.end)
+         ) {
+            current_node.chain(tmp_nodes.last());
+            tmp_nodes.push(current_node);
          }
       }
       if (tmp_nodes.length >= 2) {
@@ -193,14 +196,14 @@ class Track {
    }
 
    static isValidSwitch(location, tracks) {
-      const allNodes = tracks.flatMap((track) => track.nodes).filter((n) => n._tmp.prev.equals(location) || n.equals(location));
+      const allNodes = tracks.flatMap((track) => track.nodes).filter((n) => n.start.equals(location) || n.end.equals(location));
       if (!allNodes.length.between(3, 4)) {
-         console.log("1");
+         console.log(`to many nodes ${allNodes.length}`);
          return false;
       }
-      const ordered_nodes = allNodes.toSorted((n, n1) => n1._tmp.rad - n1._tmp.rad);
-      if (ordered_nodes[0]._tmp.rad != ordered_nodes[1]._tmp.rad) {
-         console.log("2");
+      const ordered_nodes = allNodes.toSorted((n, n1) => n.rad - n1.rad);
+      if (ordered_nodes[0].rad != ordered_nodes[1].rad && ordered_nodes[1].rad != ordered_nodes[2].rad) {
+         console.log(`2 tracks with the same angle are necessary`);
          return false;
       }
       return true;
@@ -231,12 +234,12 @@ class Track {
 
       if (left_tracks.length == 1) {
          sw.t1 = left_tracks[0];
-         rad = sw.t1.end._tmp.rad;
-         sw.t2 = right_tracks.find((t) => t.nodes.first()._tmp.rad == rad);
+         rad = sw.t1.lastNode.rad;
+         sw.t2 = right_tracks.find((t) => t.firstNode.rad == rad);
       } else {
          sw.t1 = right_tracks[0];
-         rad = sw.t1.nodes.first()._tmp.rad;
-         sw.t2 = left_tracks.find((t) => t.end._tmp.rad == rad);
+         rad = sw.t1.firstNode.rad;
+         sw.t2 = left_tracks.find((t) => t.lastNode.rad == rad);
       }
 
       if (sw.t2 == null) throw new Error("couldnt find 2 tracks with the same slope");
@@ -246,7 +249,7 @@ class Track {
 
       if (sw.t4) sw.type = SWITCH_TYPE.DKW;
       else {
-         const angle = findAngle(location, sw.t3.end.equals(location) ? sw.t3.end : sw.t3.nodes.first(), rad);
+         const angle = findAngle(location, sw.t3.end.equals(location) ? sw.t3.lastNode : sw.t3.firstNode, rad);
          sw.type = Math.ceil((angle % 360) / 90);
       }
       //console.log(Object.keys(SWITCH_TYPE).find((key) => SWITCH_TYPE[key] === sw.type));
@@ -256,13 +259,11 @@ class Track {
       return sw;
    }
 
-   static connectTracks() {
-      tracks.forEach((track) => (track._tmp.switches = [])); //delets all swichtes
+   static splitTracksAtIntersections() {
       let intersection,
-         skip = false; // true if the track was already split
-
-      let new_tracks = [];
-      let remainingTracks = [...tracks]; //copy of the tracks, will be modified during the loop
+         skip = false, // true if the track was already split
+         new_tracks = [],
+         remainingTracks = [...tracks]; //copy of the tracks, will be modified during the loop
 
       //iterate over all tracks and search for intersections
       while (remainingTracks.length > 0) {
@@ -278,10 +279,7 @@ class Track {
                for (let l = 0; l < track2.nodes.length; l++) {
                   const node2 = track2.nodes[l];
                   // retrive the intersection point of the two nodes
-                  intersection = geometry.getIntersectionPoint(
-                     { start: node1._tmp.prev, end: node1 },
-                     { start: node2._tmp.prev, end: node2 }
-                  );
+                  intersection = geometry.getIntersectionPoint(node1, node2);
                   //check if the intersection point is on the grid
                   if (intersection && intersection.x % GRID_SIZE == 0 && intersection.y % GRID_SIZE == 0) {
                      //now we need to splitt both tracks at the intersection point
@@ -303,7 +301,7 @@ class Track {
                         remainingTracks.push(...new_tracks); //OPT: maybe only if the tracks are longer then 1.5
                         new_tracks = [];
                         skip = true;
-                        console.log(`split track2 (${track2._tmp.id}) at ${intersection.x},${intersection.y}`);
+                        console.log(`split track2 (${track2.id}) at ${intersection.x},${intersection.y}`);
                      }
                   }
 
@@ -312,22 +310,20 @@ class Track {
             }
          }
       }
+   }
 
-      remainingTracks = [...tracks]; //copy of the tracks, will be modified during the loop
+   static cleanUpTracks() {
+      const remainingTracks = [...tracks]; //copy of the tracks, will be modified during the loop
       //iterate over all tracks and search for intersections
+      let track, connected_tracks;
       while (remainingTracks.length > 0) {
-         const track = remainingTracks.shift();
-
-         const end_node = track.end; //gets its endpoint
-
+         track = remainingTracks.shift();
          //searches for every track wich starts or ends at that point
-         const connected_tracks = tracks.filter((t) => t != track && (t.start.equals(end_node) || t.end.equals(end_node)));
+         connected_tracks = tracks.filter((t) => t != track && (t.start.equals(track.end) || t.end.equals(track.end)));
 
          if (connected_tracks.length == 1) {
             const t = connected_tracks[0];
-            const n = t.nodes.first();
-            const angle = geometry.calculateAngle(end_node, n, end_node._tmp.prev);
-            
+            const angle = geometry.calculateAngle(track.end, t.firstNode.end, track.lastNode.start);
 
             if (angle > 90) {
                remainingTracks.push(...Track.joinTracks(track, connected_tracks[0]));
@@ -335,52 +331,34 @@ class Track {
             }
          }
       }
+   }
 
+   static createSwitches() {
       let sw;
       for (let i = 0; i < tracks.length; i++) {
          const track = tracks[i];
          if (track.switchAtTheEnd) continue;
-         const end_node = track.end; //gets its endpoint
+         const end_point = track.end; //gets its endpoint
 
          //searches for every track wich starts or ends at that point
-         const connected_tracks = tracks.filter((t) => t != track && (t.start.equals(end_node) || t.end.equals(end_node)));
-         
+         const connected_tracks = tracks.filter((t) => t != track && (t.start.equals(end_point) || t.end.equals(end_point)));
 
          if (connected_tracks.length.between(2, 3)) {
             connected_tracks.push(track);
 
-            if (Track.isValidSwitch(end_node, connected_tracks)) {
-               sw = Track.createSwitch(end_node, connected_tracks);
+            if (Track.isValidSwitch(end_point, connected_tracks)) {
+               sw = Track.createSwitch(end_point, connected_tracks);
                [sw.t1, sw.t2, sw.t3, sw.t4].forEach((track) => track && track.addSwitch(sw));
             }
          }
       }
    }
 
-   static calcTempValues4Nodes(p1, p2) {
-      if (p2 == null) return;
-      if (p1 == null) {
-         p2._tmp = {};
-         return;
-      }
-      if (p1.x === p2.x && p1.y === p2.y) throw new Error("two same points are not allowed for a node");
-
-      p2._tmp = {};
-      p2._tmp.prev = p1;
-      p2._tmp.vector = {
-         x: p2.x - p1.x,
-         y: p2.y - p1.y,
-      };
-      p2._tmp.rad = Math.atan(p2._tmp.vector.y / p2._tmp.vector.x);
-      p2._tmp.deg = p2._tmp.rad * (180 / Math.PI);
-
-      p2._tmp.length = geometry.length(p2._tmp.vector);
-      p2._tmp.unit = new V2(geometry.unit(p2._tmp.vector, p2._tmp.length));
-
-      p2._tmp.slope = geometry.slope(p1, p2);
-
-      p2._tmp.sin = Math.sin(p2._tmp.rad);
-      p2._tmp.cos = Math.cos(p2._tmp.rad);
+   static createRailNetwork() {
+      tracks.forEach((track) => (track._tmp.switches = [])); //delets all swichtes
+      Track.splitTracksAtIntersections();
+      Track.cleanUpTracks();
+      Track.createSwitches();
    }
 
    static switch_A_Switch(sw, mouseX) {
@@ -393,15 +371,6 @@ class Track {
             sw.from = swap(sw.from, sw.t1, sw.t4);
          }
       }
-   }
-
-   static FromObject(o) {
-      let t = new Track(o.start, o.end);
-      t.signals = o.signals;
-      t.signals.forEach(function (s) {
-         s._positioning.track = t;
-      });
-      return t;
    }
 
    nodes = [];
@@ -424,6 +393,14 @@ class Track {
    }
 
    get end() {
+      return this.nodes.last().end;
+   }
+
+   get firstNode() {
+      return this.nodes.first();
+   }
+
+   get lastNode() {
       return this.nodes.last();
    }
 
@@ -528,8 +505,8 @@ class Track {
    //the direction is automaticly optained
    along(point, x) {
       x = x * (point.x == this.start.x ? 1 : -1);
-      if (x > 0) return geometry.add(point, geometry.multiply(this.nodes.first()._tmp.unit, x));
-      else return geometry.add(point, geometry.multiply(this.end._tmp.unit, x));
+      if (x > 0) return geometry.add(point, geometry.multiply(this.firstNode.unit, x));
+      else return geometry.add(point, geometry.multiply(this.lastNode.unit, x));
    }
 
    AddSignal(signal) {
@@ -550,6 +527,19 @@ class Track {
    }
 
    stringify() {
-      return { _class: "Track", start: this.start, end: this.end, signals: this.signals };
+      return { _class: "Track", start: this.start, nodes: this.nodes, signals: this.signals };
+   }
+
+   static FromObject(o) {
+      const nodes = [Point.fromPoint(o.start), ...o.nodes];
+      for (let i = 1; i < nodes.length; i++) {
+         nodes[i].chain(nodes[i - 1]);
+      }
+      let t = new Track(nodes);
+      t.signals = o.signals;
+      t.signals.forEach(function (s) {
+         s._positioning.track = t;
+      });
+      return t;
    }
 }

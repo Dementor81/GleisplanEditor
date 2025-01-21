@@ -1,6 +1,6 @@
 "use strict";
 
-const VERSION = "0.43";
+const VERSION = "0.44";
 
 const MODE_PLAY = 1;
 const MODE_EDIT = 2;
@@ -167,8 +167,8 @@ function init() {
             ),
          ]);
 
+         STORAGE.loadRecent()
          selectRenderer(false);
-         //loadRecent();
       } catch (error) {
          showErrorToast(error);
       }
@@ -384,7 +384,7 @@ function deleteSelectedObject() {
    if (selection.object) {
       if (selection.type == "Track") {
          [].concat(selection.object).forEach((t) => tracks.remove(t));
-         Track.connectTracks();
+         Track.createRailNetwork();
          STORAGE.saveUndoHistory();
       }
       if (selection.type == "Signal") [].concat(selection.object).forEach((s) => Signal.removeSignal(s, null));
@@ -914,7 +914,7 @@ function determineMouseAction(event, local_point) {
                mouseAction.action = MOUSE_DOWN_ACTION.MOVE_OBJECT;
             } else {
                mouseAction.action = MOUSE_DOWN_ACTION.BUILD_TRACK;
-               addTrackAnchorPoint(local_point);
+               addTrackAnchorPoint(getSnapPoint(local_point));
                overlay_container.addChild((mouseAction.lineShape = new createjs.Shape()));
             }
          } else {
@@ -981,7 +981,7 @@ function drawBluePrintTrack() {
 
    for (let index = 1; index < mouseAction.nodes.length; index++) {
       const node = mouseAction.nodes[index];
-      g.lt(node.x, node.y);
+      g.lt(node.end.x, node.end.y);
    }
 
    const last = mouseAction.nodes.last();
@@ -991,19 +991,18 @@ function drawBluePrintTrack() {
 
 function addTrackAnchorPoint(current) {
    if (mouseAction.nodes == null) {
-      mouseAction.nodes = [getSnapPoint(current)];
-      return;
+      mouseAction.nodes = [];
    }
-   
+
    //wenn der letzte Punkt gleich dem aktuellen ist, dann nichts tun
    if (mouseAction.nodes.last()?.equals(current)) return;
    //wenn der Startpunkt gleich dem aktuellen ist, dann Track zurücksetzen
-   if (mouseAction.nodes.first().equals(current)) {
-      track.nodes = [];
+   if (mouseAction.nodes.first()?.equals(current)) {
+      mouseAction.nodes = [mouseAction.nodes[0]];
       return;
    }
 
-   mouseAction.nodes.push(current);
+   mouseAction.nodes.push(new TrackNode(mouseAction.nodes.last(), current));
    return;
 
    if (ankerPoints == null || ankerPoints.length == 0) {
@@ -1071,7 +1070,7 @@ function handleStageMouseUp(e) {
          } else if (mouseAction.action === MOUSE_DOWN_ACTION.BUILD_TRACK) {
             if (mouseAction.nodes.length > 0) {
                Track.checkNodesAndCreateTracks(mouseAction.nodes);
-               Track.connectTracks();
+               Track.createRailNetwork();
                renderer.reDrawEverything(true);
                STORAGE.saveUndoHistory();
                STORAGE.save();
@@ -1131,7 +1130,7 @@ function handleStageMouseUp(e) {
                selectObject(mouseAction.container.train, e);
             } else if (mouseAction.container?.name == "track") {
                selectObject(mouseAction.container.track, e);
-               console.log(mouseAction.container.track.nodes.first()._tmp.deg);
+               console.log(mouseAction.container.track);               
             } else if (mouseAction.container?.name == "object") {
                selectObject(mouseAction.container.object, e);
             } else if (mouseAction.container?.name == "switch") {
@@ -1155,7 +1154,7 @@ function handleStageMouseUp(e) {
 }
 
 const STORAGE = {
-   MIN_STORAGE_VERSION: 0.43,
+   MIN_STORAGE_VERSION: 0.44,
    STORAGE_IDENT: "bahnhof_last1",
 
    receiver(key, value) {
@@ -1209,7 +1208,7 @@ const STORAGE = {
       if (loaded.objects) GenericObject.all_objects = loaded.objects;
       tracks = loaded.tracks?.clean() || []; //when something went wront while loading track, we filter all nulls
 
-      Track.connectTracks();
+      Track.createRailNetwork();
       Train.allTrains = loaded.trains?.clean() || []; ////when something went wront while loading trains, we filter all nulls
       Train.allTrains.forEach((t) => t.restore());
       Train.allTrains = Train.allTrains.filter((t) => t.track != null);
@@ -1221,7 +1220,7 @@ const STORAGE = {
    },
 
    save() {
-      /* localStorage.setItem(STORAGE.STORAGE_IDENT, STORAGE.getSaveString()); */
+      localStorage.setItem(STORAGE.STORAGE_IDENT, STORAGE.getSaveString());
    },
 
    loadRecent() {

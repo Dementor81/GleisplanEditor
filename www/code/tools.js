@@ -742,7 +742,7 @@ const geometry = {
 //rad= angle of track_1 in rad
 //c= end of the track_2 to find angle
 function findAngle(sw, node, rad = 0) {
-   let c = node.equals(sw) ? node._tmp.prev : node;
+   let c = node.end.equals(sw) ? node.start : node.end;
 
    let atan = Math.atan2(c.y - sw.y, c.x - sw.x) - rad;
    if (atan < 0) atan += 2 * π; //macht aus neg Winkeln durch addition von 360° positive winkel

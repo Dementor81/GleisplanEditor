@@ -126,18 +126,18 @@ class trackRendering_basic {
       ui_container.addChild(text);
       for (let index = 0; index < track.nodes.length; index++) {
          const node = track.nodes[index];
-         g.lineTo(node.x, node.y);
+         g.lineTo(node.end.x, node.end.y);
 
          if (index === Math.floor(track.nodes.length / 2)) {
-            text.x = node._tmp.prev.x + (node.x - node._tmp.prev.x)/2 + 10;
-            text.y = node._tmp.prev.y + (node.y - node._tmp.prev.y)/2 + 10;
+            text.x = node.start.x + (node.end.x - node.start.x)/2 + 8;
+            text.y = node.start.y + (node.end.y - node.start.y)/2 + 10;
          }
       }
 
       if (!track.switchAtTheStart) {
          //prellbock beim start
-         p1 = geometry.perpendicular(track.start, track.nodes.first()._tmp.deg, -trackRendering_basic.BUMPER_SIZE);
-         p2 = geometry.perpendicular(track.start, track.nodes.first()._tmp.deg, trackRendering_basic.BUMPER_SIZE);
+         p1 = geometry.perpendicular(track.start, track.firstNode.deg, -trackRendering_basic.BUMPER_SIZE);
+         p2 = geometry.perpendicular(track.start, track.firstNode.deg, trackRendering_basic.BUMPER_SIZE);
          shape.graphics.moveTo(p1.x, p1.y).lineTo(p2.x, p2.y);
       } else if (track == track.switchAtTheStart.t1) {
          this.renderSwitch(track.switchAtTheStart);
@@ -145,8 +145,8 @@ class trackRendering_basic {
 
       if (!track.switchAtTheEnd) {
          //prellbock beim ende
-         p1 = geometry.perpendicular(track.end, track.nodes.last()._tmp.deg, -trackRendering_basic.BUMPER_SIZE);
-         p2 = geometry.perpendicular(track.end, track.nodes.last()._tmp.deg, trackRendering_basic.BUMPER_SIZE);
+         p1 = geometry.perpendicular(track.end, track.lastNode.deg, -trackRendering_basic.BUMPER_SIZE);
+         p2 = geometry.perpendicular(track.end, track.lastNode.deg, trackRendering_basic.BUMPER_SIZE);
          shape.graphics.moveTo(p1.x, p1.y).lineTo(p2.x, p2.y);
       } else {
          if (track == track.switchAtTheEnd.t1) {
