@@ -16,10 +16,24 @@ class trackRendering_basic {
       signal_container.removeAllChildren();
       train_container.removeAllChildren();
       ui_container.removeAllChildren();
+      debug_container.removeAllChildren();
+      object_container.removeAllChildren();
 
       this.renderAllTracks();
       this.renderAllGenericObjects();
+      this.renderAllSignals();
       stage.update();
+   }
+
+   renderAllSignals() {
+      signal_container.removeAllChildren();
+      Signal.allSignals.forEach(signal => {
+         let container = signal_container.addChild(createSignalContainer(signal));
+         alignSignalContainerWithTrack(container,signal._positioning);
+         if (selection.isSelectedObject(signal)) {
+            container.shadow = new createjs.Shadow("#ff0000", 0, 0, 3);
+         }
+      });
    }
 
    renderAllTracks() {
@@ -208,8 +222,8 @@ class trackRendering_basic {
             ui_shape.graphics.setStrokeStyle(trackRendering_basic.STROKE / 2, "round").beginStroke("gray");
 
             const triangle = function (t) {
-               let p1 = t.along(sw.location, 10);
-               let p0 = t.along(sw.location, 3);
+               let p1 = t.along(sw.location, 13);
+               let p0 = t.along(sw.location, 5);
                ui_shape.graphics.moveTo(p0.x, p0.y).lineTo(p1.x, p1.y);
             };
 

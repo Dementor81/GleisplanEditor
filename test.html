@@ -1,133 +1,106 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Schnittpunkte berechnen</title>
-</head>
-<body>
-  <canvas id="canvas" width="500" height="300" style="border:1px solid black;"></canvas>
+   <head>
+      <meta charset="UTF-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <title>Schnittpunkte berechnen</title>
+   </head>
+   <body>
+      <canvas id="canvas" width="500" height="300" style="border: 1px solid black"></canvas>
 
-  <script>
-    // Hilfsfunktion: Punkt auf einer Bézierkurve finden
-    function bezierPoint(p0, p1, p2, t) {
-      const x = (1 - t) ** 2 * p0.x + 2 * (1 - t) * t * p1.x + t ** 2 * p2.x;
-      const y = (1 - t) ** 2 * p0.y + 2 * (1 - t) * t * p1.y + t ** 2 * p2.y;
-      return { x, y };
-    }
+      <script>
+         // Hilfsfunktion: Punkt auf einer Bézierkurve finden
+         const canvas = document.querySelector("canvas");
+         const ctx = canvas.getContext("2d");
+         canvas.width = 800;
+         canvas.height = 600;
 
-    // Funktion: Schnittpunkt einer Linie mit der Bézierkurve finden
-    function findIntersection(linePoint, lineDirection, p0, p1, p2, steps = 1) {
-      let closestPoint = null;
-      let minDistance = Infinity;
+         // Zwei Schienen: gerade und abzweigend
+         function leftRail(t) {
+            return {
+               x: 100 + t * 600,
+               y: 300,
+            };
+         }
+         function rightRail(t) {
+            return {
+               x: 100 + t * 600,
+               y: 300 + 100 * Math.sin((t * Math.PI) / 2),
+            };
+         }
 
-      for (let i = 0; i <= steps; i++) {
-        const t = i / steps;
-        const bezierPt = bezierPoint(p0, p1, p2, t);
+         // Mittelachse als Durchschnitt
+         function centerLine(t) {
+            const l = leftRail(t);
+            const r = rightRail(t);
+            return {
+               x: (l.x + r.x) / 2,
+               y: (l.y + r.y) / 2,
+            };
+         }
 
-        // Projektion des Bézierpunktes auf die Linie
-        const dx = bezierPt.x - linePoint.x;
-        const dy = bezierPt.y - linePoint.y;
-        const projection = (dx * lineDirection.x + dy * lineDirection.y) / 
-                           (lineDirection.x ** 2 + lineDirection.y ** 2);
+         // Tangente der Mittelachse
+         function tangent(t) {
+            const delta = 0.001;
+            const p1 = centerLine(t - delta);
+            const p2 = centerLine(t + delta);
+            return {
+               x: p2.x - p1.x,
+               y: p2.y - p1.y,
+            };
+         }
 
-        const projectionPoint = {
-          x: linePoint.x + projection * lineDirection.x,
-          y: linePoint.y + projection * lineDirection.y,
-        };
+         // Abstand zwischen linker und rechter Schiene an Punkt t
+         function sleeperLength(t, extra = 20) {
+            const l = leftRail(t);
+            const r = rightRail(t);
+            const dx = r.x - l.x;
+            const dy = r.y - l.y;
+            return Math.hypot(dx, dy) + extra;
+         }
 
-        // Abstand zwischen Projektion und dem Bézierpunkt
-        const dist = Math.sqrt((bezierPt.x - projectionPoint.x) ** 2 +
-                               (bezierPt.y - projectionPoint.y) ** 2);
+         function drawSleeper(t) {
+            const pos = centerLine(t);
+            const tan = tangent(t);
+            const len = sleeperLength(t);
 
-        if (dist < minDistance) {
-          minDistance = dist;
-          closestPoint = bezierPt;
-        }
-      }
+            const norm = {
+               x: -tan.y,
+               y: tan.x,
+            };
+            const normLen = Math.hypot(norm.x, norm.y);
+            const nx = ((norm.x / normLen) * len) / 2;
+            const ny = ((norm.y / normLen) * len) / 2;
 
-      return closestPoint;
-    }
+            ctx.beginPath();
+            ctx.moveTo(pos.x - nx, pos.y - ny);
+            ctx.lineTo(pos.x + nx, pos.y + ny);
+            ctx.strokeStyle = "brown";
+            ctx.lineWidth = 4;
+            ctx.stroke();
+         }
 
-    // Hauptfunktion: Verbindungen erzeugen
-    function connectIntersections(lineStart, lineEnd, bezierP0, bezierP1, bezierP2, interval, steps = 100) {
-      const connections = [];
-      const lineLength = Math.sqrt(
-        (lineEnd.x - lineStart.x) ** 2 + (lineEnd.y - lineStart.y) ** 2
-      );
-      const numPoints = Math.floor(lineLength / interval);
+         // Zeichne Schwellen
+         for (let t = 0; t <= 1; t += 0.03) {
+            drawSleeper(t);
+         }
 
-      // Richtung der senkrechten Linie berechnen (90° Rotation)
-      const lineDir = { x: lineEnd.x - lineStart.x, y: lineEnd.y - lineStart.y };
-      const perpendicular = { x: -lineDir.y, y: lineDir.x };
+         // Zeichne Schienen zum Vergleich
+         ctx.strokeStyle = "gray";
+         ctx.lineWidth = 2;
 
-      for (let i = 0; i <= numPoints; i++) {
-        const tLine = i / numPoints;
-        const linePoint = {
-          x: lineStart.x + (lineEnd.x - lineStart.x) * tLine,
-          y: lineStart.y + (lineEnd.y - lineStart.y) * tLine,
-        };
+         function drawRail(fn) {
+            ctx.beginPath();
+            for (let t = 0; t <= 1; t += 0.01) {
+               const p = fn(t);
+               if (t === 0) ctx.moveTo(p.x, p.y);
+               else ctx.lineTo(p.x, p.y);
+            }
+            ctx.stroke();
+         }
 
-        // Schnittpunkt mit der Bézierkurve berechnen
-        const intersection = findIntersection(linePoint, perpendicular, bezierP0, bezierP1, bezierP2, steps);
-
-        connections.push({ linePoint, bezierPoint: intersection });
-      }
-
-      return connections;
-    }
-
-    // Canvas-Setup
-    const canvas = document.getElementById("canvas");
-    const ctx = canvas.getContext("2d");
-
-    // Beispiel-Daten
-    const lineStart = { x: 50, y: 200 };
-    const lineEnd = { x: 450, y: 200 };
-    const bezierP0 = { x: 50, y: 100 };
-    const bezierP1 = { x: 250, y: 20 };
-    const bezierP2 = { x: 450, y: 100 };
-    const interval = 15;
-
-    // Verbindungen berechnen
-    const connections = connectIntersections(lineStart, lineEnd, bezierP0, bezierP1, bezierP2, interval);
-
-    // Bézierkurve zeichnen
-    ctx.beginPath();
-    ctx.moveTo(bezierP0.x, bezierP0.y);
-    ctx.quadraticCurveTo(bezierP1.x, bezierP1.y, bezierP2.x, bezierP2.y);
-    ctx.strokeStyle = "blue";
-    ctx.lineWidth = 2;
-    ctx.stroke();
-
-    // Gerade Linie zeichnen
-    ctx.beginPath();
-    ctx.moveTo(lineStart.x, lineStart.y);
-    ctx.lineTo(lineEnd.x, lineEnd.y);
-    ctx.strokeStyle = "green";
-    ctx.lineWidth = 2;
-    ctx.stroke();
-
-    // Verbindungslinien zeichnen
-    ctx.strokeStyle = "red";
-    ctx.lineWidth = 1;
-    connections.forEach(connection => {
-      ctx.beginPath();
-      ctx.moveTo(connection.linePoint.x, connection.linePoint.y);
-      ctx.lineTo(connection.bezierPoint.x, connection.bezierPoint.y);
-      ctx.stroke();
-    });
-
-    // Punkte markieren
-    ctx.fillStyle = "black";
-    connections.forEach(connection => {
-      ctx.beginPath();
-      ctx.arc(connection.bezierPoint.x, connection.bezierPoint.y, 3, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.beginPath();
-      ctx.arc(connection.linePoint.x, connection.linePoint.y, 3, 0, Math.PI * 2);
-      ctx.fill();
-    });
-  </script>
-</body>
+         drawRail(leftRail);
+         drawRail(rightRail);
+      </script>
+   </body>
 </html>

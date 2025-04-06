@@ -26,6 +26,7 @@ class TrackNode {
       return this.#_end.y;
    }
 
+   //global coordinates
    get start() {
       return this.#_start;
    }
@@ -35,6 +36,7 @@ class TrackNode {
       this.#resetCache();
    }
 
+   //global coordinates
    get end() {
       return this.#_end;
    }
@@ -78,6 +80,15 @@ class TrackNode {
       return this._slope ? this._slope : (this._slope = this.vector.y / this.vector.x);
    }
 
+   get sin() {
+      if (!this._sin) this._sin = Math.sin(this.rad);
+      return this._sin;
+   }
+   get cos() {
+      if (!this._cos) this._cos = Math.cos(this.rad);
+      return this._cos;
+   }
+
    #resetCache() {
       this._vector = null;
       this._rad = null;
@@ -85,6 +96,8 @@ class TrackNode {
       this._length = null;
       this._unit = null;
       this._slope = null;
+      this._sin = null;
+      this._cos = null;
    }
 
    chain(node) {
@@ -92,6 +105,20 @@ class TrackNode {
       else if (node instanceof Point) this.#_start = Point.fromPoint(node);
       else throw new TypeError("parameter must be of type TrackNode or Point");
    }
+
+   getPointfromKm(km) {
+      return { x: (Math.cos(this._rad) * km).round(0), y: (Math.sin(this._rad) * km).round(0) };
+   }
+
+   getKmFromPoint(p) {
+      if (!geometry.pointOnLine(this.start, this.end, p)) return;
+
+      let v = new V2(this.start);
+      v = v.sub(p);
+      return v.length;
+   }
+
+   /* ------------------------------------- */
 
    equals(point) {
       return this.#_end.x === point.x && this.#_end.y === point.y;

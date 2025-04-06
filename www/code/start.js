@@ -2,6 +2,8 @@
 
 const VERSION = "0.44";
 
+const DEFAULT_SIMPLIFIED_VIEW = false; // Set to false for textured view by default
+
 const MODE_PLAY = 1;
 const MODE_EDIT = 2;
 
@@ -11,7 +13,7 @@ const GRID_SUB_STEPS = 4;
 const GRID_SUB_SIZE = GRID_SIZE / GRID_SUB_STEPS;
 
 const SNAP_2_GRID = 10;
-const MAX_SCALE = 5;
+const MAX_SCALE = 8;
 const MIN_SCALE = 0.2;
 
 const MOST_UNDO = 20;
@@ -167,8 +169,8 @@ function init() {
             ),
          ]);
 
-         STORAGE.loadRecent()
-         selectRenderer(false);
+         STORAGE.loadRecent();
+         selectRenderer(!DEFAULT_SIMPLIFIED_VIEW);
       } catch (error) {
          showErrorToast(error);
       }
@@ -404,6 +406,7 @@ function undo() {
 const RENDERING = {
    clear() {
       tracks = [];
+      Signal.allSignals = [];
       Train.allTrains = [];
       GenericObject.all_objects = [];
 
@@ -428,34 +431,43 @@ const RENDERING = {
          stage.addChildAt(grid, 0);
          grid.graphics.setStrokeStyle(1, "round");
       }
+
       grid.visible = showGrid;
-      if (showGrid) {
-         if (repaint) {
-            grid.graphics.c().setStrokeStyle(1, "round").setStrokeDash([5, 5], 2).beginStroke("#ccc");
+      if (!showGrid) return;
 
-            const bounds = stage.canvas.getBoundingClientRect();
-            const scale = stage.scale;
-            const size = {
-               width: bounds.width / scale,
-               height: bounds.height / scale,
-            };
-            let x = 0;
-            while (x < size.width) {
-               grid.graphics.moveTo(x, -GRID_SIZE).lineTo(x, size.height);
-               x += GRID_SIZE;
-            }
+      if (repaint) {
+         const bounds = stage.canvas.getBoundingClientRect();
+         const scale = stage.scale;
 
-            let y = 0;
-            while (y < size.height) {
-               grid.graphics.moveTo(-GRID_SIZE, y).lineTo(size.width, y);
-               y += GRID_SIZE;
-            }
-            grid.cache(-GRID_SIZE, -GRID_SIZE, size.width + GRID_SIZE * scale, size.height + GRID_SIZE * scale, scale);
+         // Calculate visible area in grid coordinates
+         const size = {
+            width: Math.ceil(bounds.width / scale / GRID_SIZE) * GRID_SIZE,
+            height: Math.ceil(bounds.height / scale / GRID_SIZE) * GRID_SIZE,
+         };
+
+         // Add padding to prevent gaps during panning
+         const padding = GRID_SIZE * 2;
+
+         grid.graphics.clear().setStrokeStyle(1, "round").setStrokeDash([5, 5], 2).beginStroke("#ccc");
+
+         // Draw vertical lines
+         for (let x = -padding; x <= size.width + padding; x += GRID_SIZE) {
+            grid.graphics.moveTo(x, -padding).lineTo(x, size.height + padding);
          }
-         const scaled_grid_size = GRID_SIZE * stage.scale;
-         grid.x = Math.floor(stage.x / scaled_grid_size) * -GRID_SIZE;
-         grid.y = Math.floor(stage.y / scaled_grid_size) * -GRID_SIZE;
+
+         // Draw horizontal lines
+         for (let y = -padding; y <= size.height + padding; y += GRID_SIZE) {
+            grid.graphics.moveTo(-padding, y).lineTo(size.width + padding, y);
+         }
+
+         // Cache with padding to prevent artifacts
+         grid.cache(-padding, -padding, size.width + padding * 2, size.height + padding * 2, scale);
       }
+
+      // Align grid to nearest grid line to prevent floating point artifacts
+      const scaled_grid_size = GRID_SIZE * stage.scale;
+      grid.x = Math.floor(stage.x / scaled_grid_size) * -GRID_SIZE;
+      grid.y = Math.floor(stage.y / scaled_grid_size) * -GRID_SIZE;
    },
 };
 
@@ -628,8 +640,11 @@ const UI = {
    GetDataURL_FromTemplate(template) {
       const tmpStage = new createjs.Stage($("<canvas>").attr({ width: 450, height: 450 })[0]);
       tmpStage.scale = template.scale;
-      new Signal(template).draw(tmpStage, true);
+
+      // Use dedicated preview rendering method
+      SignalRenderer.drawPreview(template, tmpStage);
       tmpStage.update();
+
       const sig_bounds = tmpStage.getBounds();
       if (sig_bounds == null) throw Error(template.title + " has no visual Element visible");
       tmpStage.cache(sig_bounds.x, sig_bounds.y, sig_bounds.width, sig_bounds.height, 0.5);
@@ -740,17 +755,25 @@ function getHitTest(container) {
 }
 
 function getHitInfoForSignalPositioning(testPoint) {
-   let circle = { x: testPoint.x, y: testPoint.y, radius: GRID_SIZE / 2 };
-   let box, result;
    for (const track of tracks) {
       if (testPoint.x.between(track.start.x, track.end.x)) {
-         box = TOOLS.createBoxFromLine(track.start, track.end, track._tmp.unit, GRID_SIZE_2);
-         if (isPointInsideBox(testPoint, box, track._tmp.rad))
-            if ((result = TOOLS.LineIsInCircle(track, circle))) {
-               result.track = track;
-               result.above = result.point.y > circle.y;
-               return result;
+         let km = 0;
+         for (const node of track.nodes) {
+            const distance = geometry.pointToSegmentDistance(testPoint, node.start, node.end);
+            if (distance <= GRID_SIZE_2) {
+               const point = TOOLS.nearestPointOnLine(node.start, node.end, testPoint);
+               km += node.getKmFromPoint(point);
+               return {
+                  track: track,
+                  node: node,
+                  point: point,
+                  km: km,
+                  above: testPoint.y < point.y,
+               };
+            } else {
+               km += node.length;
             }
+         }
       }
    }
 }
@@ -778,23 +801,26 @@ function createSignalContainer(signal) {
    return c;
 }
 
-function alignSignalContainerWithTrack(c) {
-   const pos = c.data._positioning;
-   //koordinaten anhand des Strecken KM suchen
-   const coordinates = geometry.add(pos.track.getPointfromKm(pos.km), pos.track.start);
+function alignSignalContainerWithTrack(c, pos) {
+   //koordinaten anhand des Strecken KM suchen, wenn sie nicht übergeben worden sind
+   if (!pos.point) {
+      const { node, point } = pos.track.getPointFromKm(pos.km);
+      pos.node = node;
+      pos.point = point;
+   }
    let p;
    if (pos.above) {
-      c.rotation = 270 + pos.track._tmp.deg;
+      c.rotation = 270 + pos.node.deg;
       p = geometry.perpendicular(
-         coordinates,
-         pos.track._tmp.deg,
+         pos.point,
+         pos.node.deg,
          -renderer.SIGNAL_DISTANCE_FROM_TRACK - c.data._template.distance_from_track
       );
    } else {
-      c.rotation = 90 + pos.track._tmp.deg;
+      c.rotation = 90 + pos.node.deg;
       p = geometry.perpendicular(
-         coordinates,
-         pos.track._tmp.deg,
+         pos.point,
+         pos.node.deg,
          renderer.SIGNAL_DISTANCE_FROM_TRACK + c.data._template.distance_from_track
       );
    }
@@ -820,9 +846,7 @@ function startDragAndDropSignal(mouseX, mouseY) {
 
 function handleMouseMove(event) {
    //console.log("handleMouseMove", event);
-   if (!event.primary) {
-      return;
-   }
+   if (!event.primary) return;
    if (mouseAction == null) {
       stage.removeEventListener("stagemousemove", handleMouseMove);
       return;
@@ -932,14 +956,9 @@ function determineMouseAction(event, local_point) {
 function dragnDropSignal(local_point, flipped) {
    let hitInformation = getHitInfoForSignalPositioning(local_point);
    if (hitInformation) {
+      hitInformation.flipped = flipped;
       mouseAction.hit_track = hitInformation;
-      mouseAction.container.data._positioning = {
-         track: hitInformation.track,
-         km: hitInformation.km,
-         above: hitInformation.above,
-         flipped: flipped,
-      };
-      alignSignalContainerWithTrack(mouseAction.container);
+      alignSignalContainerWithTrack(mouseAction.container, hitInformation);
    } else {
       mouseAction.hit_track = null;
       mouseAction.container.rotation = 0;
@@ -959,9 +978,7 @@ function draw_SignalPositionLine() {
    if (shape) overlay_container.removeChild(shape);
 
    if (mouseAction.hit_track) {
-      const track = mouseAction.hit_track.track;
-      const km = mouseAction.hit_track.km;
-      const point = geometry.add(track.getPointfromKm(km), track.start);
+      const point = mouseAction.hit_track.point;
       shape = new createjs.Shape();
       shape.name = "SignalPositionLine";
       shape.graphics
@@ -1130,7 +1147,7 @@ function handleStageMouseUp(e) {
                selectObject(mouseAction.container.train, e);
             } else if (mouseAction.container?.name == "track") {
                selectObject(mouseAction.container.track, e);
-               console.log(mouseAction.container.track);               
+               console.log(mouseAction.container.track);
             } else if (mouseAction.container?.name == "object") {
                selectObject(mouseAction.container.object, e);
             } else if (mouseAction.container?.name == "switch") {
@@ -1262,19 +1279,66 @@ const STORAGE = {
    },
 };
 
-function drawPoint(point, displayObject, label = "", color = "#000", size = 1) {
+function drawPoint(point, displayObject, label = "", color = "#000", size = 0.5) {
    const s = new createjs.Shape();
    s.graphics.setStrokeStyle(1).beginStroke(color).beginFill(color).drawCircle(0, 0, size);
    s.x = point.x;
    s.y = point.y;
 
-   displayObject.addChild(s);
+   debug_container.addChild(s);
 
    if (label) {
-      const text = new createjs.Text(label, "Italic 10px Arial", color);
+      const text = new createjs.Text(label, "Italic 6px Arial", color);
       text.x = s.x;
       text.y = s.y - 5;
       text.textBaseline = "alphabetic";
-      displayObject.addChild(text);
+      debug_container.addChild(text);
+   }
+}
+
+function drawVector(vector, point, label = "", color = "#000", width = 1) {
+   const s = new createjs.Shape();
+   s.graphics.setStrokeStyle(width).beginStroke(color);
+   
+   // Calculate vector length
+   const vectorLength = Math.sqrt(vector.x * vector.x + vector.y * vector.y);
+   const minLength = 10;
+   
+   // Scale vector if it's too short
+   const scale = vectorLength < minLength ? minLength / vectorLength : 1;
+   const scaledVector = {
+      x: vector.x * scale,
+      y: vector.y * scale
+   };
+   
+   // Calculate end point based on scaled vector
+   const endPoint = {
+      x: point.x + scaledVector.x,
+      y: point.y + scaledVector.y,
+   };
+   
+   // Draw the main vector line
+   s.graphics.moveTo(point.x, point.y).lineTo(endPoint.x, endPoint.y);
+   
+   // Draw arrow head
+   const angle = Math.atan2(scaledVector.y, scaledVector.x);
+   const arrowLength = 3;
+   const arrowAngle = Math.PI / 8; // 22.5 degrees
+   
+   s.graphics
+      .moveTo(endPoint.x, endPoint.y)
+      .lineTo(endPoint.x - arrowLength * Math.cos(angle - arrowAngle), endPoint.y - arrowLength * Math.sin(angle - arrowAngle))
+      .moveTo(endPoint.x, endPoint.y)
+      .lineTo(endPoint.x - arrowLength * Math.cos(angle + arrowAngle), endPoint.y - arrowLength * Math.sin(angle + arrowAngle));
+   
+   debug_container.addChild(s);
+
+   if (label) {
+      const text = new createjs.Text(label, "Italic 6px Arial", color);
+      // Position the label at the midpoint of the vector
+      text.x = (point.x + endPoint.x) / 2;
+      text.y = (point.y + endPoint.y) / 2 - 5;
+      text.textBaseline = "alphabetic";
+      debug_container.addChild(text);
    }
 }

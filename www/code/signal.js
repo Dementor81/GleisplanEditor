@@ -1,19 +1,117 @@
 "use strict";
 
+class SignalRenderer {
+   static #renderingState = new WeakMap();
+
+   static draw(signal, container, force = false) {
+      if (!SignalRenderer.#renderingState.has(signal) && (force || signal._changed)) {
+         SignalRenderer.#renderingState.set(signal, { container });
+
+         container.removeAllChildren();
+
+         signal._dontCache = false;
+         signal._template.elements.forEach((ve) => this.drawVisualElement(signal, ve));
+         signal._changed = false;
+         SignalRenderer.#renderingState.delete(signal);
+      }
+   }
+
+   static drawVisualElement(signal, ve) {
+      if (Array.isArray(ve)) ve.forEach((e) => this.drawVisualElement(signal, e));
+      else if (typeof ve == "string") {
+         this.addImageElement(signal, ve);
+      } else if (ve instanceof TextElement) {
+         this.drawTextElement(signal, ve);
+      } else if (ve instanceof VisualElement) {
+         if (ve.isAllowed(signal) && ve.isEnabled(signal)) {
+            if (ve.image) this.addImageElement(signal, ve, ve.blinkt());
+            ve.childs()?.forEach((c) => this.drawVisualElement(signal, c));
+         }
+      } else console.log("unknown type of VisualElement: " + ve);
+      return false;
+   }
+
+   static drawTextElement(signal, ve) {
+      if (!ve.pos()) throw new Error("TextElement doesnt have a position");
+      if (ve.isAllowed(signal) && ve.isEnabled(signal)) {
+         const formatString = (f) => `${f[2] ? "bold" : ""} ${f[0]}px ${f[1]}`;
+
+         let txt = ve.getText(signal);
+         if (txt == null) return false;
+         if (typeof txt == "string") txt = txt.replace("-", "\n");
+         let ar = clone(ve.format);
+         const displayObject = new createjs.Text(txt, formatString(ar), ve.color);
+         [displayObject.x, displayObject.y] = ve.pos();
+         displayObject.textAlign = "center";
+
+         let current_bounds, max_bounds;
+         do {
+            current_bounds = displayObject.getBounds();
+            max_bounds = ve.bounds();
+            if (max_bounds && (current_bounds.width > max_bounds[0] || current_bounds.height > max_bounds[1])) {
+               ar[0] -= 5;
+               displayObject.font = formatString(ar);
+               displayObject.lineHeight = ar[0];
+            } else break;
+         } while (true);
+         const state = SignalRenderer.#renderingState.get(signal);
+         state.container.addChild(displayObject);
+      }
+   }
+
+   static addImageElement(signal, ve, blinkt = false) {
+      const textureName = typeof ve == "string" ? ve : ve.image;
+
+      if (textureName == null || textureName == "") return;
+
+      if (textureName.includes(",", 1)) textureName.split(",").forEach((x) => this.addImageElement(signal, x));
+      else {
+         const state = SignalRenderer.#renderingState.get(signal);
+         if (!state.container.getChildByName(textureName)) {
+            //check if this texture was already drawn. Some texture are the same for different signals like Zs1 and Zs8
+            let bmp = pl.getSprite(signal._template.json_file, textureName);
+            if (bmp != null) {
+               state.container.addChild(bmp);
+
+               if (blinkt) {
+                  signal._dontCache = true;
+                  createjs.Tween.get(bmp, { loop: true }).wait(1000).to({ alpha: 0 }, 200).wait(800).to({ alpha: 1 }, 50);
+               }
+
+               return bmp;
+            } else console.log(textureName + " nicht gezeichnet, da sprite für " + textureName + " nicht erstellt wurde");
+         }
+      }
+   }
+
+   static drawPreview(template, container) {
+      container.removeAllChildren();
+      // Create a minimal context for preview rendering
+      const previewContext = {
+         _template: template,
+         _signalStellung: {},
+         check: () => true, // For preview, always show all elements
+         get: () => null
+      };
+      
+      SignalRenderer.#renderingState.set(previewContext, { container });
+      // Use existing drawVisualElement but with our preview context
+      template.elements.forEach(ve => 
+         this.drawVisualElement(previewContext, ve)
+      );
+      SignalRenderer.#renderingState.delete(previewContext);
+   }
+}
+
 class Signal {
+   static allSignals = new Set();
+
    static removeSignal(s) {
       const track = tracks.find((t) => t.signals.includes(s));
       if (track) track.removeSignal(s);
    }
 
-   static FromObject(o) {
-      let s = new Signal();
-
-      s._template = signalTemplates[o._template];
-      s._signalStellung = o._signalStellung;
-      s._positioning = o._positioning;
-      return s;
-   }
+   
 
    _template = null;
    _signalStellung = {};
@@ -26,24 +124,18 @@ class Signal {
    _changed = false;
    _dontCache = false;
 
-   stringify() {
-      return {
-         _class: "Signal",
-         _template: findFieldNameForObject(signalTemplates, this._template),
-         _signalStellung: this._signalStellung,
-         _positioning: {
-            km: this._positioning.km,
-            above: this._positioning.above,
-            flipped: this._positioning.flipped,
-         },
-      };
-   }
+   
 
    constructor(template) {
-      if (template) {
-         this._template = template;
-         if (template.initialSignalStellung) template.initialSignalStellung.forEach((i) => this.set_stellung(i, true, false));
-      }
+      this._template = template;
+      this._positioning = {
+         track: null,
+         km: 0,
+         above: false,
+         flipped: false
+      };
+      Signal.allSignals.add(this);
+      if (template.initialSignalStellung) template.initialSignalStellung.forEach((i) => this.set_stellung(i, true, false));
    }
 
    get title() {
@@ -193,78 +285,7 @@ class Signal {
    }
 
    draw(c, force = false) {
-      if (this._rendering == undefined && (force || this._changed)) {
-         this._rendering = { container: c };
-
-         c.removeAllChildren();
-
-         this._dontCache = false;
-         this._template.elements.forEach((ve) => this.drawVisualElement(ve));
-         this._changed = false;
-         delete this._rendering;
-      }
-   }
-
-   drawVisualElement(ve) {
-      if (Array.isArray(ve)) ve.forEach((e) => this.drawVisualElement(e));
-      else if (typeof ve == "string") {
-         this.addImageElement(ve);
-      } else if (ve instanceof TextElement) {
-         if (!ve.pos()) throw new Error("TextElement doesnt have a position");
-         if (ve.isAllowed(this) && ve.isEnabled(this)) {
-            const formatString = (f) => `${f[2] ? "bold" : ""} ${f[0]}px ${f[1]}`;
-
-            let txt = ve.getText(this);
-            if (txt == null) return false;
-            if (typeof txt == "string") txt = txt.replace("-", "\n");
-            let ar = clone(ve.format);
-            const displayObject = new createjs.Text(txt, formatString(ar), ve.color);
-            [displayObject.x, displayObject.y] = ve.pos();
-            displayObject.textAlign = "center";
-
-            let current_bounds, max_bounds;
-            do {
-               current_bounds = displayObject.getBounds();
-               max_bounds = ve.bounds();
-               if (max_bounds && (current_bounds.width > max_bounds[0] || current_bounds.height > max_bounds[1])) {
-                  ar[0] -= 5;
-                  displayObject.font = formatString(ar);
-                  displayObject.lineHeight = ar[0];
-               } else break;
-            } while (true);
-            this._rendering.container.addChild(displayObject);
-         }
-      } else if (ve instanceof VisualElement) {
-         if (ve.isAllowed(this) && ve.isEnabled(this)) {
-            if (ve.image) this.addImageElement(ve, ve.blinkt());
-            ve.childs()?.forEach((c) => this.drawVisualElement(c));
-         }
-      } else console.log("unknown type of VisualElement: " + ve);
-      return false;
-   }
-
-   addImageElement(ve, blinkt = false) {
-      const textureName = typeof ve == "string" ? ve : ve.image;
-
-      if (textureName == null || textureName == "") return;
-
-      if (textureName.includes(",", 1)) textureName.split(",").forEach((x) => this.addImageElement(x));
-      else {
-         if (!this._rendering.container.getChildByName(textureName)) {
-            //check if this texture was already drawn. Some texture are the same for different signals like Zs1 and Zs8
-            let bmp = pl.getSprite(this._template.json_file, textureName);
-            if (bmp != null) {
-               this._rendering.container.addChild(bmp);
-
-               if (blinkt) {
-                  this._dontCache = true;
-                  createjs.Tween.get(bmp, { loop: true }).wait(1000).to({ alpha: 0 }, 200).wait(800).to({ alpha: 1 }, 50);
-               }
-
-               return bmp;
-            } else console.log(textureName + " nicht gezeichnet, da sprite für " + textureName + " nicht erstellt wurde");
-         }
-      }
+      SignalRenderer.draw(this, c, force);
    }
 
    search4Signal(signal, dir, feature) {
@@ -324,6 +345,36 @@ class Signal {
             }
          } else track = null;
       }
+   }
+
+   setTrack(track) {
+      if (this._positioning.track) {
+         this._positioning.track.signals.remove(this);
+      }
+      this._positioning.track = track;
+      if (track) {
+         track.signals.push(this);
+      }
+   }
+
+   stringify() {
+      return {
+         _class: "Signal",
+         _template: findFieldNameForObject(signalTemplates, this._template),
+         _signalStellung: this._signalStellung,
+         _positioning: {
+            km: this._positioning.km,
+            above: this._positioning.above,
+            flipped: this._positioning.flipped,
+         },
+      };
+   }
+
+   static FromObject(o) {
+      let s = new Signal(signalTemplates[o._template]);      
+      s._signalStellung = o._signalStellung;
+      s._positioning = o._positioning;
+      return s;
    }
 }
 

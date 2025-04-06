@@ -67,6 +67,16 @@ Array.prototype.random = function () {
    return this[Math.randomInt(this.length - 1)];
 };
 
+Array.prototype.countNonUnique = function() {
+   const counts = {};
+   let nonUniqueCount = 0;
+   for (const item of this) {
+      if (counts[item] === 1) nonUniqueCount++; // Only increment on second occurrence
+      counts[item] = (counts[item] || 0) + 1;
+   }
+   return nonUniqueCount;
+}
+
 //will only add the element if the array does not already contain it.
 Array.prototype.pushUnique = function (newElement) {
    if (this.indexOf(newElement) === -1) {
@@ -224,96 +234,35 @@ function isPointInsideBox(point, box, rotationAngle) {
    return isInsideX && isInsideY;
 }
 const TOOLS = {
-   createBoxFromLine(startPoint, endPoint, unit, size) {
-      // Calculate the perpendicular vector (swapping x and y components and negating one of them)
-      const perpendicularX = -unit.y * size;
-      const perpendicularY = unit.x * size;
-      return {
-         bottomLeft: {
-            x: startPoint.x + perpendicularX,
-            y: startPoint.y + perpendicularY,
-         },
-         bottomRight: {
-            x: endPoint.x + perpendicularX,
-            y: endPoint.y + perpendicularY,
-         },
-         topRight: {
-            x: endPoint.x - perpendicularX,
-            y: endPoint.y - perpendicularY,
-         },
-         topLeft: {
-            x: startPoint.x - perpendicularX,
-            y: startPoint.y - perpendicularY,
-         },
-      };
-   },
-
-   boundingBox(points) {
-      if (!Array.isArray(points) || points.length === 0) {
-         return null; // Wenn das Array leer oder kein Array ist, gib null zurück
+   /**
+    * Finds the nearest point on a line segment to a given point
+    * @param {Point|{x: number, y: number}} start - Start point of the line segment
+    * @param {Point|{x: number, y: number}} end - End point of the line segment
+    * @param {Point|{x: number, y: number}} point - Point to find nearest position to
+    * @returns {Point} The nearest point on the line segment
+    */
+   nearestPointOnLine(start, end, point) {
+      const lineDeltaX = end.x - start.x;
+      const lineDeltaY = end.y - start.y;
+      
+      // Handle degenerate case where start and end are the same point
+      if (lineDeltaX === 0 && lineDeltaY === 0) {
+         return new Point(start.x, start.y);
       }
 
-      // Initialisiere die Grenzwerte für x und y
-      let minX = points[0].x;
-      let maxX = points[0].x;
-      let minY = points[0].y;
-      let maxY = points[0].y;
+      // Find the closest point on the line to the point
+      // We can avoid the sqrt in lineLength by using squared values
+      const lengthSquared = lineDeltaX * lineDeltaX + lineDeltaY * lineDeltaY;
+      let u = ((point.x - start.x) * lineDeltaX + (point.y - start.y) * lineDeltaY) / lengthSquared;
 
-      // Durchlaufe alle Punkte im Array
-      for (const point of points) {
-         minX = Math.min(minX, point.x);
-         maxX = Math.max(maxX, point.x);
-         minY = Math.min(minY, point.y);
-         maxY = Math.max(maxY, point.y);
-      }
+      // Clamp u to the range [0, 1]
+      u = Math.max(0, Math.min(1, u));
 
-      // Berechne Breite und Höhe der Bounding Box
-      const width = maxX - minX;
-      const height = maxY - minY;
-
-      // Erstelle das Bounding-Box-Objekt
-      const boundingBoxObj = {
-         x: minX,
-         y: minY,
-         width,
-         height,
-      };
-
-      return boundingBoxObj;
-   },
-
-   LineIsInCircle(line, circle) {
-      // Find the distance between the line start and end points
-      const lineDeltaX = line.end.x - line.start.x;
-      const lineDeltaY = line.end.y - line.start.y;
-      const lineLength = line._tmp.length;
-      const lineUnitVector = line._tmp.unit;
-
-      // Find the closest point on the line to the circle
-      const u = ((circle.x - line.start.x) * lineUnitVector.x + (circle.y - line.start.y) * lineUnitVector.y) / lineLength;
-
-      let closestPointOnLine;
-      if (u < 0) {
-         closestPointOnLine = line.start;
-      } else if (u > 1) {
-         closestPointOnLine = line.end;
-      } else {
-         closestPointOnLine = {
-            x: line.start.x + u * lineUnitVector.x * lineLength,
-            y: line.start.y + u * lineUnitVector.y * lineLength,
-         };
-      }
-
-      // Check if the closest point on the line is within the circle
-      const distanceToCircle = Math.sqrt(
-         Math.pow(closestPointOnLine.x - circle.x, 2) + Math.pow(closestPointOnLine.y - circle.y, 2)
+      // Calculate the closest point on the line segment
+      return new Point(
+         start.x + u * lineDeltaX,
+         start.y + u * lineDeltaY
       );
-      if (distanceToCircle <= circle.radius)
-         return {
-            point: closestPointOnLine,
-            km: u * lineLength,
-         };
-      return null;
    },
 };
 
@@ -666,6 +615,30 @@ const geometry = {
 
       return v;
    },
+
+   //returns the distance between a point and a line
+   pointToSegmentDistance: function(point, start, end) {
+      const dx = end.x - start.x;
+      const dy = end.y - start.y;
+      
+      // Handle degenerate case where start and end are the same point
+      if (dx === 0 && dy === 0) {
+          return Math.hypot(point.x - start.x, point.y - start.y);
+      }
+      
+      // Compute the projection of the point onto the line defined by start and end
+      const t = ((point.x - start.x) * dx + (point.y - start.y) * dy) / (dx * dx + dy * dy);
+      
+      // Clamp t to the range [0,1] to restrict to the segment
+      const tClamped = Math.max(0, Math.min(1, t));
+      
+      // Find the closest point on the segment
+      const closestX = start.x + tClamped * dx;
+      const closestY = start.y + tClamped * dy;
+      
+      // Return the Euclidean distance
+      return Math.hypot(point.x - closestX, point.y - closestY);
+  },
 
    //calculates a point which is perpendicular to the given vector
    perpendicular: function (p, deg, distance) {

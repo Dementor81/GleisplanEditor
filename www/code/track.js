@@ -39,13 +39,15 @@ class Track {
 
       if (!cut) throw new Error("The split point is not on the track");
 
-      /* track.signals.forEach((signal) => {
-         if (geometry.pointOnLine(track.start, point, signal._positioning.point)) {
-            t1.AddSignal(signal);
+      // Update signal positions
+      track.signals.forEach(signal => {
+         if (geometry.pointOnLine(track.start, split_point, signal._positioning.point)) {
+            signal.setTrack(nodes_1); 
          } else {
-            t2.AddSignal(signal);
+            signal.setTrack(nodes_2);
          }
-      }); */
+      });
+      
       return [nodes_1, nodes_2];
    }
 
@@ -95,8 +97,8 @@ class Track {
 
       const new_tracks = [];
 
-      //reverse the nidex array if the user drawed it from right to left
-      if (nodes.first().x > nodes.last().end.x) {
+      //reverse the index array if the user drawed it from right to left, or if the user drawed straight from bottom to top
+      if (nodes.first().x > nodes.last().end.x || (nodes.first().x == nodes.last().end.x && nodes.first().y > nodes.last().end.y)) {
          nodes.reverse();
          for (let i = 1; i < nodes.length; i++) {
             const n1 = nodes[i];
@@ -195,16 +197,31 @@ class Track {
       return track;
    }
 
+   /**
+    * Validates if a switch at a given location is valid based on the provided tracks.
+    *
+    * @param {Object} location - The location to check for a valid switch.
+    * @param {Array} tracks - An array of track objects, each containing nodes with start and end points.
+    * @returns {boolean} - Returns true if the switch is valid, otherwise false.
+    */
    static isValidSwitch(location, tracks) {
       const allNodes = tracks.flatMap((track) => track.nodes).filter((n) => n.start.equals(location) || n.end.equals(location));
       if (!allNodes.length.between(3, 4)) {
-         console.log(`to many nodes ${allNodes.length}`);
+         console.log(`too many nodes ${allNodes.length}`);
          return false;
       }
-      const ordered_nodes = allNodes.toSorted((n, n1) => n.rad - n1.rad);
-      if (ordered_nodes[0].rad != ordered_nodes[1].rad && ordered_nodes[1].rad != ordered_nodes[2].rad) {
-         console.log(`2 tracks with the same angle are necessary`);
+      const slopes = allNodes.map((n) => n.slope);
+      const equal_slopes = slopes.countNonUnique();
+      if (!((allNodes.length == 3 && equal_slopes == 1) || (allNodes.length == 4 && equal_slopes == 2))) {
+         console.log(`2 tracks with the same slope are necessary`);
          return false;
+      }
+
+      for (let i = 1; i < slopes.length; i++) {
+         if (Math.abs(slopes[i - 1] - slopes[i]) > 1) {
+            console.log(`slope between 2 tracks must be lower than 45°`);
+            return false;
+         }
       }
       return true;
    }
@@ -459,11 +476,23 @@ class Track {
    } */
 
    //returns the Point
-   getPointfromKm(km) {
-      return { x: (Math.cos(this._tmp.rad) * km).round(0), y: (Math.sin(this._tmp.rad) * km).round(0) };
+   getPointFromKm(km) {
+      let accumulatedKm = 0;
+      for (let i = 0; i < this.nodes.length; i++) {
+         const node = this.nodes[i];
+         const nodeLength = node.length;
+         if (accumulatedKm + nodeLength >= km) {
+            const remainingKm = km - accumulatedKm;
+            const point = geometry.add(node.start, geometry.multiply(node.unit, remainingKm));
+            return { node, point };
+         }
+         accumulatedKm += nodeLength;
+      }
+      throw new Error("Km exceeds track length");
    }
 
    getKmfromPoint(p) {
+      throw new Error("Not implemented");
       if (!geometry.pointOnLine(this.start, this.end, p)) return;
 
       let v = new V2(this.start);
