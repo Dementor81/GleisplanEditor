@@ -399,12 +399,12 @@ class trackRendering_textured {
 
    drawSleepersAlongCurve(startPoint, endPoint, controlPoint, container) {
       //the curve is eproximat 11% times longer than the straight line
-      const steps = Math.floor(geometry.distance(startPoint, endPoint) / this.sleeperIntervall *1.11);
+      const steps = Math.floor((geometry.distance(startPoint, endPoint) * 1.11) / this.sleeperIntervall);
       const regX = this.schwellenBreite / 2 / trackRendering_textured.TRACK_SCALE;
       const regY = this.schwellenHöhe_2 / trackRendering_textured.TRACK_SCALE;
-
-      for (let i = 0; i <= steps; i++) {
-         const t = i / steps;
+      const step2 = 0.5 / steps;
+      for (let i = 0; i < steps; i++) {
+         const t = i / steps + step2; //offset by half a step to start with a gap
          const point = this.getPointOnQuadraticCurve(t, startPoint, controlPoint, endPoint);
          const angle = this.getDegreeOfTangentOnCurve(t, startPoint, controlPoint, endPoint);
 
@@ -516,10 +516,9 @@ class trackRendering_textured {
    }
 
    drawSleepers(node, startPoint, endPoint, container) {
-      
       let x = startPoint.x;
       let y = startPoint.y;
-      
+
       let l = geometry.distance(startPoint, endPoint);
       // Calculate how many sleepers fit
       let amount = Math.floor(l / this.sleeperIntervall);
@@ -527,36 +526,28 @@ class trackRendering_textured {
       // Calculate the remaining space after fitting full sleepers
       let remainingSpace = l % this.sleeperIntervall;
       // Distribute the remaining space evenly between sleepers
-      let adjustedInterval = this.sleeperIntervall + (remainingSpace / amount);
-      
-      const step_x = node.cos* adjustedInterval,
-         step_y = node.sin* adjustedInterval;
-      /* // Calculate the total space needed for sleepers
+      let adjustedInterval = this.sleeperIntervall + remainingSpace / amount;
+
+      const step_x = node.cos * adjustedInterval,
+         step_y = node.sin * adjustedInterval;
+      // Calculate the total space needed for sleepers
       let totalSpace = amount * this.sleeperIntervall;
       // Calculate the remaining space to be distributed at both ends
       let endGap = (l - totalSpace) / 2;
-      
+
       // Add the end gap
-      x += cos * (endGap + this.schwellenGap);
-      y += sin * (endGap + this.schwellenGap);
- */
+      x += node.cos * (this.schwellenGap / 2);
+      y += node.sin * (this.schwellenGap / 2);
+
       for (let i = 0; i < amount; i++) {
          this.drawSleeper(x, y, node.deg, container);
          // Move to next position using sleeperIntervall
          y += step_y;
-         x += step_x ;
+         x += step_x;
       }
    }
 
-   drawSleeper(
-      x,
-      y,
-      angle,
-      container,
-      length = this.schwellenHöhe,
-      regY = this.schwellenImg.height / 2,
-      regX = this.sleepersImgWidth / 2
-   ) {
+   drawSleeper(x, y, angle, container, length = this.schwellenHöhe, regY = this.schwellenImg.height / 2, regX = 0) {
       if (stage.scale < this.LOD) {
          var sleeper = container.addChild(new createjs.Shape()).set({ x: x, y: y, rotation: angle, regY: regY, regX: regX });
 
@@ -756,10 +747,11 @@ class trackRendering_textured {
       const mirrored = sw.type.is(SWITCH_TYPE.FROM_LEFT, SWITCH_TYPE.FROM_RIGHT) ? -1 : 1;
 
       let deg = (sw.location.equals(sw.t1.start) ? sw.t1.firstNode : sw.t1.lastNode).deg;
-      if (flipped == 1) deg = (deg + 180) % 360;
+
+      const back2front = sw.type.is(SWITCH_TYPE.FROM_RIGHT, SWITCH_TYPE.FROM_LEFT);
 
       tracks.forEach((track, i) => {
-         let p = track.along(sw.location,GRID_SIZE_2);          
+         let p = track.along(sw.location, GRID_SIZE_2);
          let node = sw.location.equals(track.start) ? track.firstNode : track.lastNode;
          let p1 = geometry.add(p, geometry.perpendicularX(geometry.multiply(node.unit, this.schwellenHöhe_2 * flipped))),
             p2 = geometry.add(p, geometry.perpendicularX(geometry.multiply(node.unit, -this.schwellenHöhe_2 * flipped)));
@@ -774,41 +766,42 @@ class trackRendering_textured {
             drawPoint(p, container, `${trackIndex}.0`, "#ff0000");
 
             // Draw perpendicular points
-            drawPoint(p1, container, `${trackIndex}.1`, "#00ff00");
-            drawPoint(p2, container, `${trackIndex}.2`, "#00ff00");
-
-            // Draw unit vector
-            const shape = new createjs.Shape();
-            container.addChild(shape);
-            shape.graphics.setStrokeStyle(1).beginStroke("#0000ff");
-            shape.graphics.mt(p.x, p.y).lt(p.x + unit.x * 20, p.y + unit.y * 20);
+            //drawPoint(p1, container, `${trackIndex}.1`, "#00ff00");
+            //drawPoint(p2, container, `${trackIndex}.2`, "#00ff00");
          });
       });
 
       const cp = geometry.getIntersectionPointX(points[0][2], points[0][3], points[2][2], points[2][3]);
 
-      const length = geometry.distance(points[0][1], points[1][1]) + this.schwellenGap / 2; //length of the straight part + half of the gap, to minimize the gap the to next track
-      const length2 = geometry.distance(points[0][2], points[2][2]) + this.schwellenGap / 2; //almost the length of the curve
+      const length = geometry.distance(points[0][1], points[1][1]); //length of the straight part + half of the gap, to minimize the gap the to next track
+      const length2 = geometry.distance(points[0][2], points[2][2]); //almost the length of the curve
 
       const amount_on_straight_rail = Math.floor(length / this.sleeperIntervall);
-      const amount_on_curved_rail = Math.floor(length2 / this.sleeperIntervall);
-      const new_intervall = this.sleeperIntervall + (length % this.sleeperIntervall) / amount_on_straight_rail; //new intervall to minimize the gap and using the leftover from the division
-      let p1,t,sleeper_length;
+      const amount_on_curved_rail = Math.floor(length2 / (this.sleeperIntervall * 1.15));
+      const new_intervall = (this.sleeperIntervall + (length % this.sleeperIntervall) / amount_on_straight_rail) * mirrored; //new intervall to minimize the gap and using the leftover from the division
+      let p1, t, sleeper_length;
+
+      if (back2front) p1 = points[0][1].sub(geometry.multiply(points[0][3], this.sleeperIntervall));
+      else p1 = points[0][1].add(geometry.multiply(points[0][3], (this.schwellenGap / 2) * mirrored));
+
+      const step_vector = geometry.multiply(points[0][3], new_intervall);
 
       for (let i = 0; i < amount_on_curved_rail; i++) {
-         t = ((this.sleeperIntervall * i) / length2) * 1.15;
+         t = i / amount_on_curved_rail + 0.4 / amount_on_curved_rail;
+         drawPoint(p1, container, `${i}`, "#ff0000");
+         drawPoint(getPointOnCurve(t, points[0][2], cp, points[2][2]), container, `${i}`, "#ff0000");
 
-         p1 = points[0][1].add(geometry.multiply(points[0][3], new_intervall * i * mirrored));
-         sleeper_length = geometry.distance(getPointOnCurve(t, points[0][2], cp, points[2][2]), p1);
-         this.drawSleeper(p1.x, p1.y, deg, container, sleeper_length, 0);
+         sleeper_length = Math.max(geometry.distance(getPointOnCurve(t, points[0][2], cp, points[2][2]), p1), this.schwellenHöhe);
+
+         this.drawSleeper(p1.x, p1.y, deg, container, -sleeper_length * flipped, 0);
+         p1 = p1.add(step_vector);
       }
 
       for (let i = amount_on_curved_rail; i < amount_on_straight_rail; i++) {
          t = (this.sleeperIntervall * i) / length2;
-         p1 = points[0][1].add(geometry.multiply(points[0][3], new_intervall * i * mirrored));
-
+         drawPoint(p1, container, `${i}`, "#ffff00");
          //subtract the sleeper intervall to create a gap to the next sleeper
-         sleeper_length =
+         sleeper_length = Math.max(
             geometry.distance(
                geometry.getIntersectionPointX(
                   points[2][2],
@@ -817,9 +810,12 @@ class trackRendering_textured {
                   geometry.perpendicularX(points[0][3])
                ),
                p1
-            ) - this.sleeperIntervall;
-
-         this.drawSleeper(p1.x, p1.y, deg, container, sleeper_length, 0);
+            ),
+            this.schwellenHöhe
+         );
+         
+         this.drawSleeper(p1.x, p1.y, deg, container, -sleeper_length * flipped, 0);
+         p1 = p1.add(step_vector);
       }
    }
 
