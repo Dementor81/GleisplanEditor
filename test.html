@@ -3,104 +3,86 @@
    <head>
       <meta charset="UTF-8" />
       <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-      <title>Schnittpunkte berechnen</title>
+      <title>Bezier Curve Demo</title>
+
+      <style></style>
    </head>
    <body>
-      <canvas id="canvas" width="500" height="300" style="border: 1px solid black"></canvas>
+      <canvas id="canvas" width="800" height="600"></canvas>
+      <script type="module">
+         import * as ClipperLib from "https://cdn.jsdelivr.net/npm/clipper-lib@latest/+esm";
 
-      <script>
-         // Hilfsfunktion: Punkt auf einer Bézierkurve finden
-         const canvas = document.querySelector("canvas");
+         const canvas = document.getElementById("canvas");
          const ctx = canvas.getContext("2d");
-         canvas.width = 800;
-         canvas.height = 600;
+         const scale = 100;
 
-         // Zwei Schienen: gerade und abzweigend
-         function leftRail(t) {
-            return {
-               x: 100 + t * 600,
-               y: 300,
+         // Define your polygon
+         const polygon = [
+            { x: 100, y: 100 },
+            { x: 300, y: 80 },
+            { x: 400, y: 150 },
+            { x: 500, y: 200 },
+            { x: 450, y: 400 },
+            { x: 300, y: 450 },
+            { x: 200, y: 350 },
+            { x: 120, y: 200 },
+         ];
+
+         // Draw the polygon
+         ctx.beginPath();
+         ctx.moveTo(polygon[0].x, polygon[0].y);
+         polygon.slice(1).forEach((p) => ctx.lineTo(p.x, p.y));
+         ctx.closePath();
+         ctx.strokeStyle = "#000";
+         ctx.stroke();
+
+         // Convert polygon for Clipper
+         const clipPath = polygon.map((p) => ({ X: p.x * scale, Y: p.y * scale }));
+
+         const spacing = 20;
+         for (let x = 0; x < canvas.width; x += spacing) {
+            const line = [
+               { X: x * scale, Y: 0 },
+               { X: x * scale, Y: canvas.height * scale },
+            ];
+
+            const clipper = new ClipperLib.Clipper();
+            clipper.AddPath(clipPath, ClipperLib.PolyType.ptClip, true); // closed polygon
+            clipper.AddPath(line, ClipperLib.PolyType.ptSubject, false); // open path
+
+            const polyTree = new ClipperLib.PolyTree();
+            clipper.Execute(
+               ClipperLib.ClipType.ctIntersection,
+               polyTree,
+               ClipperLib.PolyFillType.pftNonZero,
+               ClipperLib.PolyFillType.pftNonZero
+            );
+
+            const extractLines = (tree) => {
+               const lines = [];
+               const traverse = (node) => {
+                  if (node.Contour.length >= 2) {
+                     for (let i = 0; i < node.Contour.length - 1; i++) {
+                        lines.push([node.Contour[i], node.Contour[i + 1]]);
+                     }
+                  }
+                  for (const child of node.Childs) traverse(child);
+               };
+               traverse(tree);
+               return lines;
             };
-         }
-         function rightRail(t) {
-            return {
-               x: 100 + t * 600,
-               y: 300 + 100 * Math.sin((t * Math.PI) / 2),
-            };
-         }
 
-         // Mittelachse als Durchschnitt
-         function centerLine(t) {
-            const l = leftRail(t);
-            const r = rightRail(t);
-            return {
-               x: (l.x + r.x) / 2,
-               y: (l.y + r.y) / 2,
-            };
-         }
+            const segments = extractLines(polyTree);
 
-         // Tangente der Mittelachse
-         function tangent(t) {
-            const delta = 0.001;
-            const p1 = centerLine(t - delta);
-            const p2 = centerLine(t + delta);
-            return {
-               x: p2.x - p1.x,
-               y: p2.y - p1.y,
-            };
-         }
-
-         // Abstand zwischen linker und rechter Schiene an Punkt t
-         function sleeperLength(t, extra = 20) {
-            const l = leftRail(t);
-            const r = rightRail(t);
-            const dx = r.x - l.x;
-            const dy = r.y - l.y;
-            return Math.hypot(dx, dy) + extra;
-         }
-
-         function drawSleeper(t) {
-            const pos = centerLine(t);
-            const tan = tangent(t);
-            const len = sleeperLength(t);
-
-            const norm = {
-               x: -tan.y,
-               y: tan.x,
-            };
-            const normLen = Math.hypot(norm.x, norm.y);
-            const nx = ((norm.x / normLen) * len) / 2;
-            const ny = ((norm.y / normLen) * len) / 2;
-
-            ctx.beginPath();
-            ctx.moveTo(pos.x - nx, pos.y - ny);
-            ctx.lineTo(pos.x + nx, pos.y + ny);
-            ctx.strokeStyle = "brown";
-            ctx.lineWidth = 4;
-            ctx.stroke();
-         }
-
-         // Zeichne Schwellen
-         for (let t = 0; t <= 1; t += 0.03) {
-            drawSleeper(t);
-         }
-
-         // Zeichne Schienen zum Vergleich
-         ctx.strokeStyle = "gray";
-         ctx.lineWidth = 2;
-
-         function drawRail(fn) {
-            ctx.beginPath();
-            for (let t = 0; t <= 1; t += 0.01) {
-               const p = fn(t);
-               if (t === 0) ctx.moveTo(p.x, p.y);
-               else ctx.lineTo(p.x, p.y);
+            for (const [p1, p2] of segments) {
+               ctx.beginPath();
+               ctx.moveTo(p1.X / scale, p1.Y / scale);
+               ctx.lineTo(p2.X / scale, p2.Y / scale);
+               ctx.strokeStyle = "rgba(0, 150, 255, 0.8)";
+               ctx.lineWidth = 1;
+               ctx.stroke();
             }
-            ctx.stroke();
          }
-
-         drawRail(leftRail);
-         drawRail(rightRail);
       </script>
    </body>
 </html>

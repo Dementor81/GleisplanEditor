@@ -650,10 +650,10 @@ const geometry = {
 
    //calculates a point which is perpendicular to the given vector
    perpendicularX: function (v) {
-      return {
+      return new V2({
          y: v.x,
          x: -v.y,
-      };
+      });
    },
 
    parallel: function (deg, distance) {
@@ -708,6 +708,74 @@ const geometry = {
 
       // Convert to degrees (optional)
       return theta * (180 / Math.PI); // Return the angle in degrees
+   },
+
+   /**
+    * Returns the midpoint between two points
+    * @param {Object} p1 - First point
+    * @param {number} p1.x - X coordinate of first point
+    * @param {number} p1.y - Y coordinate of first point
+    * @param {Object} p2 - Second point
+    * @param {number} p2.x - X coordinate of second point
+    * @param {number} p2.y - Y coordinate of second point
+    * @returns {Point} The midpoint between p1 and p2
+    */
+   midpoint: function(p1, p2) {
+      return new Point(
+         ((p1.x + p2.x) / 2).round(this.PRECISION),
+         ((p1.y + p2.y) / 2).round(this.PRECISION)
+      );
+   },
+
+   /**
+    * Returns the angle bisector of two normalized vectors
+    * @param {Object} v1 - First normalized vector
+    * @param {number} v1.x - X component of first vector
+    * @param {number} v1.y - Y component of first vector
+    * @param {Object} v2 - Second normalized vector
+    * @param {number} v2.x - X component of second vector
+    * @param {number} v2.y - Y component of second vector
+    * @returns {Point} The angle bisector vector (normalized)
+    */
+   angleBisector: function(v1, v2) {
+      // Add the two vectors to get the bisector
+      const bisector = this.add(v1, v2);    
+      
+      
+      // Normalize the bisector using the existing normalize function
+      return this.unit(bisector);
+   },
+
+   /**
+    * Returns a point along the angle bisector of two unit vectors at a given distance
+    * @param {Object} v1 - First normalized vector
+    * @param {number} v1.x - X component of first vector
+    * @param {number} v1.y - Y component of first vector
+    * @param {Object} v2 - Second normalized vector
+    * @param {number} v2.x - X component of second vector
+    * @param {number} v2.y - Y component of second vector
+    * @param {number} distance - Distance to move along the bisector
+    * @returns {Point} The point at the specified distance along the angle bisector
+    */
+   pointAlongBisector: function(v1, v2, distance) {
+      // Get the angle bisector vector
+      const bisector = this.angleBisector(v1, v2);
+      
+      // Scale the bisector by the desired distance
+      const scaledBisector = this.multiply(bisector, distance);
+      
+      return scaledBisector;
+   },
+
+   /**
+    * Inverts a given vector by negating both x and y components
+    * @param {Object} v - Vector to invert
+    * @param {number} v.x - X component of vector
+    * @param {number} v.y - Y component of vector
+    * @returns {Point} The inverted vector
+    */
+   invert: function(v) {
+      return new Point(-v.x, -v.y);
    },
 };
 

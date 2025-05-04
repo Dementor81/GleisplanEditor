@@ -245,8 +245,12 @@ class Track {
          from: null,
       };
 
-      const left_tracks = tracks.filter((t) => t.end.equals(location));
-      const right_tracks = tracks.filter((t) => t.start.equals(location));
+      const left_tracks = tracks
+         .filter((t) => t.end.equals(location))
+         .sort((a, b) => b.lastNode.slope - a.lastNode.slope);
+      const right_tracks = tracks
+         .filter((t) => t.start.equals(location))
+         .sort((a, b) => b.firstNode.slope - a.firstNode.slope);
       let rad = 0;
 
       if (left_tracks.length == 1) {
