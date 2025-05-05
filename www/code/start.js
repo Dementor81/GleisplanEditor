@@ -259,7 +259,7 @@ function init() {
    });
 
    $("#btnRedraw").click(() => {
-      renderer.reDrawEverything(true);
+      testPerformance(() => renderer.reDrawEverything(true), "Total redraw time");
    });
 
    $("#btnImage").click((e) => {

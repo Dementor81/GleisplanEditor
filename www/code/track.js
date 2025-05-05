@@ -397,7 +397,6 @@ class Track {
    nodes = [];
    #_start = null;
    signals = [];
-   rendered = false;
 
    //Temp values
    _tmp = {
