@@ -507,20 +507,12 @@ const geometry = {
    //returns the intersection point of 2 lines, regardless of their length
    getIntersectionPointX: function (p1, d1, p2, d2) {
       // Solve for t and s using the equations:
-      // p1.x + t * d1.x = p2.x + s * d2.x
-      // p1.y + t * d1.y = p2.y + s * d2.y
       const denominator = d1.x * d2.y - d1.y * d2.x;
-
       if (denominator === 0) return null; // Vectors are parallel or collinear
-
       // Compute parameters t and s
       const t = ((p2.x - p1.x) * d2.y - (p2.y - p1.y) * d2.x) / denominator;
-      const s = ((p2.x - p1.x) * d1.y - (p2.y - p1.y) * d1.x) / denominator;
-
       // Compute the intersection point using either vector
-      const intersection = new Point(p1.x + t * d1.x, p1.y + t * d1.y);
-
-      return intersection;
+      return new Point(p1.x + t * d1.x, p1.y + t * d1.y);
    },
 
    /**

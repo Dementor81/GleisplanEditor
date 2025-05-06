@@ -49,41 +49,41 @@ class trackRendering_textured {
 
       this._idleCallback = myIdleCallback(
          function (r) {
-            if(track_container.renderedTracks.size == 0 || this._rendering != null) return;
+            if (track_container.renderedTracks.size == 0 || this._rendering != null) return;
             const bounds = this.calcCanvasSize();
-            
+
             // Find tracks that are no longer visible
             const toBeRemoved = [];
-            track_container.renderedTracks.forEach(track => {
+            track_container.renderedTracks.forEach((track) => {
                if (!this.TrackVisible(track, bounds)) {
                   toBeRemoved.push(track);
                }
             });
 
             // Remove tracks and their associated signals
-            toBeRemoved.forEach(track => {
+            toBeRemoved.forEach((track) => {
                // Remove associated signals
-               const signalsToBeRemoved = signal_container.children.filter(cs => cs.data._positioning.track === track);
-               signalsToBeRemoved.forEach(cs => {
+               const signalsToBeRemoved = signal_container.children.filter((cs) => cs.data._positioning.track === track);
+               signalsToBeRemoved.forEach((cs) => {
                   signal_container.removeChild(cs);
                });
                // Remove track from rendered set
                track_container.renderedTracks.delete(track);
 
                // Remove track elements from both containers
-               const sleepersToRemove = track_container.children[0].children.filter(c => c.data === track);
-               const railsToRemove = track_container.children[1].children.filter(c => c.data === track);
+               const sleepersToRemove = track_container.children[0].children.filter((c) => c.data === track);
+               const railsToRemove = track_container.children[1].children.filter((c) => c.data === track);
 
-               sleepersToRemove.forEach(c => {
+               sleepersToRemove.forEach((c) => {
                   delete c.track;
                   track_container.children[0].removeChild(c);
                });
 
-               railsToRemove.forEach(c => {
+               railsToRemove.forEach((c) => {
                   delete c.track;
                   track_container.children[1].removeChild(c);
-               });               
-            });      
+               });
+            });
             this._idleCallback = null;
          }.bind(this)
       );
@@ -102,7 +102,6 @@ class trackRendering_textured {
    /// dont_optimize parameter disables the optimasation to only handle and draw elements inside the viewport
    /// and disables caching. its used by the export to image functionality
    reDrawEverything(force = false, dont_optimize = false) {
-      
       if (!pl.loaded)
          //stupid code that should prevent drawing, before the preloader is ready
          setTimeout(() => {
@@ -135,7 +134,6 @@ class trackRendering_textured {
             if (!dont_optimize) this.cleanUp();
             delete this._rendering;
             stage.update();
-            
          }
       }
    }
@@ -147,9 +145,10 @@ class trackRendering_textured {
       this.schwellenHöhe = this.schwellenImg.height * trackRendering_textured.TRACK_SCALE;
       this.schwellenHöhe_2 = this.schwellenHöhe / 2;
       this.schwellenBreite = this.sleepersImgWidth * trackRendering_textured.TRACK_SCALE;
-      this.schwellenGap = this.schwellenBreite * 1.1;
+      this.schwellenGap = this.schwellenBreite * 1.1; // distance between the sleepers
       this.sleeperIntervall = this.schwellenBreite + this.schwellenGap;
-      this.rail_offset = this.schwellenHöhe / 4.7;
+      this.rail_offset = this.schwellenHöhe / 4.7; // distance between the rail and the end of the sleeper
+      this.rail_distance = this.schwellenHöhe_2 - this.rail_offset; // distance between the rail and the center of the track
 
       this.TRAIN_HEIGHT = this.schwellenHöhe - this.rail_offset;
       this.TRAIN_WIDTH = GRID_SIZE * 0.7;
@@ -248,6 +247,7 @@ class trackRendering_textured {
    }
 
    renderAllTracks(force) {
+      //if we have to force a redraw, we have to create the containers for the sleepers and rails
       if (force) {
          const sleepers_container = new createjs.Container();
          sleepers_container.name = "global_sleepers";
@@ -270,7 +270,7 @@ class trackRendering_textured {
 
       for (const t of tracks) {
          if (this.TrackVisible(t)) {
-            
+            //either we have a forced redraw or the track is not rendered yet
             if (force || !track_container.renderedTracks.has(t)) {
                this.renderTrack(t);
                /* for (const signal of t.signals) {
@@ -280,10 +280,8 @@ class trackRendering_textured {
                   this.handleCachingSignal(c);
                } */
             } else if (this._rendering.lodChanged) {
-               /* const c2 = c.children.find((c) => c.track == t);
-               this.updateTrack(c2, t); */
+               this.updateTrack(t);
             }
-            
          }
       }
 
@@ -334,26 +332,31 @@ class trackRendering_textured {
       track_container.renderedTracks.add(track);
 
       //if (selection.isSelectedObject(track)) this.#isSelected(track_container);
-
-      
    }
 
-   renderTrackNodes(track) {
+   ///calculate start and end points for each node of a track and the control point for the curve
+   ///start and end points of straight segments are adjusted for the curves
+   calculateTrackPoints(track) {
       const hasSwitchStart = track.switchAtTheStart != null;
       const hasSwitchEnd = track.switchAtTheEnd != null;
       const nodes = track.nodes;
-      // Calculate all center line points
-      const points = [];
-      const rail_distance = this.schwellenHöhe_2 - this.rail_offset;
+      const points = new Array(nodes.length);
+
+      let node = nodes[0],
+         isFirst = true,
+         isLast,
+         next,
+         startPoint,
+         endPoint,
+         straightEndPoint,
+         centerLine;
 
       for (let i = 0; i < nodes.length; i++) {
-         const node = nodes[i];
-         const isFirst = i === 0;
-         const isLast = i === nodes.length - 1;
-         const next = nodes[i + 1];
+         isLast = i === nodes.length - 1;
+         if (!isLast) next = nodes[i + 1];
 
-         let startPoint = node.start;
-         let endPoint = node.end;
+         startPoint = node.start;
+         endPoint = node.end;
 
          // Adjust points if there are switches
          if (!isFirst || hasSwitchStart) {
@@ -365,15 +368,14 @@ class trackRendering_textured {
          }
 
          // Calculate straight segment end point
-         const straightEndPoint = isLast ? endPoint : endPoint.add(geometry.multiply(node.unit, -GRID_SIZE_2));
+         straightEndPoint = isLast ? endPoint : endPoint.add(geometry.multiply(node.unit, -GRID_SIZE_2));
 
-         const centerLine = {
+         centerLine = {
             node: node,
             start: startPoint,
             straightEnd: straightEndPoint,
             end: endPoint,
             unit: node.unit,
-            deg: node.deg,
          };
 
          // If not the last node, calculate curve control point
@@ -384,82 +386,165 @@ class trackRendering_textured {
             centerLine.controlPoint = geometry.getIntersectionPointX(straightEndPoint, node.unit, nextStart, next.unit);
          }
 
-         points.push(centerLine);
+         points[i] = centerLine;
+         if (!isLast) {
+            isFirst = false;
+            node = next;
+         }
       }
+
+      return points;
+   }
+
+
+   renderTrackNodes(track) {
+      const points = this.calculateTrackPoints(track);
 
       const sleepers_container = new createjs.Container();
       sleepers_container.name = "track_sleepers";
       sleepers_container.mouseChildren = false;
       sleepers_container.data = track;
       this._rendering.sleepers_container.addChild(sleepers_container);
-      // Draw sleepers
-      for (const point of points) {
-         // Draw sleepers for straight segment
-         this.drawSleepers(point.node, point.start, point.straightEnd, sleepers_container);
 
-         // Draw sleepers for curve if exists
-         if (point.controlPoint) {
-            this.drawSleepersAlongCurve(
-               point.straightEnd,
-               point.curveEnd,
-               point.controlPoint,
-               sleepers_container
-            );
-         }
-      }
+      this.drawTrackSleepers(points, sleepers_container);
 
       // Draw rails
+      this.renderRails(track, points);
+   }
+
+   renderRails(track, points) {
       const rail_shape = new createjs.Shape();
       rail_shape.snapToPixel = true;
       rail_shape.data = track;
       this._rendering.rails_container.addChild(rail_shape);
 
-      trackRendering_textured.RAILS.forEach((rail) => {
-         rail_shape.graphics.setStrokeStyle(rail[0]).beginStroke(rail[1]);
+      let offset_vector, rail1_start, rail1_end, rail2_start, rail2_end;
+      let curveStart1, curveStart2, next_offset_vector, curveEnd1, curveEnd2, cp1, cp2;
 
-         for (const point of points) {
-            const offset_vector = geometry.perpendicularX(geometry.multiply(point.unit, rail_distance));
-            // Draw straight segment rails
-            const p1 = geometry.add(point.start, offset_vector);
-            const p2 = geometry.add(point.straightEnd, offset_vector);
-            const p3 = geometry.sub(point.start, offset_vector);
-            const p4 = geometry.sub(point.straightEnd, offset_vector);
-
-            rail_shape.graphics.mt(p1.x, p1.y).lt(p2.x, p2.y).mt(p3.x, p3.y).lt(p4.x, p4.y);
-
-            // Draw curve if exists
-            if (point.controlPoint) {
-               const curveStart1 = geometry.add(point.straightEnd, offset_vector);
-               const curveStart2 = geometry.sub(point.straightEnd, offset_vector);
-               const offset_vector2 = geometry.perpendicularX(geometry.multiply(point.nextUnit, rail_distance));
-               const curveEnd1 = geometry.add(point.curveEnd, offset_vector2);
-               const curveEnd2 = geometry.sub(point.curveEnd, offset_vector2);
-               const cp1 = geometry.getIntersectionPointX(curveStart1, point.unit, curveEnd1, point.nextUnit);
-               const cp2 = geometry.getIntersectionPointX(curveStart2, point.unit, curveEnd2, point.nextUnit);
-
-               rail_shape.graphics
-                  .mt(curveStart1.x, curveStart1.y)
-                  .quadraticCurveTo(cp1.x, cp1.y, curveEnd1.x, curveEnd1.y)
-                  .mt(curveStart2.x, curveStart2.y)
-                  .quadraticCurveTo(cp2.x, cp2.y, curveEnd2.x, curveEnd2.y);
-            }
+      for (const point of points) {
+         offset_vector = next_offset_vector || geometry.perpendicularX(point.unit.multiply(this.rail_distance));
+         // Draw straight segment rails
+         rail1_start = point.start.add(offset_vector);
+         rail1_end = point.straightEnd.add(offset_vector);
+         rail2_start = point.start.sub(offset_vector);
+         rail2_end = point.straightEnd.sub(offset_vector);
+         if (point.controlPoint) {
+            curveStart1 = rail1_end || point.straightEnd.add(offset_vector);
+            curveStart2 = rail2_end || point.straightEnd.sub(offset_vector);
+            next_offset_vector = geometry.perpendicularX(point.nextUnit.multiply(this.rail_distance));
+            curveEnd1 = point.curveEnd.add(next_offset_vector);
+            curveEnd2 = point.curveEnd.sub(next_offset_vector);
+            cp1 = geometry.getIntersectionPointX(curveStart1, point.unit, curveEnd1, point.nextUnit);
+            cp2 = geometry.getIntersectionPointX(curveStart2, point.unit, curveEnd2, point.nextUnit);
          }
-         rail_shape.graphics.endStroke();
-      });
 
-      
+         trackRendering_textured.RAILS.forEach((rail) => {
+            rail_shape.graphics.setStrokeStyle(rail[0]).beginStroke(rail[1]);
+            rail_shape.graphics
+               .mt(rail1_start.x, rail1_start.y)
+               .lt(rail1_end.x, rail1_end.y)
+               .mt(rail2_start.x, rail2_start.y)
+               .lt(rail2_end.x, rail2_end.y);
+            if (point.controlPoint) {
+               rail_shape.graphics
+                  .quadraticCurveTo(cp2.x, cp2.y, curveEnd2.x, curveEnd2.y)
+                  .mt(curveStart1.x, curveStart1.y)
+                  .quadraticCurveTo(cp1.x, cp1.y, curveEnd1.x, curveEnd1.y);
+            }
+            rail_shape.graphics.endStroke();
+         });
+      }
+   }
+
+   drawTrackSleepers(points, container) {
+      // Draw sleepers
+      for (const point of points) {
+         // Draw sleepers for straight segment
+         this.drawSleepers(point.node, point.start, point.straightEnd, container);
+
+         // Draw sleepers for curve if exists
+         if (point.controlPoint) {
+            this.drawSleepersAlongCurve(point.straightEnd, point.curveEnd, point.controlPoint, container);
+         }
+      }
    }
 
    drawSleepersAlongCurve(startPoint, endPoint, controlPoint, container) {
       //the curve is eproximat 11% times longer than the straight line
       const steps = Math.floor((geometry.distance(startPoint, endPoint) * 1.11) / this.sleeperIntervall);
       const step4 = 0.25 / steps;
+
       for (let i = 0; i < steps; i++) {
-         const t = i / steps + step4; 
+         const t = i / steps + step4;
          const point = this.getPointOnCurve(t, startPoint, controlPoint, endPoint);
          const angle = this.getDegreeOfTangentOnCurve(t, startPoint, controlPoint, endPoint);
 
-         this.drawSleeper(point.x, point.y, angle, container);
+         this.drawSleeper(i, point.x, point.y, angle, container);
+      }
+   }
+
+   drawSleepers(node, startPoint, endPoint, container) {
+      let x = startPoint.x;
+      let y = startPoint.y;
+
+      const l = geometry.distance(startPoint, endPoint);
+      // Calculate how many sleepers fit
+      const amount = Math.floor(l / this.sleeperIntervall);
+
+      // Calculate the remaining space after fitting full sleepers
+      const remainingSpace = l % this.sleeperIntervall;
+      // Distribute the remaining space evenly between sleepers
+      const adjustedInterval = this.sleeperIntervall + remainingSpace / amount;
+
+      const step_x = node.cos * adjustedInterval,
+         step_y = node.sin * adjustedInterval;
+
+      // Add the end gap
+      x += node.cos * (this.schwellenGap / 2);
+      y += node.sin * (this.schwellenGap / 2);
+
+      for (let i = 0; i < amount; i++) {
+         this.drawSleeper(i, x, y, node.deg, container);
+         // Move to next position using sleeperIntervall
+         y += step_y;
+         x += step_x;
+      }
+   }
+
+   drawSleeper(i, x, y, angle, container, length = this.schwellenHöhe, regY) {
+      if (stage.scale < this.LOD) {
+         //if we get no regY, we use the middle of the sleeper
+         const ry = regY == null ? length / 2 : regY;
+         let sleeper = container.addChild(new createjs.Shape()).set({ x: x, y: y, rotation: angle, regY: ry, regX: 0 });
+
+         sleeper.graphics
+            .setStrokeStyle(0.2, "round")
+            .beginStroke("black")
+            .beginFill("#99735b")
+            .r(0, 0, this.schwellenBreite, length)
+            .ef();
+      } else {
+         let random = i % trackRendering_textured.SCHWELLEN_VARIANTEN;
+         const scaleY = length / this.schwellenHöhe;
+         //if we get no regY, we use the middle of the sleeper image. otherwise we have to scale the given regY
+         const ry = regY == null ? this.schwellenImg.height / 2 : regY / (trackRendering_textured.TRACK_SCALE * scaleY);
+         container.addChild(
+            new createjs.Bitmap(this.schwellenImg).set({
+               y: y,
+               x: x,
+               regY: ry,
+               regX: 0,
+               sourceRect: new createjs.Rectangle(
+                  (random * this.schwellenImg.width) / trackRendering_textured.SCHWELLEN_VARIANTEN,
+                  0,
+                  this.sleepersImgWidth,
+                  this.schwellenImg.height
+               ),
+               scale: trackRendering_textured.TRACK_SCALE,
+               scaleY: trackRendering_textured.TRACK_SCALE * scaleY,
+               rotation: angle,
+            })
+         );
       }
    }
 
@@ -476,9 +561,10 @@ class trackRendering_textured {
    }
 
    getDegreeOfTangentOnCurve(t, p0, cp, p1) {
-      const dx = 2 * (1 - t) * (cp.x - p0.x) + 2 * t * (p1.x - cp.x);
-      const dy = 2 * (1 - t) * (cp.y - p0.y) + 2 * t * (p1.y - cp.y);
-      return (Math.atan2(dy, dx) * 180) / Math.PI;
+      const mt = 1 - t;
+      const dx = 2 * (mt * (cp.x - p0.x) + t * (p1.x - cp.x));
+      const dy = 2 * (mt * (cp.y - p0.y) + t * (p1.y - cp.y));
+      return Math.atan2(dy, dx) * (180 / Math.PI);
    }
 
    drawBumper(track, track_container) {
@@ -511,14 +597,17 @@ class trackRendering_textured {
       }
    }
 
-   updateTrack(container, track) {
-      container.removeAllChildren();
-      this.drawStraightTrack2(container, track);
+   updateTrack(track) {
+      // Find the sleepers container for this track
+      const sleepersContainer = this._rendering.sleepers_container.children.find((c) => c.data === track);
+      if (!sleepersContainer) return;
 
-      if (type(track.switchAtTheEnd) == "Track") this.drawCurvedTrack2(container, track, track.switchAtTheEnd);
-      this.drawBumper(track, container);
+      // Remove existing sleepers
+      sleepersContainer.removeAllChildren();
 
-      //container.updateCache();
+      // Calculate points and redraw sleepers with current LOD
+      const points = this.calculateTrackPoints(track);
+      this.drawTrackSleepers(points, sleepersContainer);
    }
 
    #isSelected(c) {
@@ -539,73 +628,6 @@ class trackRendering_textured {
       stage.update();
    }
 
-   drawSleepers(node, startPoint, endPoint, container) {
-      let x = startPoint.x;
-      let y = startPoint.y;
-
-      let l = geometry.distance(startPoint, endPoint);
-      // Calculate how many sleepers fit
-      let amount = Math.floor(l / this.sleeperIntervall);
-
-      // Calculate the remaining space after fitting full sleepers
-      let remainingSpace = l % this.sleeperIntervall;
-      // Distribute the remaining space evenly between sleepers
-      let adjustedInterval = this.sleeperIntervall + remainingSpace / amount;
-
-      const step_x = node.cos * adjustedInterval,
-         step_y = node.sin * adjustedInterval;
-      // Calculate the total space needed for sleepers
-      let totalSpace = amount * this.sleeperIntervall;
-      // Calculate the remaining space to be distributed at both ends
-      let endGap = (l - totalSpace) / 2;
-
-      // Add the end gap
-      x += node.cos * (this.schwellenGap / 2);
-      y += node.sin * (this.schwellenGap / 2);
-
-      for (let i = 0; i < amount; i++) {
-         this.drawSleeper(x, y, node.deg, container);
-         // Move to next position using sleeperIntervall
-         y += step_y;
-         x += step_x;
-      }
-   }
-
-   drawSleeper(x, y, angle, container, length = this.schwellenHöhe, regY) {
-      if (stage.scale < this.LOD) {
-         const ry = regY == null ? length / 2 : regY;
-         var sleeper = container.addChild(new createjs.Shape()).set({ x: x, y: y, rotation: angle, regY: ry, regX: 0 });
-
-         sleeper.graphics
-            .setStrokeStyle(0.2, "round")
-            .beginStroke("black")
-            .beginFill("#99735b")
-            .r(0, 0, this.schwellenBreite, length)
-            .ef();
-      } else {
-         let random = Math.randomInt(trackRendering_textured.SCHWELLEN_VARIANTEN - 1);
-         const scaleY = length / this.schwellenHöhe;
-         const ry = regY == null ? this.schwellenImg.height / 2 : regY / (trackRendering_textured.TRACK_SCALE * scaleY);
-         container.addChild(
-            new createjs.Bitmap(this.schwellenImg).set({
-               y: y,
-               x: x,
-               regY: ry,
-               regX: 0,
-               sourceRect: new createjs.Rectangle(
-                  (random * this.schwellenImg.width) / trackRendering_textured.SCHWELLEN_VARIANTEN,
-                  0,
-                  this.sleepersImgWidth,
-                  this.schwellenImg.height
-               ),
-               scale: trackRendering_textured.TRACK_SCALE,
-               scaleY: trackRendering_textured.TRACK_SCALE * scaleY,
-               rotation: angle,
-            })
-         );
-      }
-   }
-
    calcBoundPoints(p1, p2, offset, rad1, rad2) {
       const x1 = Math.sin(rad1) * offset,
          x2 = Math.sin(rad2) * offset,
@@ -618,8 +640,6 @@ class trackRendering_textured {
          { x: p2.x - x2, y: p2.y + y2 },
       ];
    }
-
-   
 
    drawSleepersOnSwitch(sw) {
       // Function to get a point on the quadratic curve
@@ -673,7 +693,7 @@ class trackRendering_textured {
                this.schwellenHöhe
             );
 
-            this.drawSleeper(p1.x, p1.y, deg, container, -sleeper_length * flipped, 0);
+            this.drawSleeper(i, p1.x, p1.y, deg, container, -sleeper_length * flipped, 0);
             p1 = p1.add(step_vector);
          }
 
@@ -693,7 +713,7 @@ class trackRendering_textured {
                this.schwellenHöhe
             );
 
-            this.drawSleeper(p1.x, p1.y, deg, container, -sleeper_length * flipped, 0);
+            this.drawSleeper(i, p1.x, p1.y, deg, container, -sleeper_length * flipped, 0);
             p1 = p1.add(step_vector);
          }
       } else if (tracks.length == 4) {
@@ -702,12 +722,13 @@ class trackRendering_textured {
          const offsetVector = geometry.perpendicularX(points[0][3]);
 
          // Draw sleepers using the pattern
-         trackRendering_textured.FOUR_WAY_SLEEPER_PATTERN.forEach((data) => {
+         trackRendering_textured.FOUR_WAY_SLEEPER_PATTERN.forEach((data, i) => {
             // Calculate sleeper position
             const sleeperPosition = centerPoint.add(offsetVector.multiply());
 
             // Draw sleeper with scaled length
             this.drawSleeper(
+               i,
                centerPoint.x,
                centerPoint.y,
                deg,
@@ -722,7 +743,7 @@ class trackRendering_textured {
       }
    }
 
-   drawBezierRail(graphics, startTrack, endTrack, railSide) {
+   drawRail(graphics, startTrack, endTrack, railSide) {
       // railSide: 0 for inner rail, 1 for outer rail
       const curvature = 22;
       const startPoint = railSide === 0 ? startTrack.rails.inner : startTrack.rails.outer;
@@ -731,10 +752,6 @@ class trackRendering_textured {
       const cp1 = geometry.add(startPoint, geometry.multiply(startTrack.unit, curvature));
       const cp2 = geometry.add(endPoint, geometry.multiply(endTrack.unit, -curvature));
 
-      // Draw control points for debugging
-      //drawPoint(cp1, null, "cp1", "#0fffa0");
-      //drawPoint(cp2, null, "cp2", "#0fffa0");
-
       graphics.mt(startPoint.x, startPoint.y).bezierCurveTo(cp1.x, cp1.y, cp2.x, cp2.y, endPoint.x, endPoint.y);
    }
 
@@ -742,7 +759,6 @@ class trackRendering_textured {
       this.drawSleepersOnSwitch(sw);
 
       // Calculate common values once
-      const rail_distance = this.schwellenHöhe_2 - this.rail_offset;
       const tracks = [sw.t1, sw.t2, sw.t3, sw.t4].filter((t) => t);
       const flipped = sw.type.is(SWITCH_TYPE.FROM_RIGHT, SWITCH_TYPE.TO_RIGHT) ? -1 : 1;
       const mirrored = sw.type.is(SWITCH_TYPE.FROM_LEFT, SWITCH_TYPE.FROM_RIGHT) ? -1 : 1;
@@ -752,7 +768,7 @@ class trackRendering_textured {
          const node = sw.location.equals(track.start) ? track.firstNode : track.lastNode;
          const unit = node.unit;
          // Calculate rail offset vector once per track
-         const railOffset = geometry.perpendicularX(geometry.multiply(unit, rail_distance * flipped));
+         const railOffset = geometry.perpendicularX(geometry.multiply(unit, this.rail_distance * flipped));
          const position = track.along(sw.location, GRID_SIZE_2);
 
          return {
@@ -900,10 +916,10 @@ class trackRendering_textured {
             g = shape.graphics.setStrokeStyle(rail[0]).beginStroke(rail[1]);
 
             // Draw outer rails
-            this.drawBezierRail(g, straightBranch, curvedBranch2, 1);
-            this.drawBezierRail(g, curvedBranch, mainTrack, 0);
-            this.drawBezierRail(g, straightBranch, curvedBranch2, 0);
-            this.drawBezierRail(g, curvedBranch, mainTrack, 1);
+            this.drawRail(g, straightBranch, curvedBranch2, 1);
+            this.drawRail(g, curvedBranch, mainTrack, 0);
+            this.drawRail(g, straightBranch, curvedBranch2, 0);
+            this.drawRail(g, curvedBranch, mainTrack, 1);
 
             let p1 = straightBranch.rails.outer.add(straightBranch.unit.multiply(30));
             g.mt(mainTrack.rails.outer.x, mainTrack.rails.outer.y).lt(p1.x, p1.y);
@@ -972,7 +988,6 @@ class trackRendering_textured {
 
    TrackVisible(track, screen_rectangle = this._rendering.screen_rectangle) {
       if (this._rendering?.dont_optimize) return true;
-      
 
       const isInside = (point, rect) =>
          point.x > rect.left && point.x < rect.right && point.y > rect.top && point.y < rect.bottom;
