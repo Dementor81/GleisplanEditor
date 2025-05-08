@@ -4,7 +4,7 @@ class trackRendering_textured {
    static TRACK_SCALE = 0.2;
    static signale_scale = 0.5;
    static SCHWELLEN_VARIANTEN = 24;
-
+   static CURVATURE_4WAY_SWITCH = 22;
    static RAILS = [
       [2.8, "#222"],
       [2.4, "#999"],
@@ -33,6 +33,10 @@ class trackRendering_textured {
 
       this.LOD = 5;
       this._lastRenderScale = 0;
+      
+      // Cache for sleeper shapes and bitmaps
+      this._sleeperCache = {};
+      this._bitmapCache = new Array(trackRendering_textured.SCHWELLEN_VARIANTEN);
    }
 
    cleanUp() {
@@ -84,6 +88,12 @@ class trackRendering_textured {
                   track_container.children[1].removeChild(c);
                });
             });
+            
+            // Clean up sleeper cache if it's getting too large (more than 200 entries)
+            if (Object.keys(this._sleeperCache).length > 200) {
+               this._sleeperCache = {};
+            }
+            
             this._idleCallback = null;
          }.bind(this)
       );
@@ -396,7 +406,6 @@ class trackRendering_textured {
       return points;
    }
 
-
    renderTrackNodes(track) {
       const points = this.calculateTrackPoints(track);
 
@@ -457,7 +466,6 @@ class trackRendering_textured {
    }
 
    drawTrackSleepers(points, container) {
-      // Draw sleepers
       for (const point of points) {
          // Draw sleepers for straight segment
          this.drawSleepers(point.node, point.start, point.straightEnd, container);
@@ -472,14 +480,17 @@ class trackRendering_textured {
    drawSleepersAlongCurve(startPoint, endPoint, controlPoint, container) {
       //the curve is eproximat 11% times longer than the straight line
       const steps = Math.floor((geometry.distance(startPoint, endPoint) * 1.11) / this.sleeperIntervall);
-      const step4 = 0.25 / steps;
+      const step = 1 / steps;
+      let t = 0.25 / steps,
+         point,
+         angle;
 
       for (let i = 0; i < steps; i++) {
-         const t = i / steps + step4;
-         const point = this.getPointOnCurve(t, startPoint, controlPoint, endPoint);
-         const angle = this.getDegreeOfTangentOnCurve(t, startPoint, controlPoint, endPoint);
-
+         point = this.getPointOnCurve(t, startPoint, controlPoint, endPoint);
+         angle = this.getDegreeOfTangentOnCurve(t, startPoint, controlPoint, endPoint);
+         
          this.drawSleeper(i, point.x, point.y, angle, container);
+         t += step;
       }
    }
 
@@ -513,38 +524,71 @@ class trackRendering_textured {
 
    drawSleeper(i, x, y, angle, container, length = this.schwellenHöhe, regY) {
       if (stage.scale < this.LOD) {
-         //if we get no regY, we use the middle of the sleeper
+         // For simple shapes at low LOD
          const ry = regY == null ? length / 2 : regY;
-         let sleeper = container.addChild(new createjs.Shape()).set({ x: x, y: y, rotation: angle, regY: ry, regX: 0 });
-
-         sleeper.graphics
-            .setStrokeStyle(0.2, "round")
-            .beginStroke("black")
-            .beginFill("#99735b")
-            .r(0, 0, this.schwellenBreite, length)
-            .ef();
+         
+         // Create a unique cache key based on the length
+         const cacheKey = `shape_${length}`;
+         
+         // Get cached shape or create a new one
+         let sleeperShape = this._sleeperCache[cacheKey];
+         if (!sleeperShape) {
+            sleeperShape = new createjs.Shape();
+            sleeperShape.graphics
+               .setStrokeStyle(0.2, "round")
+               .beginStroke("black")
+               .beginFill("#99735b")
+               .r(0, 0, this.schwellenBreite, length)
+               .ef();
+            
+            // Store in cache
+            this._sleeperCache[cacheKey] = sleeperShape;
+         }
+         
+         // Clone the cached shape for this instance
+         let sleeper = sleeperShape.clone();
+         sleeper.x = x;
+         sleeper.y = y;
+         sleeper.rotation = angle;
+         sleeper.regY = ry;
+         sleeper.regX = 0;
+         
+         container.addChild(sleeper);
       } else {
-         let random = i % trackRendering_textured.SCHWELLEN_VARIANTEN;
+         // Use bitmap rendering at higher LOD
+         i = i % trackRendering_textured.SCHWELLEN_VARIANTEN;
          const scaleY = length / this.schwellenHöhe;
-         //if we get no regY, we use the middle of the sleeper image. otherwise we have to scale the given regY
          const ry = regY == null ? this.schwellenImg.height / 2 : regY / (trackRendering_textured.TRACK_SCALE * scaleY);
-         container.addChild(
-            new createjs.Bitmap(this.schwellenImg).set({
-               y: y,
-               x: x,
-               regY: ry,
-               regX: 0,
-               sourceRect: new createjs.Rectangle(
-                  (random * this.schwellenImg.width) / trackRendering_textured.SCHWELLEN_VARIANTEN,
-                  0,
-                  this.sleepersImgWidth,
-                  this.schwellenImg.height
-               ),
-               scale: trackRendering_textured.TRACK_SCALE,
-               scaleY: trackRendering_textured.TRACK_SCALE * scaleY,
-               rotation: angle,
-            })
-         );
+         
+         // Check if we have a cached bitmap for this index
+         if (!this._bitmapCache[i]) {
+            // Create the sourceRect for this index
+            const sourceRect = new createjs.Rectangle(
+               (i * this.schwellenImg.width) / trackRendering_textured.SCHWELLEN_VARIANTEN,
+               0,
+               this.sleepersImgWidth,
+               this.schwellenImg.height
+            );
+            
+            // Create and cache the bitmap
+            const bitmap = new createjs.Bitmap(this.schwellenImg);
+            bitmap.sourceRect = sourceRect;
+            this._bitmapCache[i] = bitmap;
+         }
+         
+         // Clone the cached bitmap
+         const sleeperBitmap = this._bitmapCache[i].clone();
+         
+         // Set position and transformation properties
+         sleeperBitmap.x = x;
+         sleeperBitmap.y = y;
+         sleeperBitmap.regY = ry;
+         sleeperBitmap.regX = 0;
+         sleeperBitmap.scale = trackRendering_textured.TRACK_SCALE;
+         sleeperBitmap.scaleY = trackRendering_textured.TRACK_SCALE * scaleY;
+         sleeperBitmap.rotation = angle;
+         
+         container.addChild(sleeperBitmap);
       }
    }
 
@@ -641,55 +685,38 @@ class trackRendering_textured {
       ];
    }
 
-   drawSleepersOnSwitch(sw) {
-      // Function to get a point on the quadratic curve
-
+   drawSleepersOnSwitch(sw,mirrored, flipped,mainTrack,straightBranch,curvedBranch,curvedBranch2) {
       const container = new createjs.Container();
       container.name = "switch_sleepers";
       container.data = sw;
       container.mouseChildren = false;
-      this._rendering.sleepers_container.addChild(container);
-
-      let points = [];
-
-      let tracks = [sw.t1, sw.t2, sw.t3, sw.t4].filter((t) => t);
-      const flipped = sw.type.is(SWITCH_TYPE.FROM_RIGHT, SWITCH_TYPE.TO_RIGHT) ? -1 : 1;
-      const mirrored = sw.type.is(SWITCH_TYPE.FROM_LEFT, SWITCH_TYPE.FROM_RIGHT) ? -1 : 1;
-
-      let deg = (sw.location.equals(sw.t1.start) ? sw.t1.firstNode : sw.t1.lastNode).deg;
-
+      this._rendering.sleepers_container.addChild(container);     
+      
+      const deg = (sw.location.equals(sw.t1.start) ? sw.t1.firstNode : sw.t1.lastNode).deg;
+      
       const back2front = sw.type.is(SWITCH_TYPE.FROM_RIGHT, SWITCH_TYPE.FROM_LEFT);
 
-      tracks.forEach((track, i) => {
-         let p = track.along(sw.location, GRID_SIZE_2);
-         let node = sw.location.equals(track.start) ? track.firstNode : track.lastNode;
-         let p1 = geometry.add(p, geometry.perpendicularX(geometry.multiply(node.unit, this.schwellenHöhe_2 * flipped))),
-            p2 = geometry.add(p, geometry.perpendicularX(geometry.multiply(node.unit, -this.schwellenHöhe_2 * flipped)));
+      if (curvedBranch2 == null) {
+         const cp = geometry.getIntersectionPointX(mainTrack.sleepers.outer, mainTrack.unit, curvedBranch.sleepers.outer, curvedBranch.unit);
 
-         points.push([p, p1, p2, node.unit]);
-      });
-
-      if (tracks.length == 3) {
-         const cp = geometry.getIntersectionPointX(points[0][2], points[0][3], points[2][2], points[2][3]);
-
-         const length = geometry.distance(points[0][1], points[1][1]); //length of the straight part + half of the gap, to minimize the gap the to next track
-         const length2 = geometry.distance(points[0][2], points[2][2]); //almost the length of the curve
+         const length = geometry.distance(mainTrack.sleepers.inner, straightBranch.sleepers.inner); //length of the straight part + half of the gap, to minimize the gap the to next track
+         const length2 = geometry.distance(mainTrack.sleepers.outer, curvedBranch.sleepers.outer); //almost the length of the curve
 
          const amount_on_straight_rail = Math.floor(length / this.sleeperIntervall);
          const amount_on_curved_rail = Math.floor(length2 / (this.sleeperIntervall * 1.15));
          const new_intervall = (this.sleeperIntervall + (length % this.sleeperIntervall) / amount_on_straight_rail) * mirrored; //new intervall to minimize the gap and using the leftover from the division
          let p1, t, sleeper_length;
 
-         if (back2front) p1 = points[0][1].sub(geometry.multiply(points[0][3], this.sleeperIntervall));
-         else p1 = points[0][1].add(geometry.multiply(points[0][3], (this.schwellenGap / 2) * mirrored));
+         if (back2front) p1 = mainTrack.sleepers.inner.sub(geometry.multiply(mainTrack.unit, this.sleeperIntervall));
+         else p1 = mainTrack.sleepers.inner.add(geometry.multiply(mainTrack.unit, (this.schwellenGap / 2) * mirrored));
 
-         const step_vector = geometry.multiply(points[0][3], new_intervall);
+         const step_vector = geometry.multiply(mainTrack.unit, new_intervall);
 
          for (let i = 0; i < amount_on_curved_rail; i++) {
             t = i / amount_on_curved_rail + 0.4 / amount_on_curved_rail;
 
             sleeper_length = Math.max(
-               geometry.distance(this.getPointOnCurve(t, points[0][2], cp, points[2][2]), p1),
+               geometry.distance(this.getPointOnCurve(t, mainTrack.sleepers.outer, cp, curvedBranch.sleepers.outer), p1),
                this.schwellenHöhe
             );
 
@@ -703,10 +730,10 @@ class trackRendering_textured {
             sleeper_length = Math.max(
                geometry.distance(
                   geometry.getIntersectionPointX(
-                     points[2][2],
-                     geometry.perpendicularX(points[2][3]),
+                     curvedBranch.sleepers.outer,
+                     geometry.perpendicularX(curvedBranch.unit),
                      p1,
-                     geometry.perpendicularX(points[0][3])
+                     geometry.perpendicularX(mainTrack.unit)
                   ),
                   p1
                ),
@@ -716,16 +743,12 @@ class trackRendering_textured {
             this.drawSleeper(i, p1.x, p1.y, deg, container, -sleeper_length * flipped, 0);
             p1 = p1.add(step_vector);
          }
-      } else if (tracks.length == 4) {
+      } else {
          // Calculate starting point and offset vector
-         let centerPoint = points[1][0].add(geometry.multiply(points[0][3], this.sleeperIntervall / 4));
-         const offsetVector = geometry.perpendicularX(points[0][3]);
-
+         let centerPoint = straightBranch.position.add(mainTrack.unit.multiply(this.sleeperIntervall / 4));
+         const step_vector = mainTrack.unit.multiply(this.sleeperIntervall);
          // Draw sleepers using the pattern
          trackRendering_textured.FOUR_WAY_SLEEPER_PATTERN.forEach((data, i) => {
-            // Calculate sleeper position
-            const sleeperPosition = centerPoint.add(offsetVector.multiply());
-
             // Draw sleeper with scaled length
             this.drawSleeper(
                i,
@@ -738,212 +761,180 @@ class trackRendering_textured {
             );
 
             // Move to next position
-            centerPoint = centerPoint.add(geometry.multiply(points[0][3], this.sleeperIntervall));
+            centerPoint = centerPoint.add(step_vector);
          });
       }
-   }
-
-   drawRail(graphics, startTrack, endTrack, railSide) {
-      // railSide: 0 for inner rail, 1 for outer rail
-      const curvature = 22;
-      const startPoint = railSide === 0 ? startTrack.rails.inner : startTrack.rails.outer;
-      const endPoint = railSide === 0 ? endTrack.rails.inner : endTrack.rails.outer;
-
-      const cp1 = geometry.add(startPoint, geometry.multiply(startTrack.unit, curvature));
-      const cp2 = geometry.add(endPoint, geometry.multiply(endTrack.unit, -curvature));
-
-      graphics.mt(startPoint.x, startPoint.y).bezierCurveTo(cp1.x, cp1.y, cp2.x, cp2.y, endPoint.x, endPoint.y);
-   }
+   }   
 
    renderSwitch(sw) {
-      this.drawSleepersOnSwitch(sw);
-
       // Calculate common values once
       const tracks = [sw.t1, sw.t2, sw.t3, sw.t4].filter((t) => t);
       const flipped = sw.type.is(SWITCH_TYPE.FROM_RIGHT, SWITCH_TYPE.TO_RIGHT) ? -1 : 1;
       const mirrored = sw.type.is(SWITCH_TYPE.FROM_LEFT, SWITCH_TYPE.FROM_RIGHT) ? -1 : 1;
 
-      // Pre-calculate track data once
-      const trackData = tracks.map((track) => {
+      // Calculate track data for each track
+      const calcTrackData = (track) => {
          const node = sw.location.equals(track.start) ? track.firstNode : track.lastNode;
-         const unit = node.unit;
-         // Calculate rail offset vector once per track
-         const railOffset = geometry.perpendicularX(geometry.multiply(unit, this.rail_distance * flipped));
+         const railOffset = geometry.perpendicularX(node.unit.multiply(this.rail_distance * flipped));
+         const sleeperOffset = geometry.perpendicularX(node.unit.multiply(this.schwellenHöhe_2 * flipped));
          const position = track.along(sw.location, GRID_SIZE_2);
-
+         
          return {
-            position,
-            unit,
-            // Calculate rail positions once
+            unit: node.unit,
+            position: position,
             rails: {
                inner: position.add(railOffset),
                outer: position.sub(railOffset),
             },
+            sleepers: {
+               inner: position.add(sleeperOffset),
+               outer: position.sub(sleeperOffset),
+            },
          };
-      });
+      }
 
       const shape = new createjs.Shape();
       shape.data = sw;
       shape.snapToPixel = true;
       this._rendering.rails_container.addChild(shape);
 
-      const mainTrack = trackData[0];
-      const straightBranch = trackData[1];
-      const curvedBranch = trackData[2];
+      const mainTrack = calcTrackData(tracks[0]);
+      const straightBranch = calcTrackData(tracks[1]);
+      const curvedBranch = calcTrackData(tracks[2]);
+      let curvedBranch2 = null;
+      // Draw track based on the number of tracks
+      if (tracks.length === 3) {
+         this.renderThreeWaySwitch(shape, mainTrack, straightBranch, curvedBranch, flipped, mirrored);
+      } else if (tracks.length === 4) {
+         curvedBranch2 = calcTrackData(tracks[3]);
+         this.renderFourWaySwitch(shape, mainTrack, straightBranch, curvedBranch, curvedBranch2);
+      }else{
+         throw new Error("Invalid number of tracks at switch");
+      }
 
-      // Calculate intersection points once
-      let g = null;
+      this.drawSleepersOnSwitch(sw,mirrored,flipped,mainTrack,straightBranch,curvedBranch,curvedBranch2);
+   }
 
-      if (trackData.length === 3) {
-         const intersections = {
-            outerCurve: geometry.getIntersectionPointX(
-               mainTrack.rails.outer,
-               mainTrack.unit,
-               curvedBranch.rails.outer,
-               curvedBranch.unit
-            ),
-
-            frog: geometry.getIntersectionPointX(
-               straightBranch.rails.outer,
-               straightBranch.unit,
-               curvedBranch.rails.inner,
-               curvedBranch.unit
-            ),
-         };
-         // Calculate inner curve control point using the already calculated frog point
-         intersections.innerCurve = geometry.getIntersectionPointX(
-            mainTrack.rails.inner,
+   renderThreeWaySwitch(shape, mainTrack, straightBranch, curvedBranch, flipped, mirrored) {
+      const g = shape.graphics;
+      
+      // Calculate intersection points once - reuse for all rail sizes
+      const intersections = {
+         outerCurve: geometry.getIntersectionPointX(
+            mainTrack.rails.outer,
             mainTrack.unit,
-            intersections.frog,
+            curvedBranch.rails.outer,
             curvedBranch.unit
-         );
-         // Pre-calculate all herzstück (frog) points
-         const frogOffset = -3 * mirrored;
-         const guardRailLength = 10 * mirrored;
-         const frogPoints = {
-            curveEnd: Point.fromPoint(intersections.frog).add(curvedBranch.unit.multiply(frogOffset)),
-            straightStart: Point.fromPoint(intersections.frog).add(straightBranch.unit.multiply(frogOffset)),
-         };
-
-         // Calculate end points using the pre-calculated points
-         frogPoints.straightEnd = frogPoints.curveEnd.add(straightBranch.unit.multiply(guardRailLength));
-         frogPoints.curveStart = frogPoints.straightStart.add(curvedBranch.unit.multiply(guardRailLength));
-
-         // Draw all rails
-         trackRendering_textured.RAILS.forEach((rail) => {
-            g = shape.graphics.setStrokeStyle(rail[0]).beginStroke(rail[1]);
-
-            // Outer curved branch
-            g.mt(mainTrack.rails.outer.x, mainTrack.rails.outer.y).quadraticCurveTo(
-               intersections.outerCurve.x,
-               intersections.outerCurve.y,
-               curvedBranch.rails.outer.x,
-               curvedBranch.rails.outer.y
-            );
-
-            // Inner curved branch with frog connection
-            g.mt(mainTrack.rails.inner.x, mainTrack.rails.inner.y)
-               .quadraticCurveTo(
-                  intersections.innerCurve.x - flipped,
-                  intersections.innerCurve.y - flipped,
-                  frogPoints.curveEnd.x,
-                  frogPoints.curveEnd.y
-               )
-               .lt(frogPoints.straightEnd.x, frogPoints.straightEnd.y);
-
-            // Frog point and connecting rails
-            g.mt(straightBranch.rails.outer.x, straightBranch.rails.outer.y)
-               .lt(intersections.frog.x, intersections.frog.y)
-               .lt(curvedBranch.rails.inner.x, curvedBranch.rails.inner.y);
-
-            // Straight connection
-            g.mt(mainTrack.rails.inner.x, mainTrack.rails.inner.y).lt(straightBranch.rails.inner.x, straightBranch.rails.inner.y);
-
-            // Guard rail
-            g.mt(frogPoints.curveStart.x, frogPoints.curveStart.y)
-               .lt(frogPoints.straightStart.x, frogPoints.straightStart.y)
-               .lt(mainTrack.rails.outer.x, mainTrack.rails.outer.y + 2 * flipped);
-            g.endStroke();
-         });
-      } else if (trackData.length === 4) {
-         const curvedBranch2 = trackData[3];
-
-         const intersections = {
-            outerCurve: geometry.getIntersectionPointX(
-               mainTrack.rails.outer,
-               mainTrack.unit,
-               curvedBranch.rails.outer,
-               curvedBranch.unit
-            ),
-
-            frog: geometry.getIntersectionPointX(
-               straightBranch.rails.outer,
-               straightBranch.unit,
-               curvedBranch.rails.inner,
-               curvedBranch.unit
-            ),
-         };
-
-         intersections.frog2 = geometry.getIntersectionPointX(
-            mainTrack.rails.inner,
-            mainTrack.unit,
-            curvedBranch2.rails.outer,
-            curvedBranch2.unit
-         );
-
-         intersections.innerCurve = geometry.getIntersectionPointX(
-            mainTrack.rails.inner,
-            mainTrack.unit,
-            curvedBranch.rails.inner,
-            curvedBranch.unit
-         );
-
-         intersections.outerCurve2 = geometry.getIntersectionPointX(
+         ),
+         
+         frog: geometry.getIntersectionPointX(
             straightBranch.rails.outer,
             straightBranch.unit,
-            curvedBranch2.rails.outer,
-            curvedBranch2.unit
-         );
+            curvedBranch.rails.inner,
+            curvedBranch.unit
+         ),
+      };
+      
+      // Calculate inner curve control point using the already calculated frog point
+      intersections.innerCurve = geometry.getIntersectionPointX(
+         mainTrack.rails.inner,
+         mainTrack.unit,
+         intersections.frog,
+         curvedBranch.unit
+      );
+      
+      // Pre-calculate all herzstück (frog) points
+      const frogOffset = -trackRendering_textured.RAILS[0][0] * mirrored; //thats the distance between the frog and the point blades
+      const guardRailLength = 10 * mirrored;
+      const frogPoints = {
+         curveEnd: Point.fromPoint(intersections.frog).add(curvedBranch.unit.multiply(frogOffset)),
+         straightStart: Point.fromPoint(intersections.frog).add(straightBranch.unit.multiply(frogOffset)),
+      };
 
-         intersections.innerCurve2 = geometry.getIntersectionPointX(
-            straightBranch.rails.inner,
-            straightBranch.unit,
-            curvedBranch2.rails.inner,
-            curvedBranch2.unit
-         );
+      // Calculate end points using the pre-calculated points
+      frogPoints.straightEnd = frogPoints.curveEnd.add(straightBranch.unit.multiply(guardRailLength));
+      frogPoints.curveStart = frogPoints.straightStart.add(curvedBranch.unit.multiply(guardRailLength));
 
-         trackRendering_textured.RAILS.forEach((rail) => {
-            g = shape.graphics.setStrokeStyle(rail[0]).beginStroke(rail[1]);
+      // Draw all rails with different thicknesses in one pass
+      for (const rail of trackRendering_textured.RAILS) {
+         g.setStrokeStyle(rail[0]).beginStroke(rail[1]);
 
-            // Draw outer rails
-            this.drawRail(g, straightBranch, curvedBranch2, 1);
-            this.drawRail(g, curvedBranch, mainTrack, 0);
-            this.drawRail(g, straightBranch, curvedBranch2, 0);
-            this.drawRail(g, curvedBranch, mainTrack, 1);
+         // Outer curved branch
+         g.mt(mainTrack.rails.outer.x, mainTrack.rails.outer.y)
+          .quadraticCurveTo(
+             intersections.outerCurve.x,
+             intersections.outerCurve.y,
+             curvedBranch.rails.outer.x, 
+             curvedBranch.rails.outer.y
+          );
 
-            let p1 = straightBranch.rails.outer.add(straightBranch.unit.multiply(30));
-            g.mt(mainTrack.rails.outer.x, mainTrack.rails.outer.y).lt(p1.x, p1.y);
+         // Inner curved branch with frog connection
+         g.mt(mainTrack.rails.inner.x, mainTrack.rails.inner.y)
+          .quadraticCurveTo(
+             intersections.innerCurve.x - flipped,
+             intersections.innerCurve.y - flipped,
+             frogPoints.curveEnd.x,
+             frogPoints.curveEnd.y
+          )
+          .lt(frogPoints.straightEnd.x, frogPoints.straightEnd.y);
 
-            p1 = mainTrack.rails.inner.add(mainTrack.unit.multiply(-30));
-            g.mt(straightBranch.rails.inner.x, straightBranch.rails.inner.y).lt(p1.x, p1.y);
+         // Frog point and connecting rails
+         g.mt(straightBranch.rails.outer.x, straightBranch.rails.outer.y)
+          .lt(intersections.frog.x, intersections.frog.y)
+          .lt(curvedBranch.rails.inner.x, curvedBranch.rails.inner.y);
 
-            p1 = curvedBranch.rails.inner.add(curvedBranch.unit.multiply(30));
-            g.mt(curvedBranch2.rails.inner.x, curvedBranch2.rails.inner.y).lt(p1.x, p1.y);
+         // Straight connection
+         g.mt(mainTrack.rails.inner.x, mainTrack.rails.inner.y)
+          .lt(straightBranch.rails.inner.x, straightBranch.rails.inner.y);
 
-            p1 = curvedBranch2.rails.outer.add(curvedBranch2.unit.multiply(-30));
-            g.mt(curvedBranch.rails.outer.x, curvedBranch.rails.outer.y).lt(p1.x, p1.y);
+         // Guard rail
+         g.mt(frogPoints.curveStart.x, frogPoints.curveStart.y)
+          .lt(frogPoints.straightStart.x, frogPoints.straightStart.y)
+          .lt(mainTrack.rails.outer.x, mainTrack.rails.outer.y + 2 * flipped); //TODO  we can implement switching the switch here
+        
+         g.endStroke();
+      }
+   }
 
-            // Frog point and connecting rails
-            g.mt(straightBranch.rails.outer.x, straightBranch.rails.outer.y)
-               .lt(intersections.frog.x, intersections.frog.y)
-               .lt(curvedBranch.rails.inner.x, curvedBranch.rails.inner.y);
+   renderFourWaySwitch(shape, mainTrack, straightBranch, curvedBranch, curvedBranch2) {
+      const drawRail = (graphics, startTrack, endTrack, railSide) => {
+         // railSide: 'inner' or 'outer'
+         
+         const startPoint = startTrack.rails[railSide];
+         const endPoint = endTrack.rails[railSide];
+   
+         const cp1 = geometry.add(startPoint, geometry.multiply(startTrack.unit, trackRendering_textured.CURVATURE_4WAY_SWITCH));
+         const cp2 = geometry.add(endPoint, geometry.multiply(endTrack.unit, -trackRendering_textured.CURVATURE_4WAY_SWITCH));
+   
+         graphics.mt(startPoint.x, startPoint.y).bezierCurveTo(cp1.x, cp1.y, cp2.x, cp2.y, endPoint.x, endPoint.y);
+      }
+      
+      const g = shape.graphics;
+      
+      // Draw all rails with different thicknesses
+      for (const rail of trackRendering_textured.RAILS) {
+         g.setStrokeStyle(rail[0]).beginStroke(rail[1]);
 
-            g.mt(mainTrack.rails.inner.x, mainTrack.rails.inner.y)
-               .lt(intersections.frog2.x, intersections.frog2.y)
-               .lt(curvedBranch2.rails.outer.x, curvedBranch2.rails.outer.y);
+         // Draw using the helper method for consistent curve rendering
+         drawRail(g, straightBranch, curvedBranch2, "outer");
+         drawRail(g, curvedBranch, mainTrack, "inner");
+         drawRail(g, straightBranch, curvedBranch2, "inner");
+         drawRail(g, curvedBranch, mainTrack, "outer");
 
-            g.endStroke();
-         });
+         // Draw straight connections
+         g.mt(mainTrack.rails.inner.x, mainTrack.rails.inner.y)
+          .lt(straightBranch.rails.inner.x, straightBranch.rails.inner.y);
+          
+         g.mt(mainTrack.rails.outer.x, mainTrack.rails.outer.y)
+          .lt(straightBranch.rails.outer.x, straightBranch.rails.outer.y);
+
+         g.mt(curvedBranch.rails.inner.x, curvedBranch.rails.inner.y)
+          .lt(curvedBranch2.rails.inner.x, curvedBranch2.rails.inner.y);
+          
+         g.mt(curvedBranch.rails.outer.x, curvedBranch.rails.outer.y)
+          .lt(curvedBranch2.rails.outer.x, curvedBranch2.rails.outer.y);
+
+         g.endStroke();
       }
    }
 
