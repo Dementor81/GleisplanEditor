@@ -39,11 +39,6 @@ class trackRendering_basic {
    renderAllTracks() {
       tracks.forEach((t) => {
          this.renderTrack(track_container, t);
-         /* t.signals.forEach((signal) => {
-            let c = signal_container.addChild(createSignalContainer(signal));
-            alignSignalContainerWithTrack(c);
-            if (selection.isSelectedObject(signal)) c.shadow = new createjs.Shadow("#ff0000", 0, 0, 3);
-         }); */
       });
    }
 

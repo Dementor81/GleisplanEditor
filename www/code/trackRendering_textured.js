@@ -33,7 +33,7 @@ class trackRendering_textured {
 
       this.LOD = 5;
       this._lastRenderScale = 0;
-      
+
       // Cache for sleeper shapes and bitmaps
       this._sleeperCache = {};
       this._bitmapCache = new Array(trackRendering_textured.SCHWELLEN_VARIANTEN);
@@ -88,12 +88,12 @@ class trackRendering_textured {
                   track_container.children[1].removeChild(c);
                });
             });
-            
+
             // Clean up sleeper cache if it's getting too large (more than 200 entries)
             if (Object.keys(this._sleeperCache).length > 200) {
                this._sleeperCache = {};
             }
-            
+
             this._idleCallback = null;
          }.bind(this)
       );
@@ -138,6 +138,7 @@ class trackRendering_textured {
             }
 
             this.renderAllTracks(force);
+            this.renderAllSignals(force);
             this.renderAllTrains();
             this.renderAllGenericObjects();
             this._lastRenderScale = stage.scale;
@@ -256,16 +257,27 @@ class trackRendering_textured {
       container.addChild(text);
    }
 
+   renderAllSignals(force) {
+      signal_container.removeAllChildren();
+      Signal.allSignals.forEach(signal => {
+         let container = signal_container.addChild(createSignalContainer(signal));
+         alignSignalContainerWithTrack(container,signal._positioning);
+         if (selection.isSelectedObject(signal)) {
+            container.shadow = new createjs.Shadow("#ff0000", 0, 0, 3);
+         }
+      });
+   }
+
    renderAllTracks(force) {
       //if we have to force a redraw, we have to create the containers for the sleepers and rails
       if (force) {
          const sleepers_container = new createjs.Container();
          sleepers_container.name = "global_sleepers";
-         sleepers_container.mouseChildren = false;
+         sleepers_container.mouseChildren = true;
 
          const rails_container = new createjs.Container();
          rails_container.name = "global_rails";
-         rails_container.mouseChildren = false;
+         rails_container.mouseChildren = true;
 
          this._rendering.sleepers_container = sleepers_container;
          this._rendering.rails_container = rails_container;
@@ -410,7 +422,7 @@ class trackRendering_textured {
       const points = this.calculateTrackPoints(track);
 
       const sleepers_container = new createjs.Container();
-      sleepers_container.name = "track_sleepers";
+      sleepers_container.name = "track";
       sleepers_container.mouseChildren = false;
       sleepers_container.data = track;
       this._rendering.sleepers_container.addChild(sleepers_container);
@@ -423,6 +435,7 @@ class trackRendering_textured {
 
    renderRails(track, points) {
       const rail_shape = new createjs.Shape();
+      rail_shape.name = "track";
       rail_shape.snapToPixel = true;
       rail_shape.data = track;
       this._rendering.rails_container.addChild(rail_shape);
@@ -488,7 +501,7 @@ class trackRendering_textured {
       for (let i = 0; i < steps; i++) {
          point = this.getPointOnCurve(t, startPoint, controlPoint, endPoint);
          angle = this.getDegreeOfTangentOnCurve(t, startPoint, controlPoint, endPoint);
-         
+
          this.drawSleeper(i, point.x, point.y, angle, container);
          t += step;
       }
@@ -526,10 +539,10 @@ class trackRendering_textured {
       if (stage.scale < this.LOD) {
          // For simple shapes at low LOD
          const ry = regY == null ? length / 2 : regY;
-         
+
          // Create a unique cache key based on the length
          const cacheKey = `shape_${length}`;
-         
+
          // Get cached shape or create a new one
          let sleeperShape = this._sleeperCache[cacheKey];
          if (!sleeperShape) {
@@ -540,11 +553,11 @@ class trackRendering_textured {
                .beginFill("#99735b")
                .r(0, 0, this.schwellenBreite, length)
                .ef();
-            
+
             // Store in cache
             this._sleeperCache[cacheKey] = sleeperShape;
          }
-         
+
          // Clone the cached shape for this instance
          let sleeper = sleeperShape.clone();
          sleeper.x = x;
@@ -552,14 +565,14 @@ class trackRendering_textured {
          sleeper.rotation = angle;
          sleeper.regY = ry;
          sleeper.regX = 0;
-         
+
          container.addChild(sleeper);
       } else {
          // Use bitmap rendering at higher LOD
          i = i % trackRendering_textured.SCHWELLEN_VARIANTEN;
          const scaleY = length / this.schwellenHöhe;
          const ry = regY == null ? this.schwellenImg.height / 2 : regY / (trackRendering_textured.TRACK_SCALE * scaleY);
-         
+
          // Check if we have a cached bitmap for this index
          if (!this._bitmapCache[i]) {
             // Create the sourceRect for this index
@@ -569,16 +582,16 @@ class trackRendering_textured {
                this.sleepersImgWidth,
                this.schwellenImg.height
             );
-            
+
             // Create and cache the bitmap
             const bitmap = new createjs.Bitmap(this.schwellenImg);
             bitmap.sourceRect = sourceRect;
             this._bitmapCache[i] = bitmap;
          }
-         
+
          // Clone the cached bitmap
          const sleeperBitmap = this._bitmapCache[i].clone();
-         
+
          // Set position and transformation properties
          sleeperBitmap.x = x;
          sleeperBitmap.y = y;
@@ -587,7 +600,7 @@ class trackRendering_textured {
          sleeperBitmap.scale = trackRendering_textured.TRACK_SCALE;
          sleeperBitmap.scaleY = trackRendering_textured.TRACK_SCALE * scaleY;
          sleeperBitmap.rotation = angle;
-         
+
          container.addChild(sleeperBitmap);
       }
    }
@@ -652,6 +665,19 @@ class trackRendering_textured {
       // Calculate points and redraw sleepers with current LOD
       const points = this.calculateTrackPoints(track);
       this.drawTrackSleepers(points, sleepersContainer);
+
+      
+      if (track == track.switchAtTheEnd?.t1) {
+         const switchSleepersContainer = this._rendering.sleepers_container.children.find((c) => c.data === track.switchAtTheEnd);         
+         const switchRenderingParameter = this.getSwitchRenderingParameter(track.switchAtTheEnd);
+         this.drawSleepersOnSwitch(track.switchAtTheEnd, switchRenderingParameter,switchSleepersContainer);
+      }
+
+      if (track == track.switchAtTheStart?.t1) {
+         const switchSleepersContainer = this._rendering.sleepers_container.children.find((c) => c.data === track.switchAtTheStart);
+         const switchRenderingParameter = this.getSwitchRenderingParameter(track.switchAtTheStart);
+         this.drawSleepersOnSwitch(track.switchAtTheStart, switchRenderingParameter,switchSleepersContainer);
+      }
    }
 
    #isSelected(c) {
@@ -685,19 +711,31 @@ class trackRendering_textured {
       ];
    }
 
-   drawSleepersOnSwitch(sw,mirrored, flipped,mainTrack,straightBranch,curvedBranch,curvedBranch2) {
-      const container = new createjs.Container();
-      container.name = "switch_sleepers";
-      container.data = sw;
-      container.mouseChildren = false;
-      this._rendering.sleepers_container.addChild(container);     
-      
+   drawSleepersOnSwitch(sw, switchRenderingParameter, container) {
+      const { mainTrack, straightBranch, curvedBranch, curvedBranch2, flipped, mirrored } = switchRenderingParameter;
+
+      if (container == null) {
+         container = new createjs.Container();
+         container.name = "switch_sleepers";
+         container.data = sw;
+         container.mouseChildren = false;
+         this._rendering.sleepers_container.addChild(container);
+      }
+      else {
+         container.removeAllChildren();
+      }
+
       const deg = (sw.location.equals(sw.t1.start) ? sw.t1.firstNode : sw.t1.lastNode).deg;
-      
+
       const back2front = sw.type.is(SWITCH_TYPE.FROM_RIGHT, SWITCH_TYPE.FROM_LEFT);
 
       if (curvedBranch2 == null) {
-         const cp = geometry.getIntersectionPointX(mainTrack.sleepers.outer, mainTrack.unit, curvedBranch.sleepers.outer, curvedBranch.unit);
+         const cp = geometry.getIntersectionPointX(
+            mainTrack.sleepers.outer,
+            mainTrack.unit,
+            curvedBranch.sleepers.outer,
+            curvedBranch.unit
+         );
 
          const length = geometry.distance(mainTrack.sleepers.inner, straightBranch.sleepers.inner); //length of the straight part + half of the gap, to minimize the gap the to next track
          const length2 = geometry.distance(mainTrack.sleepers.outer, curvedBranch.sleepers.outer); //almost the length of the curve
@@ -764,10 +802,27 @@ class trackRendering_textured {
             centerPoint = centerPoint.add(step_vector);
          });
       }
-   }   
+   }
 
    renderSwitch(sw) {
-      // Calculate common values once
+      const switchRenderingParameter = this.getSwitchRenderingParameter(sw);
+
+      const shape = new createjs.Shape();
+      shape.data = sw;
+      shape.snapToPixel = true;
+      this._rendering.rails_container.addChild(shape);
+
+      // Draw track based on the number of tracks
+      if (switchRenderingParameter.curvedBranch2 == null) {
+         this.renderThreeWaySwitch(shape, switchRenderingParameter);
+      } else {
+         this.renderFourWaySwitch(shape, switchRenderingParameter);
+      }
+
+      this.drawSleepersOnSwitch(sw, switchRenderingParameter);
+   }
+
+   getSwitchRenderingParameter(sw) {
       const tracks = [sw.t1, sw.t2, sw.t3, sw.t4].filter((t) => t);
       const flipped = sw.type.is(SWITCH_TYPE.FROM_RIGHT, SWITCH_TYPE.TO_RIGHT) ? -1 : 1;
       const mirrored = sw.type.is(SWITCH_TYPE.FROM_LEFT, SWITCH_TYPE.FROM_RIGHT) ? -1 : 1;
@@ -778,7 +833,7 @@ class trackRendering_textured {
          const railOffset = geometry.perpendicularX(node.unit.multiply(this.rail_distance * flipped));
          const sleeperOffset = geometry.perpendicularX(node.unit.multiply(this.schwellenHöhe_2 * flipped));
          const position = track.along(sw.location, GRID_SIZE_2);
-         
+
          return {
             unit: node.unit,
             position: position,
@@ -791,33 +846,19 @@ class trackRendering_textured {
                outer: position.sub(sleeperOffset),
             },
          };
-      }
-
-      const shape = new createjs.Shape();
-      shape.data = sw;
-      shape.snapToPixel = true;
-      this._rendering.rails_container.addChild(shape);
-
+      };
       const mainTrack = calcTrackData(tracks[0]);
       const straightBranch = calcTrackData(tracks[1]);
       const curvedBranch = calcTrackData(tracks[2]);
-      let curvedBranch2 = null;
-      // Draw track based on the number of tracks
-      if (tracks.length === 3) {
-         this.renderThreeWaySwitch(shape, mainTrack, straightBranch, curvedBranch, flipped, mirrored);
-      } else if (tracks.length === 4) {
-         curvedBranch2 = calcTrackData(tracks[3]);
-         this.renderFourWaySwitch(shape, mainTrack, straightBranch, curvedBranch, curvedBranch2);
-      }else{
-         throw new Error("Invalid number of tracks at switch");
-      }
-
-      this.drawSleepersOnSwitch(sw,mirrored,flipped,mainTrack,straightBranch,curvedBranch,curvedBranch2);
+      const curvedBranch2 = tracks.length === 4 ? calcTrackData(tracks[3]) : null;
+      
+      return { mainTrack, straightBranch, curvedBranch, curvedBranch2, flipped, mirrored };
    }
 
-   renderThreeWaySwitch(shape, mainTrack, straightBranch, curvedBranch, flipped, mirrored) {
+   renderThreeWaySwitch(shape, switchRenderingParameter) {
       const g = shape.graphics;
-      
+      const { mainTrack, straightBranch, curvedBranch, flipped, mirrored } = switchRenderingParameter;
+
       // Calculate intersection points once - reuse for all rail sizes
       const intersections = {
          outerCurve: geometry.getIntersectionPointX(
@@ -826,7 +867,7 @@ class trackRendering_textured {
             curvedBranch.rails.outer,
             curvedBranch.unit
          ),
-         
+
          frog: geometry.getIntersectionPointX(
             straightBranch.rails.outer,
             straightBranch.unit,
@@ -834,7 +875,7 @@ class trackRendering_textured {
             curvedBranch.unit
          ),
       };
-      
+
       // Calculate inner curve control point using the already calculated frog point
       intersections.innerCurve = geometry.getIntersectionPointX(
          mainTrack.rails.inner,
@@ -842,7 +883,7 @@ class trackRendering_textured {
          intersections.frog,
          curvedBranch.unit
       );
-      
+
       // Pre-calculate all herzstück (frog) points
       const frogOffset = -trackRendering_textured.RAILS[0][0] * mirrored; //thats the distance between the frog and the point blades
       const guardRailLength = 10 * mirrored;
@@ -860,57 +901,57 @@ class trackRendering_textured {
          g.setStrokeStyle(rail[0]).beginStroke(rail[1]);
 
          // Outer curved branch
-         g.mt(mainTrack.rails.outer.x, mainTrack.rails.outer.y)
-          .quadraticCurveTo(
-             intersections.outerCurve.x,
-             intersections.outerCurve.y,
-             curvedBranch.rails.outer.x, 
-             curvedBranch.rails.outer.y
-          );
+         g.mt(mainTrack.rails.outer.x, mainTrack.rails.outer.y).quadraticCurveTo(
+            intersections.outerCurve.x,
+            intersections.outerCurve.y,
+            curvedBranch.rails.outer.x,
+            curvedBranch.rails.outer.y
+         );
 
          // Inner curved branch with frog connection
          g.mt(mainTrack.rails.inner.x, mainTrack.rails.inner.y)
-          .quadraticCurveTo(
-             intersections.innerCurve.x - flipped,
-             intersections.innerCurve.y - flipped,
-             frogPoints.curveEnd.x,
-             frogPoints.curveEnd.y
-          )
-          .lt(frogPoints.straightEnd.x, frogPoints.straightEnd.y);
+            .quadraticCurveTo(
+               intersections.innerCurve.x - flipped,
+               intersections.innerCurve.y - flipped,
+               frogPoints.curveEnd.x,
+               frogPoints.curveEnd.y
+            )
+            .lt(frogPoints.straightEnd.x, frogPoints.straightEnd.y);
 
          // Frog point and connecting rails
          g.mt(straightBranch.rails.outer.x, straightBranch.rails.outer.y)
-          .lt(intersections.frog.x, intersections.frog.y)
-          .lt(curvedBranch.rails.inner.x, curvedBranch.rails.inner.y);
+            .lt(intersections.frog.x, intersections.frog.y)
+            .lt(curvedBranch.rails.inner.x, curvedBranch.rails.inner.y);
 
          // Straight connection
-         g.mt(mainTrack.rails.inner.x, mainTrack.rails.inner.y)
-          .lt(straightBranch.rails.inner.x, straightBranch.rails.inner.y);
+         g.mt(mainTrack.rails.inner.x, mainTrack.rails.inner.y).lt(straightBranch.rails.inner.x, straightBranch.rails.inner.y);
 
          // Guard rail
          g.mt(frogPoints.curveStart.x, frogPoints.curveStart.y)
-          .lt(frogPoints.straightStart.x, frogPoints.straightStart.y)
-          .lt(mainTrack.rails.outer.x, mainTrack.rails.outer.y + 2 * flipped); //TODO  we can implement switching the switch here
-        
+            .lt(frogPoints.straightStart.x, frogPoints.straightStart.y)
+            .lt(mainTrack.rails.outer.x, mainTrack.rails.outer.y + 2 * flipped); //TODO  we can implement switching the switch here
+
          g.endStroke();
       }
    }
 
-   renderFourWaySwitch(shape, mainTrack, straightBranch, curvedBranch, curvedBranch2) {
+   renderFourWaySwitch(shape, switchRenderingParameter) {
+      const { mainTrack, straightBranch, curvedBranch, curvedBranch2 } = switchRenderingParameter;
+
       const drawRail = (graphics, startTrack, endTrack, railSide) => {
          // railSide: 'inner' or 'outer'
-         
+
          const startPoint = startTrack.rails[railSide];
          const endPoint = endTrack.rails[railSide];
-   
+
          const cp1 = geometry.add(startPoint, geometry.multiply(startTrack.unit, trackRendering_textured.CURVATURE_4WAY_SWITCH));
          const cp2 = geometry.add(endPoint, geometry.multiply(endTrack.unit, -trackRendering_textured.CURVATURE_4WAY_SWITCH));
-   
+
          graphics.mt(startPoint.x, startPoint.y).bezierCurveTo(cp1.x, cp1.y, cp2.x, cp2.y, endPoint.x, endPoint.y);
-      }
-      
+      };
+
       const g = shape.graphics;
-      
+
       // Draw all rails with different thicknesses
       for (const rail of trackRendering_textured.RAILS) {
          g.setStrokeStyle(rail[0]).beginStroke(rail[1]);
@@ -922,17 +963,19 @@ class trackRendering_textured {
          drawRail(g, curvedBranch, mainTrack, "outer");
 
          // Draw straight connections
-         g.mt(mainTrack.rails.inner.x, mainTrack.rails.inner.y)
-          .lt(straightBranch.rails.inner.x, straightBranch.rails.inner.y);
-          
-         g.mt(mainTrack.rails.outer.x, mainTrack.rails.outer.y)
-          .lt(straightBranch.rails.outer.x, straightBranch.rails.outer.y);
+         g.mt(mainTrack.rails.inner.x, mainTrack.rails.inner.y).lt(straightBranch.rails.inner.x, straightBranch.rails.inner.y);
 
-         g.mt(curvedBranch.rails.inner.x, curvedBranch.rails.inner.y)
-          .lt(curvedBranch2.rails.inner.x, curvedBranch2.rails.inner.y);
-          
-         g.mt(curvedBranch.rails.outer.x, curvedBranch.rails.outer.y)
-          .lt(curvedBranch2.rails.outer.x, curvedBranch2.rails.outer.y);
+         g.mt(mainTrack.rails.outer.x, mainTrack.rails.outer.y).lt(straightBranch.rails.outer.x, straightBranch.rails.outer.y);
+
+         g.mt(curvedBranch.rails.inner.x, curvedBranch.rails.inner.y).lt(
+            curvedBranch2.rails.inner.x,
+            curvedBranch2.rails.inner.y
+         );
+
+         g.mt(curvedBranch.rails.outer.x, curvedBranch.rails.outer.y).lt(
+            curvedBranch2.rails.outer.x,
+            curvedBranch2.rails.outer.y
+         );
 
          g.endStroke();
       }

@@ -104,6 +104,8 @@ class TrackNode {
       if (node instanceof TrackNode) this.#_start = Point.fromPoint(node.end);
       else if (node instanceof Point) this.#_start = Point.fromPoint(node);
       else throw new TypeError("parameter must be of type TrackNode or Point");
+
+      this.#resetCache();
    }
 
    getPointfromKm(km) {

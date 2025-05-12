@@ -406,7 +406,7 @@ function undo() {
 const RENDERING = {
    clear() {
       tracks = [];
-      Signal.allSignals = [];
+      Signal.allSignals = new Set();
       Train.allTrains = [];
       GenericObject.all_objects = [];
 
@@ -681,6 +681,7 @@ function selectObject(object, e) {
       return;
    }
    const t = type(object);
+   if (object) console.log(object);
 
    if (t != selection.type) {
       selection.object = object;
@@ -803,26 +804,16 @@ function createSignalContainer(signal) {
 
 function alignSignalContainerWithTrack(c, pos) {
    //koordinaten anhand des Strecken KM suchen, wenn sie nicht übergeben worden sind
-   if (!pos.point) {
-      const { node, point } = pos.track.getPointFromKm(pos.km);
-      pos.node = node;
-      pos.point = point;
-   }
+
+   const { node, point } = pos.track.getPointFromKm(pos.km);
+
    let p;
    if (pos.above) {
-      c.rotation = 270 + pos.node.deg;
-      p = geometry.perpendicular(
-         pos.point,
-         pos.node.deg,
-         -renderer.SIGNAL_DISTANCE_FROM_TRACK - c.data._template.distance_from_track
-      );
+      c.rotation = 270 + node.deg;
+      p = geometry.perpendicular(point, node.deg, -renderer.SIGNAL_DISTANCE_FROM_TRACK - c.data._template.distance_from_track);
    } else {
-      c.rotation = 90 + pos.node.deg;
-      p = geometry.perpendicular(
-         pos.point,
-         pos.node.deg,
-         renderer.SIGNAL_DISTANCE_FROM_TRACK + c.data._template.distance_from_track
-      );
+      c.rotation = 90 + node.deg;
+      p = geometry.perpendicular(point, node.deg, renderer.SIGNAL_DISTANCE_FROM_TRACK + c.data._template.distance_from_track);
    }
    if (pos.flipped) c.rotation += 180;
 
@@ -958,6 +949,7 @@ function dragnDropSignal(local_point, flipped) {
    if (hitInformation) {
       hitInformation.flipped = flipped;
       mouseAction.hit_track = hitInformation;
+      console.log(hitInformation);
       alignSignalContainerWithTrack(mouseAction.container, hitInformation);
    } else {
       mouseAction.hit_track = null;
@@ -1078,7 +1070,8 @@ function handleStageMouseUp(e) {
 
             if (mouseAction.hit_track) {
                signal_container.addChild(mouseAction.container);
-               mouseAction.hit_track.track.AddSignal(mouseAction.container.data);
+               const signal = mouseAction.container.data;
+               mouseAction.hit_track.track.AddSignal(signal, mouseAction.hit_track.km, mouseAction.hit_track.above);
             }
             STORAGE.save();
             STORAGE.saveUndoHistory();
@@ -1146,8 +1139,7 @@ function handleStageMouseUp(e) {
             } else if (mouseAction.container?.name == "train") {
                selectObject(mouseAction.container.train, e);
             } else if (mouseAction.container?.name == "track") {
-               selectObject(mouseAction.container.track, e);
-               console.log(mouseAction.container.track);
+               selectObject(mouseAction.container.data, e);
             } else if (mouseAction.container?.name == "object") {
                selectObject(mouseAction.container.object, e);
             } else if (mouseAction.container?.name == "switch") {
@@ -1299,38 +1291,38 @@ function drawPoint(point, displayObject, label = "", color = "#000", size = 0.5)
 function drawVector(vector, point, label = "", color = "#000", width = 1) {
    const s = new createjs.Shape();
    s.graphics.setStrokeStyle(width).beginStroke(color);
-   
+
    // Calculate vector length
    const vectorLength = Math.sqrt(vector.x * vector.x + vector.y * vector.y);
    const minLength = 10;
-   
+
    // Scale vector if it's too short
    const scale = vectorLength < minLength ? minLength / vectorLength : 1;
    const scaledVector = {
       x: vector.x * scale,
-      y: vector.y * scale
+      y: vector.y * scale,
    };
-   
+
    // Calculate end point based on scaled vector
    const endPoint = {
       x: point.x + scaledVector.x,
       y: point.y + scaledVector.y,
    };
-   
+
    // Draw the main vector line
    s.graphics.moveTo(point.x, point.y).lineTo(endPoint.x, endPoint.y);
-   
+
    // Draw arrow head
    const angle = Math.atan2(scaledVector.y, scaledVector.x);
    const arrowLength = 3;
    const arrowAngle = Math.PI / 8; // 22.5 degrees
-   
+
    s.graphics
       .moveTo(endPoint.x, endPoint.y)
       .lineTo(endPoint.x - arrowLength * Math.cos(angle - arrowAngle), endPoint.y - arrowLength * Math.sin(angle - arrowAngle))
       .moveTo(endPoint.x, endPoint.y)
       .lineTo(endPoint.x - arrowLength * Math.cos(angle + arrowAngle), endPoint.y - arrowLength * Math.sin(angle + arrowAngle));
-   
+
    debug_container.addChild(s);
 
    if (label) {

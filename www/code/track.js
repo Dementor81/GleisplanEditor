@@ -49,26 +49,7 @@ class Track {
       });
       
       return [nodes_1, nodes_2];
-   }
-
-   /* static splitTrack(track, point) {
-      const t1 = new Track(track.start, point);
-      const t2 = new Track(point, track.end);
-      const cut_km = track.getKmfromPoint(point);
-
-      track.signals.forEach((s) => {
-         if (s._positioning.km < cut_km) {
-            s._positioning.track = t1;
-            t1.AddSignal(s);
-         } else {
-            s._positioning.track = t2;
-            s._positioning.km -= cut_km;
-            t2.AddSignal(s);
-         }
-      });
-
-      return [t1, t2];
-   } */
+   }   
 
    static joinTracks(track1, track2) {
       if (track1.end.equals(track2.start)) {
@@ -81,16 +62,7 @@ class Track {
       }
    }
 
-   /* static joinTrack(track1, track2) {
-      let cut_km = track1.length;
-      track1.setNewEnd(track2.end);
-
-      track2.signals.forEach((s) => {
-         s._positioning.track = track1;
-         s._positioning.km += cut_km;
-         track1.AddSignal(s);
-      });
-   } */
+   
 
    static checkNodesAndCreateTracks(nodes) {
       if (nodes == null || nodes.length <= 1) return;
@@ -452,34 +424,11 @@ class Track {
       this.nodes = nodes;
    }
 
-   /*    addNode(p2) {
-      const p1 = this.nodes.length > 0 ? this.nodes.last() : this.start;
-
-      this.calcTempValues4Nodes(p1, p2);
-
-      //if the last node has the same angle as the new node, remove the last node to remove unnessesary nodes
-      if (p1._tmp && p1._tmp.deg == p2._tmp.deg) {
-         this.nodes.pop();
-      }
-
-      this.nodes.push(p2);
-   } */
-
-   /*   finish() {
-      if (this.start.x > this.end.x) {
-         this.nodes.reverse();
-         this.nodes.push(this.start);
-         this.#_start = this.nodes.shift();
-         for (let i = 0; i < this.nodes.length; i++) {
-            const p2 = this.nodes[i];
-            const p1 = i == 0 ? this.#_start : this.nodes[i - 1];
-            this.calcTempValues4Nodes(p1, p2);
-         }
-      }
-   } */
+   
 
    //returns the Point
    getPointFromKm(km) {
+      console.log(this.id,km);
       let accumulatedKm = 0;
       for (let i = 0; i < this.nodes.length; i++) {
          const node = this.nodes[i];
@@ -503,36 +452,6 @@ class Track {
       return v.length;
    }
 
-   setNewStart(newStart) {
-      //1. check is slope is the same
-      if (geometry.slope(this.start, this.end) != geometry.slope(newStart, this.end)) return;
-
-      //2. check if new x is lower then old x
-      if (newStart.x >= this.start.x) return;
-
-      //3. calculate distance between new and old start
-      const lengthAdded = geometry.distance(newStart, this.start);
-
-      //4. set new start
-      this.start = newStart;
-      this.calcTempValues4Nodes();
-
-      //5. reposition all signals acording to the new length
-      this.signals.forEach((p) => (p.km += lengthAdded));
-   }
-
-   setNewEnd(newEnd) {
-      //1. check is slope is the same
-      if (geometry.slope(this.start, this.end) != geometry.slope(newEnd, this.end)) return;
-
-      //2. check if new x is higher then old x
-      if (newEnd.x <= this.start.x) return;
-
-      //3. set new end
-      this.end = newEnd;
-      this.calcTempValues4Nodes();
-   }
-
    //returns the point, if u go x km from point along the track, so point must be track.start or track.end
    //the direction is automaticly optained
    along(point, x) {
@@ -541,8 +460,11 @@ class Track {
       else return geometry.add(point, geometry.multiply(this.lastNode.unit, x));
    }
 
-   AddSignal(signal) {
-      let i = this.signals.findIndex((s) => signal._positioning.km < s._positioning.km);
+   AddSignal(signal,km,above) {
+      signal._positioning.km = km;
+      signal._positioning.track = this;
+      signal._positioning.above = above;
+      let i = this.signals.findIndex((s) => km < s._positioning.km);
       if (i != -1) this.signals.splice(i, 0, signal);
       else this.signals.push(signal);
    }
