@@ -85,7 +85,7 @@ var renderer;
 
 var tracks = [];
 
-var undoHistory = ["[]"];
+var undoHistory = [];
 
 var signalTemplates = {};
 
@@ -171,6 +171,7 @@ function init() {
 
          STORAGE.loadRecent();
          selectRenderer(!DEFAULT_SIMPLIFIED_VIEW);
+         updateUndoButtonState();
       } catch (error) {
          showErrorToast(error);
       }
@@ -259,7 +260,8 @@ function init() {
    });
 
    $("#btnRedraw").click(() => {
-      testPerformance(() => renderer.reDrawEverything(true), "Total redraw time");
+      //testPerformance(() => renderer.reDrawEverything(true), "Total redraw time");
+      renderer.reDrawEverything(true);
    });
 
    $("#btnImage").click((e) => {
@@ -397,10 +399,16 @@ function deleteSelectedObject() {
    }
 }
 
+function updateUndoButtonState() {
+    $("#btnUndo").prop("disabled", undoHistory.length <= 1);
+}
+
 function undo() {
    STORAGE.restoreLastUndoStep();
+   STORAGE.save();
    renderer.reDrawEverything(true);
    stage.update();
+   updateUndoButtonState();
 }
 
 const RENDERING = {
@@ -578,7 +586,7 @@ const UI = {
          UI.hideStartScreen();
          RENDERING.drawGrid();
          renderer.reDrawEverything(true);
-         STORAGE.saveUndoHistory();
+         
       });
       $("#btnLoad2Gleisig,#btnLoad1Gleisig").on("click", (e) => {
          const name = $(e.target).attr("data");
@@ -1144,7 +1152,7 @@ function handleStageMouseUp(e) {
                selectObject(mouseAction.container.object, e);
             } else if (mouseAction.container?.name == "switch") {
                Track.switch_A_Switch(mouseAction.container.sw, local_point.x);
-               renderer.reRenderSwitch(mouseAction.container.sw);
+               renderer.renderSwitchUI(mouseAction.container.sw);
                stage.update();
             } else {
                selectObject();
@@ -1205,6 +1213,8 @@ const STORAGE = {
       if (last) {
          STORAGE.loadFromJson(last);
       } else tracks = [];
+
+      updateUndoButtonState();
    },
 
    loadFromJson(json) {
@@ -1221,11 +1231,15 @@ const STORAGE = {
       Train.allTrains = loaded.trains?.clean() || []; ////when something went wront while loading trains, we filter all nulls
       Train.allTrains.forEach((t) => t.restore());
       Train.allTrains = Train.allTrains.filter((t) => t.track != null);
+
+      
    },
 
    saveUndoHistory() {
-      /* undoHistory.push(JSON.stringify({ tracks: tracks, objects: GenericObject.all_objects }, STORAGE.replacer));
-      if (undoHistory.length > MOST_UNDO) undoHistory.shift(); */
+      undoHistory.push(JSON.stringify({ tracks: tracks, objects: GenericObject.all_objects }, STORAGE.replacer));
+      if (undoHistory.length > MOST_UNDO) undoHistory.shift();
+
+      updateUndoButtonState();
    },
 
    save() {
@@ -1242,10 +1256,12 @@ const STORAGE = {
                if (loaded_version >= STORAGE.MIN_STORAGE_VERSION) STORAGE.loadFromJson(x.slice(indexOfFirst + 1));
                else console.error(`stored version ${loaded_version} to old`);
             } else throw new Error("Version Tag is missing");
+            STORAGE.saveUndoHistory();
          }
       } catch (error) {
          showErrorToast(error);
       }
+      updateUndoButtonState();
    },
 
    loadPrebuildbyName(name) {

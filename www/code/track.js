@@ -39,17 +39,8 @@ class Track {
 
       if (!cut) throw new Error("The split point is not on the track");
 
-      // Update signal positions
-      track.signals.forEach(signal => {
-         if (geometry.pointOnLine(track.start, split_point, signal._positioning.point)) {
-            signal.setTrack(nodes_1); 
-         } else {
-            signal.setTrack(nodes_2);
-         }
-      });
-      
       return [nodes_1, nodes_2];
-   }   
+   }
 
    static joinTracks(track1, track2) {
       if (track1.end.equals(track2.start)) {
@@ -57,12 +48,11 @@ class Track {
          tracks.remove(track1);
          tracks.remove(track2);
          return Track.checkNodesAndCreateTracks(nodes);
+         //TODO: update signals
       } else {
          throw new Error("Tracks cannot be joined. The end of the first track must match the start of the second track.");
       }
    }
-
-   
 
    static checkNodesAndCreateTracks(nodes) {
       if (nodes == null || nodes.length <= 1) return;
@@ -70,7 +60,10 @@ class Track {
       const new_tracks = [];
 
       //reverse the index array if the user drawed it from right to left, or if the user drawed straight from bottom to top
-      if (nodes.first().x > nodes.last().end.x || (nodes.first().x == nodes.last().end.x && nodes.first().y > nodes.last().end.y)) {
+      if (
+         nodes.first().x > nodes.last().end.x ||
+         (nodes.first().x == nodes.last().end.x && nodes.first().y > nodes.last().end.y)
+      ) {
          nodes.reverse();
          for (let i = 1; i < nodes.length; i++) {
             const n1 = nodes[i];
@@ -217,12 +210,8 @@ class Track {
          from: null,
       };
 
-      const left_tracks = tracks
-         .filter((t) => t.end.equals(location))
-         .sort((a, b) => b.lastNode.slope - a.lastNode.slope);
-      const right_tracks = tracks
-         .filter((t) => t.start.equals(location))
-         .sort((a, b) => b.firstNode.slope - a.firstNode.slope);
+      const left_tracks = tracks.filter((t) => t.end.equals(location)).sort((a, b) => b.lastNode.slope - a.lastNode.slope);
+      const right_tracks = tracks.filter((t) => t.start.equals(location)).sort((a, b) => b.firstNode.slope - a.firstNode.slope);
       let rad = 0;
 
       if (left_tracks.length == 1) {
@@ -242,7 +231,7 @@ class Track {
 
       if (sw.t4) sw.type = SWITCH_TYPE.DKW;
       else {
-         const angle = findAngle(location, sw.t3.end.equals(location) ? sw.t3.lastNode : sw.t3.firstNode, rad);
+         const angle = findAngle(location, sw.t3.getNodeAtLocation(location), rad);
          sw.type = Math.ceil((angle % 360) / 90);
       }
       //console.log(Object.keys(SWITCH_TYPE).find((key) => SWITCH_TYPE[key] === sw.type));
@@ -279,8 +268,21 @@ class Track {
                      //if the intersection point is not the start or end point of the tracks
                      if (!intersection.equals(track1.start) && !intersection.equals(track1.end)) {
                         const nodes = Track.splitTrackAtPoint(track1, intersection);
+
+                        const km = track1.getKmfromPoint(intersection);
+                        const signal_on_track = track1.signals;
                         tracks.remove(track1);
                         nodes.forEach((nodes) => new_tracks.push(...Track.checkNodesAndCreateTracks(nodes)));
+                        
+
+                        signal_on_track.forEach((signal) => {
+                           if (signal._positioning.km < km) {
+                              signal.setTrack(new_tracks[0],signal._positioning.km);
+                           } else {
+                              signal.setTrack(new_tracks[1],signal._positioning.km-km);
+                           }
+                        });
+
                         remainingTracks.push(...new_tracks);
                         new_tracks = [];
                         skip = true;
@@ -288,13 +290,21 @@ class Track {
 
                      if (!intersection.equals(track2.start) && !intersection.equals(track2.end)) {
                         const nodes = Track.splitTrackAtPoint(track2, intersection);
+                        const km = track2.getKmfromPoint(intersection);
+                        const signal_on_track = track2.signals;
                         tracks.remove(track2);
                         remainingTracks.remove(track2);
                         nodes.forEach((nodes) => new_tracks.push(...Track.checkNodesAndCreateTracks(nodes)));
+                        signal_on_track.forEach((signal) => {
+                           if (signal._positioning.km < km) {
+                              signal.setTrack(new_tracks[0],signal._positioning.km);
+                           } else {
+                              signal.setTrack(new_tracks[1],signal._positioning.km-km);
+                           }
+                        });
                         remainingTracks.push(...new_tracks); //OPT: maybe only if the tracks are longer then 1.5
                         new_tracks = [];
                         skip = true;
-                        console.log(`split track2 (${track2.id}) at ${intersection.x},${intersection.y}`);
                      }
                   }
 
@@ -389,7 +399,7 @@ class Track {
    }
 
    get firstNode() {
-      return this.nodes.first();
+      return this.nodes.first(); 
    }
 
    get lastNode() {
@@ -412,6 +422,20 @@ class Track {
       return this.nodes.reduce((acc, p, i) => (acc += p._tmp.length), 0);
    }
 
+   /**
+    * Returns the node at the specified location
+    * @param {Point} location - The location to check
+    * @returns {TrackNode} The node at the location or null if location doesn't match start or end
+    */
+   getNodeAtLocation(location) {
+      if (location.equals(this.start)) {
+         return this.firstNode;
+      } else if (location.equals(this.end)) {
+         return this.lastNode;
+      }
+      return null;
+   }
+
    constructor(nodes) {
       if (!nodes || nodes.length <= 1) throw new Error("Track must have at least 2 nodes");
       this._tmp.id = Track._getID();
@@ -424,11 +448,8 @@ class Track {
       this.nodes = nodes;
    }
 
-   
-
    //returns the Point
    getPointFromKm(km) {
-      console.log(this.id,km);
       let accumulatedKm = 0;
       for (let i = 0; i < this.nodes.length; i++) {
          const node = this.nodes[i];
@@ -444,12 +465,23 @@ class Track {
    }
 
    getKmfromPoint(p) {
-      throw new Error("Not implemented");
-      if (!geometry.pointOnLine(this.start, this.end, p)) return;
+      if (p.equals(this.start)) {
+         return 0;
+      }
 
-      let v = new V2(this.start);
-      v = v.sub(p);
-      return v.length;
+      let accumulatedKm = 0;
+      for (let i = 0; i < this.nodes.length; i++) {
+         const node = this.nodes[i];
+         // Assumes geometry.pointOnLine checks if p is ON the segment [node.start, node.end]
+         if (geometry.pointOnLine(node.start, node.end, p)) {
+            const distanceOnNode = geometry.distance(node.start, p);
+            return accumulatedKm + distanceOnNode;
+         }
+         accumulatedKm += node.length;
+      }
+
+      // If the point is not found on any node segment after checking all nodes
+      throw new Error("Point is not on the track.");
    }
 
    //returns the point, if u go x km from point along the track, so point must be track.start or track.end
@@ -460,7 +492,7 @@ class Track {
       else return geometry.add(point, geometry.multiply(this.lastNode.unit, x));
    }
 
-   AddSignal(signal,km,above) {
+   AddSignal(signal, km, above) {
       signal._positioning.km = km;
       signal._positioning.track = this;
       signal._positioning.above = above;
@@ -477,7 +509,9 @@ class Track {
    }
 
    addSwitch(sw) {
-      this._tmp.switches[this.end.equals(sw.location) ? 1 : 0] = sw;
+      // Store switch at index 0 for start position, 1 for end position
+      const isAtEnd = this.end.equals(sw.location);
+      this._tmp.switches[isAtEnd ? 1 : 0] = sw;
    }
 
    stringify() {

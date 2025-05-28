@@ -119,32 +119,46 @@ class trackRendering_textured {
          }, 500);
       else {
          if (this._rendering == undefined) {
-            this._rendering = { dont_optimize: dont_optimize };
-            this._rendering.screen_rectangle = this.calcCanvasSize();
+            try {
+               this._rendering = { dont_optimize: dont_optimize };
+               this._rendering.screen_rectangle = this.calcCanvasSize();
 
-            if (force) {
-               track_container.removeAllChildren();
-               signal_container.removeAllChildren();
-               ui_container.removeAllChildren();
-               train_container.removeAllChildren();
-               object_container.removeAllChildren();
-               debug_container.removeAllChildren();
-               this.calcRenderValues();
-            } else {
-               //if we passed the LOD in either direction we have to rerender the tracks
-               if (this.LOD.between(this._lastRenderScale, stage.scale)) {
-                  this._rendering.lodChanged = true;
+               if (force) {
+                  track_container.removeAllChildren();
+                  signal_container.removeAllChildren();
+                  ui_container.removeAllChildren();
+                  train_container.removeAllChildren();
+                  object_container.removeAllChildren();
+                  debug_container.removeAllChildren();
+                  this.calcRenderValues();
+               } else {
+                  //if we passed the LOD in either direction we have to rerender the tracks
+                  if (this.LOD.between(this._lastRenderScale, stage.scale)) {
+                     this._rendering.lodChanged = true;
+                  }
                }
-            }
 
-            this.renderAllTracks(force);
-            this.renderAllSignals(force);
-            this.renderAllTrains();
-            this.renderAllGenericObjects();
-            this._lastRenderScale = stage.scale;
-            if (!dont_optimize) this.cleanUp();
-            delete this._rendering;
-            stage.update();
+               try {
+                  this.renderAllTracks(force);
+                  this.renderAllSignals(force);
+                  this.renderAllTrains();
+                  this.renderAllGenericObjects();
+                  this._lastRenderScale = stage.scale;
+                  if (!dont_optimize) this.cleanUp();
+               } catch (error) {
+                  console.error("Error during rendering:", error);
+                  throw error;
+               } finally {
+                  delete this._rendering;
+                  stage.update();
+               }
+            } catch (error) {
+               console.error("Critical rendering error:", error);
+               showErrorToast(error);
+               // Attempt to recover by clearing rendering state
+               delete this._rendering;
+               throw error;
+            }
          }
       }
    }
@@ -259,9 +273,9 @@ class trackRendering_textured {
 
    renderAllSignals(force) {
       signal_container.removeAllChildren();
-      Signal.allSignals.forEach(signal => {
+      Signal.allSignals.forEach((signal) => {
          let container = signal_container.addChild(createSignalContainer(signal));
-         alignSignalContainerWithTrack(container,signal._positioning);
+         alignSignalContainerWithTrack(container, signal._positioning);
          if (selection.isSelectedObject(signal)) {
             container.shadow = new createjs.Shadow("#ff0000", 0, 0, 3);
          }
@@ -294,13 +308,7 @@ class trackRendering_textured {
          if (this.TrackVisible(t)) {
             //either we have a forced redraw or the track is not rendered yet
             if (force || !track_container.renderedTracks.has(t)) {
-               this.renderTrack(t);
-               /* for (const signal of t.signals) {
-                  const c = signal_container.addChild(createSignalContainer(signal));
-                  if (selection.isSelectedObject(signal)) c.shadow = new createjs.Shadow("#ff0000", 0, 0, 3);
-                  alignSignalContainerWithTrack(c);
-                  this.handleCachingSignal(c);
-               } */
+               this.renderTrack(t);               
             } else if (this._rendering.lodChanged) {
                this.updateTrack(t);
             }
@@ -385,8 +393,16 @@ class trackRendering_textured {
             startPoint = startPoint.add(geometry.multiply(node.unit, GRID_SIZE_2));
          }
 
+         if (isFirst && !hasSwitchStart) {
+            startPoint = startPoint.sub(geometry.multiply(node.unit, GRID_SIZE_2));
+         }
+
          if (isLast && hasSwitchEnd) {
             endPoint = endPoint.add(geometry.multiply(node.unit, -GRID_SIZE_2));
+         }
+
+         if (isLast && !hasSwitchEnd) {
+            endPoint = endPoint.add(geometry.multiply(node.unit, GRID_SIZE_2));
          }
 
          // Calculate straight segment end point
@@ -431,6 +447,8 @@ class trackRendering_textured {
 
       // Draw rails
       this.renderRails(track, points);
+
+      this.drawBumper(track, this._rendering.rails_container);
    }
 
    renderRails(track, points) {
@@ -626,13 +644,14 @@ class trackRendering_textured {
 
    drawBumper(track, track_container) {
       if (track.switchAtTheEnd == null) {
+         const node = track.lastNode;
          track_container.addChild(
             new createjs.Bitmap(this.bumperImg).set({
-               y: track._tmp.vector.y,
-               x: track._tmp.vector.x,
+               y: node.end.y,
+               x: node.end.x,
                scale: trackRendering_textured.TRACK_SCALE,
                scaleX: -trackRendering_textured.TRACK_SCALE,
-               rotation: track._tmp.deg,
+               rotation: node.deg,
                regY: this.bumperImg.height / 2,
                regX: this.bumperImg.width,
             })
@@ -640,13 +659,14 @@ class trackRendering_textured {
       }
 
       if (track.switchAtTheStart == null) {
+         const node = track.firstNode;
          track_container.addChild(
             new createjs.Bitmap(this.bumperImg).set({
-               y: 0,
-               x: 0,
+               y: node.start.y,
+               x: node.start.x,
                scale: trackRendering_textured.TRACK_SCALE,
                scaleX: trackRendering_textured.TRACK_SCALE,
-               rotation: track._tmp.deg,
+               rotation: node.deg,
                regY: this.bumperImg.height / 2,
                regX: this.bumperImg.width,
             })
@@ -666,17 +686,18 @@ class trackRendering_textured {
       const points = this.calculateTrackPoints(track);
       this.drawTrackSleepers(points, sleepersContainer);
 
-      
       if (track == track.switchAtTheEnd?.t1) {
-         const switchSleepersContainer = this._rendering.sleepers_container.children.find((c) => c.data === track.switchAtTheEnd);         
+         const switchSleepersContainer = this._rendering.sleepers_container.children.find((c) => c.data === track.switchAtTheEnd);
          const switchRenderingParameter = this.getSwitchRenderingParameter(track.switchAtTheEnd);
-         this.drawSleepersOnSwitch(track.switchAtTheEnd, switchRenderingParameter,switchSleepersContainer);
+         this.drawSleepersOnSwitch(track.switchAtTheEnd, switchRenderingParameter, switchSleepersContainer);
       }
 
       if (track == track.switchAtTheStart?.t1) {
-         const switchSleepersContainer = this._rendering.sleepers_container.children.find((c) => c.data === track.switchAtTheStart);
+         const switchSleepersContainer = this._rendering.sleepers_container.children.find(
+            (c) => c.data === track.switchAtTheStart
+         );
          const switchRenderingParameter = this.getSwitchRenderingParameter(track.switchAtTheStart);
-         this.drawSleepersOnSwitch(track.switchAtTheStart, switchRenderingParameter,switchSleepersContainer);
+         this.drawSleepersOnSwitch(track.switchAtTheStart, switchRenderingParameter, switchSleepersContainer);
       }
    }
 
@@ -720,12 +741,11 @@ class trackRendering_textured {
          container.data = sw;
          container.mouseChildren = false;
          this._rendering.sleepers_container.addChild(container);
-      }
-      else {
+      } else {
          container.removeAllChildren();
       }
 
-      const deg = (sw.location.equals(sw.t1.start) ? sw.t1.firstNode : sw.t1.lastNode).deg;
+      const deg = sw.t1.getNodeAtLocation(sw.location).deg;
 
       const back2front = sw.type.is(SWITCH_TYPE.FROM_RIGHT, SWITCH_TYPE.FROM_LEFT);
 
@@ -820,6 +840,7 @@ class trackRendering_textured {
       }
 
       this.drawSleepersOnSwitch(sw, switchRenderingParameter);
+      this.renderSwitchUI(sw);
    }
 
    getSwitchRenderingParameter(sw) {
@@ -829,7 +850,7 @@ class trackRendering_textured {
 
       // Calculate track data for each track
       const calcTrackData = (track) => {
-         const node = sw.location.equals(track.start) ? track.firstNode : track.lastNode;
+         const node = track.getNodeAtLocation(sw.location);
          const railOffset = geometry.perpendicularX(node.unit.multiply(this.rail_distance * flipped));
          const sleeperOffset = geometry.perpendicularX(node.unit.multiply(this.schwellenHöhe_2 * flipped));
          const position = track.along(sw.location, GRID_SIZE_2);
@@ -851,7 +872,7 @@ class trackRendering_textured {
       const straightBranch = calcTrackData(tracks[1]);
       const curvedBranch = calcTrackData(tracks[2]);
       const curvedBranch2 = tracks.length === 4 ? calcTrackData(tracks[3]) : null;
-      
+
       return { mainTrack, straightBranch, curvedBranch, curvedBranch2, flipped, mirrored };
    }
 
@@ -981,33 +1002,33 @@ class trackRendering_textured {
       }
    }
 
-   reRenderSwitch(sw) {
-      const s = ui_container.children.find((c) => c.sw == sw);
-      if (s) s.parent.removeChild(s);
-
-      //this.renderSwitchUI(sw);
-   }
-
    renderSwitchUI(sw) {
-      ui_container.addChild(
-         (() => {
-            let c = new createjs.Container();
-            c.mouseChildren = false;
-            c.name = "switch";
-            c.sw = sw;
-            [sw.from, sw.branch].forEach((t) => {
-               const arrow = new createjs.Shape();
-               c.addChild(arrow);
+      // Check if a container already exists for this switch
+      let container = ui_container.children.find((c) => c.sw === sw);
+      
+      if (container) {
+         // If container exists, clear it but keep it
+         container.removeAllChildren();
+      } else {
+         // Create a new container if none exists
+         container = new createjs.Container();
+         container.mouseChildren = false;
+         container.name = "switch";
+         container.sw = sw;
+         ui_container.addChild(container);
+      }
+      
+      // Add arrows for both tracks
+      [sw.from, sw.branch].forEach((t) => {
+         const arrow = new createjs.Shape();
+         container.addChild(arrow);
 
-               arrow.graphics.setStrokeStyle(trackRendering_basic.STROKE, "round").beginStroke("#333");
-               arrow.graphics.drawArrow(20, 5);
-               arrow.x = sw.location.x;
-               arrow.y = sw.location.y;
-               arrow.rotation = findAngle(sw.location, t.end.equals(sw.location) ? t.start : t.end);
-            });
-            return c;
-         })()
-      );
+         arrow.graphics.setStrokeStyle(trackRendering_basic.STROKE, "round").beginStroke("#333");
+         arrow.graphics.drawArrow(20, 5);
+         arrow.x = sw.location.x;
+         arrow.y = sw.location.y;
+         arrow.rotation = findAngle(sw.location, t.getNodeAtLocation(sw.location));
+      });
    }
 
    PointVisible(p1) {

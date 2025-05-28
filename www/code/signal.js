@@ -347,11 +347,12 @@ class Signal {
       }
    }
 
-   setTrack(track) {
+   setTrack(track,km) {
       if (this._positioning.track) {
          this._positioning.track.signals.remove(this);
       }
       this._positioning.track = track;
+      this._positioning.km = km;
       if (track) {
          track.signals.push(this);
       }

@@ -27,9 +27,9 @@ class trackRendering_basic {
 
    renderAllSignals() {
       signal_container.removeAllChildren();
-      Signal.allSignals.forEach(signal => {
+      Signal.allSignals.forEach((signal) => {
          let container = signal_container.addChild(createSignalContainer(signal));
-         alignSignalContainerWithTrack(container,signal._positioning);
+         alignSignalContainerWithTrack(container, signal._positioning);
          if (selection.isSelectedObject(signal)) {
             container.shadow = new createjs.Shadow("#ff0000", 0, 0, 3);
          }
@@ -130,7 +130,7 @@ class trackRendering_basic {
       g.setStrokeStyle(trackRendering_basic.STROKE, "round").beginStroke(trackRendering_basic.TRACK_COLOR);
       shape.color = g.command;
       g.moveTo(track.start.x, track.start.y);
-      const text = new createjs.Text(track.id, "Italic 10px Arial", "black");      
+      const text = new createjs.Text(track.id, "Italic 10px Arial", "black");
       text.textBaseline = "alphabetic";
       ui_container.addChild(text);
       for (let index = 0; index < track.nodes.length; index++) {
@@ -138,8 +138,8 @@ class trackRendering_basic {
          g.lineTo(node.end.x, node.end.y);
 
          if (index === Math.floor(track.nodes.length / 2)) {
-            text.x = node.start.x + (node.end.x - node.start.x)/2 + 8;
-            text.y = node.start.y + (node.end.y - node.start.y)/2 + 10;
+            text.x = node.start.x + (node.end.x - node.start.x) / 2 + 8;
+            text.y = node.start.y + (node.end.y - node.start.y) / 2 + 10;
          }
       }
 
@@ -176,9 +176,11 @@ class trackRendering_basic {
 
    renderSwitch(sw) {
       if (!sw.t1 || !sw.t2 || !sw.t3 || (sw.type == SWITCH_TYPE.DKW && !sw.t4)) {
-         console.log(sw);
          throw new Error("switch is faulty, cause one of the branches is null");
       }
+
+      const drawTriangle = (shape, color, p1, p2, p3) =>
+         shape.graphics.beginFill(color).moveTo(p1.x, p1.y).lineTo(p2.x, p2.y).lineTo(p3.x, p3.y).cp();
       let switch_shape = new createjs.Shape();
       switch_shape.name = "switch";
       switch_shape.sw = sw;
@@ -188,58 +190,59 @@ class trackRendering_basic {
 
       p1 = sw.t2.along(sw.location, trackRendering_basic.SWITCH_SIZE);
       p2 = sw.t3.along(sw.location, trackRendering_basic.SWITCH_SIZE);
-      this.drawTriangle(switch_shape, "black", sw.location, p1, p2);
+      drawTriangle(switch_shape, "black", sw.location, p1, p2);
 
       if (sw.type == SWITCH_TYPE.DKW) {
          p1 = sw.t1.along(sw.location, trackRendering_basic.SWITCH_SIZE);
          p2 = sw.t4.along(sw.location, trackRendering_basic.SWITCH_SIZE);
 
-         this.drawTriangle(switch_shape, "black", sw.location, p1, p2);
+         drawTriangle(switch_shape, "black", sw.location, p1, p2);
       }
 
       this.renderSwitchUI(sw);
    }
 
-   reRenderSwitch(sw) {
-      const s = ui_container.children.find((c) => c.sw == sw);
-      if (s) s.parent.removeChild(s);
-
-      this.renderSwitchUI(sw);
-      stage.update();
-   }
-
    renderSwitchUI(sw) {
-      ui_container.addChild(
-         (() => {
-            const ui_shape = new createjs.Shape();
-            ui_shape.name = "switch";
-            ui_shape.sw = sw;
-            ui_shape.graphics.setStrokeStyle(trackRendering_basic.STROKE / 2, "round").beginStroke("gray");
+      
 
-            const triangle = function (t) {
-               let p1 = t.along(sw.location, 13);
-               let p0 = t.along(sw.location, 5);
-               ui_shape.graphics.moveTo(p0.x, p0.y).lineTo(p1.x, p1.y);
-            };
+      // Check if a container already exists for this switch
+      let container = ui_container.children.find((c) => c.sw === sw);
 
-            triangle(sw.t1);
-            triangle(sw.t2);
-            triangle(sw.t3);
+      if (container) {
+         // If container exists, clear it but keep it
+         container.removeAllChildren();
+      } else {
+         // Create a new container if none exists
+         container = new createjs.Container();
+         container.mouseChildren = false;
+         container.name = "switch";
+         container.sw = sw;
+         ui_container.addChild(container);
+      }
 
-            if (sw.type == SWITCH_TYPE.DKW) triangle(sw.t4);
+      const ui_shape = new createjs.Shape();
+      ui_shape.name = "switch";
+      ui_shape.sw = sw;
+      container.addChild(ui_shape);
+      ui_shape.graphics.setStrokeStyle(trackRendering_basic.STROKE / 2, "round").beginStroke("gray");
 
-            ui_shape.graphics.setStrokeStyle(trackRendering_basic.STROKE / 2, "round").beginStroke("white");
+      const triangle = function (t) {
+         let p1 = t.along(sw.location, 13);
+         let p0 = t.along(sw.location, 5);
+         ui_shape.graphics.moveTo(p0.x, p0.y).lineTo(p1.x, p1.y);
+      };
 
-            if (!sw.type.is(SWITCH_TYPE.DKW)) triangle(sw.t1);
-            else triangle(sw.from);
+      triangle(sw.t1);
+      triangle(sw.t2);
+      triangle(sw.t3);
 
-            triangle(sw.branch);
-            return ui_shape;
-         })()
-      );
-   }
+      if (sw.type == SWITCH_TYPE.DKW) triangle(sw.t4);
 
-   drawTriangle(shape, color, p1, p2, p3) {
-      shape.graphics.beginFill(color).moveTo(p1.x, p1.y).lineTo(p2.x, p2.y).lineTo(p3.x, p3.y).cp();
+      ui_shape.graphics.setStrokeStyle(trackRendering_basic.STROKE / 2, "round").beginStroke("white");
+
+      if (!sw.type.is(SWITCH_TYPE.DKW)) triangle(sw.t1);
+      else triangle(sw.from);
+
+      triangle(sw.branch);
    }
 }
