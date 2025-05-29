@@ -400,7 +400,7 @@ function deleteSelectedObject() {
 }
 
 function updateUndoButtonState() {
-    $("#btnUndo").prop("disabled", undoHistory.length <= 1);
+   $("#btnUndo").prop("disabled", undoHistory.length <= 1);
 }
 
 function undo() {
@@ -586,7 +586,6 @@ const UI = {
          UI.hideStartScreen();
          RENDERING.drawGrid();
          renderer.reDrawEverything(true);
-         
       });
       $("#btnLoad2Gleisig,#btnLoad1Gleisig").on("click", (e) => {
          const name = $(e.target).attr("data");
@@ -922,6 +921,7 @@ function getSnapPoint(local_point) {
 }
 
 function determineMouseAction(event, local_point) {
+   
    //wie weit wurde die maus seit mousedown bewegt
    if (mouseAction.distance() > 4) {
       if (event.nativeEvent.buttons == 1) {
@@ -935,15 +935,14 @@ function determineMouseAction(event, local_point) {
                myCanvas.style.cursor = "move";
 
                mouseAction.action = MOUSE_DOWN_ACTION.MOVE_OBJECT;
-            } else {
+            } else if (mouseAction.container?.name == "track" ||mouseAction.container?.name == "switch" || mouseAction.container == null){
                mouseAction.action = MOUSE_DOWN_ACTION.BUILD_TRACK;
                addTrackAnchorPoint(getSnapPoint(local_point));
                overlay_container.addChild((mouseAction.lineShape = new createjs.Shape()));
             }
-         } else {
-            if (mouseAction.container?.name == "train") {
-               mouseAction.action = MOUSE_DOWN_ACTION.MOVE_TRAIN;
-            }
+         }
+         if (mouseAction.container?.name == "train") {
+            mouseAction.action = MOUSE_DOWN_ACTION.MOVE_TRAIN;
          }
       } else if (event.nativeEvent.buttons == 2) {
          //stage.addEventListener("stagemousemove", handleMouseMove);
@@ -1070,7 +1069,7 @@ function handleStageMouseUp(e) {
       myCanvas.style.cursor = "auto";
       if (mouseAction == null) return;
 
-      let local_point = stage.globalToLocal(stage.mouseX, stage.mouseY);
+      let local_point = Point.fromPoint(stage.globalToLocal(stage.mouseX, stage.mouseY));
       //left button
       if (e.nativeEvent.which == 1) {
          if (mouseAction.action === MOUSE_DOWN_ACTION.DND_SIGNAL) {
@@ -1090,6 +1089,7 @@ function handleStageMouseUp(e) {
                Track.checkNodesAndCreateTracks(mouseAction.nodes);
                Track.createRailNetwork();
                renderer.reDrawEverything(true);
+               Train.allTrains.forEach((t) => t.restore());
                STORAGE.saveUndoHistory();
                STORAGE.save();
             }
@@ -1098,17 +1098,31 @@ function handleStageMouseUp(e) {
             const hit = getHitTest(track_container);
             if (hit?.name == "track") {
                const color = ["#ff0000", "#ffff00", "#00ff00", "#0000ff"].random();
-               const track = hit.track;
+               const track = hit.data;
+               const hitInfo = getHitInfoForSignalPositioning(local_point);
                let train, car, car2;
-               car = train = Train.addTrain(track, (local_point.x - track.start.x) / track._tmp.cos, color);
-               Train.allTrains.push(train);
-               for (let index = 0; index <= 2; index++) {
-                  car2 = Train.addTrain(track, (local_point.x - track.start.x) / track._tmp.cos, color);
-                  car.coupleBack(car2);
-                  car = car2;
-               }
+               const km = hitInfo.km;
+
+               // Create locomotive as the first car
+               car = train = Train.addTrain(track, km, color, Train.CAR_TYPES.LOCOMOTIVE, "");
+
+               // Add passenger cars
+               car2 = Train.addTrain(track, km, color, Train.CAR_TYPES.PASSENGER, "");
+               car.coupleBack(car2);
+               car = car2;
+
+               // Add another passenger car
+               car2 = Train.addTrain(track, km, color, Train.CAR_TYPES.PASSENGER, "");
+               car.coupleBack(car2);
+               car = car2;
+
+               // Add a third passenger car
+               car2 = Train.addTrain(track, km, color, Train.CAR_TYPES.PASSENGER, "");
+               car.coupleBack(car2);
+
+               // Update train positions
                Train.moveTrain(train, 0);
-               renderer.reDrawEverything();
+               renderer.renderAllTrains();
                stage.update();
                STORAGE.save();
             }
@@ -1231,8 +1245,6 @@ const STORAGE = {
       Train.allTrains = loaded.trains?.clean() || []; ////when something went wront while loading trains, we filter all nulls
       Train.allTrains.forEach((t) => t.restore());
       Train.allTrains = Train.allTrains.filter((t) => t.track != null);
-
-      
    },
 
    saveUndoHistory() {

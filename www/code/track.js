@@ -10,7 +10,12 @@ class Track {
       return tracks.find((t) => t.signals.find((o) => o.data == s) != undefined);
    }
    static findTrackByPoint(p) {
-      return tracks.find((track) => geometry.pointOnLine(track.start, track.end, p));
+      return tracks.find((track) => {
+         // Check each node in the track
+         return track.nodes.some(node => 
+            geometry.pointOnLine(node.start, node.end, p)
+         );
+      });
    }
 
    static counter = 0;
@@ -419,7 +424,7 @@ class Track {
    }
 
    get length() {
-      return this.nodes.reduce((acc, p, i) => (acc += p._tmp.length), 0);
+      return this.nodes.reduce((acc, node) => (acc += node.length), 0);
    }
 
    /**

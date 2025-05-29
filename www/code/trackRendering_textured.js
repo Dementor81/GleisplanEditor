@@ -183,46 +183,80 @@ class trackRendering_textured {
 
    renderAllTrains() {
       train_container.removeAllChildren();
-      Train.allTrains.forEach((train) => {
-         const c = new createjs.Container();
-         c.name = "train";
-         c.train = train;
-         c.mouseChildren = false;
-         const p = geometry.add(train.track.start, train.track.unit.multiply(train.pos));
-         this.renderCar(train, c, true);
-         if (train.trainCoupledBack) this.renderCar(train.trainCoupledBack, c);
 
-         train_container.addChild(c);
-      });
+      // Only render trains that aren't coupled to another train's front
+      // This ensures we only create containers for lead cars
+      Train.allTrains
+         .filter((train) => !train.trainCoupledFront)
+         .forEach((train) => {
+            const c = new createjs.Container();
+            c.name = "train";
+            c.train = train;
+            c.mouseChildren = false;
+
+            // Start rendering from the first car (locomotive)
+            this.renderCar(train, c);
+
+            // Position doesn't matter for the container as each car is positioned individually
+
+            train_container.addChild(c);
+         });
    }
 
-   renderCar(car, container, first = false) {
+   renderCar(car, container) {
+      // Create graphics for the car
       const g = new createjs.Graphics();
       g.setStrokeStyle(1);
       g.beginStroke(createjs.Graphics.getRGB(0, 0, 0));
       g.beginFill(car.color);
+
+      // Use the car's actual length for width instead of fixed TRAIN_WIDTH
+      const carWidth = car.length;
+      const carHeight = this.TRAIN_HEIGHT;
+
+      // Set corner radius based on car type and position in train
       let corner = [1.5, 1.5, 1.5, 1.5];
 
-      if (first) {
-         corner[0] = corner[3] = 20;
+      // If this is the first car (locomotive), round the front
+      if (car.type == Train.CAR_TYPES.LOCOMOTIVE) {
+         corner[0] = corner[3] = corner[1] = corner[2] = 8;
       }
 
+      /* // If this is the last car, round the back
       if (car.trainCoupledBack == null) {
          corner[1] = corner[2] = 20;
-      }
+      } */
 
-      g.drawRoundRectComplex(0, 0, this.TRAIN_WIDTH, this.TRAIN_HEIGHT, corner[0], corner[1], corner[2], corner[3]);
+      // Draw car with rounded corners
+      g.drawRoundRectComplex(0, 0, carWidth, carHeight, corner[0], corner[1], corner[2], corner[3]);   
 
+      // Create the shape and position it
       const s = new createjs.Shape(g);
-      const p = geometry.add(car.track.start, car.track.unit.multiply(car.pos));
+
+      // Get the position on the track based on the car's km position
+      const trackPosition = car.track.getPointFromKm(car.pos);
+      const p = trackPosition.point;
+
       s.x = p.x;
       s.y = p.y;
-      s.regX = this.TRAIN_WIDTH / 2;
-      s.regY = this.TRAIN_HEIGHT / 2;
-      s.rotation = car.track.deg;
+      s.regX = carWidth / 2;
+      s.regY = carHeight / 2;
+      s.rotation = trackPosition.node.deg;
 
       container.addChild(s);
-      if (car.trainCoupledBack) this.renderCar(car.trainCoupledBack, container);
+      // Add train number if it exists
+      if (car.number && car.type == Train.CAR_TYPES.LOCOMOTIVE) {
+         const text = new createjs.Text(car.number, "10px Arial", "#000000");
+         text.textAlign = "center";
+         text.x = p.x;
+         text.y = p.y;
+         text.textBaseline = "middle";
+         container.addChild(text);
+      }
+      // Recursively render coupled cars
+      if (car.trainCoupledBack) {
+         this.renderCar(car.trainCoupledBack, container);
+      }
    }
 
    renderAllGenericObjects() {
@@ -308,7 +342,7 @@ class trackRendering_textured {
          if (this.TrackVisible(t)) {
             //either we have a forced redraw or the track is not rendered yet
             if (force || !track_container.renderedTracks.has(t)) {
-               this.renderTrack(t);               
+               this.renderTrack(t);
             } else if (this._rendering.lodChanged) {
                this.updateTrack(t);
             }
@@ -1005,7 +1039,7 @@ class trackRendering_textured {
    renderSwitchUI(sw) {
       // Check if a container already exists for this switch
       let container = ui_container.children.find((c) => c.sw === sw);
-      
+
       if (container) {
          // If container exists, clear it but keep it
          container.removeAllChildren();
@@ -1017,7 +1051,7 @@ class trackRendering_textured {
          container.sw = sw;
          ui_container.addChild(container);
       }
-      
+
       // Add arrows for both tracks
       [sw.from, sw.branch].forEach((t) => {
          const arrow = new createjs.Shape();
