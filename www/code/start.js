@@ -1,6 +1,6 @@
 "use strict";
 
-const VERSION = "0.44";
+const VERSION = "0.5";
 
 const DEFAULT_SIMPLIFIED_VIEW = false; // Set to false for textured view by default
 
@@ -1201,7 +1201,7 @@ function handleStageMouseUp(e) {
 }
 
 const STORAGE = {
-   MIN_STORAGE_VERSION: 0.44,
+   MIN_STORAGE_VERSION: 0.5,
    STORAGE_IDENT: "bahnhof_last1",
 
    receiver(key, value) {
