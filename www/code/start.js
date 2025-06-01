@@ -40,6 +40,8 @@ const CUSTOM_MOUSE_ACTION = {
    DRAWING: 1,
    TEXT: 2,
    PLATTFORM: 3,
+   TRAIN_COUPLE: 4,
+   TRAIN_DECOUPLE: 5,
 };
 
 const SWITCH_TYPE = {
@@ -389,6 +391,14 @@ function deleteSelectedObject() {
       if (selection.type == "Track") {
          [].concat(selection.object).forEach((t) => tracks.remove(t));
          Track.createRailNetwork();
+         // Check and remove any trains that were on the deleted tracks
+         const removedTracks = [].concat(selection.object);
+         for (const track of removedTracks) {
+            const trainsOnTrack = Train.allTrains.filter(train => train.track === track);
+            for (const train of trainsOnTrack) {
+               Train.deleteTrain(train);
+            }
+         }
          STORAGE.saveUndoHistory();
       }
       if (selection.type == "Signal") [].concat(selection.object).forEach((s) => Signal.removeSignal(s, null));
@@ -413,6 +423,9 @@ function undo() {
 
 const RENDERING = {
    clear() {
+      // Stop any moving trains first
+      Train.stopAllTrains();
+      
       tracks = [];
       Signal.allSignals = new Set();
       Train.allTrains = [];
@@ -727,7 +740,7 @@ function onResizeWindow() {
 }
 
 function handleStageMouseDown(event) {
-   //console.log("handleStageMouseDown", event);
+   console.log("handleStageMouseDown", event);
 
    let hittest = getHitTest();
 
@@ -906,7 +919,7 @@ function handleMouseMove(event) {
       RENDERING.drawGrid(false);
       renderer.reDrawEverything();
    } else if (mouseAction.action === MOUSE_DOWN_ACTION.MOVE_TRAIN) {
-      Train.moveTrain(mouseAction.container.train, event.nativeEvent.movementX);
+      Train.moveTrain(mouseAction.container.data, event.nativeEvent.movementX);
       renderer.reDrawEverything();
    } else if (mouseAction.action === MOUSE_DOWN_ACTION.ADD_TRAIN) {
       mouseAction.container.x = local_point.x;
@@ -1063,7 +1076,7 @@ function addTrackAnchorPoint(current) {
 }
 
 function handleStageMouseUp(e) {
-   //console.log("handleStageMouseUp", e);
+   console.log("handleStageMouseUp", e);
    try {
       stage.removeEventListener("stagemousemove", handleMouseMove);
       myCanvas.style.cursor = "auto";
@@ -1154,12 +1167,27 @@ function handleStageMouseUp(e) {
                stage.update();
                STORAGE.saveUndoHistory();
                STORAGE.save();
+            } else if (custom_mouse_mode === CUSTOM_MOUSE_ACTION.TRAIN_DECOUPLE) {
+               if (mouseAction.container?.name == "decouplingPoint") {
+                  Train.handleDecouplingClick(mouseAction.container.data);
+               }else{
+                  Train.exitDecouplingMode();
+               }
+            } else if (custom_mouse_mode === CUSTOM_MOUSE_ACTION.TRAIN_COUPLE) {
+               if (mouseAction.container?.name == "couplingPoint") {
+                  Train.handleCouplingClick(mouseAction.container.data);
+               } else {
+                  Train.exitCouplingMode();
+               }
             }
          } else if (mouseAction.action === MOUSE_DOWN_ACTION.NONE && mouseAction.distance() < 4) {
             if (mouseAction.container?.name == "signal") {
                selectObject(mouseAction.container.data, e);
+            } else if (mouseAction.container?.name == "couplingPoint" && custom_mouse_mode === CUSTOM_MOUSE_ACTION.TRAIN_COUPLE) {
+               // Handle coupling at this point
+               Train.handleCouplingClick(mouseAction.container.data);
             } else if (mouseAction.container?.name == "train") {
-               selectObject(mouseAction.container.train, e);
+               selectObject(mouseAction.container.data, e);
             } else if (mouseAction.container?.name == "track") {
                selectObject(mouseAction.container.data, e);
             } else if (mouseAction.container?.name == "object") {

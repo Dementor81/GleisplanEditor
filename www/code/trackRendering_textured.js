@@ -130,6 +130,10 @@ class trackRendering_textured {
                   train_container.removeAllChildren();
                   object_container.removeAllChildren();
                   debug_container.removeAllChildren();
+                  
+                  // Clear the overlay container
+                  overlay_container.removeAllChildren();
+                  
                   this.calcRenderValues();
                } else {
                   //if we passed the LOD in either direction we have to rerender the tracks
@@ -192,7 +196,7 @@ class trackRendering_textured {
             const c = new createjs.Container();
             c.name = "train";
             c.train = train;
-            c.mouseChildren = false;
+            c.mouseChildren = true;
 
             // Start rendering from the first car (locomotive)
             this.renderCar(train, c);
@@ -232,6 +236,9 @@ class trackRendering_textured {
 
       // Create the shape and position it
       const s = new createjs.Shape(g);
+      s.data = car;
+      s.mouseChildren = false;
+      s.name = "train";
 
       // Get the position on the track based on the car's km position
       const trackPosition = car.track.getPointFromKm(car.pos);
