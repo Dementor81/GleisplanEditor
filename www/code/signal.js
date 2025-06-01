@@ -130,7 +130,7 @@ class Signal {
    static allSignals = new Set();
 
    static removeSignal(s) {
-      const track = tracks.find((t) => t.signals.includes(s));
+      const track = Track.allTracks.find((t) => t.signals.includes(s));
       if (track) track.removeSignal(s);
    }
 

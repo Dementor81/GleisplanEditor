@@ -1,16 +1,18 @@
 "use strict";
 
 class Track {
+   static allTracks = [];
+
    //track drawing
    static isValidTrackNodePoint(p) {
       return true;
    }
 
    static findTrackbySignal(s) {
-      return tracks.find((t) => t.signals.find((o) => o.data == s) != undefined);
+      return Track.allTracks.find((t) => t.signals.find((o) => o.data == s) != undefined);
    }
    static findTrackByPoint(p) {
-      return tracks.find((track) => {
+      return Track.allTracks.find((track) => {
          // Check each node in the track
          return track.nodes.some(node => 
             geometry.pointOnLine(node.start, node.end, p)
@@ -50,8 +52,8 @@ class Track {
    static joinTracks(track1, track2) {
       if (track1.end.equals(track2.start)) {
          const nodes = [track1.start].concat(track1.nodes).concat(track2.nodes);
-         tracks.remove(track1);
-         tracks.remove(track2);
+         Track.allTracks.remove(track1);
+         Track.allTracks.remove(track2);
          return Track.checkNodesAndCreateTracks(nodes);
          //TODO: update signals
       } else {
@@ -105,7 +107,7 @@ class Track {
          //search for a node with the same slope and that overlaps with the current node
          const overlapping_nodes = (() => {
             let foundNodes = [];
-            tracks.forEach((track) => {
+            Track.allTracks.forEach((track) => {
                track.nodes.forEach((node) => {
                   if (
                      node.slope === current_node.slope &&
@@ -163,7 +165,7 @@ class Track {
 
    static createTrack(nodes) {
       const track = new Track(nodes);
-      tracks.push(track);
+      Track.allTracks.push(track);
       return track;
    }
 
@@ -250,7 +252,7 @@ class Track {
       let intersection,
          skip = false, // true if the track was already split
          new_tracks = [],
-         remainingTracks = [...tracks]; //copy of the tracks, will be modified during the loop
+         remainingTracks = [...Track.allTracks]; //copy of the tracks, will be modified during the loop
 
       //iterate over all tracks and search for intersections
       while (remainingTracks.length > 0) {
@@ -276,7 +278,7 @@ class Track {
 
                         const km = track1.getKmfromPoint(intersection);
                         const signal_on_track = track1.signals;
-                        tracks.remove(track1);
+                        Track.allTracks.remove(track1);
                         nodes.forEach((nodes) => new_tracks.push(...Track.checkNodesAndCreateTracks(nodes)));
                         
 
@@ -297,7 +299,7 @@ class Track {
                         const nodes = Track.splitTrackAtPoint(track2, intersection);
                         const km = track2.getKmfromPoint(intersection);
                         const signal_on_track = track2.signals;
-                        tracks.remove(track2);
+                        Track.allTracks.remove(track2);
                         remainingTracks.remove(track2);
                         nodes.forEach((nodes) => new_tracks.push(...Track.checkNodesAndCreateTracks(nodes)));
                         signal_on_track.forEach((signal) => {
@@ -321,13 +323,13 @@ class Track {
    }
 
    static cleanUpTracks() {
-      const remainingTracks = [...tracks]; //copy of the tracks, will be modified during the loop
+      const remainingTracks = [...Track.allTracks]; //copy of the tracks, will be modified during the loop
       //iterate over all tracks and search for intersections
       let track, connected_tracks;
       while (remainingTracks.length > 0) {
          track = remainingTracks.shift();
          //searches for every track wich starts or ends at that point
-         connected_tracks = tracks.filter((t) => t != track && (t.start.equals(track.end) || t.end.equals(track.end)));
+         connected_tracks = Track.allTracks.filter((t) => t != track && (t.start.equals(track.end) || t.end.equals(track.end)));
 
          if (connected_tracks.length == 1) {
             const t = connected_tracks[0];
@@ -343,13 +345,13 @@ class Track {
 
    static createSwitches() {
       let sw;
-      for (let i = 0; i < tracks.length; i++) {
-         const track = tracks[i];
+      for (let i = 0; i < Track.allTracks.length; i++) {
+         const track = Track.allTracks[i];
          if (track.switchAtTheEnd) continue;
          const end_point = track.end; //gets its endpoint
 
          //searches for every track wich starts or ends at that point
-         const connected_tracks = tracks.filter((t) => t != track && (t.start.equals(end_point) || t.end.equals(end_point)));
+         const connected_tracks = Track.allTracks.filter((t) => t != track && (t.start.equals(end_point) || t.end.equals(end_point)));
 
          if (connected_tracks.length.between(2, 3)) {
             connected_tracks.push(track);
@@ -363,7 +365,7 @@ class Track {
    }
 
    static createRailNetwork() {
-      tracks.forEach((track) => (track._tmp.switches = [])); //delets all swichtes
+      Track.allTracks.forEach((track) => (track._tmp.switches = [])); //delets all swichtes
       Track.splitTracksAtIntersections();
       Track.cleanUpTracks();
       Track.createSwitches();

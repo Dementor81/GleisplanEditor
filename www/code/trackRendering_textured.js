@@ -394,7 +394,7 @@ class trackRendering_textured {
          this._rendering.rails_container = track_container.children[1];
       }
 
-      for (const t of tracks) {
+      for (const t of Track.allTracks) {
          if (this.TrackVisible(t)) {
             //either we have a forced redraw or the track is not rendered yet
             if (force || !track_container.renderedTracks.has(t)) {

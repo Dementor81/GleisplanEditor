@@ -37,7 +37,7 @@ class trackRendering_basic {
    }
 
    renderAllTracks() {
-      tracks.forEach((t) => {
+      Track.allTracks.forEach((t) => {
          this.renderTrack(track_container, t);
       });
    }

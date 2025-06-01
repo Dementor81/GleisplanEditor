@@ -86,7 +86,7 @@ var loadQueue;
 
 var renderer;
 
-var tracks = [];
+
 
 var undoHistory = [];
 
@@ -394,7 +394,7 @@ function init() {
 function deleteSelectedObject() {
    if (selection.object) {
       if (selection.type == "Track") {
-         [].concat(selection.object).forEach((t) => tracks.remove(t));
+         [].concat(selection.object).forEach((t) => Track.allTracks.remove(t));
          Track.createRailNetwork();
          // Check and remove any trains that were on the deleted tracks
          const removedTracks = [].concat(selection.object);
@@ -432,7 +432,7 @@ const RENDERING = {
       // Stop any moving trains first
       Train.stopAllTrains();
 
-      tracks = [];
+      Track.allTracks = [];
       Signal.allSignals = new Set();
       Train.allTrains = [];
       GenericObject.all_objects = [];
@@ -784,7 +784,7 @@ function getHitTest(container) {
 }
 
 function getHitInfoForSignalPositioning(testPoint) {
-   for (const track of tracks) {
+   for (const track of Track.allTracks) {
       if (testPoint.x.between(track.start.x, track.end.x)) {
          let km = 0;
          for (const node of track.nodes) {
@@ -1222,7 +1222,7 @@ const STORAGE = {
          ";" +
          JSON.stringify(
             {
-               tracks: tracks,
+               tracks: Track.allTracks,
                trains: Train.allTrains,
                objects: GenericObject.all_objects,
                settings: {
@@ -1242,7 +1242,7 @@ const STORAGE = {
       const last = undoHistory.last();
       if (last) {
          STORAGE.loadFromJson(last);
-      } else tracks = [];
+      } else Track.allTracks = [];
 
       updateUndoButtonState();
    },
@@ -1256,7 +1256,7 @@ const STORAGE = {
          stage.scale = loaded.settings.zoom;
       }
       if (loaded.objects) GenericObject.all_objects = loaded.objects;
-      tracks = loaded.tracks?.clean() || []; //when something went wront while loading track, we filter all nulls
+      Track.allTracks = loaded.tracks?.clean() || []; //when something went wront while loading track, we filter all nulls
 
       Track.createRailNetwork();
       Train.allTrains = loaded.trains?.clean() || []; ////when something went wront while loading trains, we filter all nulls
@@ -1265,7 +1265,7 @@ const STORAGE = {
    },
 
    saveUndoHistory() {
-      undoHistory.push(JSON.stringify({ tracks: tracks, objects: GenericObject.all_objects }, STORAGE.replacer));
+      undoHistory.push(JSON.stringify({ tracks: Track.allTracks, objects: GenericObject.all_objects }, STORAGE.replacer));
       if (undoHistory.length > MOST_UNDO) undoHistory.shift();
 
       updateUndoButtonState();
