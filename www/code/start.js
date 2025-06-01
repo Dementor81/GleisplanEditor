@@ -68,6 +68,7 @@ var stage,
    main_container,
    overlay_container,
    ui_container,
+   selection_container,
    signal_container,
    track_container,
    train_container,
@@ -140,10 +141,12 @@ function init() {
    main_container.addChild((train_container = create_container("trains")));
    main_container.addChild((signal_container = create_container("signals")));
    stage.addChild((ui_container = create_container("ui")));
+   stage.addChild((selection_container = create_container("selection")));
    stage.addChild((overlay_container = create_container("overlay")));
    stage.addChild((drawing_container = create_container("drawing_container")));
 
-   //UI.ShowPreBuildScreen();
+ 
+   UI.showPreBuildScreen();
 
    pl.start().then(() => {
       console.log(`Preloader: ${pl._loadedItems}/${pl._totalItems}`);
@@ -255,6 +258,8 @@ function init() {
 
    $("#btnClear").click(() => {
       RENDERING.clear();
+      STORAGE.save();
+      STORAGE.saveUndoHistory();
    });
 
    $("#btnCenter").click(() => {
@@ -351,7 +356,7 @@ function init() {
    });
 
    document.addEventListener("keydown", (e) => {
-      if (e.target.tagName != "INPUT" && e.code == "Delete") {
+      if (e.target.tagName != "INPUT" && (e.code == "Delete" || e.code == "Backspace")) {
          deleteSelectedObject();
       }
    });
@@ -394,7 +399,7 @@ function deleteSelectedObject() {
          // Check and remove any trains that were on the deleted tracks
          const removedTracks = [].concat(selection.object);
          for (const track of removedTracks) {
-            const trainsOnTrack = Train.allTrains.filter(train => train.track === track);
+            const trainsOnTrack = Train.allTrains.filter((train) => train.track === track);
             for (const train of trainsOnTrack) {
                Train.deleteTrain(train);
             }
@@ -423,17 +428,20 @@ function undo() {
 
 const RENDERING = {
    clear() {
+      selectObject();
       // Stop any moving trains first
       Train.stopAllTrains();
-      
+
       tracks = [];
       Signal.allSignals = new Set();
       Train.allTrains = [];
       GenericObject.all_objects = [];
 
-      STORAGE.save();
-      renderer.reDrawEverything(true); //just to make sure, something accidently not deleted we be drawn to the stage.
-      stage.update();
+      
+      if (renderer) {
+         renderer.reDrawEverything(true); //just to make sure, something accidently not deleted we be drawn to the stage.
+         stage.update();
+      }
    },
    center() {
       stage.scale = 1;
@@ -591,7 +599,7 @@ const UI = {
       }
    },
 
-   ShowPreBuildScreen() {
+   showPreBuildScreen() {
       if (localStorage.getItem("bahnhof_last1") == null) $(btnLoadRecent).attr("disabled", "disabled");
       $(btnStartFromZero).click(UI.hideStartScreen);
       $(btnLoadRecent).click(() => {
@@ -696,7 +704,7 @@ function selectObject(object, e) {
    if (!object) {
       selection.object = null;
       selection.type = "";
-      renderer.updateSelection();
+      renderer?.updateSelection();
       UI.showMenu();
       return;
    }
@@ -711,7 +719,7 @@ function selectObject(object, e) {
          selection.object = Array.isArray(selection.object) ? [...selection.object, object] : [selection.object, object];
       else selection.object = object;
    }
-   renderer.updateSelection();
+   renderer?.updateSelection();
 
    let menu;
    switch (t) {
@@ -740,7 +748,7 @@ function onResizeWindow() {
 }
 
 function handleStageMouseDown(event) {
-   console.log("handleStageMouseDown", event);
+   //console.log("handleStageMouseDown", event);
 
    let hittest = getHitTest();
 
@@ -799,28 +807,7 @@ function getHitInfoForSignalPositioning(testPoint) {
    }
 }
 
-function createSignalContainer(signal) {
-   let c = new createjs.Container();
-   c.name = "signal";
-   c.data = signal;
-   c.mouseChildren = false;
-   c.snapToPixel = true;
-   c.scale = signal._template.scale;
 
-   signal.draw(c, true);
-   let sig_bounds = c.getBounds();
-   if (sig_bounds) {
-      // schläft fehl, wenn nichts gezeichnet wurde
-      let hit = new createjs.Shape();
-      hit.graphics.beginFill("#000").drawRect(sig_bounds.x, sig_bounds.y, sig_bounds.width, sig_bounds.height);
-      c.hitArea = hit;
-
-      c.regX = sig_bounds.width / 2 + sig_bounds.x;
-      c.regY = sig_bounds.height + sig_bounds.y;
-   } else console.error("Wahrscheinlich fehler beim Zeichen des Signals!");
-
-   return c;
-}
 
 function alignSignalContainerWithTrack(c, pos) {
    //koordinaten anhand des Strecken KM suchen, wenn sie nicht übergeben worden sind
@@ -846,7 +833,7 @@ function startDragAndDropSignal(mouseX, mouseY) {
       mouseAction.container.parent.removeChild(mouseAction.container);
    } else {
       let signal = new Signal(mouseAction.template);
-      mouseAction.container = createSignalContainer(signal);
+      mouseAction.container = SignalRenderer.createSignalContainer(signal);
       mouseAction.container.x = mouseX;
       mouseAction.container.y = mouseY;
    }
@@ -893,7 +880,7 @@ function handleMouseMove(event) {
          stage.update();
       }
    } else if (mouseAction.action === MOUSE_DOWN_ACTION.MOVE_OBJECT) {
-      const o = mouseAction.container.object;
+      const o = mouseAction.container.data;
       o.pos(local_point);
       if (mouseAction.offset) {
          let p = mouseAction.container.localToLocal(mouseAction.offset.x, mouseAction.offset.y, stage);
@@ -902,8 +889,11 @@ function handleMouseMove(event) {
       }
       mouseAction.container.x = local_point.x;
       mouseAction.container.y = local_point.y;
+      renderer.updateSelection();
    } else if (mouseAction.action === MOUSE_DOWN_ACTION.DND_SIGNAL) {
       dragnDropSignal(local_point, event.nativeEvent.altKey);
+      renderer.updateSelection();
+
    } else if (mouseAction.action === MOUSE_DOWN_ACTION.BUILD_TRACK) {
       const grid_snap_point = getSnapPoint(local_point);
 
@@ -934,7 +924,6 @@ function getSnapPoint(local_point) {
 }
 
 function determineMouseAction(event, local_point) {
-   
    //wie weit wurde die maus seit mousedown bewegt
    if (mouseAction.distance() > 4) {
       if (event.nativeEvent.buttons == 1) {
@@ -944,11 +933,15 @@ function determineMouseAction(event, local_point) {
                mouseAction.action = MOUSE_DOWN_ACTION.DND_SIGNAL;
                mouseAction.container.data._positioning.track.removeSignal(mouseAction.container.data);
                startDragAndDropSignal();
-            } else if (mouseAction.container?.name == "object") {
+            } else if (mouseAction.container?.name == "GenericObject") {
                myCanvas.style.cursor = "move";
 
                mouseAction.action = MOUSE_DOWN_ACTION.MOVE_OBJECT;
-            } else if (mouseAction.container?.name == "track" ||mouseAction.container?.name == "switch" || mouseAction.container == null){
+            } else if (
+               mouseAction.container?.name == "track" ||
+               mouseAction.container?.name == "switch" ||
+               mouseAction.container == null
+            ) {
                mouseAction.action = MOUSE_DOWN_ACTION.BUILD_TRACK;
                addTrackAnchorPoint(getSnapPoint(local_point));
                overlay_container.addChild((mouseAction.lineShape = new createjs.Shape()));
@@ -1076,7 +1069,7 @@ function addTrackAnchorPoint(current) {
 }
 
 function handleStageMouseUp(e) {
-   console.log("handleStageMouseUp", e);
+   //console.log("handleStageMouseUp", e);
    try {
       stage.removeEventListener("stagemousemove", handleMouseMove);
       myCanvas.style.cursor = "auto";
@@ -1091,12 +1084,11 @@ function handleStageMouseUp(e) {
             if (mouseAction.hit_track) {
                signal_container.addChild(mouseAction.container);
                const signal = mouseAction.container.data;
-               mouseAction.hit_track.track.AddSignal(signal, mouseAction.hit_track.km, mouseAction.hit_track.above);
+               mouseAction.hit_track.track.AddSignal(signal, mouseAction.hit_track.km, mouseAction.hit_track.above, mouseAction.hit_track.flipped);
             }
+            renderer.reDrawEverything(true);
             STORAGE.save();
             STORAGE.saveUndoHistory();
-            overlay_container.removeAllChildren();
-            stage.update();
          } else if (mouseAction.action === MOUSE_DOWN_ACTION.BUILD_TRACK) {
             if (mouseAction.nodes.length > 0) {
                Track.checkNodesAndCreateTracks(mouseAction.nodes);
@@ -1136,7 +1128,6 @@ function handleStageMouseUp(e) {
                // Update train positions
                Train.moveTrain(train, 0);
                renderer.renderAllTrains();
-               stage.update();
                STORAGE.save();
             }
          } else if (mouseAction.action.is(MOUSE_DOWN_ACTION.MOVE_TRAIN, MOUSE_DOWN_ACTION.MOVE_OBJECT)) {
@@ -1150,7 +1141,6 @@ function handleStageMouseUp(e) {
                renderer.renderAllGenericObjects();
                custom_mouse_mode = CUSTOM_MOUSE_ACTION.NONE;
                UI.activate_custom_mouse_mode();
-               stage.update();
                STORAGE.saveUndoHistory();
                STORAGE.save();
             } else if (custom_mouse_mode == CUSTOM_MOUSE_ACTION.PLATTFORM) {
@@ -1160,17 +1150,16 @@ function handleStageMouseUp(e) {
                   .pos(mouseAction.startPoint)
                   .size(local_point.x - mouseAction.startPoint.x, local_point.y - mouseAction.startPoint.y);
                GenericObject.all_objects.push(o);
-               selectObject(o);
                renderer.renderAllGenericObjects();
+               selectObject(o);
                custom_mouse_mode = CUSTOM_MOUSE_ACTION.NONE;
                UI.activate_custom_mouse_mode();
-               stage.update();
                STORAGE.saveUndoHistory();
                STORAGE.save();
             } else if (custom_mouse_mode === CUSTOM_MOUSE_ACTION.TRAIN_DECOUPLE) {
                if (mouseAction.container?.name == "decouplingPoint") {
                   Train.handleDecouplingClick(mouseAction.container.data);
-               }else{
+               } else {
                   Train.exitDecouplingMode();
                }
             } else if (custom_mouse_mode === CUSTOM_MOUSE_ACTION.TRAIN_COUPLE) {
@@ -1190,12 +1179,11 @@ function handleStageMouseUp(e) {
                selectObject(mouseAction.container.data, e);
             } else if (mouseAction.container?.name == "track") {
                selectObject(mouseAction.container.data, e);
-            } else if (mouseAction.container?.name == "object") {
-               selectObject(mouseAction.container.object, e);
+            } else if (mouseAction.container?.name == "GenericObject") {
+               selectObject(mouseAction.container.data, e);
             } else if (mouseAction.container?.name == "switch") {
                Track.switch_A_Switch(mouseAction.container.sw, local_point.x);
                renderer.renderSwitchUI(mouseAction.container.sw);
-               stage.update();
             } else {
                selectObject();
             }
@@ -1260,6 +1248,7 @@ const STORAGE = {
    },
 
    loadFromJson(json) {
+      RENDERING.clear();
       let loaded = JSON.parse(json, STORAGE.receiver);
       if (loaded.settings) {
          stage.x = loaded.settings.scrollX;

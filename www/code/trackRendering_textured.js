@@ -39,6 +39,53 @@ class trackRendering_textured {
       this._bitmapCache = new Array(trackRendering_textured.SCHWELLEN_VARIANTEN);
    }
 
+   /**
+    * Get the bounds of a track
+    * @param {Track} track - The track to get bounds for
+    * @param {Boolean} forceRecalculate - Force recalculation of bounds even if cached
+    * @return {Object} - Bounds object with x, y, width, height
+    */
+   getTrackBounds(track, forceRecalculate = false) {
+      // Validate input
+      if (!track) {
+         console.warn("getTrackBounds called with invalid track");
+         return { x: 0, y: 0, width: 0, height: 0 };
+      }
+
+      // If we already calculated bounds during rendering and not forcing recalculation
+      if (!forceRecalculate && track._renderData && track._renderData.bounds) {
+         return track._renderData.bounds;
+      }
+
+      try {
+         // Calculate bounds from scratch
+         const points = this.calculateTrackPoints(track);
+         const bounds = this.calculateRailBounds(points);
+
+         // Cache the result for future use
+         if (!track._renderData) {
+            track._renderData = {};
+         }
+         track._renderData.bounds = bounds;
+
+         return bounds;
+      } catch (error) {
+         console.error("Error calculating track bounds:", error);
+
+         // Fallback to a simple estimation based on track start and end
+         const start = track.start;
+         const end = track.end;
+         const padding = GRID_SIZE; // Use a reasonable default padding
+
+         return {
+            x: Math.min(start.x, end.x) - padding,
+            y: Math.min(start.y, end.y) - padding,
+            width: Math.abs(end.x - start.x) + padding * 2,
+            height: Math.abs(end.y - start.y) + padding * 2,
+         };
+      }
+   }
+
    cleanUp() {
       if (this._idleCallback) {
          if (window.requestIdleCallback) cancelIdleCallback(this._idleCallback);
@@ -130,10 +177,11 @@ class trackRendering_textured {
                   train_container.removeAllChildren();
                   object_container.removeAllChildren();
                   debug_container.removeAllChildren();
-                  
+                  selection_container.removeAllChildren();
+
                   // Clear the overlay container
                   overlay_container.removeAllChildren();
-                  
+
                   this.calcRenderValues();
                } else {
                   //if we passed the LOD in either direction we have to rerender the tracks
@@ -232,7 +280,7 @@ class trackRendering_textured {
       } */
 
       // Draw car with rounded corners
-      g.drawRoundRectComplex(0, 0, carWidth, carHeight, corner[0], corner[1], corner[2], corner[3]);   
+      g.drawRoundRectComplex(0, 0, carWidth, carHeight, corner[0], corner[1], corner[2], corner[3]);
 
       // Create the shape and position it
       const s = new createjs.Shape(g);
@@ -270,8 +318,8 @@ class trackRendering_textured {
       object_container.removeAllChildren();
       GenericObject.all_objects.forEach((o) => {
          const c = new createjs.Container();
-         c.name = "object";
-         c.object = o;
+         c.name = "GenericObject";
+         c.data = o;
          c.mouseChildren = false;
          c.x = o.pos().x;
          c.y = o.pos().y;
@@ -301,7 +349,9 @@ class trackRendering_textured {
    renderPlattformObject(plattform, container) {
       const shape = new createjs.Shape();
       container.addChild(shape);
-      shape.graphics.beginStroke("#111111").beginFill("#444").drawRect(0, 0, plattform.size().width, plattform.size().height);
+      const size = plattform.size();
+      shape.graphics.beginStroke("#111111").beginFill("#444").drawRect(0, 0, size.width, size.height);
+      shape.setBounds(0, 0, size.width, size.height);
 
       var text = new createjs.Text(plattform.content(), "16px Arial", "#eee");
       text.textBaseline = "middle";
@@ -315,10 +365,9 @@ class trackRendering_textured {
    renderAllSignals(force) {
       signal_container.removeAllChildren();
       Signal.allSignals.forEach((signal) => {
-         let container = signal_container.addChild(createSignalContainer(signal));
+         let container = signal_container.addChild(SignalRenderer.createSignalContainer(signal));
          alignSignalContainerWithTrack(container, signal._positioning);
          if (selection.isSelectedObject(signal)) {
-            container.shadow = new createjs.Shadow("#ff0000", 0, 0, 3);
          }
       });
    }
@@ -354,15 +403,6 @@ class trackRendering_textured {
                this.updateTrack(t);
             }
          }
-      }
-
-      if (!force) {
-         signal_container.children.forEach((c) => {
-            if (c.data._changed) {
-               c.data.draw(c);
-               this.handleCachingSignal(c);
-            }
-         });
       }
    }
 
@@ -401,8 +441,6 @@ class trackRendering_textured {
       }
 
       track_container.renderedTracks.add(track);
-
-      //if (selection.isSelectedObject(track)) this.#isSelected(track_container);
    }
 
    ///calculate start and end points for each node of a track and the control point for the curve
@@ -465,6 +503,9 @@ class trackRendering_textured {
             centerLine.controlPoint = geometry.getIntersectionPointX(straightEndPoint, node.unit, nextStart, next.unit);
          }
 
+         // Pre-calculate rail positions for both straight and curved segments
+         this.calculateRailPositions(centerLine);
+
          points[i] = centerLine;
          if (!isLast) {
             isFirst = false;
@@ -473,6 +514,62 @@ class trackRendering_textured {
       }
 
       return points;
+   }
+
+   /**
+    * Calculate rail positions for a track segment
+    * @param {Object} centerLine - The centerline object to add rail positions to
+    */
+   calculateRailPositions(centerLine) {
+      // Calculate rail offset vectors
+      const railOffsetVector = geometry.perpendicularX(centerLine.unit.multiply(this.rail_distance));
+
+      // Calculate rail positions for straight segment
+      centerLine.rails = {
+         straight: {
+            // Inner rail (usually the right side in the direction of travel)
+            inner: {
+               start: centerLine.start.add(railOffsetVector),
+               end: centerLine.straightEnd.add(railOffsetVector),
+            },
+            // Outer rail (usually the left side in the direction of travel)
+            outer: {
+               start: centerLine.start.sub(railOffsetVector),
+               end: centerLine.straightEnd.sub(railOffsetVector),
+            },
+         },
+      };
+
+      // Calculate rail positions for curve if it exists
+      if (centerLine.controlPoint) {
+         const nextRailOffsetVector = geometry.perpendicularX(centerLine.nextUnit.multiply(this.rail_distance));
+
+         // Calculate curve endpoints
+         const curveInnerEnd = centerLine.curveEnd.add(nextRailOffsetVector);
+         const curveOuterEnd = centerLine.curveEnd.sub(nextRailOffsetVector);
+
+         // Calculate curve startpoints (same as straight segment endpoints)
+         const curveInnerStart = centerLine.rails.straight.inner.end;
+         const curveOuterStart = centerLine.rails.straight.outer.end;
+
+         // Calculate control points for inner and outer rail curves
+         const cpInner = geometry.getIntersectionPointX(curveInnerStart, centerLine.unit, curveInnerEnd, centerLine.nextUnit);
+         const cpOuter = geometry.getIntersectionPointX(curveOuterStart, centerLine.unit, curveOuterEnd, centerLine.nextUnit);
+
+         // Store curve rail positions
+         centerLine.rails.curve = {
+            inner: {
+               start: curveInnerStart,
+               end: curveInnerEnd,
+               cp: cpInner,
+            },
+            outer: {
+               start: curveOuterStart,
+               end: curveOuterEnd,
+               cp: cpOuter,
+            },
+         };
+      }
    }
 
    renderTrackNodes(track) {
@@ -487,9 +584,75 @@ class trackRendering_textured {
       this.drawTrackSleepers(points, sleepers_container);
 
       // Draw rails
-      this.renderRails(track, points);
+      const railShape = this.renderRails(track, points);
+
+      // Get bounds from the rail shape
+      const bounds = railShape.getBounds();
+
+      // Create a track object that combines rail and sleeper information
+      track._renderData = {
+         bounds: bounds,
+         points: points,
+      };
 
       this.drawBumper(track, this._rendering.rails_container);
+   }
+
+   calculateRailBounds(points) {
+      // Initialize bounds with first point
+      let minX = Infinity,
+         minY = Infinity,
+         maxX = -Infinity,
+         maxY = -Infinity;
+
+      // Helper to update bounds with a point
+      const updateBounds = (point) => {
+         minX = Math.min(minX, point.x);
+         minY = Math.min(minY, point.y);
+         maxX = Math.max(maxX, point.x);
+         maxY = Math.max(maxY, point.y);
+      };
+
+      // Iterate through all points and collect extremes
+      for (const point of points) {
+         // Add all straight segment points to bounds
+         const { inner, outer } = point.rails.straight;
+         updateBounds(inner.start);
+         updateBounds(inner.end);
+         updateBounds(outer.start);
+         updateBounds(outer.end);
+
+         // Handle curve segments
+         if (point.rails.curve) {
+            const curve = point.rails.curve;
+
+            // Add curve endpoints and control points
+            updateBounds(curve.inner.start);
+            updateBounds(curve.inner.end);
+            updateBounds(curve.outer.start);
+            updateBounds(curve.outer.end);
+         }
+      }
+
+      // Add padding for line thickness
+      const padding = trackRendering_textured.RAILS[0][0] * 0.5; // Half of the thickest rail
+      return {
+         x: minX - padding,
+         y: minY - padding,
+         width: maxX - minX + padding * 2,
+         height: maxY - minY + padding * 2,
+      };
+   }
+
+   getPointOnQuadraticCurve(t, p0, cp, p1) {
+      const oneMinusT = 1 - t;
+      const oneMinusTSquared = oneMinusT * oneMinusT;
+      const tSquared = t * t;
+
+      return new Point(
+         oneMinusTSquared * p0.x + 2 * oneMinusT * t * cp.x + tSquared * p1.x,
+         oneMinusTSquared * p0.y + 2 * oneMinusT * t * cp.y + tSquared * p1.y
+      );
    }
 
    renderRails(track, points) {
@@ -499,42 +662,43 @@ class trackRendering_textured {
       rail_shape.data = track;
       this._rendering.rails_container.addChild(rail_shape);
 
-      let offset_vector, rail1_start, rail1_end, rail2_start, rail2_end;
-      let curveStart1, curveStart2, next_offset_vector, curveEnd1, curveEnd2, cp1, cp2;
-
       for (const point of points) {
-         offset_vector = next_offset_vector || geometry.perpendicularX(point.unit.multiply(this.rail_distance));
-         // Draw straight segment rails
-         rail1_start = point.start.add(offset_vector);
-         rail1_end = point.straightEnd.add(offset_vector);
-         rail2_start = point.start.sub(offset_vector);
-         rail2_end = point.straightEnd.sub(offset_vector);
-         if (point.controlPoint) {
-            curveStart1 = rail1_end || point.straightEnd.add(offset_vector);
-            curveStart2 = rail2_end || point.straightEnd.sub(offset_vector);
-            next_offset_vector = geometry.perpendicularX(point.nextUnit.multiply(this.rail_distance));
-            curveEnd1 = point.curveEnd.add(next_offset_vector);
-            curveEnd2 = point.curveEnd.sub(next_offset_vector);
-            cp1 = geometry.getIntersectionPointX(curveStart1, point.unit, curveEnd1, point.nextUnit);
-            cp2 = geometry.getIntersectionPointX(curveStart2, point.unit, curveEnd2, point.nextUnit);
-         }
+         // Use pre-calculated rail positions
+         const { straight, curve } = point.rails;
 
          trackRendering_textured.RAILS.forEach((rail) => {
             rail_shape.graphics.setStrokeStyle(rail[0]).beginStroke(rail[1]);
+
+            // Draw straight segments
             rail_shape.graphics
-               .mt(rail1_start.x, rail1_start.y)
-               .lt(rail1_end.x, rail1_end.y)
-               .mt(rail2_start.x, rail2_start.y)
-               .lt(rail2_end.x, rail2_end.y);
-            if (point.controlPoint) {
+               .mt(straight.inner.start.x, straight.inner.start.y)
+               .lt(straight.inner.end.x, straight.inner.end.y)
+               .mt(straight.outer.start.x, straight.outer.start.y)
+               .lt(straight.outer.end.x, straight.outer.end.y);
+
+            // Draw curves if present
+            if (curve) {
                rail_shape.graphics
-                  .quadraticCurveTo(cp2.x, cp2.y, curveEnd2.x, curveEnd2.y)
-                  .mt(curveStart1.x, curveStart1.y)
-                  .quadraticCurveTo(cp1.x, cp1.y, curveEnd1.x, curveEnd1.y);
+                  .mt(curve.outer.start.x, curve.outer.start.y)
+                  .quadraticCurveTo(curve.outer.cp.x, curve.outer.cp.y, curve.outer.end.x, curve.outer.end.y)
+                  .mt(curve.inner.start.x, curve.inner.start.y)
+                  .quadraticCurveTo(curve.inner.cp.x, curve.inner.cp.y, curve.inner.end.x, curve.inner.end.y);
             }
+
             rail_shape.graphics.endStroke();
          });
       }
+
+      // Calculate and set bounds for the rail shape
+      const bounds = this.calculateRailBounds(points);
+      rail_shape.setBounds(bounds.x, bounds.y, bounds.width, bounds.height);
+
+      // If debug mode is enabled, visualize the bounds
+      if (window.DEBUG_BOUNDS) {
+         this.visualizeTrackBounds(track, bounds);
+      }
+
+      return rail_shape;
    }
 
    drawTrackSleepers(points, container) {
@@ -543,7 +707,7 @@ class trackRendering_textured {
          this.drawSleepers(point.node, point.start, point.straightEnd, container);
 
          // Draw sleepers for curve if exists
-         if (point.controlPoint) {
+         if (point.rails.curve) {
             this.drawSleepersAlongCurve(point.straightEnd, point.curveEnd, point.controlPoint, container);
          }
       }
@@ -612,7 +776,7 @@ class trackRendering_textured {
                .beginFill("#99735b")
                .r(0, 0, this.schwellenBreite, length)
                .ef();
-
+            sleeperShape.setBounds(0, 0, this.schwellenBreite, length);
             // Store in cache
             this._sleeperCache[cacheKey] = sleeperShape;
          }
@@ -742,35 +906,38 @@ class trackRendering_textured {
       }
    }
 
-   #isSelected(c) {
-      c.shadow = new createjs.Shadow("#ff0000", 0, 0, 3);
+   #isSelected(track) {
+      const points = this.calculateTrackPoints(track);
+      const bounds = this.calculateRailBounds(points);
+      this.visualizeTrackBounds(track, bounds);
+   }
+
+   #isSelected2(container) {
+      const bounds = container.getTransformedBounds();
+      this.visualizeTrackBounds(container.data, bounds);
    }
 
    updateSelection() {
-      track_container.children.forEach((c) => {
-         if (selection.isSelectedObject(c.track)) this.#isSelected(c);
-         else c.shadow = null;
-      });
-      signal_container.children.forEach((c) => {
-         if (c.data) {
-            if (selection.isSelectedObject(c.data)) this.#isSelected(c);
-            else c.shadow = null;
-         }
-      });
-      stage.update();
-   }
+      selection_container.removeAllChildren();
 
-   calcBoundPoints(p1, p2, offset, rad1, rad2) {
-      const x1 = Math.sin(rad1) * offset,
-         x2 = Math.sin(rad2) * offset,
-         y1 = Math.cos(rad1) * offset,
-         y2 = Math.cos(rad2) * offset;
-      return [
-         { x: p1.x + x1, y: p1.y - y1 },
-         { x: p2.x + x2, y: p2.y - y2 },
-         { x: p1.x - x1, y: p1.y + y1 },
-         { x: p2.x - x2, y: p2.y + y2 },
-      ];
+      if (selection.type == "Track") {
+         track_container.children[0].children.forEach((c) => {
+            if (selection.isSelectedObject(c.data)) this.#isSelected2(c);
+         });
+      } else if (selection.type == "Signal") {
+         signal_container.children.forEach((c) => {
+            if (c.data) {
+               if (selection.isSelectedObject(c.data)) this.#isSelected2(c);
+            }
+         });
+      } else if (selection.type == "GenericObject") {
+         object_container.children.forEach((c) => {
+            if (c.data) {
+               if (selection.isSelectedObject(c.data)) this.#isSelected2(c);
+            }
+         });
+      }
+      stage.update();
    }
 
    drawSleepersOnSwitch(sw, switchRenderingParameter, container) {
@@ -1112,5 +1279,37 @@ class trackRendering_textured {
       if (geometry.doLineSegmentsIntersect(p1, p2, track.start, track.end)) return true; */
 
       return false;
+   }
+
+   /**
+    * Visualize track bounds for debugging
+    * @param {Track} track - The track to visualize bounds for
+    * @param {Object} bounds - The bounds to visualize
+    */
+   visualizeTrackBounds(track, bounds) {
+      if (bounds == null) throw new Error("Bounds are null");
+
+      // Add padding to bounds
+      const padding = 5;
+      bounds.x -= padding;
+      bounds.y -= padding;
+      bounds.width += padding * 2;
+      bounds.height += padding * 2;
+
+      // Create a shape for the bounds visualization
+      const boundsShape = new createjs.Shape();
+      boundsShape.name = "selection";
+      boundsShape.mouseEnabled = false;
+      boundsShape.data = track;
+
+      // Draw the bounds rectangle
+      boundsShape.graphics
+         .setStrokeStyle(2)
+         .setStrokeDash([5, 5])
+         .beginStroke("rgba(0, 0, 0, 0.7)")
+         .drawRect(bounds.x, bounds.y, bounds.width, bounds.height)
+         .endStroke();
+
+      selection_container.addChild(boundsShape);
    }
 }

@@ -69,7 +69,7 @@ Features:
     ☐ Auswahlrahmen ziehen
     ☐ Signale kopieren, per drag&drop
     ☐ Wagen verhalten sich korrekt in Bögen
-    ☐ Züge kuppeln
+    ✔ Züge kuppeln @done(25-06-01 09:36)
     ☐ Wenn Signale übereinander liegen, dann die Reihenfolge sicherstellen
     ☐ Bemahlungen automatisch an einem Gleis ausrichten
     ☐ Bemahlungen Radieren können
@@ -87,7 +87,8 @@ Big Features:
     ☐ HauptsignaleSignale um zusätzliche Signale (lf,zp usw) erweitern
     ☐ die Verbindung von Signalen durch linien entlang der Gelsie visualisieren
     ☐ Signale in einem eigenen Fenster vergrößern (wie beim SignalSim)
-    ☐ Weichen selbst zeichen und beim Stellen Weichenzunge bewegen
+    ✔ Weichen selbst zeichen @done(25-06-01 13:09)
+    ☐ beim Stellen Weichenzunge bewegen
     ☐ Bilder hinzufügen
     ☐ Raster verdichten, so dass komplexere Anlagen möglich sind, Gleise aber immer eine bestimmte Rasterweite entfernt sind
     ☐ Strecken auch von oben nach unten bauen
@@ -95,7 +96,10 @@ Big Features:
 
 Rebuild:
     ☐ Zeichenroutine darf nur regelkonforme Strecken zulassen
-    ☐ Signale patzieren
+    ✔ Signale patzieren @done(25-06-01 09:30)
+    ✔ selektion anzeigen @done(25-06-01 13:09)
+    ☐ caching track und signale
+    ☐ hitarea für gleise
 
 
 

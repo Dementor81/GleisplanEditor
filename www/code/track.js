@@ -497,10 +497,11 @@ class Track {
       else return geometry.add(point, geometry.multiply(this.lastNode.unit, x));
    }
 
-   AddSignal(signal, km, above) {
+   AddSignal(signal, km, above, flipped) {
       signal._positioning.km = km;
       signal._positioning.track = this;
       signal._positioning.above = above;
+      signal._positioning.flipped = flipped;
       let i = this.signals.findIndex((s) => km < s._positioning.km);
       if (i != -1) this.signals.splice(i, 0, signal);
       else this.signals.push(signal);

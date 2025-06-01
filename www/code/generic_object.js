@@ -35,21 +35,14 @@ class GenericObject {
       }
       $("#editObjectMenu h5").text(header_text);
 
-      /* $("#colorInputTrain")
-         .off()
-         .val(train.color)
-         .on("change", function (e) {
-            
-            stage.update();
-            STORAGE.save();
-         }); */
-
+      
       $("#inputContent")
          .off()
          .val(o.content())
          .on("input", function (e) {
             o.content($(this).val());
             renderer.renderAllGenericObjects();
+            renderer.updateSelection();
             stage.update();
             STORAGE.save();
          });

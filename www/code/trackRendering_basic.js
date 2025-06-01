@@ -28,7 +28,7 @@ class trackRendering_basic {
    renderAllSignals() {
       signal_container.removeAllChildren();
       Signal.allSignals.forEach((signal) => {
-         let container = signal_container.addChild(createSignalContainer(signal));
+         let container = signal_container.addChild(SignalRenderer.createSignalContainer(signal));
          alignSignalContainerWithTrack(container, signal._positioning);
          if (selection.isSelectedObject(signal)) {
             container.shadow = new createjs.Shadow("#ff0000", 0, 0, 3);
@@ -47,7 +47,7 @@ class trackRendering_basic {
    }
 
    updateSelection() {
-      track_container.children.forEach((c) => {
+      track_container.children[1].children.forEach((c) => {
          if (c.track) {
             if (selection.isSelectedObject(c.track)) this.isSelected(c);
             else c.color.style = trackRendering_basic.TRACK_COLOR;
