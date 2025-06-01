@@ -182,13 +182,7 @@ class Train {
       // Stop the train if it's moving
       if (Train.movingTrains.has(train)) {
          Train.stopTrain(train);
-      }
-      
-      // Uncouple the train from both ends
-      if (train.trainCoupledFront) {
-         train.trainCoupledFront.trainCoupledBack = null;
-         train.trainCoupledFront = null;
-      }
+      }  
 
       // Get the last car in the train that will be deleted
       let currentCar = train;
@@ -199,11 +193,11 @@ class Train {
       // Remove all cars in this train from allTrains
       while (currentCar) {
          this.allTrains.remove(currentCar);
+         //save the next car before removing all references to other objects
          const nextCar = currentCar.trainCoupledFront;
          currentCar.trainCoupledFront = null;
          currentCar.trainCoupledBack = null;
          currentCar.track = null;
-         currentCar.pos = null;
          currentCar = nextCar;
       }
 

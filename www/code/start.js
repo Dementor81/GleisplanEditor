@@ -752,7 +752,7 @@ function handleStageMouseDown(event) {
 
    let hittest = getHitTest();
 
-   //console.log(hittest ? hittest : "nothing hit");
+   console.log(hittest ? hittest : "nothing hit");
 
    mouseAction = {
       action: custom_mouse_mode != CUSTOM_MOUSE_ACTION.NONE ? MOUSE_DOWN_ACTION.CUSTOM : MOUSE_DOWN_ACTION.NONE,
