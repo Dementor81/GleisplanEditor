@@ -47,7 +47,7 @@ class trackRendering_basic {
    }
 
    updateSelection() {
-      track_container.children[1].children.forEach((c) => {
+      track_container.children.forEach((c) => {
          if (c.track) {
             if (selection.isSelectedObject(c.track)) this.isSelected(c);
             else c.color.style = trackRendering_basic.TRACK_COLOR;
