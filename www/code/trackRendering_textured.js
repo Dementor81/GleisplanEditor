@@ -192,6 +192,7 @@ class trackRendering_textured {
 
                try {
                   this.renderAllTracks(force);
+                  //this.renderAllSwitches();
                   this.renderAllSignals(force);
                   this.renderAllTrains();
                   this.renderAllGenericObjects();
@@ -406,6 +407,14 @@ class trackRendering_textured {
       }
    }
 
+   renderAllSwitches() {
+      for (const sw of Switch.allSwitches) {
+         if (this.SwitchVisible(sw)) {
+            this.renderSwitch(sw);
+         }
+      }
+   }
+
    handleCachingSignal(c) {
       if (!c.data._dontCache && !this._rendering.dont_optimize) {
          if (c.bitmapCache) c.uncache(); // c.updateCache(); //we cant just update the cache, cause maybe the bounds have changed
@@ -431,15 +440,6 @@ class trackRendering_textured {
 
    renderTrack(track) {
       this.renderTrackNodes(track);
-
-      if (track == track.switchAtTheEnd?.t1) {
-         this.renderSwitch(track.switchAtTheEnd);
-      }
-
-      if (track == track.switchAtTheStart?.t1) {
-         this.renderSwitch(track.switchAtTheStart);
-      }
-
       track_container.renderedTracks.add(track);
    }
 
@@ -468,21 +468,21 @@ class trackRendering_textured {
          endPoint = node.end;
 
          // Adjust points if there are switches
-         if (!isFirst || hasSwitchStart) {
+         /* if (!isFirst || hasSwitchStart) {
             startPoint = startPoint.add(geometry.multiply(node.unit, GRID_SIZE_2));
-         }
+         } */
 
          if (isFirst && !hasSwitchStart) {
             startPoint = startPoint.sub(geometry.multiply(node.unit, GRID_SIZE_2));
          }
 
-         if (isLast && hasSwitchEnd) {
+         /* if (isLast && hasSwitchEnd) {
             endPoint = endPoint.add(geometry.multiply(node.unit, -GRID_SIZE_2));
-         }
+         } */
 
          if (isLast && !hasSwitchEnd) {
             endPoint = endPoint.add(geometry.multiply(node.unit, GRID_SIZE_2));
-         }
+         } 
 
          // Calculate straight segment end point
          straightEndPoint = isLast ? endPoint : endPoint.add(geometry.multiply(node.unit, -GRID_SIZE_2));
@@ -906,15 +906,46 @@ class trackRendering_textured {
       }
    }
 
-   #isSelected(track) {
-      const points = this.calculateTrackPoints(track);
-      const bounds = this.calculateRailBounds(points);
-      this.visualizeTrackBounds(track, bounds);
+   /**
+    * Creates a shape for a track endpoint
+    * @param {Point} point - The point where the endpoint should be
+    * @param {Track} track - The track this endpoint belongs to
+    * @param {string} endpointType - Either "start" or "end"
+    * @returns {createjs.Shape} The created shape
+    */
+   createEndpointShape(point, track, endpointType) {
+      const RECT_SIZE = 8;
+      const shape = new createjs.Shape();
+      
+      // Set properties to identify the shape
+      shape.name = "track_endpoint";
+      shape.endpoint = endpointType;
+      shape.track = track;
+      
+      // Create hit area
+      const hitArea = new createjs.Shape();
+      hitArea.graphics
+         .beginFill("#000")
+         .drawRect(point.x - RECT_SIZE/2, point.y - RECT_SIZE/2, RECT_SIZE, RECT_SIZE);
+      shape.hitArea = hitArea;
+      
+      // Draw rectangle
+      shape.graphics
+         .setStrokeStyle(2)
+         .beginStroke("#ff0000")
+         .drawRect(point.x - RECT_SIZE/2, point.y - RECT_SIZE/2, RECT_SIZE, RECT_SIZE);
+      
+      return shape;
    }
 
-   #isSelected2(container) {
-      const bounds = container.getTransformedBounds();
-      this.visualizeTrackBounds(container.data, bounds);
+   /**
+    * Draws selection rectangles at the start and end points of a track
+    * @param {Track} track - The track to draw selection rectangles for
+    */
+   drawTrackEndpoints(track) {
+      // Create and add shapes for start and end points
+      selection_container.addChild(this.createEndpointShape(track.start, track, "start"));
+      selection_container.addChild(this.createEndpointShape(track.end, track, "end"));
    }
 
    updateSelection() {
@@ -922,18 +953,21 @@ class trackRendering_textured {
 
       if (selection.type == "Track") {
          track_container.children[0].children.forEach((c) => {
-            if (selection.isSelectedObject(c.data)) this.#isSelected2(c);
+            if (selection.isSelectedObject(c.data)) {
+               this.visualizeTrackBounds(c);
+               this.drawTrackEndpoints(c.data);
+            }
          });
       } else if (selection.type == "Signal") {
          signal_container.children.forEach((c) => {
             if (c.data) {
-               if (selection.isSelectedObject(c.data)) this.#isSelected2(c);
+               if (selection.isSelectedObject(c.data)) this.visualizeTrackBounds(c);
             }
          });
       } else if (selection.type == "GenericObject") {
          object_container.children.forEach((c) => {
             if (c.data) {
-               if (selection.isSelectedObject(c.data)) this.#isSelected2(c);
+               if (selection.isSelectedObject(c.data)) this.visualizeTrackBounds(c);
             }
          });
       }
@@ -955,7 +989,7 @@ class trackRendering_textured {
 
       const deg = sw.t1.getNodeAtLocation(sw.location).deg;
 
-      const back2front = sw.type.is(SWITCH_TYPE.FROM_RIGHT, SWITCH_TYPE.FROM_LEFT);
+      const back2front = sw.type.is(Switch.SWITCH_TYPE.FROM_RIGHT, Switch.SWITCH_TYPE.FROM_LEFT);
 
       if (curvedBranch2 == null) {
          const cp = geometry.getIntersectionPointX(
@@ -1053,8 +1087,8 @@ class trackRendering_textured {
 
    getSwitchRenderingParameter(sw) {
       const tracks = [sw.t1, sw.t2, sw.t3, sw.t4].filter((t) => t);
-      const flipped = sw.type.is(SWITCH_TYPE.FROM_RIGHT, SWITCH_TYPE.TO_RIGHT) ? -1 : 1;
-      const mirrored = sw.type.is(SWITCH_TYPE.FROM_LEFT, SWITCH_TYPE.FROM_RIGHT) ? -1 : 1;
+      const flipped = sw.type.is(Switch.SWITCH_TYPE.FROM_RIGHT, Switch.SWITCH_TYPE.TO_RIGHT) ? -1 : 1;
+      const mirrored = sw.type.is(Switch.SWITCH_TYPE.FROM_LEFT, Switch.SWITCH_TYPE.FROM_RIGHT) ? -1 : 1;
 
       // Calculate track data for each track
       const calcTrackData = (track) => {
@@ -1235,7 +1269,7 @@ class trackRendering_textured {
          arrow.graphics.drawArrow(20, 5);
          arrow.x = sw.location.x;
          arrow.y = sw.location.y;
-         arrow.rotation = findAngle(sw.location, t.getNodeAtLocation(sw.location));
+         arrow.rotation = Switch.findAngle(sw.location, t.end.equals(sw.location) ? t.start : t.end);
       });
    }
 
@@ -1281,12 +1315,26 @@ class trackRendering_textured {
       return false;
    }
 
+   SwitchVisible(sw) {
+      if (this._rendering?.dont_optimize) return true;
+      const screen_rectangle = this._rendering.screen_rectangle;
+
+      // Check if switch location is visible
+      if (this.PointVisible(sw.location)) return true;
+
+      // Check if any of the switch's tracks are visible
+      const tracks = [sw.t1, sw.t2, sw.t3, sw.t4].filter(t => t);
+      return tracks.some(track => this.TrackVisible(track, screen_rectangle));
+   }
+
    /**
     * Visualize track bounds for debugging
-    * @param {Track} track - The track to visualize bounds for
-    * @param {Object} bounds - The bounds to visualize
+    * @param {Object} container - The container to visualize bounds for
     */
-   visualizeTrackBounds(track, bounds) {
+   visualizeTrackBounds(container) {
+      const bounds = container.getTransformedBounds();
+      const object = container.data;
+
       if (bounds == null) throw new Error("Bounds are null");
 
       // Add padding to bounds
@@ -1300,7 +1348,7 @@ class trackRendering_textured {
       const boundsShape = new createjs.Shape();
       boundsShape.name = "selection";
       boundsShape.mouseEnabled = false;
-      boundsShape.data = track;
+      boundsShape.data = object;
 
       // Draw the bounds rectangle
       boundsShape.graphics

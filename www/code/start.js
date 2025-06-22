@@ -2,7 +2,7 @@
 
 const VERSION = "0.5";
 
-const DEFAULT_SIMPLIFIED_VIEW = false; // Set to false for textured view by default
+const DEFAULT_SIMPLIFIED_VIEW = true; // Set to false for textured view by default
 
 const MODE_PLAY = 1;
 const MODE_EDIT = 2;
@@ -32,7 +32,8 @@ const MOUSE_DOWN_ACTION = {
    ADD_TRAIN: 5,
    MOVE_TRAIN: 6,
    MOVE_OBJECT: 7,
-   CUSTOM: 8,
+   DND_TRACK: 8,
+   CUSTOM: 9,
 };
 
 const CUSTOM_MOUSE_ACTION = {
@@ -42,16 +43,6 @@ const CUSTOM_MOUSE_ACTION = {
    PLATTFORM: 3,
    TRAIN_COUPLE: 4,
    TRAIN_DECOUPLE: 5,
-};
-
-const SWITCH_TYPE = {
-   NONE: 0,
-   TO_RIGHT: 1, //45°
-   FROM_RIGHT: 2, //135°
-   FROM_LEFT: 3, //225°
-   TO_LEFT: 4, //315°
-   DKW: 9,
-   CROSSING: 10,
 };
 
 const MENU = {
@@ -85,8 +76,6 @@ var mouseAction = null;
 var loadQueue;
 
 var renderer;
-
-
 
 var undoHistory = [];
 
@@ -174,7 +163,7 @@ function init() {
             ),
          ]);
 
-         STORAGE.loadRecent();
+         //STORAGE.loadRecent();
          selectRenderer(!DEFAULT_SIMPLIFIED_VIEW);
          updateUndoButtonState();
       } catch (error) {
@@ -250,6 +239,7 @@ function init() {
 
    $("#switch_renderer").on("change", (e) => {
       selectRenderer(!$("#switch_renderer").is(":checked"));
+      STORAGE.save();
    });
 
    $("#btnAddSignals").click(() => UI.showMenu(MENU.NEW_SIGNAL));
@@ -394,19 +384,19 @@ function init() {
 function deleteSelectedObject() {
    if (selection.object) {
       if (selection.type == "Track") {
-         [].concat(selection.object).forEach((t) => Track.allTracks.remove(t));
-         Track.createRailNetwork();
-         // Check and remove any trains that were on the deleted tracks
          const removedTracks = [].concat(selection.object);
+         removedTracks.forEach((t) => Track.removeTrack(t));
+         // Check and remove any trains that were on the deleted tracks
          for (const track of removedTracks) {
             const trainsOnTrack = Train.allTrains.filter((train) => train.track === track);
             for (const train of trainsOnTrack) {
                Train.deleteTrain(train);
             }
          }
-         STORAGE.saveUndoHistory();
+         Track.createRailNetwork();
       }
       if (selection.type == "Signal") [].concat(selection.object).forEach((s) => Signal.removeSignal(s, null));
+      STORAGE.saveUndoHistory();
       STORAGE.save();
       renderer.reDrawEverything(true);
       stage.update();
@@ -433,6 +423,7 @@ const RENDERING = {
       Train.stopAllTrains();
 
       Track.allTracks = [];
+      Switch.allSwitches = [];
       Signal.allSignals = new Set();
       Train.allTrains = [];
       GenericObject.all_objects = [];
@@ -765,6 +756,14 @@ function handleStageMouseDown(event) {
       },
    };
 
+   // Check if we clicked on a track endpoint
+   if (mouseAction.container?.name === "track_endpoint") {
+      mouseAction.action = MOUSE_DOWN_ACTION.DND_TRACK;
+      mouseAction.track = mouseAction.container.track;
+      mouseAction.endpoint = mouseAction.container.endpoint;
+      
+   }
+
    if (custom_mouse_mode == CUSTOM_MOUSE_ACTION.DRAWING) {
       const color = document.querySelector('input[name="DrawingColor"]:checked').value;
       const width = document.querySelector('input[name="DrawingWidth"]:checked').value;
@@ -806,8 +805,6 @@ function getHitInfoForSignalPositioning(testPoint) {
       }
    }
 }
-
-
 
 function alignSignalContainerWithTrack(c, pos) {
    //koordinaten anhand des Strecken KM suchen, wenn sie nicht übergeben worden sind
@@ -914,6 +911,20 @@ function handleMouseMove(event) {
    } else if (mouseAction.action === MOUSE_DOWN_ACTION.ADD_TRAIN) {
       mouseAction.container.x = local_point.x;
       mouseAction.container.y = local_point.y;
+   } else if (mouseAction.action === MOUSE_DOWN_ACTION.DND_TRACK) {
+      const grid_snap_point = getSnapPoint(local_point);
+      
+      if (geometry.distance(local_point, grid_snap_point) <= SNAP_2_GRID) {
+         if (Track.isValidTrackNodePoint(grid_snap_point)) {
+            if (mouseAction.endpoint === "start") {
+               mouseAction.track.setNewStart(grid_snap_point);
+            } else {
+               mouseAction.track.setNewEnd(grid_snap_point);
+            }
+            Track.createRailNetwork();
+            renderer.reDrawEverything(true);
+         }
+      }
    }
 
    stage.update();
@@ -1002,8 +1013,8 @@ function drawBluePrintTrack() {
    g.c().setStrokeStyle(trackRendering_basic.STROKE).beginStroke("blue").moveTo(mouseAction.nodes[0].x, mouseAction.nodes[0].y);
 
    for (let index = 1; index < mouseAction.nodes.length; index++) {
-      const node = mouseAction.nodes[index];
-      g.lt(node.end.x, node.end.y);
+      const point = mouseAction.nodes[index];
+      g.lt(point.x, point.y);
    }
 
    const last = mouseAction.nodes.last();
@@ -1011,26 +1022,26 @@ function drawBluePrintTrack() {
    g.beginStroke("red").moveTo(last.x, last.y).lt(p.x, p.y).endStroke();
 }
 
-function addTrackAnchorPoint(current) {
+function addTrackAnchorPoint(p) {
    if (mouseAction.nodes == null) {
       mouseAction.nodes = [];
    }
 
    //wenn der letzte Punkt gleich dem aktuellen ist, dann nichts tun
-   if (mouseAction.nodes.last()?.equals(current)) return;
+   if (mouseAction.nodes.last()?.equals(p)) return;
    //wenn der Startpunkt gleich dem aktuellen ist, dann Track zurücksetzen
-   if (mouseAction.nodes.first()?.equals(current)) {
+   if (mouseAction.nodes.first()?.equals(p)) {
       mouseAction.nodes = [mouseAction.nodes[0]];
       return;
    }
 
-   mouseAction.nodes.push(new TrackNode(mouseAction.nodes.last(), current));
+   mouseAction.nodes.push(p);
    return;
 
    if (ankerPoints == null || ankerPoints.length == 0) {
-      mouseAction.ankerPoints = [current];
+      mouseAction.ankerPoints = [p];
    } else {
-      if (geometry.distance(local_point, current) > SNAP_2_GRID) {
+      if (geometry.distance(local_point, p) > SNAP_2_GRID) {
          /* if (ankerPoints.length > 1) {
             ankerPoints.pop();
          } */
@@ -1039,14 +1050,14 @@ function addTrackAnchorPoint(current) {
 
       const last = ankerPoints.last();
       //if (!local_point.x.closeToBy(GRID_SIZE, SNAP_2_GRID) || !local_point.y.closeToBy(GRID_SIZE, SNAP_2_GRID)) return;
-      if (!last.equals(current)) {
-         const slope = geometry.slope(last, current);
+      if (!last.equals(p)) {
+         const slope = geometry.slope(last, p);
          if (ankerPoints.length == 1) {
-            if (slope.between(1, -1)) ankerPoints.push(current);
+            if (slope.between(1, -1)) ankerPoints.push(p);
          } else {
             let direction = Math.sign(ankerPoints[1].x - ankerPoints[0].x);
             //haben wir den Punkt schon eingetragen?
-            const y = current.x - GRID_SIZE * direction;
+            const y = p.x - GRID_SIZE * direction;
             const i = ankerPoints.findIndex((p) => Math.sign(p.x - y) == direction);
 
             if (i >= 0) {
@@ -1060,7 +1071,7 @@ function addTrackAnchorPoint(current) {
                   slope.between(1, -1) &&
                   (slope == 0 || slope + geometry.slope(last, ankerPoints[ankerPoints.length - 2]) != 0)
                ) {
-                  ankerPoints.push(current);
+                  ankerPoints.push(p);
                }
             }
          }
@@ -1182,7 +1193,7 @@ function handleStageMouseUp(e) {
             } else if (mouseAction.container?.name == "GenericObject") {
                selectObject(mouseAction.container.data, e);
             } else if (mouseAction.container?.name == "switch") {
-               Track.switch_A_Switch(mouseAction.container.sw, local_point.x);
+               Switch.switch_A_Switch(mouseAction.container.sw, local_point.x);
                renderer.renderSwitchUI(mouseAction.container.sw);
             } else {
                selectObject();
@@ -1224,11 +1235,13 @@ const STORAGE = {
             {
                tracks: Track.allTracks,
                trains: Train.allTrains,
+               //switches: Switch.allSwitches,
                objects: GenericObject.all_objects,
                settings: {
                   zoom: stage.scale,
                   scrollX: stage.x,
                   scrollY: stage.y,
+                  renderer: renderer instanceof trackRendering_textured ? "textured" : "basic"
                },
             },
             STORAGE.replacer
@@ -1254,6 +1267,9 @@ const STORAGE = {
          stage.x = loaded.settings.scrollX;
          stage.y = loaded.settings.scrollY;
          stage.scale = loaded.settings.zoom;
+         if (loaded.settings.renderer) {
+            selectRenderer(loaded.settings.renderer === "textured");
+         }
       }
       if (loaded.objects) GenericObject.all_objects = loaded.objects;
       Track.allTracks = loaded.tracks?.clean() || []; //when something went wront while loading track, we filter all nulls

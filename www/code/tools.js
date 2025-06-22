@@ -771,18 +771,7 @@ const geometry = {
    },
 };
 
-//sw=switch location
-//rad= angle of track_1 in rad
-//c= end of the track_2 to find angle
-function findAngle(sw, node, rad = 0) {
-   let c = node.end.equals(sw) ? node.start : node.end;
 
-   let atan = Math.atan2(c.y - sw.y, c.x - sw.x) - rad;
-   if (atan < 0) atan += 2 * π; //macht aus neg Winkeln durch addition von 360° positive winkel
-
-   let val = (atan * 180) / π;
-   return val;
-}
 
 function rotatePointAroundPivot(angle, pivot, point) {
    var cos = Math.cos(angle);
@@ -795,6 +784,10 @@ function rotatePointAroundPivot(angle, pivot, point) {
 }
 
 class V2 {
+   static fromV2(v) {
+      return new V2(v);
+   }
+
    #_length = null;
 
    get length() {
@@ -828,6 +821,9 @@ class V2 {
 
    unit() {
       return new V2(geometry.unit(this));
+   }
+   invert() {
+      return new V2(geometry.invert(this));
    }
 }
 
@@ -1084,6 +1080,15 @@ createjs.Graphics.prototype.drawArrow = function (length, size) {
       .lt(length, 0)
       .lt(length - size, size / 2);
 };
+
+createjs.Graphics.prototype.drawTriangle = function(color, p1, p2, p3) {
+   this.beginFill(color)
+      .mt(p1.x, p1.y)
+      .lt(p2.x, p2.y)
+      .lt(p3.x, p3.y)
+      .lt(p1.x, p1.y);
+};
+
 
 createjs.Container.prototype.countContainers = function () {
    return this.children.filter((c) => c instanceof createjs.Container).reduce((count, c) => count + c.countContainers(), 0) + 1;
