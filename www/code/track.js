@@ -13,8 +13,7 @@ class Track {
    }
    static findTrackByPoint(p) {
       return Track.allTracks.find((track) => {
-         // Check each node in the track
-         return track.nodes.some((node) => geometry.pointOnLine(node.start, node.end, p));
+         return geometry.pointOnLine(track.start, track.end, p);
       });
    }
 
@@ -465,7 +464,7 @@ class Track {
          throw new Error("Km exceeds track length");
       }
       const point = geometry.add(this.start, geometry.multiply(this.unit, km));
-      return { point };
+      return point;
    }
 
    getKmfromPoint(p) {
@@ -511,12 +510,25 @@ class Track {
    }
 
    stringify() {
-      return { _class: "Track", start: this.start, end: this.end, signals: this.signals };
+      const switchData = this.switches.map((s) => {
+         if (!s) return null;
+         return { type: s.constructor.name, id: s.id };
+      });
+      return {
+         _class: "Track",
+         id: this.id,
+         start: this.start,
+         end: this.end,
+         signals: this.signals,
+         switches: switchData,
+      };
    }
 
    static FromObject(o) {
       let t = new Track(Point.fromPoint(o.start), Point.fromPoint(o.end));
+      t.id = o.id;
       t.signals = o.signals;
+      t.switches_data = o.switches;
       t.signals.forEach(function (s) {
          s._positioning.track = t;
       });

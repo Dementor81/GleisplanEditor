@@ -192,7 +192,7 @@ class trackRendering_textured {
 
                try {
                   this.renderAllTracks(force);
-                  //this.renderAllSwitches();
+                  this.renderAllSwitches();
                   this.renderAllSignals(force);
                   this.renderAllTrains();
                   this.renderAllGenericObjects();
@@ -290,14 +290,13 @@ class trackRendering_textured {
       s.name = "train";
 
       // Get the position on the track based on the car's km position
-      const trackPosition = car.track.getPointFromKm(car.pos);
-      const p = trackPosition.point;
+      const p = car.track.getPointFromKm(car.pos);
 
       s.x = p.x;
       s.y = p.y;
       s.regX = carWidth / 2;
       s.regY = carHeight / 2;
-      s.rotation = trackPosition.node.deg;
+      s.rotation = car.track.deg;
 
       container.addChild(s);
       // Add train number if it exists
@@ -446,74 +445,58 @@ class trackRendering_textured {
    ///calculate start and end points for each node of a track and the control point for the curve
    ///start and end points of straight segments are adjusted for the curves
    calculateTrackPoints(track) {
-      const hasSwitchStart = track.switchAtTheStart != null;
-      const hasSwitchEnd = track.switchAtTheEnd != null;
-      const nodes = track.nodes;
-      const points = new Array(nodes.length);
+      const startConnection = track.switchAtTheStart;
+      const endConnection = track.switchAtTheEnd;
 
-      let node = nodes[0],
-         isFirst = true,
-         isLast,
-         next,
-         startPoint,
-         endPoint,
-         straightEndPoint,
-         centerLine;
+      let startPoint = track.start;
+      let endPoint = track.end;
 
-      for (let i = 0; i < nodes.length; i++) {
-         isLast = i === nodes.length - 1;
-         if (!isLast) next = nodes[i + 1];
-
-         startPoint = node.start;
-         endPoint = node.end;
-
-         // Adjust points if there are switches
-         /* if (!isFirst || hasSwitchStart) {
-            startPoint = startPoint.add(geometry.multiply(node.unit, GRID_SIZE_2));
-         } */
-
-         if (isFirst && !hasSwitchStart) {
-            startPoint = startPoint.sub(geometry.multiply(node.unit, GRID_SIZE_2));
-         }
-
-         /* if (isLast && hasSwitchEnd) {
-            endPoint = endPoint.add(geometry.multiply(node.unit, -GRID_SIZE_2));
-         } */
-
-         if (isLast && !hasSwitchEnd) {
-            endPoint = endPoint.add(geometry.multiply(node.unit, GRID_SIZE_2));
-         } 
-
-         // Calculate straight segment end point
-         straightEndPoint = isLast ? endPoint : endPoint.add(geometry.multiply(node.unit, -GRID_SIZE_2));
-
-         centerLine = {
-            node: node,
-            start: startPoint,
-            straightEnd: straightEndPoint,
-            end: endPoint,
-            unit: node.unit,
-         };
-
-         // If not the last node, calculate curve control point
-         if (!isLast) {
-            const nextStart = next.start.add(geometry.multiply(next.unit, GRID_SIZE_2));
-            centerLine.curveEnd = nextStart;
-            centerLine.nextUnit = next.unit;
-            centerLine.controlPoint = geometry.getIntersectionPointX(straightEndPoint, node.unit, nextStart, next.unit);
-         }
-
-         // Pre-calculate rail positions for both straight and curved segments
-         this.calculateRailPositions(centerLine);
-
-         points[i] = centerLine;
-         if (!isLast) {
-            isFirst = false;
-            node = next;
-         }
+      // Handle the start of the track
+      if (startConnection) {
+         // If there's a connection, shorten the track to make space
+         startPoint = startPoint.add(geometry.multiply(track.unit, GRID_SIZE_2));
+      } else {
+         // If there's no connection, extend it for the bumper
+         startPoint = startPoint.sub(geometry.multiply(track.unit, GRID_SIZE_2));
       }
 
-      return points;
+      let straightEndPoint = endPoint;
+      let curveEnd = null;
+      let controlPoint = null;
+      let nextUnit = null;
+
+      // Handle the end of the track
+      if (endConnection) {
+         // If there's a connection, shorten the track to make space for the switch or curve
+         straightEndPoint = endPoint.sub(geometry.multiply(track.unit, GRID_SIZE_2));
+
+         if (endConnection instanceof Track) {
+            // If the connection is another track, calculate the curve
+            const nextTrack = endConnection;
+            nextUnit = nextTrack.unit;
+            // The curve should end at the *shortened* start of the next track
+            curveEnd = nextTrack.start.add(geometry.multiply(nextUnit, GRID_SIZE_2));
+            controlPoint = geometry.getIntersectionPointX(straightEndPoint, track.unit, curveEnd, nextUnit);
+         }
+      } else {
+         // If there's no connection, extend the track for the bumper.
+         straightEndPoint = endPoint.add(geometry.multiply(track.unit, GRID_SIZE_2));
+      }
+
+      const centerLine = {
+         track: track,
+         start: startPoint,
+         straightEnd: straightEndPoint, // This is the end of the straight part, before any curve.
+         end: endPoint, // Original end point for reference.
+         unit: track.unit,
+         curveEnd: curveEnd, // End point of the curve.
+         controlPoint: controlPoint, // Control point for the curve.
+         nextUnit: nextUnit, // Unit vector of the next track.
+      };
+
+      this.calculateRailPositions(centerLine);
+
+      return [centerLine];
    }
 
    /**
@@ -704,7 +687,7 @@ class trackRendering_textured {
    drawTrackSleepers(points, container) {
       for (const point of points) {
          // Draw sleepers for straight segment
-         this.drawSleepers(point.node, point.start, point.straightEnd, container);
+         this.drawSleepers(point.track, point.start, point.straightEnd, container);
 
          // Draw sleepers for curve if exists
          if (point.rails.curve) {
@@ -730,7 +713,7 @@ class trackRendering_textured {
       }
    }
 
-   drawSleepers(node, startPoint, endPoint, container) {
+   drawSleepers(track, startPoint, endPoint, container) {
       let x = startPoint.x;
       let y = startPoint.y;
 
@@ -743,15 +726,15 @@ class trackRendering_textured {
       // Distribute the remaining space evenly between sleepers
       const adjustedInterval = this.sleeperIntervall + remainingSpace / amount;
 
-      const step_x = node.cos * adjustedInterval,
-         step_y = node.sin * adjustedInterval;
+      const step_x = track.cos * adjustedInterval,
+         step_y = track.sin * adjustedInterval;
 
       // Add the end gap
-      x += node.cos * (this.schwellenGap / 2);
-      y += node.sin * (this.schwellenGap / 2);
+      x += track.cos * (this.schwellenGap / 2);
+      y += track.sin * (this.schwellenGap / 2);
 
       for (let i = 0; i < amount; i++) {
-         this.drawSleeper(i, x, y, node.deg, container);
+         this.drawSleeper(i, x, y, track.deg, container);
          // Move to next position using sleeperIntervall
          y += step_y;
          x += step_x;
@@ -849,14 +832,13 @@ class trackRendering_textured {
 
    drawBumper(track, track_container) {
       if (track.switchAtTheEnd == null) {
-         const node = track.lastNode;
          track_container.addChild(
             new createjs.Bitmap(this.bumperImg).set({
-               y: node.end.y,
-               x: node.end.x,
+               y: track.end.y,
+               x: track.end.x,
                scale: trackRendering_textured.TRACK_SCALE,
                scaleX: -trackRendering_textured.TRACK_SCALE,
-               rotation: node.deg,
+               rotation: track.deg,
                regY: this.bumperImg.height / 2,
                regX: this.bumperImg.width,
             })
@@ -864,14 +846,13 @@ class trackRendering_textured {
       }
 
       if (track.switchAtTheStart == null) {
-         const node = track.firstNode;
          track_container.addChild(
             new createjs.Bitmap(this.bumperImg).set({
-               y: node.start.y,
-               x: node.start.x,
+               y: track.start.y,
+               x: track.start.x,
                scale: trackRendering_textured.TRACK_SCALE,
                scaleX: trackRendering_textured.TRACK_SCALE,
-               rotation: node.deg,
+               rotation: track.deg,
                regY: this.bumperImg.height / 2,
                regX: this.bumperImg.width,
             })
@@ -987,7 +968,7 @@ class trackRendering_textured {
          container.removeAllChildren();
       }
 
-      const deg = sw.t1.getNodeAtLocation(sw.location).deg;
+      const deg = sw.track1.deg;
 
       const back2front = sw.type.is(Switch.SWITCH_TYPE.FROM_RIGHT, Switch.SWITCH_TYPE.FROM_LEFT);
 
@@ -1086,19 +1067,28 @@ class trackRendering_textured {
    }
 
    getSwitchRenderingParameter(sw) {
-      const tracks = [sw.t1, sw.t2, sw.t3, sw.t4].filter((t) => t);
       const flipped = sw.type.is(Switch.SWITCH_TYPE.FROM_RIGHT, Switch.SWITCH_TYPE.TO_RIGHT) ? -1 : 1;
       const mirrored = sw.type.is(Switch.SWITCH_TYPE.FROM_LEFT, Switch.SWITCH_TYPE.FROM_RIGHT) ? -1 : 1;
 
       // Calculate track data for each track
-      const calcTrackData = (track) => {
-         const node = track.getNodeAtLocation(sw.location);
-         const railOffset = geometry.perpendicularX(node.unit.multiply(this.rail_distance * flipped));
-         const sleeperOffset = geometry.perpendicularX(node.unit.multiply(this.schwellenHöhe_2 * flipped));
-         const position = track.along(sw.location, GRID_SIZE_2);
+      const calcTrackData = (index) => {
+         let track = sw.tracks[index];
+         let unit = sw.track_directions[index];
+         if (!unit) {
+            // This can happen if calculateParameters hasn't been called on the switch.
+            // For robustness, we can calculate it here, but it's better to ensure it's calculated in the switch class.
+            console.warn("Switch track_directions not calculated, calculating on the fly.");
+            sw.calculateParameters();
+            unit = sw.track_directions[index];
+         }
+
+         const railOffset = geometry.perpendicularX(track.unit.multiply(this.rail_distance * flipped));
+         const sleeperOffset = geometry.perpendicularX(track.unit.multiply(this.schwellenHöhe_2 * flipped));
+         // The position should be on the track, at a certain distance from the switch location.
+         const position = sw.location.add(unit.multiply(GRID_SIZE_2));
 
          return {
-            unit: node.unit,
+            unit: track.unit,
             position: position,
             rails: {
                inner: position.add(railOffset),
@@ -1110,10 +1100,11 @@ class trackRendering_textured {
             },
          };
       };
-      const mainTrack = calcTrackData(tracks[0]);
-      const straightBranch = calcTrackData(tracks[1]);
-      const curvedBranch = calcTrackData(tracks[2]);
-      const curvedBranch2 = tracks.length === 4 ? calcTrackData(tracks[3]) : null;
+
+      const mainTrack = calcTrackData(0);
+      const straightBranch = calcTrackData(1);
+      const curvedBranch = calcTrackData(2);
+      const curvedBranch2 = sw.track4 ? calcTrackData(3) : null;
 
       return { mainTrack, straightBranch, curvedBranch, curvedBranch2, flipped, mirrored };
    }
@@ -1244,8 +1235,8 @@ class trackRendering_textured {
       }
    }
 
-   renderSwitchUI(sw) {
-      // Check if a container already exists for this switch
+   renderSwitchUI(sw) {      
+      /* // Check if a container already exists for this switch
       let container = ui_container.children.find((c) => c.sw === sw);
 
       if (container) {
@@ -1270,7 +1261,7 @@ class trackRendering_textured {
          arrow.x = sw.location.x;
          arrow.y = sw.location.y;
          arrow.rotation = Switch.findAngle(sw.location, t.end.equals(sw.location) ? t.start : t.end);
-      });
+      }); */
    }
 
    PointVisible(p1) {
@@ -1323,7 +1314,7 @@ class trackRendering_textured {
       if (this.PointVisible(sw.location)) return true;
 
       // Check if any of the switch's tracks are visible
-      const tracks = [sw.t1, sw.t2, sw.t3, sw.t4].filter(t => t);
+      const tracks = [sw.track1, sw.track2, sw.track3, sw.track4].filter(t => t);
       return tracks.some(track => this.TrackVisible(track, screen_rectangle));
    }
 

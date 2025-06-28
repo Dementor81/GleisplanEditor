@@ -228,12 +228,9 @@ class Train {
 
       currentTrack = car.track;
 
-      // Get the node the car is currently on
-      const trackPosition = currentTrack.getPointFromKm(car.pos);
-      const currentNode = trackPosition.node;
 
       // Calculate new position using the node's unit vector
-      new_pos = car.pos + movementX / stage.scale / currentNode.cos;
+      new_pos = car.pos + movementX / stage.scale / car.track.cos;
 
       while (car) {
          if (car != firstCar) {
@@ -272,12 +269,8 @@ class Train {
    static movementPossible(train, movementX) {
       const currentTrack = train.track;
 
-      // Get the node the train is currently on
-      const trackPosition = currentTrack.getPointFromKm(train.pos);
-      const currentNode = trackPosition.node;
-
       // Calculate new position using the node's unit vector
-      let new_pos = train.pos + movementX / stage.scale / currentNode.cos;
+      let new_pos = train.pos + movementX / stage.scale / train.track.cos;
 
       if (new_pos.outoff(0 + train.length / 2, currentTrack.length - train.length / 2)) {
          const sw = new_pos <= 0 + train.length / 2 ? currentTrack.switchAtTheStart : currentTrack.switchAtTheEnd;
@@ -323,7 +316,7 @@ class Train {
 
    set pos(km) {
       this._pos = km;
-      if (this._track) this._coordinates = this._track.getPointFromKm(km).point;
+      if (this._track) this._coordinates = this._track.getPointFromKm(km);
    }
 
    get color() {
@@ -465,8 +458,8 @@ class Train {
          const nextCar = currentCar.trainCoupledBack;
 
          // Get positions of the two cars
-         const currentPos = currentCar.track.getPointFromKm(currentCar.pos).point;
-         const nextPos = nextCar.track.getPointFromKm(nextCar.pos).point;
+         const currentPos = currentCar.track.getPointFromKm(currentCar.pos);
+         const nextPos = nextCar.track.getPointFromKm(nextCar.pos);
 
          // Calculate midpoint between cars for decoupling point
          const midX = (currentPos.x + nextPos.x) / 2;
@@ -606,8 +599,8 @@ class Train {
       // Helper function to add a coupling point
       function addCouplingPoint(car1, car2) {
          // Calculate midpoint between cars for coupling point
-         const car1Pos = car1.track.getPointFromKm(car1.pos).point;
-         const car2Pos = car2.track.getPointFromKm(car2.pos).point;
+         const car1Pos = car1.track.getPointFromKm(car1.pos);
+         const car2Pos = car2.track.getPointFromKm(car2.pos);
          const midX = (car1Pos.x + car2Pos.x) / 2;
          const midY = (car1Pos.y + car2Pos.y) / 2;
 

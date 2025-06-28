@@ -2,6 +2,11 @@
 
 class Switch {
    static allSwitches = [];
+   static counter = 0;
+
+   static _getID() {
+      return Switch.counter++;
+   }
 
    static SWITCH_TYPE = {
       NONE: 0,
@@ -67,27 +72,29 @@ class Switch {
       let rad = 0;
 
       if (left_tracks.length == 1) {
-         sw.t1 = left_tracks[0];
-         rad = sw.t1.rad;
-         sw.t2 = right_tracks.find((t) => t.rad == rad);
+         sw.track1 = left_tracks[0];
+         rad = sw.track1.rad;
+         sw.track2 = right_tracks.find((t) => t.rad == rad);
       } else {
-         sw.t1 = right_tracks[0];
-         rad = sw.t1.rad;
-         sw.t2 = left_tracks.find((t) => t.rad == rad);
+         sw.track1 = right_tracks[0];
+         rad = sw.track1.rad;
+         sw.track2 = left_tracks.find((t) => t.rad == rad);
       }
 
-      if (sw.t2 == null) throw new Error("couldnt find 2 tracks with the same slope");
+      if (sw.track2 == null) throw new Error("couldnt find 2 tracks with the same slope");
 
       //find the other two tracks and sort them by their start point
-      [sw.t3, sw.t4] = tracks.filter((t) => t != sw.t1 && t != sw.t2).sort((a, b) => a.start.x - b.start.x);
+      [sw.track3, sw.track4] = tracks
+         .filter((t) => t != sw.track1 && t != sw.track2)
+         .sort((a, b) => a.start.x - b.start.x);
 
       // Calculate direction vectors for each track branch
       sw.calculateParameters();
 
       //TODO calculate connection points and shorten the tracks
 
-      sw.branch = sw.t2;
-      sw.from = sw.t1;
+      sw.branch = sw.track2;
+      sw.from = sw.track1;
 
       return sw;
    }
@@ -128,19 +135,27 @@ class Switch {
          // Potential switch.
          if (Switch.isValidSwitch(point, tracksAtPoint)) {
             if (existingSwitch) {
-               const existingTracks = [existingSwitch.t1, existingSwitch.t2, existingSwitch.t3, existingSwitch.t4].filter(t => t);
-               const tracksMatch = existingTracks.length === tracksAtPoint.length &&
-                  existingTracks.every(existingTrack => tracksAtPoint.some(currentTrack => currentTrack === existingTrack));
+               const existingTracks = [
+                  existingSwitch.track1,
+                  existingSwitch.track2,
+                  existingSwitch.track3,
+                  existingSwitch.track4,
+               ].filter((t) => t);
+               const tracksMatch =
+                  existingTracks.length === tracksAtPoint.length &&
+                  existingTracks.every((existingTrack) =>
+                     tracksAtPoint.some((currentTrack) => currentTrack === existingTrack)
+                  );
 
                if (!tracksMatch) {
                   Switch.removeSwitch(existingSwitch);
                   const sw = Switch.createSwitch(point, tracksAtPoint);
-                  [sw.t1, sw.t2, sw.t3, sw.t4].forEach((track) => track && track.addSwitch(sw));
+                  [sw.track1, sw.track2, sw.track3, sw.track4].forEach((track) => track && track.addSwitch(sw));
                   Switch.allSwitches.push(sw);
                }
             } else {
                const sw = Switch.createSwitch(point, tracksAtPoint);
-               [sw.t1, sw.t2, sw.t3, sw.t4].forEach((track) => track && track.addSwitch(sw));
+               [sw.track1, sw.track2, sw.track3, sw.track4].forEach((track) => track && track.addSwitch(sw));
                Switch.allSwitches.push(sw);
             }
          } else if (existingSwitch) {
@@ -158,11 +173,13 @@ class Switch {
     */
    static removeSwitch(switchToRemove) {
       // Remove switch from all tracks that reference it
-      [switchToRemove.t1, switchToRemove.t2, switchToRemove.t3, switchToRemove.t4].forEach((track) => {
-         if (track) {
-            track.switches = track.switches.map((sw) => (sw === switchToRemove ? null : sw));
+      [switchToRemove.track1, switchToRemove.track2, switchToRemove.track3, switchToRemove.track4].forEach(
+         (track) => {
+            if (track) {
+               track.switches = track.switches.map((sw) => (sw === switchToRemove ? null : sw));
+            }
          }
-      });
+      );
 
       // Remove switch from the global switches array
       Switch.allSwitches.remove(switchToRemove);
@@ -170,33 +187,55 @@ class Switch {
 
    static switch_A_Switch(sw, mouseX) {
       if (!sw.type.is(Switch.SWITCH_TYPE.DKW)) {
-         sw.branch = swap(sw.branch, sw.t2, sw.t3);
+         sw.branch = swap(sw.branch, sw.track2, sw.track3);
       } else {
          if (mouseX < sw.location.x) {
-            sw.branch = swap(sw.branch, sw.t2, sw.t3);
+            sw.branch = swap(sw.branch, sw.track2, sw.track3);
          } else {
-            sw.from = swap(sw.from, sw.t1, sw.t4);
+            sw.from = swap(sw.from, sw.track1, sw.track4);
          }
       }
    }
 
    constructor(location) {
-      this.id = Switch.allSwitches.length + 1;
+      this.id = Switch._getID();
       this.location = location;
       this.type = Switch.SWITCH_TYPE.NONE;
 
       this.size = GRID_SIZE;
 
-      this.t1 = null;
-      this.t2 = null;
-      this.t3 = null;
-      this.t4 = null;
+      this.tracks = new Array(4).fill(null);
 
       this.branch = null;
       this.from = null;
 
       // Direction information for rendering - stores the direction vector for each track
       this.track_directions = new Array(4);
+   }
+
+   get track1() {
+      return this.tracks[0];
+   }
+   set track1(track) {
+      this.tracks[0] = track;
+   }
+   get track2() {
+      return this.tracks[1];
+   }
+   set track2(track) {
+      this.tracks[1] = track;
+   }
+   get track3() {
+      return this.tracks[2];
+   }
+   set track3(track) {
+      this.tracks[2] = track;
+   }
+   get track4() {
+      return this.tracks[3];
+   }
+   set track4(track) {
+      this.tracks[3] = track;
    }
 
    /**
@@ -207,15 +246,16 @@ class Switch {
       // For each track, determine if it connects to the switch at its start or end
       // and use the appropriate direction (unit vector or its opposite)
 
-      this.track_directions = [this.t1, this.t2, this.t3, this.t4].map((track) =>
+      this.track_directions = this.tracks.map((track) =>
          track ? (track.end.equals(this.location) ? V2.fromV2(track.unit).invert() : V2.fromV2(track.unit)) : null
       );
 
-      if (this.t4) this.type = Switch.SWITCH_TYPE.DKW;
+      if (this.track4) this.type = Switch.SWITCH_TYPE.DKW;
       else {
-         const angle = Switch.findAngle(this.location, this.t3.end, this.t3.rad);
+         const angle = Switch.findAngle(this.location, this.track3.end.equals(this.location) ? this.track3.start : this.track3.end, this.track1.rad);
          this.type = Math.ceil((angle % 360) / 90);
       }
+
    }
 
    /**
@@ -224,10 +264,10 @@ class Switch {
     * @param {Track} newTrack - The new track to reference.
     */
    replaceTrackReference(oldTrack, newTrack) {
-      if (this.t1 === oldTrack) this.t1 = newTrack;
-      if (this.t2 === oldTrack) this.t2 = newTrack;
-      if (this.t3 === oldTrack) this.t3 = newTrack;
-      if (this.t4 === oldTrack) this.t4 = newTrack;
+      if (this.track1 === oldTrack) this.track1 = newTrack;
+      if (this.track2 === oldTrack) this.track2 = newTrack;
+      if (this.track3 === oldTrack) this.track3 = newTrack;
+      if (this.track4 === oldTrack) this.track4 = newTrack;
 
       if (this.branch === oldTrack) this.branch = newTrack;
       if (this.from === oldTrack) this.from = newTrack;
@@ -235,5 +275,32 @@ class Switch {
       // After updating track references, it's crucial to recalculate the directions
       // for rendering and other logic.
       this.calculateParameters();
+   }
+
+   getBranchEndPoint(branch, size = this.size) {
+      return this.location.add(this.track_directions[branch].multiply(size));
+   }
+
+   stringify() {
+      return {
+         _class: "Switch",
+         id: this.id,
+         location: this.location,
+         tracks: this.tracks.map((t) => t?.id),
+         branch: this.branch?.id,
+         from: this.from?.id,
+      };
+   }
+
+   static FromObject(o) {
+      const s = new Switch(Point.fromPoint(o.location));
+      s.id = o.id;
+
+      // Store IDs for later linking
+      s.tracks_id = o.tracks;
+      s.branch_id = o.branch;
+      s.from_id = o.from;
+
+      return s;
    }
 }

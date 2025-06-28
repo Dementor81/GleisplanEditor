@@ -2,10 +2,10 @@
 
 class trackRendering_basic {
    static TRACK_COLOR = "#111111";
-   static STROKE = 4;
+   static STROKE = 6;
    static HIT_TEST_DISTANCE = 10;
-   static BUMPER_SIZE = 6;
-   static SWITCH_SIZE = 10;
+   static BUMPER_SIZE = 8;
+   static SWITCH_SIZE = 30;
 
    constructor() {
       this.SIGNAL_DISTANCE_FROM_TRACK = 18;
@@ -198,7 +198,7 @@ class trackRendering_basic {
 
    renderAllSwitches() {
       Switch.allSwitches.forEach((sw) => {
-         if (!sw.t1 || !sw.t2 || !sw.t3 || (sw.type == Switch.SWITCH_TYPE.DKW && !sw.t4)) {
+         if (!sw.track1 || !sw.track2 || !sw.track3 || (sw.type == Switch.SWITCH_TYPE.DKW && !sw.track4)) {
             console.log(sw);
             throw new Error("switch is falty");
          }
@@ -214,28 +214,28 @@ class trackRendering_basic {
          const maxTracks = sw.type == Switch.SWITCH_TYPE.DKW ? 4 : 3;
          for (let i = 0; i < maxTracks; i++) {
             if (sw.track_directions[i]) {
-               let end_point = sw.location.add(sw.track_directions[i].multiply(sw.size));
+               let end_point = sw.getBranchEndPoint(i);
                switch_shape.graphics.moveTo(sw.location.x, sw.location.y).lineTo(end_point.x, end_point.y);
             }
          }
 
-         /* let p1, p2;
+         let p1, p2;
 
-         p1 = sw.getBranchEndPoint('t2', trackRendering_basic.SWITCH_SIZE);
-         p2 = sw.getBranchEndPoint('t3', trackRendering_basic.SWITCH_SIZE);
+         p1 = sw.getBranchEndPoint(1, trackRendering_basic.SWITCH_SIZE);
+         p2 = sw.getBranchEndPoint(2, trackRendering_basic.SWITCH_SIZE);
          if (p1 && p2) {
             switch_shape.graphics.drawTriangle("black", sw.location, p1, p2);
          }
 
          if (sw.type == Switch.SWITCH_TYPE.DKW) {
-            p1 = sw.getBranchEndPoint('t1', trackRendering_basic.SWITCH_SIZE);
-            p2 = sw.getBranchEndPoint('t4', trackRendering_basic.SWITCH_SIZE);
+            p1 = sw.getBranchEndPoint(0, trackRendering_basic.SWITCH_SIZE);
+            p2 = sw.getBranchEndPoint(3, trackRendering_basic.SWITCH_SIZE);
             if (p1 && p2) {
                switch_shape.graphics.drawTriangle("black", sw.location, p1, p2);
             }
-         } */
+         }
 
-         /* this.renderSwitchUI(sw); */
+         /* this.renderSwitchUI(sw);*/
       });
    }
 
@@ -283,12 +283,12 @@ class trackRendering_basic {
          triangle("t1");
       } else {
          // For DKW switches, 'from' could be t1 or t4
-         if (sw.from === sw.t1) triangle("t1");
-         else if (sw.from === sw.t4) triangle("t4");
+         if (sw.from === sw.track1) triangle("t1");
+         else if (sw.from === sw.track4) triangle("t4");
       }
 
       // 'branch' could be t2 or t3
-      if (sw.branch === sw.t2) triangle("t2");
-      else if (sw.branch === sw.t3) triangle("t3");
+      if (sw.branch === sw.track2) triangle("t2");
+      else if (sw.branch === sw.track3) triangle("t3");
    }
 }

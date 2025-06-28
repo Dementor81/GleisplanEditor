@@ -682,10 +682,10 @@ function toggleEditMode(mode) {
 function selectRenderer(textured) {
    if (textured) {
       renderer = new trackRendering_textured();
-      $("#switch_renderer").prop(":checked", false);
+      $("#switch_renderer").prop("checked", false);
    } else {
       renderer = new trackRendering_basic();
-      $("#switch_renderer").prop(":checked", true);
+      $("#switch_renderer").prop("checked", true);
    }
    renderer.reDrawEverything(true);
    stage.update();
@@ -809,7 +809,7 @@ function getHitInfoForSignalPositioning(testPoint) {
 function alignSignalContainerWithTrack(c, pos) {
    //koordinaten anhand des Strecken KM suchen, wenn sie nicht übergeben worden sind
 
-   const { node, point } = pos.track.getPointFromKm(pos.km);
+   const point = pos.track.getPointFromKm(pos.km);
 
    let p;
    if (pos.above) {
@@ -1235,7 +1235,7 @@ const STORAGE = {
             {
                tracks: Track.allTracks,
                trains: Train.allTrains,
-               //switches: Switch.allSwitches,
+               switches: Switch.allSwitches,
                objects: GenericObject.all_objects,
                settings: {
                   zoom: stage.scale,
@@ -1260,6 +1260,35 @@ const STORAGE = {
       updateUndoButtonState();
    },
 
+   linkObjects() {
+      // Link switches to tracks
+      Switch.allSwitches.forEach((s) => {
+         if (s.tracks_id) {
+            s.tracks = s.tracks_id.map((id) => (id ? Track.allTracks.find((t) => t.id === id) : null));
+         }
+         s.branch = s.branch_id ? Track.allTracks.find((t) => t.id === s.branch_id) : null;
+         s.from = s.from_id ? Track.allTracks.find((t) => t.id === s.from_id) : null;
+         s.calculateParameters();
+         delete s.tracks_id;
+         delete s.branch_id;
+         delete s.from_id;
+      });
+
+      // Link tracks to switches/other tracks
+      Track.allTracks.forEach((t) => {
+         t.switches = t.switches_data.map((sd) => {
+            if (!sd) return null;
+            if (sd.type === "Switch") {
+               return Switch.allSwitches.find((s) => s.id === sd.id);
+            } else if (sd.type === "Track") {
+               return Track.allTracks.find((tr) => tr.id === sd.id);
+            }
+            return null;
+         });
+         delete t.switches_data;
+      });
+   },
+
    loadFromJson(json) {
       RENDERING.clear();
       let loaded = JSON.parse(json, STORAGE.receiver);
@@ -1273,6 +1302,13 @@ const STORAGE = {
       }
       if (loaded.objects) GenericObject.all_objects = loaded.objects;
       Track.allTracks = loaded.tracks?.clean() || []; //when something went wront while loading track, we filter all nulls
+      Switch.allSwitches = loaded.switches?.clean() || []; //when something went wront while loading switch, we filter all nulls
+
+      // Reset counters
+      Track.counter = Track.allTracks.length ? Math.max(...Track.allTracks.map((t) => t.id)) + 1 : 0;
+      Switch.counter = Switch.allSwitches.length ? Math.max(...Switch.allSwitches.map((s) => s.id)) + 1 : 0;
+
+      STORAGE.linkObjects();
 
       Track.createRailNetwork();
       Train.allTrains = loaded.trains?.clean() || []; ////when something went wront while loading trains, we filter all nulls
