@@ -134,7 +134,6 @@ function init() {
    stage.addChild((overlay_container = create_container("overlay")));
    stage.addChild((drawing_container = create_container("drawing_container")));
 
- 
    UI.showPreBuildScreen();
 
    pl.start().then(() => {
@@ -338,9 +337,7 @@ function init() {
       }
    });
 
-   $("#btnRemoveSignal").click((e) => {
-      deleteSelectedObject();
-   });
+   
    $("#btnUndo").click((e) => {
       undo();
    });
@@ -428,7 +425,6 @@ const RENDERING = {
       Train.allTrains = [];
       GenericObject.all_objects = [];
 
-      
       if (renderer) {
          renderer.reDrawEverything(true); //just to make sure, something accidently not deleted we be drawn to the stage.
          stage.update();
@@ -761,7 +757,6 @@ function handleStageMouseDown(event) {
       mouseAction.action = MOUSE_DOWN_ACTION.DND_TRACK;
       mouseAction.track = mouseAction.container.track;
       mouseAction.endpoint = mouseAction.container.endpoint;
-      
    }
 
    if (custom_mouse_mode == CUSTOM_MOUSE_ACTION.DRAWING) {
@@ -785,23 +780,17 @@ function getHitTest(container) {
 function getHitInfoForSignalPositioning(testPoint) {
    for (const track of Track.allTracks) {
       if (testPoint.x.between(track.start.x, track.end.x)) {
-         let km = 0;
-         for (const node of track.nodes) {
-            const distance = geometry.pointToSegmentDistance(testPoint, node.start, node.end);
-            if (distance <= GRID_SIZE_2) {
-               const point = TOOLS.nearestPointOnLine(node.start, node.end, testPoint);
-               km += node.getKmFromPoint(point);
-               return {
-                  track: track,
-                  node: node,
-                  point: point,
-                  km: km,
-                  above: testPoint.y < point.y,
-               };
-            } else {
-               km += node.length;
-            }
-         }
+         const distance = geometry.pointToSegmentDistance(testPoint, track.start, track.end);
+         if (distance <= GRID_SIZE_2) {
+            const point = TOOLS.nearestPointOnLine(track.start, track.end, testPoint);
+            
+            return {
+               track: track,
+               point: point,
+               km: track.getKmfromPoint(point),
+               above: testPoint.y < point.y,
+            };
+         } 
       }
    }
 }
@@ -813,11 +802,11 @@ function alignSignalContainerWithTrack(c, pos) {
 
    let p;
    if (pos.above) {
-      c.rotation = 270 + node.deg;
-      p = geometry.perpendicular(point, node.deg, -renderer.SIGNAL_DISTANCE_FROM_TRACK - c.data._template.distance_from_track);
+      c.rotation = 270 + pos.track.deg;
+      p = geometry.perpendicular(point, pos.track.deg, -renderer.SIGNAL_DISTANCE_FROM_TRACK - c.data._template.distance_from_track);
    } else {
-      c.rotation = 90 + node.deg;
-      p = geometry.perpendicular(point, node.deg, renderer.SIGNAL_DISTANCE_FROM_TRACK + c.data._template.distance_from_track);
+      c.rotation = 90 + pos.track.deg;
+      p = geometry.perpendicular(point, pos.track.deg, renderer.SIGNAL_DISTANCE_FROM_TRACK + c.data._template.distance_from_track);
    }
    if (pos.flipped) c.rotation += 180;
 
@@ -890,7 +879,6 @@ function handleMouseMove(event) {
    } else if (mouseAction.action === MOUSE_DOWN_ACTION.DND_SIGNAL) {
       dragnDropSignal(local_point, event.nativeEvent.altKey);
       renderer.updateSelection();
-
    } else if (mouseAction.action === MOUSE_DOWN_ACTION.BUILD_TRACK) {
       const grid_snap_point = getSnapPoint(local_point);
 
@@ -913,7 +901,7 @@ function handleMouseMove(event) {
       mouseAction.container.y = local_point.y;
    } else if (mouseAction.action === MOUSE_DOWN_ACTION.DND_TRACK) {
       const grid_snap_point = getSnapPoint(local_point);
-      
+
       if (geometry.distance(local_point, grid_snap_point) <= SNAP_2_GRID) {
          if (Track.isValidTrackNodePoint(grid_snap_point)) {
             if (mouseAction.endpoint === "start") {
@@ -1095,7 +1083,12 @@ function handleStageMouseUp(e) {
             if (mouseAction.hit_track) {
                signal_container.addChild(mouseAction.container);
                const signal = mouseAction.container.data;
-               mouseAction.hit_track.track.AddSignal(signal, mouseAction.hit_track.km, mouseAction.hit_track.above, mouseAction.hit_track.flipped);
+               mouseAction.hit_track.track.AddSignal(
+                  signal,
+                  mouseAction.hit_track.km,
+                  mouseAction.hit_track.above,
+                  mouseAction.hit_track.flipped
+               );
             }
             renderer.reDrawEverything(true);
             STORAGE.save();
@@ -1193,8 +1186,8 @@ function handleStageMouseUp(e) {
             } else if (mouseAction.container?.name == "GenericObject") {
                selectObject(mouseAction.container.data, e);
             } else if (mouseAction.container?.name == "switch") {
-               Switch.switch_A_Switch(mouseAction.container.sw, local_point.x);
-               renderer.renderSwitchUI(mouseAction.container.sw);
+               Switch.switch_A_Switch(mouseAction.container.data, local_point.x);
+               renderer.renderSwitchUI(mouseAction.container.data);
             } else {
                selectObject();
             }
@@ -1241,7 +1234,7 @@ const STORAGE = {
                   zoom: stage.scale,
                   scrollX: stage.x,
                   scrollY: stage.y,
-                  renderer: renderer instanceof trackRendering_textured ? "textured" : "basic"
+                  renderer: renderer instanceof trackRendering_textured ? "textured" : "basic",
                },
             },
             STORAGE.replacer

@@ -2,6 +2,8 @@
 
 class trackRendering_basic {
    static TRACK_COLOR = "#111111";
+   static SWITCH_UI_COLOR = "gray";
+   static SWITCH_UI_COLOR_SELECTED = "#eee";
    static STROKE = 6;
    static HIT_TEST_DISTANCE = 10;
    static BUMPER_SIZE = 8;
@@ -204,7 +206,7 @@ class trackRendering_basic {
          }
          let switch_shape = new createjs.Shape();
          switch_shape.name = "switch";
-         switch_shape.sw = sw;
+         switch_shape.data = sw;
          track_container.addChild(switch_shape);
 
          // Draw the switch branch tracks
@@ -235,14 +237,13 @@ class trackRendering_basic {
             }
          }
 
-         /* this.renderSwitchUI(sw);*/
+         this.renderSwitchUI(sw);
       });
    }
 
    renderSwitchUI(sw) {
-      return;
       // Check if a container already exists for this switch
-      let container = ui_container.children.find((c) => c.sw === sw);
+      let container = ui_container.children.find((c) => c.data === sw);
 
       if (container) {
          // If container exists, clear it but keep it
@@ -252,43 +253,29 @@ class trackRendering_basic {
          container = new createjs.Container();
          container.mouseChildren = false;
          container.name = "switch";
-         container.sw = sw;
+         container.data = sw;
          ui_container.addChild(container);
       }
 
       const ui_shape = new createjs.Shape();
-      ui_shape.name = "switch";
-      ui_shape.sw = sw;
+      ui_shape.graphics.setStrokeStyle(trackRendering_basic.STROKE / 2, "round");
       container.addChild(ui_shape);
-      ui_shape.graphics.setStrokeStyle(trackRendering_basic.STROKE / 2, "round").beginStroke("gray");
 
-      const triangle = function (t) {
-         let p1 = sw.getBranchEndPoint(t, 13);
-         let p0 = sw.getBranchEndPoint(t, 5);
-         if (p1 && p0) {
-            ui_shape.graphics.moveTo(p0.x, p0.y).lineTo(p1.x, p1.y);
-         }
+      const draw_line = function (t, color) {
+         ui_shape.graphics.beginStroke(color);
+         let p1 = sw.getBranchEndPoint(t, trackRendering_basic.SWITCH_SIZE);
+         let p0 = sw.getBranchEndPoint(t, trackRendering_basic.SWITCH_SIZE / 2);
+         ui_shape.graphics.moveTo(p0.x, p0.y).lineTo(p1.x, p1.y);
       };
 
-      triangle("t1");
-      triangle("t2");
-      triangle("t3");
-
-      if (sw.type == Switch.SWITCH_TYPE.DKW) triangle("t4");
-
-      ui_shape.graphics.setStrokeStyle(trackRendering_basic.STROKE / 2, "round").beginStroke("white");
-
-      // Handle special cases for 'from' and 'branch' which are track objects
-      if (!sw.type.is(Switch.SWITCH_TYPE.DKW)) {
-         triangle("t1");
-      } else {
-         // For DKW switches, 'from' could be t1 or t4
-         if (sw.from === sw.track1) triangle("t1");
-         else if (sw.from === sw.track4) triangle("t4");
-      }
-
-      // 'branch' could be t2 or t3
-      if (sw.branch === sw.track2) triangle("t2");
-      else if (sw.branch === sw.track3) triangle("t3");
+      sw.tracks.forEach((t, i) => {
+         if (t)
+            draw_line(
+               i,
+               t === sw.from || t === sw.branch
+                  ? trackRendering_basic.SWITCH_UI_COLOR_SELECTED
+                  : trackRendering_basic.SWITCH_UI_COLOR
+            );
+      });
    }
 }

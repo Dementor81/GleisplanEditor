@@ -131,7 +131,10 @@ class Signal {
 
    static removeSignal(s) {
       const track = Track.allTracks.find((t) => t.signals.includes(s));
-      if (track) track.removeSignal(s);
+      if (track) {
+         track.removeSignal(s);
+         Signal.allSignals.delete(s);
+      }
    }
 
    
@@ -416,6 +419,7 @@ const Sig_UI = {
          renderer.reDrawEverything();
          STORAGE.save();
       };
+      $("#btnRemoveSignal").click((e) => deleteSelectedObject());
       $("#navFeatures").empty();
       if (selection.object.check("HPsig"))
          $("#navFeatures").append(

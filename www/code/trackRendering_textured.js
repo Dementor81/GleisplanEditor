@@ -249,9 +249,7 @@ class trackRendering_textured {
 
             // Start rendering from the first car (locomotive)
             this.renderCar(train, c);
-
-            // Position doesn't matter for the container as each car is positioned individually
-
+            
             train_container.addChild(c);
          });
    }
@@ -1236,8 +1234,8 @@ class trackRendering_textured {
    }
 
    renderSwitchUI(sw) {      
-      /* // Check if a container already exists for this switch
-      let container = ui_container.children.find((c) => c.sw === sw);
+      // Check if a container already exists for this switch
+      let container = ui_container.children.find((c) => c.data === sw);
 
       if (container) {
          // If container exists, clear it but keep it
@@ -1247,7 +1245,7 @@ class trackRendering_textured {
          container = new createjs.Container();
          container.mouseChildren = false;
          container.name = "switch";
-         container.sw = sw;
+         container.data = sw;
          ui_container.addChild(container);
       }
 
@@ -1261,7 +1259,7 @@ class trackRendering_textured {
          arrow.x = sw.location.x;
          arrow.y = sw.location.y;
          arrow.rotation = Switch.findAngle(sw.location, t.end.equals(sw.location) ? t.start : t.end);
-      }); */
+      });
    }
 
    PointVisible(p1) {
