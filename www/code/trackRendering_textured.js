@@ -192,7 +192,6 @@ class trackRendering_textured {
 
                try {
                   this.renderAllTracks(force);
-                  this.renderAllSwitches();
                   this.renderAllSignals(force);
                   this.renderAllTrains();
                   this.renderAllGenericObjects();
@@ -365,8 +364,7 @@ class trackRendering_textured {
       Signal.allSignals.forEach((signal) => {
          let container = signal_container.addChild(SignalRenderer.createSignalContainer(signal));
          alignSignalContainerWithTrack(container, signal._positioning);
-         if (selection.isSelectedObject(signal)) {
-         }
+         
       });
    }
 
@@ -387,6 +385,7 @@ class trackRendering_textured {
          track_container.addChild(sleepers_container);
          track_container.addChild(rails_container);
          track_container.renderedTracks = new Set();
+         track_container.renderedSwitches = new Set();
       } else {
          this._rendering.sleepers_container = track_container.children[0];
          this._rendering.rails_container = track_container.children[1];
@@ -397,20 +396,26 @@ class trackRendering_textured {
             //either we have a forced redraw or the track is not rendered yet
             if (force || !track_container.renderedTracks.has(t)) {
                this.renderTrack(t);
+               track_container.renderedTracks.add(t);
             } else if (this._rendering.lodChanged) {
                this.updateTrack(t);
             }
          }
       }
-   }
 
-   renderAllSwitches() {
       for (const sw of Switch.allSwitches) {
          if (this.SwitchVisible(sw)) {
-            this.renderSwitch(sw);
+            if (force || !track_container.renderedSwitches.has(sw)) {
+               this.renderSwitch(sw);
+               track_container.renderedSwitches.add(sw);
+            } else if (this._rendering.lodChanged) {
+               this.updateSwitch(sw);
+            }
          }
       }
    }
+
+   
 
    handleCachingSignal(c) {
       if (!c.data._dontCache && !this._rendering.dont_optimize) {
@@ -435,11 +440,7 @@ class trackRendering_textured {
       return hit;
    }
 
-   renderTrack(track) {
-      this.renderTrackNodes(track);
-      track_container.renderedTracks.add(track);
-   }
-
+   
    ///calculate start and end points for each node of a track and the control point for the curve
    ///start and end points of straight segments are adjusted for the curves
    calculateTrackPoints(track) {
@@ -493,8 +494,49 @@ class trackRendering_textured {
       };
 
       this.calculateRailPositions(centerLine);
+      this.calculateSleeperOutline(centerLine);
 
       return [centerLine];
+   }
+
+   /**
+    * Calculate sleeper outline for a track segment
+    * @param {Object} centerLine - The centerline object to add sleeper outline to
+    */
+   calculateSleeperOutline(centerLine) {
+      const sleeperOffset = this.schwellenHöhe_2;
+      const sleeperOffsetVector = geometry.perpendicularX(centerLine.unit.multiply(sleeperOffset));
+
+      centerLine.sleeperOutline = {
+         straight: {
+            inner: {
+               start: centerLine.start.add(sleeperOffsetVector),
+               end: centerLine.straightEnd.add(sleeperOffsetVector),
+            },
+            outer: {
+               start: centerLine.start.sub(sleeperOffsetVector),
+               end: centerLine.straightEnd.sub(sleeperOffsetVector),
+            },
+         },
+      };
+
+      if (centerLine.controlPoint) {
+         const nextSleeperOffsetVector = geometry.perpendicularX(centerLine.nextUnit.multiply(sleeperOffset));
+
+         const curveOuterEnd = centerLine.curveEnd.sub(nextSleeperOffsetVector);
+         const curveInnerEnd = centerLine.curveEnd.add(nextSleeperOffsetVector);
+
+         const curveOuterStart = centerLine.sleeperOutline.straight.outer.end;
+         const curveInnerStart = centerLine.sleeperOutline.straight.inner.end;
+
+         const cpOuter = geometry.getIntersectionPointX(curveOuterStart, centerLine.unit, curveOuterEnd, centerLine.nextUnit);
+         const cpInner = geometry.getIntersectionPointX(curveInnerStart, centerLine.unit, curveInnerEnd, centerLine.nextUnit);
+
+         centerLine.sleeperOutline.curve = {
+            outer: { start: curveOuterStart, end: curveOuterEnd, cp: cpOuter },
+            inner: { start: curveInnerStart, end: curveInnerEnd, cp: cpInner },
+         };
+      }
    }
 
    /**
@@ -553,7 +595,7 @@ class trackRendering_textured {
       }
    }
 
-   renderTrackNodes(track) {
+   renderTrack(track) {
       const points = this.calculateTrackPoints(track);
 
       const sleepers_container = new createjs.Container();
@@ -561,6 +603,29 @@ class trackRendering_textured {
       sleepers_container.mouseChildren = false;
       sleepers_container.data = track;
       this._rendering.sleepers_container.addChild(sleepers_container);
+
+      const hitArea = new createjs.Shape();
+      hitArea.graphics.beginFill("#000"); // Color doesn't matter, only need one fill
+      for (const p of points) {
+         const straight = p.sleeperOutline.straight;
+         hitArea.graphics
+            .moveTo(straight.outer.start.x, straight.outer.start.y)
+            .lineTo(straight.outer.end.x, straight.outer.end.y)
+            .lineTo(straight.inner.end.x, straight.inner.end.y)
+            .lineTo(straight.inner.start.x, straight.inner.start.y)
+            .closePath();
+
+         if (p.sleeperOutline.curve) {
+            const curve = p.sleeperOutline.curve;
+            hitArea.graphics
+               .moveTo(curve.inner.start.x, curve.inner.start.y)
+               .quadraticCurveTo(curve.inner.cp.x, curve.inner.cp.y, curve.inner.end.x, curve.inner.end.y)
+               .lineTo(curve.outer.end.x, curve.outer.end.y)
+               .quadraticCurveTo(curve.outer.cp.x, curve.outer.cp.y, curve.outer.start.x, curve.outer.start.y)
+               .closePath();
+         }
+      }
+      sleepers_container.hitArea = hitArea;
 
       this.drawTrackSleepers(points, sleepers_container);
 
@@ -885,6 +950,18 @@ class trackRendering_textured {
       }
    }
 
+   updateSwitch(sw) {
+      // Find the sleepers container for this switch
+      const sleepersContainer = this._rendering.sleepers_container.children.find((c) => c.data === sw);
+      if (!sleepersContainer) return;
+
+      // Get rendering parameters
+      const switchRenderingParameter = this.getSwitchRenderingParameter(sw);
+
+      // Redraw sleepers with current LOD
+      this.drawSleepersOnSwitch(sw, switchRenderingParameter, sleepersContainer);
+   }
+
    /**
     * Creates a shape for a track endpoint
     * @param {Point} point - The point where the endpoint should be
@@ -1045,7 +1122,7 @@ class trackRendering_textured {
       }
    }
 
-   renderSwitch(sw) {
+   renderSwitch(sw, force) {
       const switchRenderingParameter = this.getSwitchRenderingParameter(sw);
 
       const shape = new createjs.Shape();

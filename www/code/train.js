@@ -413,7 +413,7 @@ class Train {
             this.trainCoupledFront = frontCar;
          }
 
-         delete this.trainCoupledFrontId;
+         
       }
 
       if (this.trainCoupledBackId) {
@@ -422,7 +422,7 @@ class Train {
             this.trainCoupledBack = backCar;
          }
 
-         delete this.trainCoupledBackId;
+         
       }
    }
 

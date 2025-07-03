@@ -1306,6 +1306,10 @@ const STORAGE = {
       Track.createRailNetwork();
       Train.allTrains = loaded.trains?.clean() || []; ////when something went wront while loading trains, we filter all nulls
       Train.allTrains.forEach((t) => t.restore());
+      Train.allTrains.forEach((t) => {
+         delete t.trainCoupledFrontId;
+         delete t.trainCoupledBackId;
+      });
       Train.allTrains = Train.allTrains.filter((t) => t.track != null);
    },
 
