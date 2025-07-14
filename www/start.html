@@ -26,12 +26,12 @@
       <script src="code/tools.js?04"></script>
       <script src="code/generic_object.js?04"></script>
       <script src="code/train.js?04"></script>
-      <script src="code/trackNode.js?04"></script>
       <script src="code/track.js?04"></script>
       <script src="code/switch.js?04"></script>
       <script src="code/signal.js?04"></script>
       <script src="code/trackRendering_basic.js?04"></script>
       <script src="code/trackRendering_textured.js?04"></script>
+      <script src="code/storage.js?04"></script>
       <script src="code/start.js?04"></script>
       <script src="code/signal_library.js?04"></script>
 
@@ -279,30 +279,18 @@
                   <i class="bi bi-trash"></i>
                </button>
             </div>
-            <nav>
-               <div class="nav nav-tabs nav-fill" role="tablist">
-                  <button
-                     class="nav-link active"
-                     id="nav-home-tab"
-                     data-bs-toggle="tab"
-                     data-bs-target="#nav-home"
-                     type="button"
-                     role="tab">
-                     Signalstellung
-                  </button>
-                  <button
-                     class="nav-link"
-                     id="navFeatures-tab"
-                     data-bs-toggle="tab"
-                     data-bs-target="#navFeatures"
-                     type="button"
-                     role="tab">
-                     Einstellungen
-                  </button>
-               </div>
-            </nav>
+            
+               <ul class="nav nav-tabs nav-fill" role="tablist">
+                  <li class="nav-item">
+                     <a class="nav-link active" id="nav-home-tab" data-bs-toggle="tab" data-bs-target="#nav-home" type="button" role="tab">Signalstellung</a>
+                  </li>
+                  <li class="nav-item">
+                     <a class="nav-link" id="navFeatures-tab" data-bs-toggle="tab" data-bs-target="#navFeatures" type="button" role="tab">Einstellungen</a>
+                  </li>
+               </ul>
+            
             <div class="tab-content" id="nav-tabContent">
-               <div class="tab-pane show active" id="nav-home" role="tabpanel"></div>
+               <div class="tab-pane active" id="nav-home" role="tabpanel"></div>
                <div class="tab-pane" id="navFeatures" role="tabpanel"></div>
             </div>
          </div>

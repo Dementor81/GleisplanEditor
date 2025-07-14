@@ -1,10 +1,10 @@
 "use strict";
 
 class trackRendering_textured {
-   static TRACK_SCALE = 0.2;
+   static TRACK_SCALE = 0.3;
    static signale_scale = 0.5;
    static SCHWELLEN_VARIANTEN = 24;
-   static CURVATURE_4WAY_SWITCH = 22;
+   static CURVATURE_4WAY_SWITCH = 70;
    static RAILS = [
       [2.8, "#222"],
       [2.4, "#999"],
@@ -14,15 +14,12 @@ class trackRendering_textured {
    // Define sleeper pattern for 4-way switch
    static FOUR_WAY_SLEEPER_PATTERN = [
       { offset: 1, length: 1.0 }, // Start straight
-      { offset: 1.1, length: 1.2 }, // Begin transition
-      { offset: 1.3, length: 1.65 }, // Peak of curve
+      { offset: 1, length: 1.4 }, // Start straight
+      { offset: 1.1, length: 1.7 }, // Begin transition
+      { offset: 1.2, length: 1.9 }, // Peak of curve
+      { offset: 1.4, length: 1.8 }, // Peak of curve
       { offset: 1.5, length: 1.7 }, // Curve
-      { offset: 1.8, length: 1.7 }, // Curve
-      { offset: 2, length: 1.7 }, // Curve
-      { offset: 2.1, length: 1.7 }, // Curve
-      { offset: 2, length: 1.6 }, // Peak of curve
-      { offset: 1.3, length: 1.2 }, // End transition
-      { offset: 1, length: 1.0 }, // End straight
+      { offset: 1.7, length: 1.65 }, // Curve
    ];
 
    constructor() {
@@ -37,53 +34,6 @@ class trackRendering_textured {
       // Cache for sleeper shapes and bitmaps
       this._sleeperCache = {};
       this._bitmapCache = new Array(trackRendering_textured.SCHWELLEN_VARIANTEN);
-   }
-
-   /**
-    * Get the bounds of a track
-    * @param {Track} track - The track to get bounds for
-    * @param {Boolean} forceRecalculate - Force recalculation of bounds even if cached
-    * @return {Object} - Bounds object with x, y, width, height
-    */
-   getTrackBounds(track, forceRecalculate = false) {
-      // Validate input
-      if (!track) {
-         console.warn("getTrackBounds called with invalid track");
-         return { x: 0, y: 0, width: 0, height: 0 };
-      }
-
-      // If we already calculated bounds during rendering and not forcing recalculation
-      if (!forceRecalculate && track._renderData && track._renderData.bounds) {
-         return track._renderData.bounds;
-      }
-
-      try {
-         // Calculate bounds from scratch
-         const points = this.calculateTrackPoints(track);
-         const bounds = this.calculateRailBounds(points);
-
-         // Cache the result for future use
-         if (!track._renderData) {
-            track._renderData = {};
-         }
-         track._renderData.bounds = bounds;
-
-         return bounds;
-      } catch (error) {
-         console.error("Error calculating track bounds:", error);
-
-         // Fallback to a simple estimation based on track start and end
-         const start = track.start;
-         const end = track.end;
-         const padding = GRID_SIZE; // Use a reasonable default padding
-
-         return {
-            x: Math.min(start.x, end.x) - padding,
-            y: Math.min(start.y, end.y) - padding,
-            width: Math.abs(end.x - start.x) + padding * 2,
-            height: Math.abs(end.y - start.y) + padding * 2,
-         };
-      }
    }
 
    cleanUp() {
@@ -415,32 +365,6 @@ class trackRendering_textured {
       }
    }
 
-   
-
-   handleCachingSignal(c) {
-      if (!c.data._dontCache && !this._rendering.dont_optimize) {
-         if (c.bitmapCache) c.uncache(); // c.updateCache(); //we cant just update the cache, cause maybe the bounds have changed
-         //else {
-         const bounds = c.getBounds();
-         c.cache(bounds.x, bounds.y, bounds.width, bounds.height, stage.scale);
-         //}
-      } else c.uncache();
-   }
-
-   createHitArea(startpoint, endpoint, deg) {
-      const hit = new createjs.Shape();
-      const sw2 = this.schwellenHöhe_2;
-      const p1 = geometry.perpendicular(startpoint, deg, -sw2);
-      const p2 = geometry.perpendicular(startpoint, deg, sw2);
-      const p3 = geometry.perpendicular(endpoint, deg, sw2);
-      const p4 = geometry.perpendicular(endpoint, deg, -sw2);
-
-      hit.graphics.beginFill("#000").mt(p1.x, p1.y).lt(p2.x, p2.y).lt(p3.x, p3.y).lt(p4.x, p4.y).lt(p1.x, p1.y);
-
-      return hit;
-   }
-
-   
    ///calculate start and end points for each node of a track and the control point for the curve
    ///start and end points of straight segments are adjusted for the curves
    calculateTrackPoints(track) {
@@ -453,7 +377,8 @@ class trackRendering_textured {
       // Handle the start of the track
       if (startConnection) {
          // If there's a connection, shorten the track to make space
-         startPoint = startPoint.add(geometry.multiply(track.unit, GRID_SIZE_2));
+         const size = startConnection instanceof Switch ? startConnection.size : GRID_SIZE_2;
+         startPoint = startPoint.add(geometry.multiply(track.unit, size));
       } else {
          // If there's no connection, extend it for the bumper
          startPoint = startPoint.sub(geometry.multiply(track.unit, GRID_SIZE_2));
@@ -467,7 +392,8 @@ class trackRendering_textured {
       // Handle the end of the track
       if (endConnection) {
          // If there's a connection, shorten the track to make space for the switch or curve
-         straightEndPoint = endPoint.sub(geometry.multiply(track.unit, GRID_SIZE_2));
+         const size = endConnection instanceof Switch ? endConnection.size : GRID_SIZE_2;
+         straightEndPoint = endPoint.sub(geometry.multiply(track.unit, size));
 
          if (endConnection instanceof Track) {
             // If the connection is another track, calculate the curve
@@ -688,17 +614,6 @@ class trackRendering_textured {
          width: maxX - minX + padding * 2,
          height: maxY - minY + padding * 2,
       };
-   }
-
-   getPointOnQuadraticCurve(t, p0, cp, p1) {
-      const oneMinusT = 1 - t;
-      const oneMinusTSquared = oneMinusT * oneMinusT;
-      const tSquared = t * t;
-
-      return new Point(
-         oneMinusTSquared * p0.x + 2 * oneMinusT * t * cp.x + tSquared * p1.x,
-         oneMinusTSquared * p0.y + 2 * oneMinusT * t * cp.y + tSquared * p1.y
-      );
    }
 
    renderRails(track, points) {
@@ -1103,9 +1018,15 @@ class trackRendering_textured {
          // Calculate starting point and offset vector
          let centerPoint = straightBranch.position.add(mainTrack.unit.multiply(this.sleeperIntervall / 4));
          const step_vector = mainTrack.unit.multiply(this.sleeperIntervall);
+         
+         // Create a full symmetric pattern from the half pattern
+         const pattern = trackRendering_textured.FOUR_WAY_SLEEPER_PATTERN;
+         const reversed_pattern = pattern.slice(0, -1).reverse(); //remove the last element because its right on the point of the switch
+         const point_symmetric_pattern = reversed_pattern.map(p => ({ offset: (2 * p.length) - p.offset, length: p.length }));
+         const fullPattern = [...pattern, ...point_symmetric_pattern];
+
          // Draw sleepers using the pattern
-         trackRendering_textured.FOUR_WAY_SLEEPER_PATTERN.forEach((data, i) => {
-            // Draw sleeper with scaled length
+         fullPattern.forEach((data, i) => {
             this.drawSleeper(
                i,
                centerPoint.x,
@@ -1115,8 +1036,6 @@ class trackRendering_textured {
                data.length * this.schwellenHöhe,
                data.offset * this.schwellenHöhe_2
             );
-
-            // Move to next position
             centerPoint = centerPoint.add(step_vector);
          });
       }
@@ -1160,7 +1079,7 @@ class trackRendering_textured {
          const railOffset = geometry.perpendicularX(track.unit.multiply(this.rail_distance * flipped));
          const sleeperOffset = geometry.perpendicularX(track.unit.multiply(this.schwellenHöhe_2 * flipped));
          // The position should be on the track, at a certain distance from the switch location.
-         const position = sw.location.add(unit.multiply(GRID_SIZE_2));
+         const position = sw.location.add(unit.multiply(sw.size));
 
          return {
             unit: track.unit,

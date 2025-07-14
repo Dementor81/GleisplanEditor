@@ -361,7 +361,7 @@ class Signal {
             } else index = index + dir;
          }
 
-         if ((sw = track._tmp.switches[dir == 1 ? 1 : 0])) {
+         if ((sw = track.switches[dir == 1 ? 1 : 0])) {
             if (type(sw) == "Track") track = sw;
             else track = getTrackAtBranch(sw, track);
 
