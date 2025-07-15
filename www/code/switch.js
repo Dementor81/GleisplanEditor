@@ -1,6 +1,11 @@
 "use strict";
 
-class Switch {
+// ES6 Module imports
+import { NumberUtils, ArrayUtils } from './utils.js';
+import { Track } from './track.js';
+import { V2, Point, geometry, type, swap } from './tools.js';
+
+export class Switch {
    static allSwitches = [];
    static counter = 0;
 
@@ -37,12 +42,12 @@ class Switch {
     * @returns {boolean} - Returns true if the switch is valid, otherwise false.
     */
    static isValidSwitch(location, tracks) {
-      if (!tracks.length.between(3, 4)) {
+      if (!NumberUtils.between(tracks.length, 3, 4)) {
          console.log(`too many nodes ${tracks.length}`);
          return false;
       }
       const slopes = tracks.map((t) => t.slope);
-      const equal_slopes = slopes.countNonUnique();
+      const equal_slopes = ArrayUtils.countNonUnique(slopes);
       if (!((tracks.length == 3 && equal_slopes == 1) || (tracks.length == 4 && equal_slopes == 2))) {
          console.log(`2 tracks with the same slope are necessary`);
          return false;
@@ -131,7 +136,7 @@ class Switch {
          if (existingSwitch) {
             Switch.removeSwitch(existingSwitch);
          }
-      } else if (tracksAtPoint.length.between(3, 4)) {
+      } else if (NumberUtils.between(tracksAtPoint.length, 3, 4)) {
          // Potential switch.
          if (Switch.isValidSwitch(point, tracksAtPoint)) {
             if (existingSwitch) {
@@ -182,11 +187,11 @@ class Switch {
       );
 
       // Remove switch from the global switches array
-      Switch.allSwitches.remove(switchToRemove);
+      ArrayUtils.remove(Switch.allSwitches, switchToRemove);
    }
 
    static switch_A_Switch(sw, mouseX) {
-      if (!sw.type.is(Switch.SWITCH_TYPE.DKW)) {
+      if (!NumberUtils.is(sw.type, Switch.SWITCH_TYPE.DKW)) {
          sw.branch = swap(sw.branch, sw.track2, sw.track3);
       } else {
          if (mouseX < sw.location.x) {
@@ -202,7 +207,7 @@ class Switch {
       this.location = location;
       this.type = Switch.SWITCH_TYPE.NONE;
 
-      this.size = GRID_SIZE;
+      this.size = window.GRID_SIZE;
 
       this.tracks = new Array(4).fill(null);
 
@@ -304,3 +309,5 @@ class Switch {
       return s;
    }
 }
+
+

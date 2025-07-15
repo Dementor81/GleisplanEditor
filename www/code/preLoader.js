@@ -1,6 +1,10 @@
 "use strict";
 
-class preLoader {
+// ES6 Module imports
+import { ArrayUtils } from './utils.js';
+import { ui } from './ui.js';
+
+export class preLoader {
     constructor(basefolder) {
         this._promises = [];
         this._basefolder = basefolder;
@@ -22,15 +26,15 @@ class preLoader {
     }
 
     addSpriteSheet(json_file) {
-        if(!this._jsonFiles.pushUnique(json_file))return null;
+        if(!ArrayUtils.pushUnique(this._jsonFiles, json_file))return null;
         
         let p = new Promise((resolve, reject) => {
-            preLoader.getJson(this._basefolder + json_file + ".json" + "?" + VERSION).then((imgCatalog) => {
+            preLoader.getJson(this._basefolder + json_file + ".json" + "?" + window.VERSION).then((imgCatalog) => {
                 let i = 0;
                 let img;
                 while (i < imgCatalog.length) {
                     img = imgCatalog[i];
-                    img.src = json_file + ".png" + "?" + VERSION;
+                    img.src = json_file + ".png" + "?" + window.VERSION;
                     img.id = json_file + img.signal;
                     i++;
                 }
@@ -52,7 +56,7 @@ class preLoader {
         return new Promise((resolve, reject) => {
             Promise.all(this._promises).then(() => {
                 this._loadQueue.addEventListener("error", (e) => {
-                    showInfoToast(e.title + ":" + e.data.id);
+                    ui.showInfoToast(e.title + ":" + e.data.id);
                 });
                 this._loadQueue.addEventListener("fileload", () => { this._loadedItems++; });
                 this._loadQueue.addEventListener("complete", () => {
@@ -93,3 +97,5 @@ class preLoader {
     }
 
 }
+
+

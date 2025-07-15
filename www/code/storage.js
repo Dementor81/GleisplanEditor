@@ -1,20 +1,33 @@
-const STORAGE = {
+"use strict";
+
+// ES6 Module imports
+import { Track } from './track.js';
+import { Switch } from './switch.js';
+import { Signal } from './signal.js';
+import { Train } from './train.js';
+import { GenericObject } from './generic_object.js';
+import { ArrayUtils } from './utils.js';
+import { ui } from './ui.js';
+
+export const STORAGE = {
    MIN_STORAGE_VERSION: 0.5,
    STORAGE_IDENT: "bahnhof_last1",
 
-   classMap: {
-      Track: Track,
-      Switch: Switch,
-      Signal: Signal,
-      Train: Train,
-      GenericObject: GenericObject,
+   getClassMap() {
+      return {
+         Track: Track,
+         Switch: Switch,
+         Signal: Signal,
+         Train: Train,
+         GenericObject: GenericObject,
+      };
    },
 
    receiver(key, value) {
-      if (value?._class && STORAGE.classMap[value._class]) {
-         const MyClass = STORAGE.classMap[value._class];
+      if (value?._class && STORAGE.getClassMap()[value._class]) {
+         const MyClass = STORAGE.getClassMap()[value._class];
          const instance = MyClass.FromObject(value);
-         if (instance == null) showErrorToast(new Error("error loading " + key));
+         if (instance == null) ui.showErrorToast(new Error("error loading " + key));
          return instance;
       }
       return value;
@@ -35,10 +48,10 @@ const STORAGE = {
                switches: Switch.allSwitches,
                objects: GenericObject.all_objects,
                settings: {
-                  zoom: stage.scale,
-                  scrollX: stage.x,
-                  scrollY: stage.y,
-                  renderer: renderer instanceof trackRendering_textured ? "textured" : "basic",
+                  zoom: window.stage.scale,
+                  scrollX: window.stage.x,
+                  scrollY: window.stage.y,
+                  renderer: window.renderer instanceof window.trackRendering_textured ? "textured" : "basic",
                },
             },
             STORAGE.replacer
@@ -47,14 +60,14 @@ const STORAGE = {
    },
 
    restoreLastUndoStep() {
-      if (undoHistory.length <= 1) return;
-      undoHistory.pop();
-      const last = undoHistory.last();
+      if (window.undoHistory.length <= 1) return;
+      window.undoHistory.pop();
+      const last = ArrayUtils.last(window.undoHistory);
       if (last) {
          STORAGE.loadFromJson(last);
       } else Track.allTracks = [];
 
-      updateUndoButtonState();
+      window.updateUndoButtonState();
    },
 
    linkObjects() {
@@ -90,16 +103,16 @@ const STORAGE = {
       RENDERING.clear();
       let loaded = JSON.parse(json, STORAGE.receiver);
       if (loaded.settings) {
-         stage.x = loaded.settings.scrollX;
-         stage.y = loaded.settings.scrollY;
-         stage.scale = loaded.settings.zoom;
+         window.stage.x = loaded.settings.scrollX;
+         window.stage.y = loaded.settings.scrollY;
+         window.stage.scale = loaded.settings.zoom;
          if (loaded.settings.renderer) {
-            selectRenderer(loaded.settings.renderer === "textured");
+            window.selectRenderer(loaded.settings.renderer === "textured");
          }
       }
       if (loaded.objects) GenericObject.all_objects = loaded.objects;
-      Track.allTracks = loaded.tracks?.clean() || []; //when something went wront while loading track, we filter all nulls
-      Switch.allSwitches = loaded.switches?.clean() || []; //when something went wront while loading switch, we filter all nulls
+      Track.allTracks = loaded.tracks ? ArrayUtils.cleanUp(loaded.tracks) : []; //when something went wront while loading track, we filter all nulls
+      Switch.allSwitches = loaded.switches ? ArrayUtils.cleanUp(loaded.switches) : []; //when something went wront while loading switch, we filter all nulls
 
       // Reset counters
       Track.counter = Track.allTracks.length ? Math.max(...Track.allTracks.map((t) => t.id)) + 1 : 0;
@@ -108,7 +121,7 @@ const STORAGE = {
       STORAGE.linkObjects();
 
       Track.createRailNetwork();
-      Train.allTrains = loaded.trains?.clean() || []; ////when something went wront while loading trains, we filter all nulls
+      Train.allTrains = loaded.trains ? ArrayUtils.cleanUp(loaded.trains) : []; ////when something went wront while loading trains, we filter all nulls
       Train.allTrains.forEach((t) => t.restore());
       Train.allTrains.forEach((t) => {
          delete t.trainCoupledFrontId;
@@ -118,10 +131,10 @@ const STORAGE = {
    },
 
    saveUndoHistory() {
-      undoHistory.push(JSON.stringify({ tracks: Track.allTracks, objects: GenericObject.all_objects }, STORAGE.replacer));
-      if (undoHistory.length > MOST_UNDO) undoHistory.shift();
+      window.undoHistory.push(JSON.stringify({ tracks: Track.allTracks, objects: GenericObject.all_objects }, STORAGE.replacer));
+      if (window.undoHistory.length > window.MOST_UNDO) window.undoHistory.shift();
 
-      updateUndoButtonState();
+      window.updateUndoButtonState();
    },
 
    save() {
@@ -141,9 +154,9 @@ const STORAGE = {
             STORAGE.saveUndoHistory();
          }
       } catch (error) {
-         showErrorToast(error);
+         ui.showErrorToast(error);
       }
-      updateUndoButtonState();
+      window.updateUndoButtonState();
    },
 
    loadPrebuildbyName(name) {
@@ -167,4 +180,6 @@ const STORAGE = {
          xmlhttp.send();
       });
    },
-}; 
+};
+
+ 

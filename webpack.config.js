@@ -1,19 +1,29 @@
 const path = require('path');
 
-module.exports = {
-  entry: './www/code/start.js',
-  output: {
-    filename: 'bundle.js',
-    path: path.resolve(__dirname, 'www', 'dist'),
-  },
-  devServer: {
-    static: {
-      directory: path.join(__dirname, 'www'),
+module.exports = (env, argv) => {
+  const isProduction = argv.mode === 'production';
+  
+  return {
+    entry: './www/code/start.js',
+    output: {
+      filename: isProduction ? 'bundle.[contenthash].js' : 'bundle.js',
+      path: path.resolve(__dirname, 'www', 'dist'),
+      clean: true, // Clean dist folder before each build
     },
-    compress: true,
-    port: 9000,
-    open: true,
-  },
-  devtool: 'source-map',
-  mode: 'development'
+    devServer: {
+      static: {
+        directory: path.join(__dirname, 'www'),
+      },
+      compress: true,
+      port: 9000,
+      open: {
+        app: {
+          name: 'google chrome', 
+        },
+      },
+      hot: true, // Enable hot module replacement
+    },
+    devtool: isProduction ? 'source-map' : 'eval-source-map',
+    mode: argv.mode || 'development',
+  };
 }; 

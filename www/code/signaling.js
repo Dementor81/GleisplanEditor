@@ -1,22 +1,14 @@
 "use strict";
 
-const CONDITIONS = (function () {
-   const BKsig = "verw=bksig",
-      SBK = "verw=sbk",
-      Esig = "verw=esig",
-      Asig = "verw=asig",
-      Zsig = "verw=zsig",
-      STRECKE = [BKsig, SBK, Esig],
-      GRENZEN = [BKsig, Esig],
-      BAHNHOF = [Asig, Zsig];
-   return { BKsig, SBK, Esig, Asig, Zsig, STRECKE, GRENZEN, BAHNHOF };
-})();
+// ES6 Module imports
+import { ArrayUtils } from './utils.js';
+
 
 //Signals are build of Visual elements. Some elements are always been drawn, like the "Mast", others have a varianty of
 //conditions.
 //1st: a VE has conditions, these must match with the Signals features. e.g.: sh1 are only on Zsig and Asig
 //2nd: the visual elemnt must be enabled.
-class VisualElement {
+export class VisualElement {
    #_blinkt = null;
    #_image = null;
    #_pos = 0;
@@ -92,7 +84,7 @@ class VisualElement {
    }
 }
 
-class TextElement extends VisualElement {
+export class TextElement extends VisualElement {
    #_format;
    #_color;
    #_source;
@@ -129,7 +121,7 @@ class TextElement extends VisualElement {
    }
 }
 
-class SignalTemplate {
+export class SignalTemplate {
    #_id = null;
    #_title = null;
    #_start = null;
@@ -235,7 +227,7 @@ class SignalTemplate {
          else this.elements = [startElements];
       } else this.elements = [id];
 
-      pl.addSpriteSheet(json_file);
+      window.pl.addSpriteSheet(json_file);
    }
 
    getVisualElementsByOnCondition(condition) {
@@ -265,7 +257,7 @@ class SignalTemplate {
          ve = stack.pop();
          if (typeof ve == "object") {
             [].concat(ve.on()).forEach((c) => {
-               if (c) c.split("&&").forEach((c) => conditions.pushUnique(c.replace("!", "")));
+               if (c) c.split("&&").forEach((c) => ArrayUtils.pushUnique(conditions, c.replace("!", "")));
             });
 
             if (ve.childs()) stack.push(...ve.childs());
@@ -282,5 +274,7 @@ class SignalTemplate {
       return this.id;
    }
 }
+
+
 
 

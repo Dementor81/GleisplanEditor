@@ -1,14 +1,25 @@
 "use strict";
 
-class trackRendering_textured {
+// ES6 Module imports
+import { Track } from './track.js';
+import { Switch } from './switch.js';
+import { Signal, SignalRenderer } from './signal.js';
+import { Train } from './train.js';
+import { GenericObject } from './generic_object.js';
+import { geometry, Point } from './tools.js';
+import { NumberUtils } from './utils.js';
+import { ui } from './ui.js';
+
+export class trackRendering_textured {
+   static SWITCH_UI_STROKE = 3;
    static TRACK_SCALE = 0.3;
    static signale_scale = 0.5;
    static SCHWELLEN_VARIANTEN = 24;
    static CURVATURE_4WAY_SWITCH = 70;
    static RAILS = [
-      [2.8, "#222"],
-      [2.4, "#999"],
-      [1.2, "#eee"],
+      [3.2, "#222"],
+      [2.8, "#999"],
+      [1.4, "#eee"],
    ];
 
    // Define sleeper pattern for 4-way switch
@@ -24,7 +35,7 @@ class trackRendering_textured {
 
    constructor() {
       //cause the class is been loaded before start.js, we have to hack and calculate this constant here
-      trackRendering_textured.CURVE_RADIUS = GRID_SIZE * 1.21;
+      trackRendering_textured.CURVE_RADIUS = window.GRID_SIZE * 1.21;
 
       this.SIGNAL_DISTANCE_FROM_TRACK = 35;
 
@@ -134,10 +145,10 @@ class trackRendering_textured {
 
                   this.calcRenderValues();
                } else {
-                  //if we passed the LOD in either direction we have to rerender the tracks
-                  if (this.LOD.between(this._lastRenderScale, stage.scale)) {
-                     this._rendering.lodChanged = true;
-                  }
+                                 //if we passed the LOD in either direction we have to rerender the tracks
+               if (NumberUtils.between(this.LOD, this._lastRenderScale, stage.scale)) {
+                  this._rendering.lodChanged = true;
+               }
                }
 
                try {
@@ -156,7 +167,7 @@ class trackRendering_textured {
                }
             } catch (error) {
                console.error("Critical rendering error:", error);
-               showErrorToast(error);
+               ui.showErrorToast(error);
                // Attempt to recover by clearing rendering state
                delete this._rendering;
                throw error;
@@ -180,7 +191,7 @@ class trackRendering_textured {
       this.TRAIN_HEIGHT = this.schwellenHöhe - this.rail_offset;
       this.TRAIN_WIDTH = GRID_SIZE * 0.7;
 
-      this.main_x1 = (Math.sin(π / 8) * trackRendering_textured.CURVE_RADIUS) / Math.cos(π / 8);
+      this.main_x1 = (Math.sin(Math.PI / 8) * trackRendering_textured.CURVE_RADIUS) / Math.cos(Math.PI / 8);
    }
 
    renderAllTrains() {
@@ -431,7 +442,7 @@ class trackRendering_textured {
     */
    calculateSleeperOutline(centerLine) {
       const sleeperOffset = this.schwellenHöhe_2;
-      const sleeperOffsetVector = geometry.perpendicularX(centerLine.unit.multiply(sleeperOffset));
+      const sleeperOffsetVector = geometry.perpendicular(centerLine.unit.multiply(sleeperOffset));
 
       centerLine.sleeperOutline = {
          straight: {
@@ -447,7 +458,7 @@ class trackRendering_textured {
       };
 
       if (centerLine.controlPoint) {
-         const nextSleeperOffsetVector = geometry.perpendicularX(centerLine.nextUnit.multiply(sleeperOffset));
+         const nextSleeperOffsetVector = geometry.perpendicular(centerLine.nextUnit.multiply(sleeperOffset));
 
          const curveOuterEnd = centerLine.curveEnd.sub(nextSleeperOffsetVector);
          const curveInnerEnd = centerLine.curveEnd.add(nextSleeperOffsetVector);
@@ -471,7 +482,7 @@ class trackRendering_textured {
     */
    calculateRailPositions(centerLine) {
       // Calculate rail offset vectors
-      const railOffsetVector = geometry.perpendicularX(centerLine.unit.multiply(this.rail_distance));
+      const railOffsetVector = geometry.perpendicular(centerLine.unit.multiply(this.rail_distance));
 
       // Calculate rail positions for straight segment
       centerLine.rails = {
@@ -491,7 +502,7 @@ class trackRendering_textured {
 
       // Calculate rail positions for curve if it exists
       if (centerLine.controlPoint) {
-         const nextRailOffsetVector = geometry.perpendicularX(centerLine.nextUnit.multiply(this.rail_distance));
+         const nextRailOffsetVector = geometry.perpendicular(centerLine.nextUnit.multiply(this.rail_distance));
 
          // Calculate curve endpoints
          const curveInnerEnd = centerLine.curveEnd.add(nextRailOffsetVector);
@@ -960,7 +971,7 @@ class trackRendering_textured {
 
       const deg = sw.track1.deg;
 
-      const back2front = sw.type.is(Switch.SWITCH_TYPE.FROM_RIGHT, Switch.SWITCH_TYPE.FROM_LEFT);
+                     const back2front = NumberUtils.is(sw.type, Switch.SWITCH_TYPE.FROM_RIGHT, Switch.SWITCH_TYPE.FROM_LEFT);
 
       if (curvedBranch2 == null) {
          const cp = geometry.getIntersectionPointX(
@@ -1002,9 +1013,9 @@ class trackRendering_textured {
                geometry.distance(
                   geometry.getIntersectionPointX(
                      curvedBranch.sleepers.outer,
-                     geometry.perpendicularX(curvedBranch.unit),
+                     geometry.perpendicular(curvedBranch.unit),
                      p1,
-                     geometry.perpendicularX(mainTrack.unit)
+                     geometry.perpendicular(mainTrack.unit)
                   ),
                   p1
                ),
@@ -1061,8 +1072,8 @@ class trackRendering_textured {
    }
 
    getSwitchRenderingParameter(sw) {
-      const flipped = sw.type.is(Switch.SWITCH_TYPE.FROM_RIGHT, Switch.SWITCH_TYPE.TO_RIGHT) ? -1 : 1;
-      const mirrored = sw.type.is(Switch.SWITCH_TYPE.FROM_LEFT, Switch.SWITCH_TYPE.FROM_RIGHT) ? -1 : 1;
+               const flipped = NumberUtils.is(sw.type, Switch.SWITCH_TYPE.FROM_RIGHT, Switch.SWITCH_TYPE.TO_RIGHT) ? -1 : 1;
+         const mirrored = NumberUtils.is(sw.type, Switch.SWITCH_TYPE.FROM_LEFT, Switch.SWITCH_TYPE.FROM_RIGHT) ? -1 : 1;
 
       // Calculate track data for each track
       const calcTrackData = (index) => {
@@ -1076,8 +1087,8 @@ class trackRendering_textured {
             unit = sw.track_directions[index];
          }
 
-         const railOffset = geometry.perpendicularX(track.unit.multiply(this.rail_distance * flipped));
-         const sleeperOffset = geometry.perpendicularX(track.unit.multiply(this.schwellenHöhe_2 * flipped));
+         const railOffset = geometry.perpendicular(track.unit.multiply(this.rail_distance * flipped));
+         const sleeperOffset = geometry.perpendicular(track.unit.multiply(this.schwellenHöhe_2 * flipped));
          // The position should be on the track, at a certain distance from the switch location.
          const position = sw.location.add(unit.multiply(sw.size));
 
@@ -1230,6 +1241,15 @@ class trackRendering_textured {
    }
 
    renderSwitchUI(sw) {      
+
+      const drawArrow = (graphics, length, size) => {
+         graphics.mt(0, 0)
+            .lt(length, 0)
+            .mt(length - size, -size / 2)
+            .lt(length, 0)
+            .lt(length - size, size / 2);
+      }
+
       // Check if a container already exists for this switch
       let container = ui_container.children.find((c) => c.data === sw);
 
@@ -1250,8 +1270,8 @@ class trackRendering_textured {
          const arrow = new createjs.Shape();
          container.addChild(arrow);
 
-         arrow.graphics.setStrokeStyle(trackRendering_basic.STROKE, "round").beginStroke("#333");
-         arrow.graphics.drawArrow(20, 5);
+         arrow.graphics.setStrokeStyle(trackRendering_textured.SWITCH_UI_STROKE, "round").beginStroke("#333");
+         drawArrow(arrow.graphics, 20, 5);
          arrow.x = sw.location.x;
          arrow.y = sw.location.y;
          arrow.rotation = Switch.findAngle(sw.location, t.end.equals(sw.location) ? t.start : t.end);
@@ -1263,8 +1283,8 @@ class trackRendering_textured {
       const screen_rectangle = this._rendering.screen_rectangle;
 
       return (
-         p1.x.between(screen_rectangle.left, screen_rectangle.right) &&
-         p1.y.between(screen_rectangle.top, screen_rectangle.bottom)
+         NumberUtils.between(p1.x, screen_rectangle.left, screen_rectangle.right) &&
+         NumberUtils.between(p1.y, screen_rectangle.top, screen_rectangle.bottom)
       );
    }
 
@@ -1346,3 +1366,5 @@ class trackRendering_textured {
       selection_container.addChild(boundsShape);
    }
 }
+
+

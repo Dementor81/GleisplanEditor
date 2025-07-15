@@ -1,6 +1,23 @@
 "use strict";
 
-function initSignals() {
+// ES6 Module imports
+import { VisualElement, TextElement, SignalTemplate } from './signaling.js';
+
+export const CONDITIONS = (function () {
+   const BKsig = "verw=bksig",
+      SBK = "verw=sbk",
+      Esig = "verw=esig",
+      Asig = "verw=asig",
+      Zsig = "verw=zsig",
+      STRECKE = [BKsig, SBK, Esig],
+      GRENZEN = [BKsig, Esig],
+      BAHNHOF = [Asig, Zsig];
+   return { BKsig, SBK, Esig, Asig, Zsig, STRECKE, GRENZEN, BAHNHOF };
+})();
+
+export function initSignals(signalTemplatesRef) {
+   // Use the passed signalTemplates reference instead of a module-level variable
+   const signalTemplates = signalTemplatesRef;
    const lightMenu = [
       ["hp=0,hp=1,hp=2", "zs3"],
       ["vr=0,vr=1,vr=2", "verk=1(verk)", "zs3v"],
@@ -479,3 +496,7 @@ function initSignals() {
    signalTemplates.zusatzSignal.createSignalCommandMenu([["zs6=1(Zs 6)"], "zs3()"]);
    signalTemplates.zusatzSignal.previewsize = 30;
 }
+
+
+
+

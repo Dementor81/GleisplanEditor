@@ -1,6 +1,15 @@
 "use strict";
 
-class trackRendering_basic {
+// ES6 Module imports
+import { Track } from './track.js';
+import { Switch } from './switch.js';
+import { Signal, SignalRenderer } from './signal.js';
+import { Train } from './train.js';
+import { GenericObject } from './generic_object.js';
+import { geometry, type } from './tools.js';
+import { NumberUtils } from './utils.js';
+
+export class trackRendering_basic {
    static TRACK_COLOR = "#111111";
    static SWITCH_UI_COLOR = "gray";
    static SWITCH_UI_COLOR_SELECTED = "#eee";
@@ -14,26 +23,26 @@ class trackRendering_basic {
    }
 
    reDrawEverything() {
-      track_container.removeAllChildren();
-      signal_container.removeAllChildren();
-      train_container.removeAllChildren();
-      ui_container.removeAllChildren();
-      debug_container.removeAllChildren();
-      object_container.removeAllChildren();
+      window.track_container.removeAllChildren();
+      window.signal_container.removeAllChildren();
+      window.train_container.removeAllChildren();
+      window.ui_container.removeAllChildren();
+      window.debug_container.removeAllChildren();
+      window.object_container.removeAllChildren();
 
       this.renderAllTracks();
       this.renderAllSwitches();
       this.renderAllGenericObjects();
       this.renderAllSignals();
-      stage.update();
+      window.stage.update();
    }
 
    renderAllSignals() {
-      signal_container.removeAllChildren();
+      window.signal_container.removeAllChildren();
       Signal.allSignals.forEach((signal) => {
-         let container = signal_container.addChild(SignalRenderer.createSignalContainer(signal));
-         alignSignalContainerWithTrack(container, signal._positioning);
-         if (selection.isSelectedObject(signal)) {
+         let container = window.signal_container.addChild(SignalRenderer.createSignalContainer(signal));
+         window.alignSignalContainerWithTrack(container, signal._positioning);
+         if (window.selection.isSelectedObject(signal)) {
             container.shadow = new createjs.Shadow("#ff0000", 0, 0, 3);
          }
       });
@@ -41,7 +50,7 @@ class trackRendering_basic {
 
    renderAllTracks() {
       Track.allTracks.forEach((t) => {
-         this.renderTrack(track_container, t);
+         this.renderTrack(window.track_container, t);
       });
    }
 
@@ -50,23 +59,23 @@ class trackRendering_basic {
    }
 
    updateSelection() {
-      track_container.children.forEach((c) => {
+      window.track_container.children.forEach((c) => {
          if (c.data) {
-            if (selection.isSelectedObject(c.data)) this.isSelected(c);
+            if (window.selection.isSelectedObject(c.data)) this.isSelected(c);
             else c.color.style = trackRendering_basic.TRACK_COLOR;
          }
       });
-      signal_container.children.forEach(function (c) {
+      window.signal_container.children.forEach(function (c) {
          if (c.data) {
-            if (selection.isSelectedObject(c.data)) c.shadow = new createjs.Shadow("#ff0000", 0, 0, 3);
+            if (window.selection.isSelectedObject(c.data)) c.shadow = new createjs.Shadow("#ff0000", 0, 0, 3);
             else c.shadow = null;
          }
       });
-      stage.update();
+      window.stage.update();
    }
 
    renderAllGenericObjects() {
-      object_container.removeAllChildren();
+      window.object_container.removeAllChildren();
       GenericObject.all_objects.forEach((o) => {
          const c = new createjs.Container();
          c.name = "object";
@@ -79,7 +88,7 @@ class trackRendering_basic {
          else if (o.type() === GenericObject.OBJECT_TYPE.plattform) this.renderPlattformObject(o, c);
          else throw new Error("Unknown Object");
 
-         object_container.addChild(c);
+         window.object_container.addChild(c);
       });
    }
 
@@ -118,8 +127,8 @@ class trackRendering_basic {
 
       if (!track.switchAtTheStart) {
          //prellbock beim start
-         const B1 = geometry.perpendicular(track.start, track.deg, -trackRendering_basic.BUMPER_SIZE);
-         const B2 = geometry.perpendicular(track.start, track.deg, trackRendering_basic.BUMPER_SIZE);
+         const B1 = track.start.add(geometry.perpendicular(track.unit).multiply(-trackRendering_basic.BUMPER_SIZE));
+         const B2 = track.start.add(geometry.perpendicular(track.unit).multiply(trackRendering_basic.BUMPER_SIZE));
          bumper_start = [B1, B2];
       } else if (type(track.switchAtTheStart) == "Switch") {
          corr_start = track.along(track.switchAtTheStart.location, track.switchAtTheStart.size);
@@ -127,17 +136,17 @@ class trackRendering_basic {
 
       if (!track.switchAtTheEnd) {
          //prellbock beim ende
-         const B1 = geometry.perpendicular(track.end, track.deg, -trackRendering_basic.BUMPER_SIZE);
-         const B2 = geometry.perpendicular(track.end, track.deg, trackRendering_basic.BUMPER_SIZE);
+         const B1 = track.end.add(geometry.perpendicular(track.unit).multiply(-trackRendering_basic.BUMPER_SIZE));
+         const B2 = track.end.add(geometry.perpendicular(track.unit).multiply(trackRendering_basic.BUMPER_SIZE));
          bumper_end = [B1, B2];
       } else if (type(track.switchAtTheEnd) == "Switch") {
          corr_end = track.along(track.switchAtTheEnd.location, -track.switchAtTheEnd.size);
       }
 
-      const p1 = geometry.perpendicular(corr_start, track.deg, -trackRendering_basic.HIT_TEST_DISTANCE);
-      const p2 = geometry.perpendicular(corr_start, track.deg, trackRendering_basic.HIT_TEST_DISTANCE);
-      const p3 = geometry.perpendicular(corr_end, track.deg, trackRendering_basic.HIT_TEST_DISTANCE);
-      const p4 = geometry.perpendicular(corr_end, track.deg, -trackRendering_basic.HIT_TEST_DISTANCE);
+      const p1 = corr_start.add(geometry.perpendicular(track.unit).multiply(-trackRendering_basic.HIT_TEST_DISTANCE));
+      const p2 = corr_start.add(geometry.perpendicular(track.unit).multiply(trackRendering_basic.HIT_TEST_DISTANCE));
+      const p3 = corr_end.add(geometry.perpendicular(track.unit).multiply(trackRendering_basic.HIT_TEST_DISTANCE));
+      const p4 = corr_end.add(geometry.perpendicular(track.unit).multiply(-trackRendering_basic.HIT_TEST_DISTANCE));
       return {
          hit_area: [p1, p2, p3, p4],
          bumper: [bumper_start, bumper_end],
@@ -178,15 +187,15 @@ class trackRendering_basic {
          //prellbock beim ende
          shape.graphics.moveTo(params.bumper[1][0].x, params.bumper[1][0].y).lineTo(params.bumper[1][1].x, params.bumper[1][1].y);
       }
-      if (selection.isSelectedObject(track)) this.isSelected(shape);
+      if (window.selection.isSelectedObject(track)) this.isSelected(shape);
 
       const text = new createjs.Text(track.id, "Italic 10px Arial", "black");
-      const p = geometry.perpendicular(track.along(track.start, track.length / 2), track.deg, 15);
+      const p = track.along(track.start, track.length / 2).add(geometry.perpendicular(track.unit).multiply(15));
 
       text.x = p.x;
       text.y = p.y;
       text.textBaseline = "alphabetic";
-      ui_container.addChild(text);
+      window.ui_container.addChild(text);
 
       shape.setBounds(
          params.start.x - trackRendering_basic.HIT_TEST_DISTANCE,
@@ -198,6 +207,14 @@ class trackRendering_basic {
       return shape;
    }
 
+   static drawTriangle(graphics, color, p1, p2, p3) {
+      graphics.beginFill(color)
+         .mt(p1.x, p1.y)
+         .lt(p2.x, p2.y)
+         .lt(p3.x, p3.y)
+         .lt(p1.x, p1.y);
+   }
+
    renderAllSwitches() {
       Switch.allSwitches.forEach((sw) => {
          if (!sw.track1 || !sw.track2 || !sw.track3 || (sw.type == Switch.SWITCH_TYPE.DKW && !sw.track4)) {
@@ -207,7 +224,7 @@ class trackRendering_basic {
          let switch_shape = new createjs.Shape();
          switch_shape.name = "switch";
          switch_shape.data = sw;
-         track_container.addChild(switch_shape);
+         window.track_container.addChild(switch_shape);
 
          // Draw the switch branch tracks
          switch_shape.graphics.setStrokeStyle(trackRendering_basic.STROKE, "round").beginStroke(trackRendering_basic.TRACK_COLOR);
@@ -226,14 +243,14 @@ class trackRendering_basic {
          p1 = sw.getBranchEndPoint(1, trackRendering_basic.SWITCH_SIZE);
          p2 = sw.getBranchEndPoint(2, trackRendering_basic.SWITCH_SIZE);
          if (p1 && p2) {
-            switch_shape.graphics.drawTriangle("black", sw.location, p1, p2);
+            trackRendering_basic.drawTriangle(switch_shape.graphics, "black", sw.location, p1, p2);
          }
 
          if (sw.type == Switch.SWITCH_TYPE.DKW) {
             p1 = sw.getBranchEndPoint(0, trackRendering_basic.SWITCH_SIZE);
             p2 = sw.getBranchEndPoint(3, trackRendering_basic.SWITCH_SIZE);
             if (p1 && p2) {
-               switch_shape.graphics.drawTriangle("black", sw.location, p1, p2);
+               trackRendering_basic.drawTriangle(switch_shape.graphics, "black", sw.location, p1, p2);
             }
          }
 
@@ -243,7 +260,7 @@ class trackRendering_basic {
 
    renderSwitchUI(sw) {
       // Check if a container already exists for this switch
-      let container = ui_container.children.find((c) => c.data === sw);
+      let container = window.ui_container.children.find((c) => c.data === sw);
 
       if (container) {
          // If container exists, clear it but keep it
@@ -254,7 +271,7 @@ class trackRendering_basic {
          container.mouseChildren = false;
          container.name = "switch";
          container.data = sw;
-         ui_container.addChild(container);
+         window.ui_container.addChild(container);
       }
 
       const ui_shape = new createjs.Shape();
@@ -279,3 +296,5 @@ class trackRendering_basic {
       });
    }
 }
+
+

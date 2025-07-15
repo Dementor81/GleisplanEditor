@@ -1,6 +1,10 @@
 "use strict";
 
-class GenericObject {
+// ES6 Module imports
+import { ArrayUtils } from './utils.js';
+import { STORAGE } from './storage.js';
+
+export class GenericObject {
    static OBJECT_TYPE = {
       none: 0,
       text: 1,
@@ -14,9 +18,9 @@ class GenericObject {
    }
 
    static removeObject(o) {
-      this.all_objects.remove(o);
-      renderer.renderAllGenericObjects();
-      stage.update();
+      ArrayUtils.remove(this.all_objects, o);
+      window.renderer.renderAllGenericObjects();
+      window.stage.update();
       STORAGE.save();
       STORAGE.saveUndoHistory();
    }
@@ -41,9 +45,9 @@ class GenericObject {
          .val(o.content())
          .on("input", function (e) {
             o.content($(this).val());
-            renderer.renderAllGenericObjects();
-            renderer.updateSelection();
-            stage.update();
+            window.renderer.renderAllGenericObjects();
+            window.renderer.updateSelection();
+            window.stage.update();
             STORAGE.save();
          });
 
@@ -51,7 +55,7 @@ class GenericObject {
          .off()
          .click(() => {
             this.removeObject(o);
-            selectObject()
+            window.selectObject()
          });
 
       setTimeout(() => {
@@ -97,3 +101,5 @@ class GenericObject {
       return { _class: "GenericObject", pos: this.#_pos, size: this.#_size, type: this.#_type, content: this.#_content };
    }
 }
+
+

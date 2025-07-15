@@ -1,6 +1,13 @@
 "use strict";
 
-class Train {
+// ES6 Module imports
+import { ArrayUtils, NumberUtils } from './utils.js';
+import { STORAGE } from './storage.js';
+import { ui } from './ui.js';
+import { Track } from './track.js';
+import { Point, type } from './tools.js';
+
+export class Train {
    static allTrains = [];
    static nextId = 0;
    static movingTrains = new Set(); // To track which trains are currently moving
@@ -21,8 +28,8 @@ class Train {
    }
 
    // Constants for different car types
-   static LOCO_LENGTH = 42;
-   static PASSENGER_LENGTH = 50;
+   static LOCO_LENGTH = 80;
+   static PASSENGER_LENGTH = 100;
    static MULTIPLE_UNIT_CAR_LENGTH = 50;
    static MULTIPLE_UNIT_HEAD_FRONT_LENGTH = 50;
    static MULTIPLE_UNIT_HEAD_BACK_LENGTH = 50;
@@ -48,8 +55,8 @@ class Train {
          .val(train.color)
          .on("change", function (e) {
             train.color = $(this).val();
-            renderer.renderAllTrains();
-            stage.update();
+            window.renderer.renderAllTrains();
+            window.stage.update();
             STORAGE.save();
          });
 
@@ -58,8 +65,8 @@ class Train {
          .val(train.number)
          .on("change", function (e) {
             train.number = $(this).val();
-            renderer.renderAllTrains();
-            stage.update();
+            window.renderer.renderAllTrains();
+            window.stage.update();
             STORAGE.save();
          });
 
@@ -68,8 +75,8 @@ class Train {
          .val(train.type)
          .on("change", function (e) {
             train.type = $(this).val();
-            renderer.renderAllTrains();
-            stage.update();
+            window.renderer.renderAllTrains();
+            window.stage.update();
             STORAGE.save();
          });
 
@@ -81,13 +88,13 @@ class Train {
          .off()
          .click(() => {
             // Set global state for coupling mode
-            if (custom_mouse_mode === CUSTOM_MOUSE_ACTION.NONE) {
+            if (window.custom_mouse_mode === window.CUSTOM_MOUSE_ACTION.NONE) {
                // First check if there are any coupling points available
                if (Train.showCouplingPoints(train)) {
                   // Add active class to button
                   $("#btnCoupleTrain").addClass("active");
 
-                  custom_mouse_mode = CUSTOM_MOUSE_ACTION.TRAIN_COUPLE;
+                  window.custom_mouse_mode = window.CUSTOM_MOUSE_ACTION.TRAIN_COUPLE;
 
                   // Show coupling message
                   $("#couplingMessage")
@@ -105,13 +112,13 @@ class Train {
          .off()
          .click(() => {
             // Set global state for decoupling mode
-            if (custom_mouse_mode === CUSTOM_MOUSE_ACTION.NONE) {
+            if (window.custom_mouse_mode === window.CUSTOM_MOUSE_ACTION.NONE) {
                // First check if there are any decoupling points available
                if (Train.showDecouplingPoints(train)) {
                   // Add active class to button
                   $("#btnUncoupleTrain").addClass("active");
 
-                  custom_mouse_mode = CUSTOM_MOUSE_ACTION.TRAIN_DECOUPLE;
+                  window.custom_mouse_mode = window.CUSTOM_MOUSE_ACTION.TRAIN_DECOUPLE;
 
                   // Show decoupling message
                   $("#couplingMessage")
@@ -192,7 +199,7 @@ class Train {
 
       // Remove all cars in this train from allTrains
       while (currentCar) {
-         this.allTrains.remove(currentCar);
+         ArrayUtils.remove(this.allTrains, currentCar);
          //save the next car before removing all references to other objects
          const nextCar = currentCar.trainCoupledFront;
          currentCar.trainCoupledFront = null;
@@ -242,7 +249,7 @@ class Train {
          }
 
          let newTrack;
-         if (new_pos.outoff(0, currentTrack.length)) {
+         if (NumberUtils.outoff(new_pos, 0, currentTrack.length)) {
             const sw = new_pos <= 0 ? currentTrack.switchAtTheStart : currentTrack.switchAtTheEnd;
 
             if (sw) {
@@ -272,7 +279,7 @@ class Train {
       // Calculate new position using the node's unit vector
       let new_pos = train.pos + movementX / stage.scale / train.track.cos;
 
-      if (new_pos.outoff(0 + train.length / 2, currentTrack.length - train.length / 2)) {
+      if (NumberUtils.outoff(new_pos, 0 + train.length / 2, currentTrack.length - train.length / 2)) {
          const sw = new_pos <= 0 + train.length / 2 ? currentTrack.switchAtTheStart : currentTrack.switchAtTheEnd;
 
          return sw != null && (type(sw) == "Track" || sw.from == currentTrack || sw.branch == currentTrack);
@@ -488,7 +495,7 @@ class Train {
       // If no decoupling points found, show a message
       if (decouplingPointsFound === 0) {
          // Show a message
-         showInfoToast("Keine Wagen in der Nähe zum entkuppeln gefunden, dieser Zug hat nur einen Wagen");
+         ui.showInfoToast("Keine Wagen in der Nähe zum entkuppeln gefunden, dieser Zug hat nur einen Wagen");
          return false;
       } else {
          stage.update();
@@ -512,10 +519,10 @@ class Train {
 
    static exitDecouplingMode() {
       // Remove decoupling points
-      overlay_container.removeAllChildren();
+      window.overlay_container.removeAllChildren();
 
       // Reset custom action mode
-      custom_mouse_mode = CUSTOM_MOUSE_ACTION.NONE;
+      window.custom_mouse_mode = window.CUSTOM_MOUSE_ACTION.NONE;
 
       // Hide message with a small delay to ensure it's fully shown first
       setTimeout(() => {
@@ -525,12 +532,12 @@ class Train {
       // Deactivate any active buttons
       $("#btnUncoupleTrain").removeClass("active");
 
-      stage.update();
+      window.stage.update();
    }
 
    static showCouplingPoints(train) {
       // Clear any existing overlay
-      overlay_container.removeAllChildren();
+      window.overlay_container.removeAllChildren();
 
       // Get the head and tail of the train
       let firstCar = train;
@@ -570,7 +577,7 @@ class Train {
          // Check front of our train to back of other train
          if (otherCar.trainCoupledBack == null) {
             distance = firstCarPos - otherCarPos;
-            if (distance.between(0, maxCouplingDistance)) {
+            if (NumberUtils.between(distance, 0, maxCouplingDistance)) {
                addCouplingPoint(otherCar, firstCar);
                couplingPointsFound++;
             }
@@ -579,7 +586,7 @@ class Train {
          // Check back of our train to front of other train
          if (otherCar.trainCoupledFront == null) {
             distance = otherCarPos - lastCarPos;
-            if (distance.between(0, maxCouplingDistance)) {
+            if (NumberUtils.between(distance, 0, maxCouplingDistance)) {
                addCouplingPoint(lastCar, otherCar);
                couplingPointsFound++;
             }
@@ -589,10 +596,10 @@ class Train {
       // If no coupling points found, show a message
       if (couplingPointsFound === 0) {
          // Show a message
-         showInfoToast("Keine Wagen in der Nähe zum kuppeln gefunden");
+         ui.showInfoToast("Keine Wagen in der Nähe zum kuppeln gefunden");
          return false;
       } else {
-         stage.update();
+         window.stage.update();
          return true;
       }
 
@@ -618,7 +625,7 @@ class Train {
          couplingPoint.name = "couplingPoint";
 
          // Add to overlay container
-         overlay_container.addChild(couplingPoint);
+         window.overlay_container.addChild(couplingPoint);
       }
    }
 
@@ -639,17 +646,17 @@ class Train {
 
    static exitCouplingMode() {
       // Remove coupling points
-      overlay_container.removeAllChildren();
+      window.overlay_container.removeAllChildren();
 
       // Reset custom action mode
-      custom_mouse_mode = CUSTOM_MOUSE_ACTION.NONE;
+      window.custom_mouse_mode = window.CUSTOM_MOUSE_ACTION.NONE;
 
       $("#couplingMessage").hide();
 
       // Deactivate any active buttons
       $("#btnCoupleTrain").removeClass("active");
 
-      stage.update();
+      window.stage.update();
    }
 
    // Add new methods for automatic train movement
@@ -723,7 +730,7 @@ class Train {
          } else {
             // Stop the train if movement is not possible
             Train.stopTrain(train);
-            showInfoToast("Zug kann nicht weiter fahren");
+            ui.showInfoToast("Zug kann nicht weiter fahren");
          }
       }
       
@@ -742,3 +749,5 @@ class Train {
       return lastCar;
    }
 }
+
+

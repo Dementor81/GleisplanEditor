@@ -1,6 +1,12 @@
 "use strict";
 
-class Track {
+// ES6 Module imports
+import { geometry, V2, Point, type } from './tools.js';
+import { Switch } from './switch.js';
+import { Signal } from './signal.js';
+import { ArrayUtils } from './utils.js';
+
+export class Track {
    static allTracks = [];
 
    //track drawing
@@ -68,7 +74,7 @@ class Track {
       const new_tracks = [];
 
       //reverse the points array if the user drew it from right to left, or if the user drew straight from bottom to top
-      if (points.first().x > points.last().x || (points.first().x == points.last().x && points.first().y > points.last().y)) {
+      if (ArrayUtils.first(points).x > ArrayUtils.last(points).x || (ArrayUtils.first(points).x == ArrayUtils.last(points).x && ArrayUtils.first(points).y > ArrayUtils.last(points).y)) {
          points.reverse();
       }
 
@@ -149,7 +155,7 @@ class Track {
             intersection = geometry.getIntersectionPoint(track1, track2);
 
             //check if the intersection point is on the grid
-            if (intersection && intersection.x % GRID_SIZE == 0 && intersection.y % GRID_SIZE == 0) {
+            if (intersection && intersection.x % window.GRID_SIZE == 0 && intersection.y % window.GRID_SIZE == 0) {
                // Split track1 if intersection is not at start or end
                if (!intersection.equals(track1.start) && !intersection.equals(track1.end)) {
                   const km = track1.getKmfromPoint(intersection);
@@ -194,8 +200,8 @@ class Track {
                   }
 
                   // Remove the original track
-                  Track.allTracks.remove(track1);
-                  remainingTracks.remove(track1);
+                  ArrayUtils.remove(Track.allTracks, track1);
+                  ArrayUtils.remove(remainingTracks, track1);
 
                   // Add new tracks
                   new_tracks.push(t1, t2);
@@ -255,8 +261,8 @@ class Track {
                   }
 
                   // Remove the original track
-                  Track.allTracks.remove(track2);
-                  remainingTracks.remove(track2);
+                  ArrayUtils.remove(Track.allTracks, track2);
+                  ArrayUtils.remove(remainingTracks, track2);
 
                   // Add new tracks
                   new_tracks.push(t1, t2);
@@ -293,7 +299,7 @@ class Track {
 
          if (connected_tracks.length == 1 && connected_tracks[0].rad == track.rad) {
             Track.joinTrack(track, connected_tracks[0]);
-            Track.allTracks.remove(connected_tracks[0]);
+            ArrayUtils.remove(Track.allTracks, connected_tracks[0]);
          } else i++;
       }
    }
@@ -322,7 +328,7 @@ class Track {
       const endSwitch = track.switchAtTheEnd;
 
       // Remove track from allTracks array
-      Track.allTracks.remove(track);
+      ArrayUtils.remove(Track.allTracks, track);
 
       if (type(track.switchAtTheStart) == "Track") track.switchAtTheStart.switchAtTheEnd = null;
       if (type(track.switchAtTheEnd) == "Track") track.switchAtTheEnd.switchAtTheStart = null;
@@ -333,7 +339,7 @@ class Track {
 
       // Remove any signals on the track
       track.signals.forEach((signal) => {
-         Signal.allSignals.remove(signal);
+         ArrayUtils.remove(Signal.allSignals, signal);
       });
    }
 
@@ -555,3 +561,5 @@ class Track {
       this.#resetCache();
    }
 }
+
+

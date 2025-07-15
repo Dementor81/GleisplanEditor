@@ -1,119 +1,9 @@
 "use strict";
 
-const π = Math.PI;
+import { NumberUtils } from './utils.js';
 
-Number.prototype.between = function (a, b) {
-   var min = Math.min.apply(Math, [a, b]),
-      max = Math.max.apply(Math, [a, b]);
-   return this >= min && this <= max;
-};
-
-Number.prototype.outoff = function (a, b) {
-   var min = Math.min.apply(Math, [a, b]),
-      max = Math.max.apply(Math, [a, b]);
-   return this < min || this > max;
-};
-
-Math.minmax = function (min, value, max) {
-   return Math.max(min, Math.min(max, value));
-};
-
-Number.prototype.is = function (a) {
-   return Array.from(arguments).includes(this);
-};
-
-Number.prototype.round = function (places) {
-   const x = Math.pow(10, places);
-   return Math.round(this * x) / x;
-};
-
-Number.prototype.closeToBy = function (y, z) {
-   const mod = this % y;
-   return Math.min(mod, y - mod) < z;
-};
-
-Array.prototype.remove = function (item) {
-   const index = this.indexOf(item);
-   if (index > -1) {
-      this.splice(index, 1);
-   }
-};
-
-Array.prototype.justNull = function () {
-   if (this.every((i) => i == null)) return null;
-   else return this;
-};
-
-Array.prototype.last = function () {
-   if (this.length > 0) {
-      return this[this.length - 1];
-   } else return null;
-};
-
-Array.prototype.first = function () {
-   if (this.length > 0) {
-      return this[0];
-   } else return null;
-};
-
-//removes all null items from the array
-Array.prototype.clean = function () {
-   return this.filter((n) => n);
-};
-
-//returns a random item from the array
-Array.prototype.random = function () {
-   if (this.length == 0) return;
-   return this[Math.randomInt(this.length - 1)];
-};
-
-Array.prototype.countNonUnique = function() {
-   const counts = {};
-   let nonUniqueCount = 0;
-   for (const item of this) {
-      if (counts[item] === 1) nonUniqueCount++; // Only increment on second occurrence
-      counts[item] = (counts[item] || 0) + 1;
-   }
-   return nonUniqueCount;
-}
-
-//will only add the element if the array does not already contain it.
-Array.prototype.pushUnique = function (newElement) {
-   if (this.indexOf(newElement) === -1) {
-      this.push(newElement);
-      return true;
-   }
-   return false;
-};
-
-Array.prototype.groupBy = function (propertyPath) {
-   // `data` is an array of objects, `key` is the key (or property accessor) to group by
-   // reduce runs this anonymous function on each element of `data` (the `item` parameter,
-   // returning the `storage` parameter at the end
-
-   return Object.values(
-      this.reduce(function (storage, item) {
-         let property = propertyPath.split(".").reduce((acc, key) => acc[key], item);
-         // get the first instance of the key by which we're grouping
-         let group = property;
-
-         // set `storage` for this instance of group to the outer scope (if not empty) or initialize it
-         storage[group] = storage[group] || [];
-
-         // add this item to its group within `storage`
-         storage[group].push(item);
-
-         // return the updated storage to the reduce function, which will then loop through the next
-         return storage;
-      }, {})
-   ).sort((a, b) => b.length - a.length); // {} is the initial value of the storage
-};
-
-function nll(o) {
-   return o == null;
-}
-
-function findFieldNameForObject(container, ref) {
+// Utility functions
+export function findFieldNameForObject(container, ref) {
    for (let key of Object.keys(container)) {
       if (container[key] === ref) {
          return key;
@@ -122,7 +12,7 @@ function findFieldNameForObject(container, ref) {
    return null;
 }
 
-function type(value) {
+export function type(value) {
    if (value === null) {
       return "null";
    }
@@ -156,20 +46,11 @@ function type(value) {
    return baseType;
 }
 
-function swap(current, value1, value2) {
+export function swap(current, value1, value2) {
    return current === value1 ? value2 : value1;
 }
 
-//returns a copy where the given item is missing
-Array.prototype.without = function (item) {
-   return this.filter((i) => i != item);
-};
-
-Math.randomInt = function (max) {
-   return Math.floor(Math.random() * (max + 1));
-};
-
-function deepEqual(x, y) {
+export function deepEqual(x, y) {
    const ok = Object.keys,
       tx = typeof x,
       ty = typeof y;
@@ -178,7 +59,7 @@ function deepEqual(x, y) {
       : x === y;
 }
 
-function clone(obj) {
+export function clone(obj) {
    var copy;
 
    // Handle the 3 simple types, and null or undefined
@@ -212,13 +93,13 @@ function clone(obj) {
    throw new Error("Unable to copy obj! Its type isn't supported.");
 }
 
-function uuidv4() {
+export function uuidv4() {
    return ([1e7] + -1e3 + -4e3 + -8e3 + -1e11).replace(/[018]/g, (c) =>
       (c ^ (crypto.getRandomValues(new Uint8Array(1))[0] & (15 >> (c / 4)))).toString(16)
    );
 }
 
-function isPointInsideBox(point, box, rotationAngle) {
+export function isPointInsideBox(point, box, rotationAngle) {
    const { topLeft, topRight, bottomRight, bottomLeft } = box;
 
    // Translate the point to align with the box's axes based on the given rotation angle
@@ -233,7 +114,18 @@ function isPointInsideBox(point, box, rotationAngle) {
 
    return isInsideX && isInsideY;
 }
-const TOOLS = {
+
+export function rotatePointAroundPivot(angle, pivot, point) {
+   var cos = Math.cos(angle);
+   var sin = Math.sin(angle);
+   var dx = point.x - pivot.x;
+   var dy = point.y - pivot.y;
+   var x = dx * cos - dy * sin + pivot.x;
+   var y = dy * cos + dx * sin + pivot.y;
+   return { x: x, y: y };
+}
+
+export const TOOLS = {
    /**
     * Finds the nearest point on a line segment to a given point
     * @param {Point|{x: number, y: number}} start - Start point of the line segment
@@ -266,213 +158,18 @@ const TOOLS = {
    },
 };
 
-function deg2rad(deg) {
-   return deg * (Math.PI / 180);
-}
-
-const ui = {
-   create_toggleButton: function (text) {
-      return $("<button>", {
-         type: "button",
-         id: "btn_" + text.replace(" ", "_"),
-         class: "btn btn-primary btn-sm",
-      }).html(text);
-   },
-   create_Input: function (text, stellung, signal) {
-      const id = uuidv4();
-      return $("<div>", { class: "form-floating" }).append([
-         $("<input>", {
-            type: "number",
-            id: id,
-            class: "form-control  form-control-sm",
-            value: signal.get(stellung),
-         })
-            .attr("data_signal", stellung)
-            .on("input", (e) => {
-               signal.set_stellung(stellung, e.target.value);
-            }),
-         $("<label>", { for: id, text: text }),
-      ]);
-   },
-   create_buttonGroup: function (items) {
-      return $("<div>", { class: "btn-group", role: "group" }).append(items);
-   },
-   showPopup: function (r, title, content, parent) {
-      let $dummy = $("#dummy");
-      let rect = parent[0].getBoundingClientRect();
-      if ($dummy.length == 0) {
-         $dummy = $("<div>", { id: "dummy" });
-         $(document.body).append($dummy);
-      }
-      $dummy.css({ position: "absolute", left: r.x + rect.x, top: r.y + rect.y, width: r.width, height: r.height });
-      let popup = bootstrap.Popover.getOrCreateInstance($dummy);
-      if (popup) {
-         $(document).off("mousedown");
-         popup.dispose();
-      }
-
-      popup = new bootstrap.Popover($dummy, {
-         html: true,
-         trigger: "manual",
-         title: title,
-         placement: "bottom",
-         sanitize: false,
-         content: content,
-      });
-      $dummy[0].addEventListener(
-         "hidden.bs.popover",
-         (e) => {
-            $(document).off("mousedown");
-            let p = bootstrap.Popover.getOrCreateInstance(e.target);
-            if (p) p.dispose();
-            $(e.target).remove();
-         },
-         { once: true }
-      );
-      $dummy[0].addEventListener(
-         "shown.bs.popover",
-         (e) => {
-            $(document).on("mousedown", (event) => {
-               let $target = $(event.target);
-
-               if ($target.closest("div.popover").length == 0) {
-                  let p = bootstrap.Popover.getOrCreateInstance(e.target);
-                  if (p) p.hide();
-               }
-            });
-         },
-         { once: true }
-      );
-      popup.show();
-      return popup;
-   },
-
-   /* showContextMenu: function (point, parent, items, signal) {
-      const createDropDownItems = function (items, dd) {
-         return items.map((item) => {
-            if (item.text) {
-               const li = $("<li>");
-               const a = $("<a>", { class: "dropdown-item", href: "#" }).text(item.text);
-               if (item.childs) {
-                  li.addClass("dropend");
-                  a.addClass("dropdown-toggle submenu");
-                  a.attr("type", "button");
-                  a.attr("data-bs-toggle", "dropdown");
-                  a.append($("<ul>", { class: "dropdown-menu dropdown-menu-end" }).append(createDropDownItems(item.childs, dd)));
-               } else {
-                  a.attr("data-signal-option", item.option);
-                  a.toggleClass("active", signal.matchFeature(item.option));
-                  a.click(() => {
-                     signal.setFeature(item.option, !a.hasClass("active"));
-                     dd.hide();
-                     renderer.reDrawEverything();
-                     stage.update();
-                     STORAGE.save();
-                  });
-               }
-               li.append(a);
-               return li;
-            } else {
-               const id = uuidv4();
-               return ui.div("dropdown-item").append(
-                  $("<div>", { class: "form-floating" }).append([
-                     $("<input>", {
-                        type: "text",
-                        id: id,
-                        class: "form-control  form-control-sm",
-                        value: signal.getFeature("bez"),
-                     }).on("input", (e) => {
-                        signal.setFeature("bez", e.target.value);
-                        renderer.reDrawEverything();
-                        STORAGE.save();
-                     }),
-                     $("<label>", { for: id, text: item.input }),
-                  ])
-               );
-            }
-         });
-      }; 
-
-      const a = $("<a>", { class: "visually-hidden" }).attr("data-bs-toggle", "dropdown").attr("data-bs-auto-close", "false");
-      const ul = $("<ul>", { class: "dropdown-menu" });
-      const div = $("<div>", { id: "generated_menu", class: "dropdown" }).append([a, ul]);
-      $(document.body).append(div);
-      const dropdownList = bootstrap.Dropdown.getOrCreateInstance(a);
-      ul.append(createDropDownItems(items, dropdownList));
-      setTimeout(() => (dropdownList._config.autoClose = "outside"), 2);
-      dropdownList._parent.addEventListener("hidden.bs.dropdown", (e) => {
-         const t = $(e.target);
-         if (!t.hasClass("submenu")) $(e.target).parent().remove();
-      });
-      let $dummy = $(dropdownList._parent);
-      let rect = parent[0].getBoundingClientRect();
-
-      $dummy.css({ position: "absolute", left: point.x + rect.x, top: point.y + rect.y });
-      dropdownList.show();
-   },*/
-   div: function (c, i) {
-      return $("<div>", { class: c }).append(i);
-   },
-
-   showModalDialog: function (content, ok_function) {
-      // Create modal div
-      let modal_div = $("<div/>", {
-         id: "myModal",
-         class: "modal fade",
-         role: "dialog",
-      }).append(
-         ui.div("modal-dialog  modal-xl modal-dialog-centered").append(
-            ui.div("modal-content").append([
-               ui.div("modal-header").append([
-                  $("<h4/>", {
-                     class: "modal-title",
-                     text: "Als Bild speichern",
-                  }),
-                  $("<button/>", {
-                     type: "button",
-                     class: "btn-close",
-                     "data-bs-dismiss": "modal",
-                  }),
-               ]),
-               ui.div("modal-body").append(content),
-               ui.div("modal-footer").append(
-                  $("<button/>", {
-                     type: "button",
-                     class: "btn btn-default",
-                     "data-dismiss": "modal",
-                     text: "Herunterladen",
-                     click: ok_function,
-                  })
-               ),
-            ])
-         )
-      );
-      modal_div.appendTo("body");
-
-      let modal = new bootstrap.Modal(modal_div[0]);
-      modal.show();
-      return modal;
-   },
-};
-
-const geometry = {
+export const geometry = {
    PRECISION: 3,
    distance: function (p1, p2) {
-      return Math.sqrt(Math.pow(p1.x - p2.x, 2) + Math.pow(p1.y - p2.y, 2)).round(this.PRECISION);
+      return NumberUtils.round(Math.sqrt(Math.pow(p1.x - p2.x, 2) + Math.pow(p1.y - p2.y, 2)), this.PRECISION);
    },
    length: function (v) {
-      return Math.sqrt(Math.pow(v.x, 2) + Math.pow(v.y, 2)).round(this.PRECISION);
+      return NumberUtils.round(Math.sqrt(Math.pow(v.x, 2) + Math.pow(v.y, 2)), this.PRECISION);
    },
    slope: function (p1, p2) {
       return (p1.y - p2.y) / (p1.x - p2.x);
    },
-
-   //checks if point c is between a and b
-   within: function (pA, pB, pC, exclude) {
-      if (exclude && (deepEqual(pA, pC) || deepEqual(pB, pC))) return false;
-      if (pC.x.outoff(pA.x, pB.x) || pC.y.outoff(pA.y, pB.y)) return false;
-      return (pB.x - pA.x) * (pC.y - pA.y) == (pC.x - pA.x) * (pB.y - pA.y);
-   },
+   
    getIntersectionPoint: function (line1, line2) {
       const denominator =
          (line2.end.y - line2.start.y) * (line1.end.x - line1.start.x) -
@@ -632,27 +329,13 @@ const geometry = {
       return Math.hypot(point.x - closestX, point.y - closestY);
   },
 
+   
    //calculates a point which is perpendicular to the given vector
-   perpendicular: function (p, deg, distance) {
-      return {
-         y: p.y + Math.sin(deg2rad(deg + 90)) * distance,
-         x: p.x + Math.cos(deg2rad(deg + 90)) * distance,
-      };
-   },
-
-   //calculates a point which is perpendicular to the given vector
-   perpendicularX: function (v) {
+   perpendicular: function (v) {
       return new V2({
          y: v.x,
          x: -v.y,
       });
-   },
-
-   parallel: function (deg, distance) {
-      return {
-         y: Math.sin(deg2rad(deg)) * -distance,
-         x: Math.cos(deg2rad(deg)) * distance,
-      };
    },
 
    //returns the unit vector of the given vector
@@ -663,8 +346,8 @@ const geometry = {
 
    multiply: function (v, s) {
       return {
-         x: (v.x * s).round(this.PRECISION),
-         y: (v.y * s).round(this.PRECISION),
+         x: NumberUtils.round(v.x * s, this.PRECISION),
+         y: NumberUtils.round(v.y * s, this.PRECISION),
       };
    },
 
@@ -675,10 +358,6 @@ const geometry = {
    sub: function (v1, v2) {
       return new Point(v1.x - v2.x, v1.y - v2.y);
    },
-
-   flipY: (v) => ({ x: v.x, y: v.y * -1 }),
-
-   round: (v) => ({ x: Math.round(v.x), y: Math.round(v.y) }),
 
    calculateAngle: function (reference, point1, point2) {
       // Calculate vectors
@@ -714,8 +393,8 @@ const geometry = {
     */
    midpoint: function(p1, p2) {
       return new Point(
-         ((p1.x + p2.x) / 2).round(this.PRECISION),
-         ((p1.y + p2.y) / 2).round(this.PRECISION)
+         NumberUtils.round((p1.x + p2.x) / 2, this.PRECISION),
+         NumberUtils.round((p1.y + p2.y) / 2, this.PRECISION)
       );
    },
 
@@ -771,19 +450,7 @@ const geometry = {
    },
 };
 
-
-
-function rotatePointAroundPivot(angle, pivot, point) {
-   var cos = Math.cos(angle);
-   var sin = Math.sin(angle);
-   var dx = point.x - pivot.x;
-   var dy = point.y - pivot.y;
-   var x = dx * cos - dy * sin + pivot.x;
-   var y = dy * cos + dx * sin + pivot.y;
-   return { x: x, y: y };
-}
-
-class V2 {
+export class V2 {
    static fromV2(v) {
       return new V2(v);
    }
@@ -827,7 +494,7 @@ class V2 {
    }
 }
 
-class Point {
+export class Point {
    static fromPoint(p) {
       return new Point(p.x, p.y);
    }
@@ -850,259 +517,13 @@ class Point {
    }
 }
 
-// Function to create a toast element
-const createToast = (title, txt) => {
-   return ui
-      .div("toast")
-      .attr({ role: "alert", "aria-live": "assertive", "aria-atomic": "true" })
-      .append([
-         $("<div>")
-            .addClass("toast-header")
-            .append([
-               $("<strong>").addClass("me-auto").text(title),
-               $("<button>").attr({ type: "button", "data-bs-dismiss": "toast", "aria-label": "Close" }).addClass("btn-close"),
-            ]),
-         $("<div>")
-            .addClass("toast-body")
-            .append([$("<p>", { text: txt })]),
-      ]);
-};
-
-const getToastContainer = () => {
-   let container = $("#toast-container");
-   if (container.length === 0) {
-      container = ui.div("toast-container").attr("id", "toast-container").css({ position: "fixed", bottom: "0", right: "0" });
-      $("body").append(container);
-   }
-   return container;
-};
-
-// Function to show the toast
-const showErrorToast = (error) => {
-   console.error(error);
-   const toast = createToast("Ups, Da gabs einen Fehler", error.message);
-   getToastContainer().prepend(ui.div("p-3").append(toast));
-   $(toast).toast({ autohide: true, delay: 10000 }).toast("show");
-   $(toast).on("hidden.bs.toast", function () {
-      $(this).parent().remove();
-   });
-};
-
-const showInfoToast = (txt) => {
-   console.info(txt);
-   const toast = createToast("Information:", txt);
-   getToastContainer().prepend(ui.div("p-3").append(toast));
-   $(toast).toast({ autohide: true, delay: 10000 }).toast("show");
-   $(toast).on("hidden.bs.toast", function () {
-      $(this).parent().remove();
-   });
-};
-
-const BS = {
-   createListGroupItem(items) {
-      return $("<li>", { class: "list-group-item" }).append(items);
-   },
-
-   create_buttonToolbar(items) {
-      return ui.div("btn-toolbar", items).attr("role", "toolbar");
-   },
-   create_buttonGroup(items) {
-      return ui.div("btn-group", items);
-   },
-   create_DropDownItem(text, value) {
-      return $("<a>", {
-         class: "dropdown-item",
-         text: text,
-         href: "#",
-         value: value ?? text,
-      });
-   },
-
-   createAccordionItem(title, parent, items, open = false) {
-      let id = uuidv4();
-      return ui.div("accordion-item", [
-         $("<h2>", { class: "accordion-header" }).append(
-            $("<button>", { class: "accordion-button  user-select-none", type: "button" })
-               .attr("data-bs-toggle", "collapse")
-               .attr("data-bs-target", "#" + id)
-               .text(title)
-               .toggleClass("collapsed", !open)
-         ),
-         ui
-            .div("accordion-collapse collapse", ui.div("accordion-body", items))
-            .attr("id", id)
-            .attr("data-bs-parent", parent)
-            .toggleClass("show", open),
-      ]);
-   },
-
-   create_DropDown(items, text, onChange) {
-      return ui
-         .div("dropdown d-grid", [
-            $("<button>", {
-               class: "btn btn-primary dropdown-toggle btn-sm",
-               type: "button",
-               text: text,
-               id: "btn_" + text.replace(" ", "_"),
-            }).attr("data-bs-toggle", "dropdown"),
-            ui.div(
-               "dropdown-menu",
-               items.map((item) => BS.create_DropDownItem(...item.split("|")))
-            ),
-         ])
-         .on("hide.bs.dropdown", (e) => {
-            if (e.clickEvent?.target && e.clickEvent?.target.nodeName == "A") {
-               const value = $(e.clickEvent.target).attr("value");
-               $(e.currentTarget).attr("value", value);
-               if (onChange) onChange(value);
-            }
-         })
-         .on("show.bs.dropdown", (e) => {
-            const targetValue = $(e.currentTarget).attr("value");
-            if (!targetValue) return;
-            $(".dropdown-item", e.currentTarget)
-               .removeClass("active")
-               .each(function () {
-                  if ($(this).attr("value") === targetValue) {
-                     $(this).addClass("active");
-                  }
-               });
-         });
-   },
-
-   createSwitchStructure(mainLabel, subLabels, onchange) {
-      let [text, value, enabled] = mainLabel;
-      if (!enabled && subLabels.length == 0) return null;
-      let $mainDiv;
-      $mainDiv = ui.div("", [
-         enabled == null || enabled
-            ? ui.div("form-check form-switch", [
-                 $("<input/>", {
-                    class: "form-check-input",
-                    type: "checkbox",
-                    role: "switch",
-                    id: "switch_" + text,
-                 })
-                    .on("change", function () {
-                       const isChecked = $(this).is(":checked");
-                       /* $("input", $mainDiv.children()[1]).prop("disabled", !isChecked); */
-                       if (onchange) onchange($(this).attr("value"), isChecked);
-                    })
-                    .attr("value", value ?? text)
-                    .attr("data-master_switch", ""),
-
-                 $("<label/>", {
-                    class: "form-check-label",
-                    for: "switch_" + text,
-                    text: text,
-                 }),
-              ])
-            : $("<label/>", {
-                 text: text,
-              }),
-
-         ui.div(
-            "ps-3",
-            subLabels
-               .filter((x) => x[2] == null || x[2] == true)
-               .map(function (label) {
-                  [text, value, enabled] = label;
-                  return ui.div("form-check form-switch", [
-                     $("<input/>", {
-                        class: "form-check-input",
-                        type: "checkbox",
-                        role: "switch",
-                        id: "switch_" + text,
-                        checked: true, // Default to checked as per your example
-                     })
-                        .on("change", function () {
-                           const isChecked = $(this).is(":checked");
-                           if (onchange) onchange($(this).attr("value"), isChecked);
-                        })
-                        .attr("value", value ?? text),
-                     $("<label/>", {
-                        class: "form-check-label",
-                        for: "switch_" + text,
-                        text: text,
-                     }),
-                  ]);
-               })
-         ),
-      ]);
-      return $mainDiv;
-   },
-   createOptionGroup(header, options, inputType = "radio", onchange) {
-      return ui.div("", [
-         $("<label>").text(header),
-         ui.div(
-            "ps-3",
-            options.map(function (option) {
-               let [text, value, enabled] = option;
-               let id = "input_" + text;
-               // Create the div for each form-check-inline
-               return ui.div("form-check form-check-inline", [
-                  $("<input>")
-                     .addClass("form-check-input")
-                     .attr("id", id)
-                     .attr("name", "OptionGroup_" + header)
-                     .attr("type", inputType)
-                     .attr("value", value ?? text)
-                     .attr("disabled", enabled != null && !enabled)
-                     .on("change", function () {
-                        const isChecked = $(this).is(":checked");
-                        if (onchange) onchange($(this).attr("value"), isChecked);
-                     }),
-                  $("<label>").addClass("form-check-label").attr("for", id).text(text),
-               ]);
-            })
-         ),
-      ]);
-   },
-
-   lightBulb() {
-      return $(
-         "<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='currentColor' class='bi bi-lightbulb' viewBox='0 0 16 16'>" +
-            "<path d='M2 6a6 6 0 1 1 10.174 4.31c-.203.196-.359.4-.453.619l-.762 1.769A.5.5 0 0 1 10.5 13a.5.5 0 0 1 0 1 .5.5 0 0 1 0 1l-.224.447a1 1 0 0 1-.894.553H6.618a1 1 0 0 1-.894-.553L5.5 15a.5.5 0 0 1 0-1 .5.5 0 0 1 0-1 .5.5 0 0 1-.46-.302l-.761-1.77a1.964 1.964 0 0 0-.453-.618A5.984 5.984 0 0 1 2 6zm6-5a5 5 0 0 0-3.479 8.592c.263.254.514.564.676.941L5.83 12h4.342l.632-1.467c.162-.377.413-.687.676-.941A5 5 0 0 0 8 1z'/> </svg>"
-      );
-   },
-
-   createAndAppendZs3(listGroup, signal, label) {
-      listGroup.append(
-         this.create_ListGroupItem([this.create_label(label), this.createButtonContainer(this.create_Zs3DropDown(signal))])
-      );
-   },
-};
-
-createjs.Graphics.prototype.drawArrow = function (length, size) {
-   this.mt(0, 0)
-      .lt(length, 0)
-      .mt(length - size, -size / 2)
-      .lt(length, 0)
-      .lt(length - size, size / 2);
-};
-
-createjs.Graphics.prototype.drawTriangle = function(color, p1, p2, p3) {
-   this.beginFill(color)
-      .mt(p1.x, p1.y)
-      .lt(p2.x, p2.y)
-      .lt(p3.x, p3.y)
-      .lt(p1.x, p1.y);
-};
-
-
-createjs.Container.prototype.countContainers = function () {
-   return this.children.filter((c) => c instanceof createjs.Container).reduce((count, c) => count + c.countContainers(), 0) + 1;
-};
-
-function testPerformance(f, txt) {
-   const startTime = performance.now();
-
-   for (let i = 0; i < 1000; i++) {
-      f();
-   }
-
-   let endTime = performance.now();
-   let timeDiff = Math.round((endTime - startTime) / 10);
-
-   console.log(`Execution time: ${timeDiff} ms for ${txt}`);
+export function testPerformance(f, txt) {
+   const start = performance.now();
+   f();
+   const end = performance.now();
+   console.info(`${txt}: ${(end - start).toFixed(3)}ms`);
 }
+
+
+
+

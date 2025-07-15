@@ -1,6 +1,14 @@
 "use strict";
 
-class SignalRenderer {
+// ES6 Module imports
+import { ui } from './ui.js';
+import { ArrayUtils } from './utils.js';
+import { clone, findFieldNameForObject, type } from './tools.js';
+import { VisualElement, TextElement } from './signaling.js';
+import { Track } from './track.js';
+import { STORAGE } from './storage.js';
+
+export class SignalRenderer {
    static #renderingState = new WeakMap();
 
    static draw(signal, container, force = false) {
@@ -92,7 +100,7 @@ class SignalRenderer {
          const state = SignalRenderer.#renderingState.get(signal);
          if (!state.container.getChildByName(textureName)) {
             //check if this texture was already drawn. Some texture are the same for different signals like Zs1 and Zs8
-            let bmp = pl.getSprite(signal._template.json_file, textureName);
+            let bmp = window.pl.getSprite(signal._template.json_file, textureName);
             if (bmp != null) {
                state.container.addChild(bmp);
 
@@ -126,15 +134,15 @@ class SignalRenderer {
    }
 }
 
-class Signal {
+export class Signal {
    static allSignals = new Set();
 
    static removeSignal(s) {
       const track = Track.allTracks.find((t) => t.signals.includes(s));
       if (track) {
          track.removeSignal(s);
-         Signal.allSignals.delete(s);
       }
+      Signal.allSignals.delete(s);
    }
 
    
@@ -226,7 +234,7 @@ class Signal {
          if (this.check(["HPsig||master"])) {
             let prevSignal = this;
             do {
-               prevSignal = this.search4Signal(prevSignal, DIRECTION.RIGHT_2_LEFT);
+               prevSignal = this.search4Signal(prevSignal, window.DIRECTION.RIGHT_2_LEFT);
                if (prevSignal && prevSignal._template.checkSignalDependency)
                   stop = prevSignal._template.checkSignalDependency(prevSignal, this);
             } while (!stop && prevSignal);
@@ -234,7 +242,7 @@ class Signal {
          if (this.check(["VRsig||slave"]) && this._template.checkSignalDependency) {
             let nextSignal = this;
             do {
-               nextSignal = this.search4Signal(nextSignal, DIRECTION.LEFT_2_RIGTH);
+               nextSignal = this.search4Signal(nextSignal, window.DIRECTION.LEFT_2_RIGTH);
                if (nextSignal && nextSignal._template.checkSignalDependency)
                   stop = nextSignal._template.checkSignalDependency(this, nextSignal, ["HPsig||master"]);
             } while (!stop && nextSignal);
@@ -375,7 +383,7 @@ class Signal {
 
    setTrack(track,km) {
       if (this._positioning.track) {
-         this._positioning.track.signals.remove(this);
+         ArrayUtils.remove(this._positioning.track.signals, this);
       }
       this._positioning.track = track;
       this._positioning.km = km;
@@ -387,7 +395,7 @@ class Signal {
    stringify() {
       return {
          _class: "Signal",
-         _template: findFieldNameForObject(signalTemplates, this._template),
+         _template: findFieldNameForObject(window.signalTemplates, this._template),
          _signalStellung: this._signalStellung,
          _positioning: {
             km: this._positioning.km,
@@ -398,34 +406,34 @@ class Signal {
    }
 
    static FromObject(o) {
-      let s = new Signal(signalTemplates[o._template]);      
+      let s = new Signal(window.signalTemplates[o._template]);      
       s._signalStellung = o._signalStellung;
       s._positioning = o._positioning;
       return s;
    }
 }
 
-const Sig_UI = {
+export const Sig_UI = {
    create_SpeedDropDown(signal, text, onChange) {
       const items = Array.from({ length: 10 }, (_, i) => `${i}0|${signal}=${i}`);
       items[0] = `aus|${signal}=-1`;
-      return BS.create_DropDown(items, text, onChange);
+      return ui.create_DropDown(items, text, onChange);
    },
    initSignalMenu() {
-      const conditions = selection.object._template.getAllVisualElementConditions();
+      const conditions = window.selection.object._template.getAllVisualElementConditions();
       const update = function (command, isOn) {
-         selection.object.set_stellung(command, isOn);
-         Sig_UI.syncSignalMenu(selection.object);
-         renderer.reDrawEverything();
+         window.selection.object.set_stellung(command, isOn);
+         Sig_UI.syncSignalMenu(window.selection.object);
+         window.renderer.reDrawEverything();
          STORAGE.save();
       };
-      $("#btnRemoveSignal").click((e) => deleteSelectedObject());
+      $("#btnRemoveSignal").click((e) => window.deleteSelectedObject());
       $("#navFeatures").empty();
-      if (selection.object.check("HPsig"))
+               if (window.selection.object.check("HPsig"))
          $("#navFeatures").append(
             ui.div(
                "p-3 border-bottom",
-               BS.create_DropDown(
+               ui.create_DropDown(
                   "Esig,Asig,Zsig,Bksig,Sbk".split(",").map((x) => x + "|verw=" + x.toLowerCase()),
                   "Verwendung",
                   update
@@ -433,7 +441,7 @@ const Sig_UI = {
             )
          );
       $("#navFeatures").append(
-         BS.createSwitchStructure(
+         ui.createSwitchStructure(
             ["Vorsignalfunktion", "VRsig", conditions.includes("VRsig")],
             [
                ...(conditions.includes("vr_op=verk") ? [["verkürzt", "vr_op=verk"]] : []),
@@ -444,7 +452,7 @@ const Sig_UI = {
       );
       if (conditions.includes("mastschild=wrw") && conditions.includes("mastschild=wgwgw"))
          $("#navFeatures").append(
-            BS.createOptionGroup(
+            ui.createOptionGroup(
                "Mastschild",
                [
                   ["W-R-W", "mastschild=wrw"],
@@ -461,7 +469,7 @@ const Sig_UI = {
          ];
          a.forEach((x) => x.push(conditions.includes(x[1])));
 
-         $("#navFeatures").append(BS.createOptionGroup("Zusatzanzeiger", a, "checkbox", update).addClass("p-3 border-bottom"));
+         $("#navFeatures").append(ui.createOptionGroup("Zusatzanzeiger", a, "checkbox", update).addClass("p-3 border-bottom"));
       }
    },
    syncSignalMenu(signal) {
@@ -488,8 +496,8 @@ const Sig_UI = {
 
          const updateFunc = function (command, active) {
             signal.set_stellung(command, !active);
-            renderer.reDrawEverything();
-            stage.update();
+            window.renderer.reDrawEverything();
+            window.stage.update();
             Sig_UI.checkBootstrapMenu(signal, signal._template.signalMenu, ul);
             STORAGE.save();
          };
@@ -506,9 +514,9 @@ const Sig_UI = {
    createBootstrapMenuItems(signal, menu_item, update) {
       if (menu_item) {
          if (Array.isArray(menu_item)) {
-            let items = menu_item.map((item) => Sig_UI.createBootstrapMenuItems(signal, item, update)).justNull();
+            let items = ArrayUtils.cleanUp(menu_item.map((item) => Sig_UI.createBootstrapMenuItems(signal, item, update)));
             if (items) {
-               return ui.div("p-3 border-bottom", BS.create_buttonToolbar(items));
+               return ui.div("p-3 border-bottom", ui.create_buttonToolbar(items));
             } else return null;
          } else if (menu_item.type == "buttonGroup" || menu_item.type == "btn") {
             let buttons = menu_item.type == "buttonGroup" ? menu_item.items : [menu_item];
@@ -530,7 +538,7 @@ const Sig_UI = {
                      .create_toggleButton(item.text, item.command)
                      .on("click", (e) => update.bind(signal)(item.command, $(e.target).hasClass("active")))
                )
-               .justNull();
+            buttons = ArrayUtils.cleanUp(buttons);
             if (buttons) return ui.create_buttonGroup(buttons);
             else return null;
          } else if (menu_item.type == "dropdown") {
@@ -569,3 +577,5 @@ const Sig_UI = {
       }
    },
 };
+
+

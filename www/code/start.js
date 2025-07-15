@@ -1,16 +1,31 @@
 "use strict";
 
+// ES6 Module imports
+import { preLoader } from './preLoader.js';
+import { SignalRenderer, Signal, Sig_UI } from './signal.js';
+import { Train } from './train.js';
+import { Switch } from './switch.js';
+import { Track } from './track.js';
+import { GenericObject } from './generic_object.js';
+import { STORAGE } from './storage.js';
+import { trackRendering_basic } from './trackRendering_basic.js';
+import { trackRendering_textured } from './trackRendering_textured.js';
+import { initSignals } from './signal_library.js';
+import { 
+   type, 
+   TOOLS, 
+   geometry, 
+   Point, 
+} from './tools.js';
+import { NumberUtils, ArrayUtils } from './utils.js';
+import { ui } from './ui.js';
+
 const VERSION = "0.5";
 
 const DEFAULT_SIMPLIFIED_VIEW = true; // Set to false for textured view by default
 
-const MODE_PLAY = 1;
-const MODE_EDIT = 2;
-
 const GRID_SIZE = 100;
 const GRID_SIZE_2 = GRID_SIZE / 2;
-const GRID_SUB_STEPS = 4;
-const GRID_SUB_SIZE = GRID_SIZE / GRID_SUB_STEPS;
 
 const SNAP_2_GRID = 10;
 const MAX_SCALE = 8;
@@ -73,13 +88,12 @@ var edit_mode = true;
 var custom_mouse_mode = CUSTOM_MOUSE_ACTION.NONE;
 var pl;
 var mouseAction = null;
-var loadQueue;
 
 var renderer;
 
 var undoHistory = [];
 
-var signalTemplates = {};
+export var signalTemplates = {};
 
 var selection = {
    type: "",
@@ -91,6 +105,23 @@ var selection = {
    },
 };
 
+// Make variables globally accessible for other modules during transition
+window.VERSION = VERSION;
+window.GRID_SIZE = GRID_SIZE;
+window.GRID_SIZE_2 = GRID_SIZE_2;
+window.DIRECTION = DIRECTION;
+window.CUSTOM_MOUSE_ACTION = CUSTOM_MOUSE_ACTION;
+window.MOST_UNDO = MOST_UNDO;
+window.signalTemplates = signalTemplates;
+window.selection = selection;
+window.custom_mouse_mode = custom_mouse_mode;
+window.undoHistory = undoHistory;
+window.updateUndoButtonState = updateUndoButtonState;
+window.selectObject = selectObject;
+window.selectRenderer = selectRenderer;
+window.deleteSelectedObject = deleteSelectedObject;
+window.alignSignalContainerWithTrack = alignSignalContainerWithTrack;
+
 $(() => {
    init();
 });
@@ -98,14 +129,13 @@ $(() => {
 function init() {
    try {
       pl = new preLoader("images");
-      initSignals();
+      window.pl = pl; // Make pl immediately available globally
+      initSignals(signalTemplates);
 
-      pl.addImage("schwellen.png", "schwellen");
-      pl.addImage("dkw2.svg", "dkw");
-      pl.addImage("weiche2.svg", "weiche");
+      pl.addImage("schwellen.png", "schwellen");      
       pl.addImage("bumper1.svg", "bumper");
    } catch (error) {
-      showErrorToast(error);
+      ui.showErrorToast(error);
    }
 
    stage = new createjs.Stage(myCanvas);
@@ -134,6 +164,23 @@ function init() {
    stage.addChild((overlay_container = create_container("overlay")));
    stage.addChild((drawing_container = create_container("drawing_container")));
 
+   // Make containers and other variables globally accessible
+   window.stage = stage;
+   window.debug_container = debug_container;
+   window.main_container = main_container;
+   window.overlay_container = overlay_container;
+   window.ui_container = ui_container;
+   window.selection_container = selection_container;
+   window.signal_container = signal_container;
+   window.track_container = track_container;
+   window.train_container = train_container;
+   window.drawing_container = drawing_container;
+   window.object_container = object_container;
+   window.renderer = renderer;
+   window.mouseAction = mouseAction;
+   window.trackRendering_basic = trackRendering_basic;
+   window.trackRendering_textured = trackRendering_textured;
+
    UI.showPreBuildScreen();
 
    pl.start().then(() => {
@@ -141,21 +188,21 @@ function init() {
       const id = "#newItemMenuAccordination";
       try {
          $(id).append([
-            BS.createAccordionItem(
+            ui.createAccordionItem(
                "Hauptsignale",
                id,
                UI.newItemButtons(signalTemplates.hv_hp, signalTemplates.ks, signalTemplates.ls, signalTemplates.zusatzSignal),
                true
             ),
 
-            BS.createAccordionItem("Vorsignale", id, UI.newItemButtons(signalTemplates.hv_vr, signalTemplates.ks_vr)),
-            BS.createAccordionItem("Lf-Signale", id, UI.newItemButtons(signalTemplates.lf6, signalTemplates.lf7)),
-            BS.createAccordionItem(
+            ui.createAccordionItem("Vorsignale", id, UI.newItemButtons(signalTemplates.hv_vr, signalTemplates.ks_vr)),
+            ui.createAccordionItem("Lf-Signale", id, UI.newItemButtons(signalTemplates.lf6, signalTemplates.lf7)),
+            ui.createAccordionItem(
                "Ne-Signale",
                id,
                UI.newItemButtons(signalTemplates.ne4, signalTemplates.ne1, signalTemplates.ne2)
             ),
-            BS.createAccordionItem(
+            ui.createAccordionItem(
                "Weitere",
                id,
                UI.newItemButtons(signalTemplates.zs3, signalTemplates.zs6, signalTemplates.zs10, signalTemplates.ra10)
@@ -166,7 +213,7 @@ function init() {
          selectRenderer(!DEFAULT_SIMPLIFIED_VIEW);
          updateUndoButtonState();
       } catch (error) {
-         showErrorToast(error);
+         ui.showErrorToast(error);
       }
    });
 
@@ -273,7 +320,7 @@ function init() {
 
          let bounds = main_container.getBounds();
          if (!bounds) {
-            showInfoToast("Nix zu sehen");
+            ui.showInfoToast("Nix zu sehen");
             return;
          }
          const anotherCanvas = $("<canvas>", { id: "test" })
@@ -294,7 +341,7 @@ function init() {
             a[0].click();
          });
       } catch (error) {
-         showErrorToast(error);
+         ui.showErrorToast(error);
       } finally {
          stage.x = backup.x;
          stage.y = backup.y;
@@ -311,6 +358,7 @@ function init() {
 
    $("#btnDraw").click((e) => {
       custom_mouse_mode = $("#btnDraw").hasClass("active") ? CUSTOM_MOUSE_ACTION.DRAWING : CUSTOM_MOUSE_ACTION.NONE;
+      window.custom_mouse_mode = custom_mouse_mode; // Update global reference
       const bsOffcanvas = bootstrap.Offcanvas.getOrCreateInstance(document.getElementById("drawingPanel"));
       if (custom_mouse_mode === CUSTOM_MOUSE_ACTION.DRAWING) {
          bsOffcanvas.show();
@@ -483,6 +531,8 @@ const RENDERING = {
    },
 };
 
+window.RENDERING = RENDERING;
+
 const UI = {
    ///Shows the menu on the right.
    /// menu==null just hides it.
@@ -490,7 +540,7 @@ const UI = {
       var bsOffcanvas = bootstrap.Offcanvas.getOrCreateInstance($("#sidebar"));
       $("input,button", bsOffcanvas._element).off().removeClass("active");
 
-      if (nll(menu)) {
+      if (menu == null) {
          bsOffcanvas.hide();
          return;
       }
@@ -542,12 +592,14 @@ const UI = {
             div_id = "newObjectMenu";
             $("#btnAddText").click(() => {
                custom_mouse_mode = $("#btnAddText").hasClass("active") ? CUSTOM_MOUSE_ACTION.TEXT : CUSTOM_MOUSE_ACTION.NONE;
+               window.custom_mouse_mode = custom_mouse_mode; // Update global reference
                UI.activate_custom_mouse_mode();
             });
             $("#btnAddPlatform").click(() => {
                custom_mouse_mode = $("#btnAddPlatform").hasClass("active")
                   ? CUSTOM_MOUSE_ACTION.PLATTFORM
                   : CUSTOM_MOUSE_ACTION.NONE;
+               window.custom_mouse_mode = custom_mouse_mode; // Update global reference
                UI.activate_custom_mouse_mode();
             });
             break;
@@ -679,6 +731,7 @@ function selectRenderer(textured) {
       renderer = new trackRendering_basic();
       $("#switch_renderer").prop("checked", true);
    }
+   window.renderer = renderer; // Update global reference
    renderer.reDrawEverything(true);
    stage.update();
 }
@@ -775,7 +828,7 @@ function getHitTest(container) {
 
 function getHitInfoForSignalPositioning(testPoint) {
    for (const track of Track.allTracks) {
-      if (testPoint.x.between(track.start.x, track.end.x)) {
+      if (NumberUtils.between(testPoint.x, track.start.x, track.end.x)) {
          const distance = geometry.pointToSegmentDistance(testPoint, track.start, track.end);
          if (distance <= GRID_SIZE_2) {
             const point = TOOLS.nearestPointOnLine(track.start, track.end, testPoint);
@@ -799,17 +852,17 @@ function alignSignalContainerWithTrack(c, pos) {
    let p;
    if (pos.above) {
       c.rotation = 270 + pos.track.deg;
-      p = geometry.perpendicular(
-         point,
-         pos.track.deg,
-         -renderer.SIGNAL_DISTANCE_FROM_TRACK - c.data._template.distance_from_track
+      p = point.add(
+         geometry
+            .perpendicular(pos.track.unit)
+            .multiply(-renderer.SIGNAL_DISTANCE_FROM_TRACK - c.data._template.distance_from_track)
       );
    } else {
       c.rotation = 90 + pos.track.deg;
-      p = geometry.perpendicular(
-         point,
-         pos.track.deg,
-         renderer.SIGNAL_DISTANCE_FROM_TRACK + c.data._template.distance_from_track
+      p = point.add(
+         geometry
+            .perpendicular(pos.track.unit)
+            .multiply(renderer.SIGNAL_DISTANCE_FROM_TRACK + c.data._template.distance_from_track)
       );
    }
    if (pos.flipped) c.rotation += 180;
@@ -1009,7 +1062,7 @@ function drawBluePrintTrack() {
       g.lt(point.x, point.y);
    }
 
-   const last = mouseAction.nodes.last();
+   const last = ArrayUtils.last(mouseAction.nodes);
    const p = stage.globalToLocal(stage.mouseX, stage.mouseY);
    g.beginStroke("red").moveTo(last.x, last.y).lt(p.x, p.y).endStroke();
 }
@@ -1020,9 +1073,9 @@ function addTrackAnchorPoint(p) {
    }
 
    //wenn der letzte Punkt gleich dem aktuellen ist, dann nichts tun
-   if (mouseAction.nodes.last()?.equals(p)) return;
+   if (ArrayUtils.last(mouseAction.nodes)?.equals(p)) return;
    //wenn der Startpunkt gleich dem aktuellen ist, dann Track zurücksetzen
-   if (mouseAction.nodes.first()?.equals(p)) {
+   if (ArrayUtils.first(mouseAction.nodes)?.equals(p)) {
       mouseAction.nodes = [mouseAction.nodes[0]];
       return;
    }
@@ -1094,6 +1147,9 @@ function handleStageMouseUp(e) {
                   mouseAction.hit_track.flipped
                );
             }
+            else{
+               Signal.removeSignal(mouseAction.container.data);
+            }
             renderer.reDrawEverything(true);
             STORAGE.save();
             STORAGE.saveUndoHistory();
@@ -1110,7 +1166,7 @@ function handleStageMouseUp(e) {
             overlay_container.removeChild(mouseAction.container);
             const hit = getHitTest(track_container);
             if (hit?.name == "track") {
-               const color = ["#ff0000", "#ffff00", "#00ff00", "#0000ff"].random();
+               const color = ArrayUtils.random(["#ff0000", "#ffff00", "#00ff00", "#0000ff"]);
                const track = hit.data;
                const hitInfo = getHitInfoForSignalPositioning(local_point);
                let train, car, car2;
@@ -1138,7 +1194,7 @@ function handleStageMouseUp(e) {
                renderer.renderAllTrains();
                STORAGE.save();
             }
-         } else if (mouseAction.action.is(MOUSE_DOWN_ACTION.MOVE_TRAIN, MOUSE_DOWN_ACTION.MOVE_OBJECT)) {
+         } else if (NumberUtils.is(mouseAction.action, MOUSE_DOWN_ACTION.MOVE_TRAIN, MOUSE_DOWN_ACTION.MOVE_OBJECT)) {
             STORAGE.save();
             STORAGE.saveUndoHistory();
          } else if (mouseAction.action === MOUSE_DOWN_ACTION.CUSTOM) {
@@ -1148,6 +1204,7 @@ function handleStageMouseUp(e) {
                selectObject(o);
                renderer.renderAllGenericObjects();
                custom_mouse_mode = CUSTOM_MOUSE_ACTION.NONE;
+               window.custom_mouse_mode = custom_mouse_mode; // Update global reference
                UI.activate_custom_mouse_mode();
                STORAGE.saveUndoHistory();
                STORAGE.save();
@@ -1161,6 +1218,7 @@ function handleStageMouseUp(e) {
                renderer.renderAllGenericObjects();
                selectObject(o);
                custom_mouse_mode = CUSTOM_MOUSE_ACTION.NONE;
+               window.custom_mouse_mode = custom_mouse_mode; // Update global reference
                UI.activate_custom_mouse_mode();
                STORAGE.saveUndoHistory();
                STORAGE.save();
@@ -1200,7 +1258,7 @@ function handleStageMouseUp(e) {
          STORAGE.save();
       }
    } catch (error) {
-      showErrorToast(error);
+      ui.showErrorToast(error);
    } finally {
       mouseAction = null;
       overlay_container.removeAllChildren();
@@ -1220,53 +1278,6 @@ function drawPoint(point, displayObject, label = "", color = "#000", size = 0.5)
       const text = new createjs.Text(label, "Italic 6px Arial", color);
       text.x = s.x;
       text.y = s.y - 5;
-      text.textBaseline = "alphabetic";
-      debug_container.addChild(text);
-   }
-}
-
-function drawVector(vector, point, label = "", color = "#000", width = 1) {
-   const s = new createjs.Shape();
-   s.graphics.setStrokeStyle(width).beginStroke(color);
-
-   // Calculate vector length
-   const vectorLength = Math.sqrt(vector.x * vector.x + vector.y * vector.y);
-   const minLength = 10;
-
-   // Scale vector if it's too short
-   const scale = vectorLength < minLength ? minLength / vectorLength : 1;
-   const scaledVector = {
-      x: vector.x * scale,
-      y: vector.y * scale,
-   };
-
-   // Calculate end point based on scaled vector
-   const endPoint = {
-      x: point.x + scaledVector.x,
-      y: point.y + scaledVector.y,
-   };
-
-   // Draw the main vector line
-   s.graphics.moveTo(point.x, point.y).lineTo(endPoint.x, endPoint.y);
-
-   // Draw arrow head
-   const angle = Math.atan2(scaledVector.y, scaledVector.x);
-   const arrowLength = 3;
-   const arrowAngle = Math.PI / 8; // 22.5 degrees
-
-   s.graphics
-      .moveTo(endPoint.x, endPoint.y)
-      .lineTo(endPoint.x - arrowLength * Math.cos(angle - arrowAngle), endPoint.y - arrowLength * Math.sin(angle - arrowAngle))
-      .moveTo(endPoint.x, endPoint.y)
-      .lineTo(endPoint.x - arrowLength * Math.cos(angle + arrowAngle), endPoint.y - arrowLength * Math.sin(angle + arrowAngle));
-
-   debug_container.addChild(s);
-
-   if (label) {
-      const text = new createjs.Text(label, "Italic 6px Arial", color);
-      // Position the label at the midpoint of the vector
-      text.x = (point.x + endPoint.x) / 2;
-      text.y = (point.y + endPoint.y) / 2 - 5;
       text.textBaseline = "alphabetic";
       debug_container.addChild(text);
    }
