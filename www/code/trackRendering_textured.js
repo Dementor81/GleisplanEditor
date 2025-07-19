@@ -1,14 +1,16 @@
 "use strict";
 
 // ES6 Module imports
-import { Track } from './track.js';
-import { Switch } from './switch.js';
-import { Signal, SignalRenderer } from './signal.js';
-import { Train } from './train.js';
-import { GenericObject } from './generic_object.js';
-import { geometry, Point } from './tools.js';
-import { NumberUtils } from './utils.js';
-import { ui } from './ui.js';
+import { Track } from "./track.js";
+import { Switch } from "./switch.js";
+import { Signal, SignalRenderer } from "./signal.js";
+import { Train } from "./train.js";
+import { GenericObject } from "./generic_object.js";
+import { geometry, Point } from "./tools.js";
+import { NumberUtils } from "./utils.js";
+import { ui } from "./ui.js";
+import { CONFIG, COMPUTED } from "./config.js";
+import { Application } from "./application.js";
 
 export class trackRendering_textured {
    static SWITCH_UI_STROKE = 3;
@@ -34,10 +36,11 @@ export class trackRendering_textured {
    ];
 
    constructor() {
+      this.app = Application.getInstance();
       //cause the class is been loaded before start.js, we have to hack and calculate this constant here
-      trackRendering_textured.CURVE_RADIUS = window.GRID_SIZE * 1.21;
+      trackRendering_textured.CURVE_RADIUS = CONFIG.GRID_SIZE * 1.21;
 
-      this.SIGNAL_DISTANCE_FROM_TRACK = 35;
+      this.SIGNAL_DISTANCE_FROM_TRACK = 45;
 
       this.LOD = 5;
       this._lastRenderScale = 0;
@@ -61,12 +64,12 @@ export class trackRendering_textured {
 
       this._idleCallback = myIdleCallback(
          function (r) {
-            if (track_container.renderedTracks.size == 0 || this._rendering != null) return;
+            if (this.app.renderingManager.containers.tracks.renderedTracks.size == 0 || this._rendering != null) return;
             const bounds = this.calcCanvasSize();
 
             // Find tracks that are no longer visible
             const toBeRemoved = [];
-            track_container.renderedTracks.forEach((track) => {
+            this.app.renderingManager.containers.tracks.renderedTracks.forEach((track) => {
                if (!this.TrackVisible(track, bounds)) {
                   toBeRemoved.push(track);
                }
@@ -75,25 +78,27 @@ export class trackRendering_textured {
             // Remove tracks and their associated signals
             toBeRemoved.forEach((track) => {
                // Remove associated signals
-               const signalsToBeRemoved = signal_container.children.filter((cs) => cs.data._positioning.track === track);
+               const signalsToBeRemoved = this.app.renderingManager.containers.signals.children.filter(
+                  (cs) => cs.data._positioning.track === track
+               );
                signalsToBeRemoved.forEach((cs) => {
-                  signal_container.removeChild(cs);
+                  this.app.renderingManager.containers.signals.removeChild(cs);
                });
                // Remove track from rendered set
-               track_container.renderedTracks.delete(track);
+               this.app.renderingManager.containers.tracks.renderedTracks.delete(track);
 
                // Remove track elements from both containers
-               const sleepersToRemove = track_container.children[0].children.filter((c) => c.data === track);
-               const railsToRemove = track_container.children[1].children.filter((c) => c.data === track);
+               const sleepersToRemove = this.app.renderingManager.containers.tracks.children[0].children.filter((c) => c.data === track);
+               const railsToRemove = this.app.renderingManager.containers.tracks.children[1].children.filter((c) => c.data === track);
 
                sleepersToRemove.forEach((c) => {
                   delete c.track;
-                  track_container.children[0].removeChild(c);
+                  this.app.renderingManager.containers.tracks.children[0].removeChild(c);
                });
 
                railsToRemove.forEach((c) => {
                   delete c.track;
-                  track_container.children[1].removeChild(c);
+                  this.app.renderingManager.containers.tracks.children[1].removeChild(c);
                });
             });
 
@@ -108,10 +113,11 @@ export class trackRendering_textured {
    }
 
    calcCanvasSize() {
-      const width = (stage.canvas.width + GRID_SIZE * 2) / stage.scaleX,
-         height = (stage.canvas.height + GRID_SIZE * 2) / stage.scaleY,
-         x = (-stage.x - GRID_SIZE) / stage.scaleX,
-         y = (-stage.y - GRID_SIZE) / stage.scaleY;
+      const stage = this.app.renderingManager.stage;
+      const width = (stage.canvas.width + CONFIG.GRID_SIZE * 2) / stage.scaleX,
+         height = (stage.canvas.height + CONFIG.GRID_SIZE * 2) / stage.scaleY,
+         x = (-stage.x - CONFIG.GRID_SIZE) / stage.scaleX,
+         y = (-stage.y - CONFIG.GRID_SIZE) / stage.scaleY;
       return { left: x, top: y, right: x + width, bottom: y + height };
    }
 
@@ -120,35 +126,27 @@ export class trackRendering_textured {
    /// dont_optimize parameter disables the optimasation to only handle and draw elements inside the viewport
    /// and disables caching. its used by the export to image functionality
    reDrawEverything(force = false, dont_optimize = false) {
-      if (!pl.loaded)
+      if (!Application.getInstance().preLoader.loaded)
          //stupid code that should prevent drawing, before the preloader is ready
          setTimeout(() => {
             this.reDrawEverything(force, dont_optimize);
          }, 500);
       else {
+         const containers = this.app.renderingManager.containers;
          if (this._rendering == undefined) {
             try {
                this._rendering = { dont_optimize: dont_optimize };
                this._rendering.screen_rectangle = this.calcCanvasSize();
 
                if (force) {
-                  track_container.removeAllChildren();
-                  signal_container.removeAllChildren();
-                  ui_container.removeAllChildren();
-                  train_container.removeAllChildren();
-                  object_container.removeAllChildren();
-                  debug_container.removeAllChildren();
-                  selection_container.removeAllChildren();
-
-                  // Clear the overlay container
-                  overlay_container.removeAllChildren();
+                  this.app.renderingManager.containers.removeAllChildren();
 
                   this.calcRenderValues();
                } else {
-                                 //if we passed the LOD in either direction we have to rerender the tracks
-               if (NumberUtils.between(this.LOD, this._lastRenderScale, stage.scale)) {
-                  this._rendering.lodChanged = true;
-               }
+                  //if we passed the LOD in either direction we have to rerender the tracks
+                  if (NumberUtils.between(this.LOD, this._lastRenderScale, this.app.renderingManager.stage.scale)) {
+                     this._rendering.lodChanged = true;
+                  }
                }
 
                try {
@@ -156,14 +154,14 @@ export class trackRendering_textured {
                   this.renderAllSignals(force);
                   this.renderAllTrains();
                   this.renderAllGenericObjects();
-                  this._lastRenderScale = stage.scale;
+                  this._lastRenderScale = this.app.renderingManager.stage.scale;
                   if (!dont_optimize) this.cleanUp();
                } catch (error) {
                   console.error("Error during rendering:", error);
                   throw error;
                } finally {
                   delete this._rendering;
-                  stage.update();
+                  this.app.renderingManager.update();
                }
             } catch (error) {
                console.error("Critical rendering error:", error);
@@ -177,8 +175,8 @@ export class trackRendering_textured {
    }
 
    calcRenderValues() {
-      this.schwellenImg = pl.getImage("schwellen");
-      this.bumperImg = pl.getImage("bumper");
+      this.schwellenImg = this.app.preLoader.getImage("schwellen");
+      this.bumperImg = this.app.preLoader.getImage("bumper");
       this.sleepersImgWidth = this.schwellenImg.width / trackRendering_textured.SCHWELLEN_VARIANTEN;
       this.schwellenHöhe = this.schwellenImg.height * trackRendering_textured.TRACK_SCALE;
       this.schwellenHöhe_2 = this.schwellenHöhe / 2;
@@ -189,13 +187,13 @@ export class trackRendering_textured {
       this.rail_distance = this.schwellenHöhe_2 - this.rail_offset; // distance between the rail and the center of the track
 
       this.TRAIN_HEIGHT = this.schwellenHöhe - this.rail_offset;
-      this.TRAIN_WIDTH = GRID_SIZE * 0.7;
+      this.TRAIN_WIDTH = CONFIG.GRID_SIZE * 0.7;
 
       this.main_x1 = (Math.sin(Math.PI / 8) * trackRendering_textured.CURVE_RADIUS) / Math.cos(Math.PI / 8);
    }
 
    renderAllTrains() {
-      train_container.removeAllChildren();
+      this.app.renderingManager.containers.trains.removeAllChildren();
 
       // Only render trains that aren't coupled to another train's front
       // This ensures we only create containers for lead cars
@@ -209,8 +207,8 @@ export class trackRendering_textured {
 
             // Start rendering from the first car (locomotive)
             this.renderCar(train, c);
-            
-            train_container.addChild(c);
+
+            this.app.renderingManager.containers.trains.addChild(c);
          });
    }
 
@@ -273,7 +271,7 @@ export class trackRendering_textured {
    }
 
    renderAllGenericObjects() {
-      object_container.removeAllChildren();
+      this.app.renderingManager.containers.objects.removeAllChildren();
       GenericObject.all_objects.forEach((o) => {
          const c = new createjs.Container();
          c.name = "GenericObject";
@@ -286,7 +284,7 @@ export class trackRendering_textured {
          else if (o.type() === GenericObject.OBJECT_TYPE.plattform) this.renderPlattformObject(o, c);
          else throw new Error("Unknown Object");
 
-         object_container.addChild(c);
+         this.app.renderingManager.containers.objects.addChild(c);
       });
    }
 
@@ -321,15 +319,15 @@ export class trackRendering_textured {
    }
 
    renderAllSignals(force) {
-      signal_container.removeAllChildren();
+      this.app.renderingManager.containers.signals.removeAllChildren();
       Signal.allSignals.forEach((signal) => {
-         let container = signal_container.addChild(SignalRenderer.createSignalContainer(signal));
-         alignSignalContainerWithTrack(container, signal._positioning);
-         
+         let container = this.app.renderingManager.containers.signals.addChild(SignalRenderer.createSignalContainer(signal));
+         this.app.alignSignalContainerWithTrack(container, signal._positioning);
       });
    }
 
    renderAllTracks(force) {
+      const containers = this.app.renderingManager.containers;
       //if we have to force a redraw, we have to create the containers for the sleepers and rails
       if (force) {
          const sleepers_container = new createjs.Container();
@@ -343,21 +341,21 @@ export class trackRendering_textured {
          this._rendering.sleepers_container = sleepers_container;
          this._rendering.rails_container = rails_container;
 
-         track_container.addChild(sleepers_container);
-         track_container.addChild(rails_container);
-         track_container.renderedTracks = new Set();
-         track_container.renderedSwitches = new Set();
+         containers.tracks.addChild(sleepers_container);
+         containers.tracks.addChild(rails_container);
+         containers.tracks.renderedTracks = new Set();
+         containers.tracks.renderedSwitches = new Set();
       } else {
-         this._rendering.sleepers_container = track_container.children[0];
-         this._rendering.rails_container = track_container.children[1];
+         this._rendering.sleepers_container = containers.tracks.children[0];
+         this._rendering.rails_container = containers.tracks.children[1];
       }
 
       for (const t of Track.allTracks) {
          if (this.TrackVisible(t)) {
             //either we have a forced redraw or the track is not rendered yet
-            if (force || !track_container.renderedTracks.has(t)) {
+            if (force || !containers.tracks.renderedTracks.has(t)) {
                this.renderTrack(t);
-               track_container.renderedTracks.add(t);
+               containers.tracks.renderedTracks.add(t);
             } else if (this._rendering.lodChanged) {
                this.updateTrack(t);
             }
@@ -366,9 +364,9 @@ export class trackRendering_textured {
 
       for (const sw of Switch.allSwitches) {
          if (this.SwitchVisible(sw)) {
-            if (force || !track_container.renderedSwitches.has(sw)) {
+            if (force || !containers.tracks.renderedSwitches.has(sw)) {
                this.renderSwitch(sw);
-               track_container.renderedSwitches.add(sw);
+               containers.tracks.renderedSwitches.add(sw);
             } else if (this._rendering.lodChanged) {
                this.updateSwitch(sw);
             }
@@ -388,11 +386,11 @@ export class trackRendering_textured {
       // Handle the start of the track
       if (startConnection) {
          // If there's a connection, shorten the track to make space
-         const size = startConnection instanceof Switch ? startConnection.size : GRID_SIZE_2;
+         const size = startConnection instanceof Switch ? startConnection.size : COMPUTED.GRID_SIZE_2;
          startPoint = startPoint.add(geometry.multiply(track.unit, size));
       } else {
          // If there's no connection, extend it for the bumper
-         startPoint = startPoint.sub(geometry.multiply(track.unit, GRID_SIZE_2));
+         startPoint = startPoint.sub(geometry.multiply(track.unit, COMPUTED.GRID_SIZE_2));
       }
 
       let straightEndPoint = endPoint;
@@ -403,7 +401,7 @@ export class trackRendering_textured {
       // Handle the end of the track
       if (endConnection) {
          // If there's a connection, shorten the track to make space for the switch or curve
-         const size = endConnection instanceof Switch ? endConnection.size : GRID_SIZE_2;
+         const size = endConnection instanceof Switch ? endConnection.size : COMPUTED.GRID_SIZE_2;
          straightEndPoint = endPoint.sub(geometry.multiply(track.unit, size));
 
          if (endConnection instanceof Track) {
@@ -411,12 +409,12 @@ export class trackRendering_textured {
             const nextTrack = endConnection;
             nextUnit = nextTrack.unit;
             // The curve should end at the *shortened* start of the next track
-            curveEnd = nextTrack.start.add(geometry.multiply(nextUnit, GRID_SIZE_2));
+            curveEnd = nextTrack.start.add(geometry.multiply(nextUnit, COMPUTED.GRID_SIZE_2));
             controlPoint = geometry.getIntersectionPointX(straightEndPoint, track.unit, curveEnd, nextUnit);
          }
       } else {
          // If there's no connection, extend the track for the bumper.
-         straightEndPoint = endPoint.add(geometry.multiply(track.unit, GRID_SIZE_2));
+         straightEndPoint = endPoint.add(geometry.multiply(track.unit, COMPUTED.GRID_SIZE_2));
       }
 
       const centerLine = {
@@ -665,11 +663,6 @@ export class trackRendering_textured {
       const bounds = this.calculateRailBounds(points);
       rail_shape.setBounds(bounds.x, bounds.y, bounds.width, bounds.height);
 
-      // If debug mode is enabled, visualize the bounds
-      if (window.DEBUG_BOUNDS) {
-         this.visualizeTrackBounds(track, bounds);
-      }
-
       return rail_shape;
    }
 
@@ -731,7 +724,7 @@ export class trackRendering_textured {
    }
 
    drawSleeper(i, x, y, angle, container, length = this.schwellenHöhe, regY) {
-      if (stage.scale < this.LOD) {
+      if (this.app.renderingManager.stage.scale < this.LOD) {
          // For simple shapes at low LOD
          const ry = regY == null ? length / 2 : regY;
 
@@ -898,25 +891,23 @@ export class trackRendering_textured {
    createEndpointShape(point, track, endpointType) {
       const RECT_SIZE = 8;
       const shape = new createjs.Shape();
-      
+
       // Set properties to identify the shape
       shape.name = "track_endpoint";
       shape.endpoint = endpointType;
       shape.track = track;
-      
+
       // Create hit area
       const hitArea = new createjs.Shape();
-      hitArea.graphics
-         .beginFill("#000")
-         .drawRect(point.x - RECT_SIZE/2, point.y - RECT_SIZE/2, RECT_SIZE, RECT_SIZE);
+      hitArea.graphics.beginFill("#000").drawRect(point.x - RECT_SIZE / 2, point.y - RECT_SIZE / 2, RECT_SIZE, RECT_SIZE);
       shape.hitArea = hitArea;
-      
+
       // Draw rectangle
       shape.graphics
          .setStrokeStyle(2)
          .beginStroke("#ff0000")
-         .drawRect(point.x - RECT_SIZE/2, point.y - RECT_SIZE/2, RECT_SIZE, RECT_SIZE);
-      
+         .drawRect(point.x - RECT_SIZE / 2, point.y - RECT_SIZE / 2, RECT_SIZE, RECT_SIZE);
+
       return shape;
    }
 
@@ -926,34 +917,34 @@ export class trackRendering_textured {
     */
    drawTrackEndpoints(track) {
       // Create and add shapes for start and end points
-      selection_container.addChild(this.createEndpointShape(track.start, track, "start"));
-      selection_container.addChild(this.createEndpointShape(track.end, track, "end"));
+      this.app.renderingManager.containers.selection.addChild(this.createEndpointShape(track.start, track, "start"));
+      this.app.renderingManager.containers.selection.addChild(this.createEndpointShape(track.end, track, "end"));
    }
 
    updateSelection() {
-      selection_container.removeAllChildren();
+      this.app.renderingManager.containers.selection.removeAllChildren();
 
-      if (selection.type == "Track") {
-         track_container.children[0].children.forEach((c) => {
-            if (selection.isSelectedObject(c.data)) {
+      if (this.app.selection.type == "Track") {
+         this.app.renderingManager.containers.tracks.children[0].children.forEach((c) => {
+            if (this.app.selection.isSelectedObject(c.data)) {
                this.visualizeTrackBounds(c);
                this.drawTrackEndpoints(c.data);
             }
          });
-      } else if (selection.type == "Signal") {
-         signal_container.children.forEach((c) => {
+      } else if (this.app.selection.type == "Signal") {
+         this.app.renderingManager.containers.signals.children.forEach((c) => {
             if (c.data) {
-               if (selection.isSelectedObject(c.data)) this.visualizeTrackBounds(c);
+               if (this.app.selection.isSelectedObject(c.data)) this.visualizeTrackBounds(c);
             }
          });
-      } else if (selection.type == "GenericObject") {
-         object_container.children.forEach((c) => {
+      } else if (this.app.selection.type == "GenericObject") {
+         this.app.renderingManager.containers.objects.children.forEach((c) => {
             if (c.data) {
-               if (selection.isSelectedObject(c.data)) this.visualizeTrackBounds(c);
+               if (this.app.selection.isSelectedObject(c.data)) this.visualizeTrackBounds(c);
             }
          });
       }
-      stage.update();
+      this.app.renderingManager.update();
    }
 
    drawSleepersOnSwitch(sw, switchRenderingParameter, container) {
@@ -971,7 +962,7 @@ export class trackRendering_textured {
 
       const deg = sw.track1.deg;
 
-                     const back2front = NumberUtils.is(sw.type, Switch.SWITCH_TYPE.FROM_RIGHT, Switch.SWITCH_TYPE.FROM_LEFT);
+      const back2front = NumberUtils.is(sw.type, Switch.SWITCH_TYPE.FROM_RIGHT, Switch.SWITCH_TYPE.FROM_LEFT);
 
       if (curvedBranch2 == null) {
          const cp = geometry.getIntersectionPointX(
@@ -1029,11 +1020,11 @@ export class trackRendering_textured {
          // Calculate starting point and offset vector
          let centerPoint = straightBranch.position.add(mainTrack.unit.multiply(this.sleeperIntervall / 4));
          const step_vector = mainTrack.unit.multiply(this.sleeperIntervall);
-         
+
          // Create a full symmetric pattern from the half pattern
          const pattern = trackRendering_textured.FOUR_WAY_SLEEPER_PATTERN;
          const reversed_pattern = pattern.slice(0, -1).reverse(); //remove the last element because its right on the point of the switch
-         const point_symmetric_pattern = reversed_pattern.map(p => ({ offset: (2 * p.length) - p.offset, length: p.length }));
+         const point_symmetric_pattern = reversed_pattern.map((p) => ({ offset: 2 * p.length - p.offset, length: p.length }));
          const fullPattern = [...pattern, ...point_symmetric_pattern];
 
          // Draw sleepers using the pattern
@@ -1072,8 +1063,8 @@ export class trackRendering_textured {
    }
 
    getSwitchRenderingParameter(sw) {
-               const flipped = NumberUtils.is(sw.type, Switch.SWITCH_TYPE.FROM_RIGHT, Switch.SWITCH_TYPE.TO_RIGHT) ? -1 : 1;
-         const mirrored = NumberUtils.is(sw.type, Switch.SWITCH_TYPE.FROM_LEFT, Switch.SWITCH_TYPE.FROM_RIGHT) ? -1 : 1;
+      const flipped = NumberUtils.is(sw.type, Switch.SWITCH_TYPE.FROM_RIGHT, Switch.SWITCH_TYPE.TO_RIGHT) ? -1 : 1;
+      const mirrored = NumberUtils.is(sw.type, Switch.SWITCH_TYPE.FROM_LEFT, Switch.SWITCH_TYPE.FROM_RIGHT) ? -1 : 1;
 
       // Calculate track data for each track
       const calcTrackData = (index) => {
@@ -1240,18 +1231,18 @@ export class trackRendering_textured {
       }
    }
 
-   renderSwitchUI(sw) {      
-
+   renderSwitchUI(sw) {
       const drawArrow = (graphics, length, size) => {
-         graphics.mt(0, 0)
+         graphics
+            .mt(0, 0)
             .lt(length, 0)
             .mt(length - size, -size / 2)
             .lt(length, 0)
             .lt(length - size, size / 2);
-      }
+      };
 
       // Check if a container already exists for this switch
-      let container = ui_container.children.find((c) => c.data === sw);
+      let container =  this.app.renderingManager.containers.ui.children.find((c) => c.data === sw);
 
       if (container) {
          // If container exists, clear it but keep it
@@ -1262,7 +1253,7 @@ export class trackRendering_textured {
          container.mouseChildren = false;
          container.name = "switch";
          container.data = sw;
-         ui_container.addChild(container);
+         this.app.renderingManager.containers.ui.addChild(container);
       }
 
       // Add arrows for both tracks
@@ -1328,8 +1319,8 @@ export class trackRendering_textured {
       if (this.PointVisible(sw.location)) return true;
 
       // Check if any of the switch's tracks are visible
-      const tracks = [sw.track1, sw.track2, sw.track3, sw.track4].filter(t => t);
-      return tracks.some(track => this.TrackVisible(track, screen_rectangle));
+      const tracks = [sw.track1, sw.track2, sw.track3, sw.track4].filter((t) => t);
+      return tracks.some((track) => this.TrackVisible(track, screen_rectangle));
    }
 
    /**
@@ -1363,8 +1354,6 @@ export class trackRendering_textured {
          .drawRect(bounds.x, bounds.y, bounds.width, bounds.height)
          .endStroke();
 
-      selection_container.addChild(boundsShape);
+      this.app.renderingManager.containers.selection.addChild(boundsShape);
    }
 }
-
-

@@ -5,6 +5,7 @@ import { geometry, V2, Point, type } from './tools.js';
 import { Switch } from './switch.js';
 import { Signal } from './signal.js';
 import { ArrayUtils } from './utils.js';
+import { CONFIG } from './config.js';
 
 export class Track {
    static allTracks = [];
@@ -155,7 +156,7 @@ export class Track {
             intersection = geometry.getIntersectionPoint(track1, track2);
 
             //check if the intersection point is on the grid
-            if (intersection && intersection.x % window.GRID_SIZE == 0 && intersection.y % window.GRID_SIZE == 0) {
+            if (intersection && intersection.x % CONFIG.GRID_SIZE == 0 && intersection.y % CONFIG.GRID_SIZE == 0) {
                // Split track1 if intersection is not at start or end
                if (!intersection.equals(track1.start) && !intersection.equals(track1.end)) {
                   const km = track1.getKmfromPoint(intersection);

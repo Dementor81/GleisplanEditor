@@ -6,6 +6,8 @@ import { STORAGE } from './storage.js';
 import { ui } from './ui.js';
 import { Track } from './track.js';
 import { Point, type } from './tools.js';
+import { Application } from './application.js';
+import { CUSTOM_MOUSE_ACTION } from './config.js';
 
 export class Train {
    static allTrains = [];
@@ -55,8 +57,8 @@ export class Train {
          .val(train.color)
          .on("change", function (e) {
             train.color = $(this).val();
-            window.renderer.renderAllTrains();
-            window.stage.update();
+            app.renderingManager.renderer.renderAllTrains();
+            app.renderingManager.update();
             STORAGE.save();
          });
 
@@ -65,8 +67,8 @@ export class Train {
          .val(train.number)
          .on("change", function (e) {
             train.number = $(this).val();
-            window.renderer.renderAllTrains();
-            window.stage.update();
+            app.renderingManager.renderer.renderAllTrains();
+            app.renderingManager.update();
             STORAGE.save();
          });
 
@@ -75,8 +77,8 @@ export class Train {
          .val(train.type)
          .on("change", function (e) {
             train.type = $(this).val();
-            window.renderer.renderAllTrains();
-            window.stage.update();
+            app.renderingManager.renderer.renderAllTrains();
+            app.renderingManager.update();
             STORAGE.save();
          });
 
@@ -88,13 +90,13 @@ export class Train {
          .off()
          .click(() => {
             // Set global state for coupling mode
-            if (window.custom_mouse_mode === window.CUSTOM_MOUSE_ACTION.NONE) {
+            if (app.customMouseMode === CUSTOM_MOUSE_ACTION.NONE) {
                // First check if there are any coupling points available
                if (Train.showCouplingPoints(train)) {
                   // Add active class to button
                   $("#btnCoupleTrain").addClass("active");
 
-                  window.custom_mouse_mode = window.CUSTOM_MOUSE_ACTION.TRAIN_COUPLE;
+                  app.customMouseMode = CUSTOM_MOUSE_ACTION.TRAIN_COUPLE;
 
                   // Show coupling message
                   $("#couplingMessage")
@@ -112,13 +114,13 @@ export class Train {
          .off()
          .click(() => {
             // Set global state for decoupling mode
-            if (window.custom_mouse_mode === window.CUSTOM_MOUSE_ACTION.NONE) {
+            if (app.customMouseMode === CUSTOM_MOUSE_ACTION.NONE) {
                // First check if there are any decoupling points available
                if (Train.showDecouplingPoints(train)) {
                   // Add active class to button
                   $("#btnUncoupleTrain").addClass("active");
 
-                  window.custom_mouse_mode = window.CUSTOM_MOUSE_ACTION.TRAIN_DECOUPLE;
+                  app.customMouseMode = CUSTOM_MOUSE_ACTION.TRAIN_DECOUPLE;
 
                   // Show decoupling message
                   $("#couplingMessage")
@@ -208,8 +210,8 @@ export class Train {
          currentCar = nextCar;
       }
 
-      renderer.renderAllTrains();
-      stage.update();
+      app.renderingManager.renderer.renderAllTrains();
+      app.renderingManager.update();
       STORAGE.save();
    }
 
@@ -237,7 +239,7 @@ export class Train {
 
 
       // Calculate new position using the node's unit vector
-      new_pos = car.pos + movementX / stage.scale / car.track.cos;
+      new_pos = car.pos + movementX / app.renderingManager.stage.scale / car.track.cos;
 
       while (car) {
          if (car != firstCar) {
@@ -277,7 +279,7 @@ export class Train {
       const currentTrack = train.track;
 
       // Calculate new position using the node's unit vector
-      let new_pos = train.pos + movementX / stage.scale / train.track.cos;
+      let new_pos = train.pos + movementX / app.renderingManager.stage.scale / train.track.cos;
 
       if (NumberUtils.outoff(new_pos, 0 + train.length / 2, currentTrack.length - train.length / 2)) {
          const sw = new_pos <= 0 + train.length / 2 ? currentTrack.switchAtTheStart : currentTrack.switchAtTheEnd;
@@ -448,7 +450,7 @@ export class Train {
 
    static showDecouplingPoints(train) {
       // Clear any existing overlay
-      overlay_container.removeAllChildren();
+      app.containers.overlay.removeAllChildren();
 
       // Find the first car in the train
       let firstCar = train;
@@ -485,7 +487,7 @@ export class Train {
          decouplingPoint.name = "decouplingPoint";
 
          // Add to overlay container
-         overlay_container.addChild(decouplingPoint);
+         overlay.addChild(decouplingPoint);
          decouplingPointsFound++;
 
          // Move to the next car
@@ -498,7 +500,7 @@ export class Train {
          ui.showInfoToast("Keine Wagen in der Nähe zum entkuppeln gefunden, dieser Zug hat nur einen Wagen");
          return false;
       } else {
-         stage.update();
+         app.renderingManager.update();
          return true;
       }
    }
@@ -512,17 +514,17 @@ export class Train {
       Train.exitDecouplingMode();
 
       // Update display
-      renderer.renderAllTrains();
-      stage.update();
+      app.renderingManager.renderer.renderAllTrains();
+      app.renderingManager.update();
       STORAGE.save();
    }
 
    static exitDecouplingMode() {
       // Remove decoupling points
-      window.overlay_container.removeAllChildren();
+      app.containers.overlay.removeAllChildren();
 
       // Reset custom action mode
-      window.custom_mouse_mode = window.CUSTOM_MOUSE_ACTION.NONE;
+      app.customMouseMode = CUSTOM_MOUSE_ACTION.NONE;
 
       // Hide message with a small delay to ensure it's fully shown first
       setTimeout(() => {
@@ -532,12 +534,12 @@ export class Train {
       // Deactivate any active buttons
       $("#btnUncoupleTrain").removeClass("active");
 
-      window.stage.update();
+      app.renderingManager.update();
    }
 
    static showCouplingPoints(train) {
       // Clear any existing overlay
-      window.overlay_container.removeAllChildren();
+      app.containers.overlay.removeAllChildren();
 
       // Get the head and tail of the train
       let firstCar = train;
@@ -599,7 +601,7 @@ export class Train {
          ui.showInfoToast("Keine Wagen in der Nähe zum kuppeln gefunden");
          return false;
       } else {
-         window.stage.update();
+         app.stage.update();
          return true;
       }
 
@@ -625,7 +627,7 @@ export class Train {
          couplingPoint.name = "couplingPoint";
 
          // Add to overlay container
-         window.overlay_container.addChild(couplingPoint);
+         app.containers.overlay.addChild(couplingPoint);
       }
    }
 
@@ -639,24 +641,24 @@ export class Train {
       Train.exitCouplingMode();
 
       // Update display
-      renderer.renderAllTrains();
-      stage.update();
+      app.renderingManager.renderer.renderAllTrains();
+      app.renderingManager.update();
       STORAGE.save();
    }
 
    static exitCouplingMode() {
       // Remove coupling points
-      window.overlay_container.removeAllChildren();
+      app.containers.overlay.removeAllChildren();
 
       // Reset custom action mode
-      window.custom_mouse_mode = window.CUSTOM_MOUSE_ACTION.NONE;
+      app.customMouseMode = CUSTOM_MOUSE_ACTION.NONE;
 
       $("#couplingMessage").hide();
 
       // Deactivate any active buttons
       $("#btnCoupleTrain").removeClass("active");
 
-      window.stage.update();
+      app.stage.update();
    }
 
    // Add new methods for automatic train movement
@@ -736,8 +738,8 @@ export class Train {
       
       // Update the display if any trains moved
       if (needsUpdate) {
-         renderer.renderAllTrains();
-         stage.update();
+         app.renderingManager.renderer.renderAllTrains();
+         app.renderingManager.update();
       }
    }
    

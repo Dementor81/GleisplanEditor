@@ -8,6 +8,7 @@ import { Train } from './train.js';
 import { GenericObject } from './generic_object.js';
 import { geometry, type } from './tools.js';
 import { NumberUtils } from './utils.js';
+import { Application } from './application.js';
 
 export class trackRendering_basic {
    static TRACK_COLOR = "#111111";
@@ -20,29 +21,26 @@ export class trackRendering_basic {
 
    constructor() {
       this.SIGNAL_DISTANCE_FROM_TRACK = 18;
+      this.app = Application.getInstance();
    }
 
    reDrawEverything() {
-      window.track_container.removeAllChildren();
-      window.signal_container.removeAllChildren();
-      window.train_container.removeAllChildren();
-      window.ui_container.removeAllChildren();
-      window.debug_container.removeAllChildren();
-      window.object_container.removeAllChildren();
+      
+      this.app.renderingManager.containers.removeAllChildren();
 
       this.renderAllTracks();
       this.renderAllSwitches();
       this.renderAllGenericObjects();
       this.renderAllSignals();
-      window.stage.update();
+      this.app.renderingManager.update();
    }
 
    renderAllSignals() {
-      window.signal_container.removeAllChildren();
+      this.app.renderingManager.containers.signals.removeAllChildren();
       Signal.allSignals.forEach((signal) => {
-         let container = window.signal_container.addChild(SignalRenderer.createSignalContainer(signal));
-         window.alignSignalContainerWithTrack(container, signal._positioning);
-         if (window.selection.isSelectedObject(signal)) {
+         let container = this.app.renderingManager.containers.signals.addChild(SignalRenderer.createSignalContainer(signal));
+         this.app.alignSignalContainerWithTrack(container, signal._positioning);
+         if (this.app.selection.isSelectedObject(signal)) {
             container.shadow = new createjs.Shadow("#ff0000", 0, 0, 3);
          }
       });
@@ -50,7 +48,7 @@ export class trackRendering_basic {
 
    renderAllTracks() {
       Track.allTracks.forEach((t) => {
-         this.renderTrack(window.track_container, t);
+         this.renderTrack(this.app.renderingManager.containers.tracks, t);
       });
    }
 
@@ -59,23 +57,23 @@ export class trackRendering_basic {
    }
 
    updateSelection() {
-      window.track_container.children.forEach((c) => {
+      this.app.renderingManager.containers.tracks.children.forEach((c) => {
          if (c.data) {
-            if (window.selection.isSelectedObject(c.data)) this.isSelected(c);
+            if (this.app.selection.isSelectedObject(c.data)) this.isSelected(c);
             else c.color.style = trackRendering_basic.TRACK_COLOR;
          }
       });
-      window.signal_container.children.forEach(function (c) {
+      this.app.renderingManager.containers.signals.children.forEach(function (c) {
          if (c.data) {
-            if (window.selection.isSelectedObject(c.data)) c.shadow = new createjs.Shadow("#ff0000", 0, 0, 3);
+            if (this.app.selection.isSelectedObject(c.data)) c.shadow = new createjs.Shadow("#ff0000", 0, 0, 3);
             else c.shadow = null;
          }
       });
-      window.stage.update();
+      this.app.renderingManager.update();
    }
 
    renderAllGenericObjects() {
-      window.object_container.removeAllChildren();
+      this.app.renderingManager.containers.objects.removeAllChildren();
       GenericObject.all_objects.forEach((o) => {
          const c = new createjs.Container();
          c.name = "object";
@@ -88,7 +86,7 @@ export class trackRendering_basic {
          else if (o.type() === GenericObject.OBJECT_TYPE.plattform) this.renderPlattformObject(o, c);
          else throw new Error("Unknown Object");
 
-         window.object_container.addChild(c);
+         this.app.renderingManager.containers.objects.addChild(c);
       });
    }
 
@@ -187,7 +185,7 @@ export class trackRendering_basic {
          //prellbock beim ende
          shape.graphics.moveTo(params.bumper[1][0].x, params.bumper[1][0].y).lineTo(params.bumper[1][1].x, params.bumper[1][1].y);
       }
-      if (window.selection.isSelectedObject(track)) this.isSelected(shape);
+      if (this.app.selection.isSelectedObject(track)) this.isSelected(shape);
 
       const text = new createjs.Text(track.id, "Italic 10px Arial", "black");
       const p = track.along(track.start, track.length / 2).add(geometry.perpendicular(track.unit).multiply(15));
@@ -195,7 +193,7 @@ export class trackRendering_basic {
       text.x = p.x;
       text.y = p.y;
       text.textBaseline = "alphabetic";
-      window.ui_container.addChild(text);
+      this.app.renderingManager.containers.ui.addChild(text);
 
       shape.setBounds(
          params.start.x - trackRendering_basic.HIT_TEST_DISTANCE,
@@ -224,10 +222,11 @@ export class trackRendering_basic {
          let switch_shape = new createjs.Shape();
          switch_shape.name = "switch";
          switch_shape.data = sw;
-         window.track_container.addChild(switch_shape);
-
+         this.app.renderingManager.containers.tracks.addChild(switch_shape);
+         
          // Draw the switch branch tracks
          switch_shape.graphics.setStrokeStyle(trackRendering_basic.STROKE, "round").beginStroke(trackRendering_basic.TRACK_COLOR);
+         switch_shape.color = switch_shape.graphics.command;
 
          // Draw all track branches using a loop
          const maxTracks = sw.type == Switch.SWITCH_TYPE.DKW ? 4 : 3;
@@ -260,7 +259,7 @@ export class trackRendering_basic {
 
    renderSwitchUI(sw) {
       // Check if a container already exists for this switch
-      let container = window.ui_container.children.find((c) => c.data === sw);
+      let container = this.app.renderingManager.containers.ui.children.find((c) => c.data === sw);
 
       if (container) {
          // If container exists, clear it but keep it
@@ -271,7 +270,7 @@ export class trackRendering_basic {
          container.mouseChildren = false;
          container.name = "switch";
          container.data = sw;
-         window.ui_container.addChild(container);
+         this.app.renderingManager.containers.ui.addChild(container);
       }
 
       const ui_shape = new createjs.Shape();

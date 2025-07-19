@@ -1,4 +1,5 @@
 const path = require('path');
+const HtmlWebpackPlugin = require('html-webpack-plugin');
 
 module.exports = (env, argv) => {
   const isProduction = argv.mode === 'production';
@@ -25,5 +26,13 @@ module.exports = (env, argv) => {
     },
     devtool: isProduction ? 'source-map' : 'eval-source-map',
     mode: argv.mode || 'development',
+    plugins: [
+      new HtmlWebpackPlugin({
+        template: 'www/start.html',
+        filename: 'start.html',
+        inject: 'head',
+        scriptLoading: 'blocking'
+      }),
+    ],
   };
 }; 

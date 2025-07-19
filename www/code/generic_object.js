@@ -3,6 +3,7 @@
 // ES6 Module imports
 import { ArrayUtils } from './utils.js';
 import { STORAGE } from './storage.js';
+import { Application } from './application.js';
 
 export class GenericObject {
    static OBJECT_TYPE = {
@@ -19,8 +20,8 @@ export class GenericObject {
 
    static removeObject(o) {
       ArrayUtils.remove(this.all_objects, o);
-      window.renderer.renderAllGenericObjects();
-      window.stage.update();
+      Application.getInstance().renderingManager.renderer.renderAllGenericObjects();
+      Application.getInstance().renderingManager.update();
       STORAGE.save();
       STORAGE.saveUndoHistory();
    }
@@ -45,9 +46,9 @@ export class GenericObject {
          .val(o.content())
          .on("input", function (e) {
             o.content($(this).val());
-            window.renderer.renderAllGenericObjects();
-            window.renderer.updateSelection();
-            window.stage.update();
+            Application.getInstance().renderingManager.renderer.renderAllGenericObjects();
+            Application.getInstance().renderingManager.renderer.updateSelection();
+            Application.getInstance().renderingManager.update();
             STORAGE.save();
          });
 
@@ -55,7 +56,7 @@ export class GenericObject {
          .off()
          .click(() => {
             this.removeObject(o);
-            window.selectObject()
+            Application.getInstance().selectObject()
          });
 
       setTimeout(() => {

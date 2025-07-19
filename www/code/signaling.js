@@ -2,7 +2,7 @@
 
 // ES6 Module imports
 import { ArrayUtils } from './utils.js';
-
+import { Application } from './application.js';
 
 //Signals are build of Visual elements. Some elements are always been drawn, like the "Mast", others have a varianty of
 //conditions.
@@ -227,7 +227,7 @@ export class SignalTemplate {
          else this.elements = [startElements];
       } else this.elements = [id];
 
-      window.pl.addSpriteSheet(json_file);
+      Application.getInstance().preLoader.addSpriteSheet(json_file);
    }
 
    getVisualElementsByOnCondition(condition) {

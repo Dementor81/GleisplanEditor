@@ -7,6 +7,8 @@ import { clone, findFieldNameForObject, type } from './tools.js';
 import { VisualElement, TextElement } from './signaling.js';
 import { Track } from './track.js';
 import { STORAGE } from './storage.js';
+import { DIRECTION } from './config.js';
+import { Application } from './application.js';
 
 export class SignalRenderer {
    static #renderingState = new WeakMap();
@@ -100,7 +102,7 @@ export class SignalRenderer {
          const state = SignalRenderer.#renderingState.get(signal);
          if (!state.container.getChildByName(textureName)) {
             //check if this texture was already drawn. Some texture are the same for different signals like Zs1 and Zs8
-            let bmp = window.pl.getSprite(signal._template.json_file, textureName);
+            let bmp = Application.getInstance().preLoader.getSprite(signal._template.json_file, textureName);
             if (bmp != null) {
                state.container.addChild(bmp);
 
@@ -234,7 +236,7 @@ export class Signal {
          if (this.check(["HPsig||master"])) {
             let prevSignal = this;
             do {
-               prevSignal = this.search4Signal(prevSignal, window.DIRECTION.RIGHT_2_LEFT);
+               prevSignal = this.search4Signal(prevSignal, DIRECTION.RIGHT_2_LEFT);
                if (prevSignal && prevSignal._template.checkSignalDependency)
                   stop = prevSignal._template.checkSignalDependency(prevSignal, this);
             } while (!stop && prevSignal);
@@ -242,7 +244,7 @@ export class Signal {
          if (this.check(["VRsig||slave"]) && this._template.checkSignalDependency) {
             let nextSignal = this;
             do {
-               nextSignal = this.search4Signal(nextSignal, window.DIRECTION.LEFT_2_RIGTH);
+               nextSignal = this.search4Signal(nextSignal, DIRECTION.LEFT_2_RIGHT);
                if (nextSignal && nextSignal._template.checkSignalDependency)
                   stop = nextSignal._template.checkSignalDependency(this, nextSignal, ["HPsig||master"]);
             } while (!stop && nextSignal);
@@ -395,7 +397,7 @@ export class Signal {
    stringify() {
       return {
          _class: "Signal",
-         _template: findFieldNameForObject(window.signalTemplates, this._template),
+         _template: findFieldNameForObject(Application.getInstance().signalTemplates, this._template),
          _signalStellung: this._signalStellung,
          _positioning: {
             km: this._positioning.km,
@@ -406,7 +408,7 @@ export class Signal {
    }
 
    static FromObject(o) {
-      let s = new Signal(window.signalTemplates[o._template]);      
+      let s = new Signal(Application.getInstance().signalTemplates[o._template]);      
       s._signalStellung = o._signalStellung;
       s._positioning = o._positioning;
       return s;
@@ -420,16 +422,17 @@ export const Sig_UI = {
       return ui.create_DropDown(items, text, onChange);
    },
    initSignalMenu() {
-      const conditions = window.selection.object._template.getAllVisualElementConditions();
+      const conditions = Application.getInstance().selection.object._template.getAllVisualElementConditions();
       const update = function (command, isOn) {
-         window.selection.object.set_stellung(command, isOn);
-         Sig_UI.syncSignalMenu(window.selection.object);
-         window.renderer.reDrawEverything();
+         Application.getInstance().selection.object.set_stellung(command, isOn);
+         Sig_UI.syncSignalMenu(Application.getInstance().selection.object);
+         Application.getInstance().renderingManager.reDrawEverything();
+         Application.getInstance().renderingManager.update();
          STORAGE.save();
       };
-      $("#btnRemoveSignal").click((e) => window.deleteSelectedObject());
+      $("#btnRemoveSignal").click((e) => Application.getInstance().uiManager.deleteSelectedObject());
       $("#navFeatures").empty();
-               if (window.selection.object.check("HPsig"))
+               if (Application.getInstance().selection.object.check("HPsig"))
          $("#navFeatures").append(
             ui.div(
                "p-3 border-bottom",
@@ -496,8 +499,8 @@ export const Sig_UI = {
 
          const updateFunc = function (command, active) {
             signal.set_stellung(command, !active);
-            window.renderer.reDrawEverything();
-            window.stage.update();
+            Application.getInstance().renderingManager.reDrawEverything();
+            Application.getInstance().renderingManager.update();
             Sig_UI.checkBootstrapMenu(signal, signal._template.signalMenu, ul);
             STORAGE.save();
          };

@@ -8,10 +8,14 @@ import { Train } from './train.js';
 import { GenericObject } from './generic_object.js';
 import { ArrayUtils } from './utils.js';
 import { ui } from './ui.js';
+import { CONFIG } from './config.js';
+import { Application } from './application.js';
+import { trackRendering_textured } from './trackRendering_textured.js';
 
 export const STORAGE = {
    MIN_STORAGE_VERSION: 0.5,
    STORAGE_IDENT: "bahnhof_last1",
+   
 
    getClassMap() {
       return {
@@ -39,7 +43,7 @@ export const STORAGE = {
 
    getSaveString() {
       return (
-         VERSION +
+         CONFIG.VERSION +
          ";" +
          JSON.stringify(
             {
@@ -48,10 +52,10 @@ export const STORAGE = {
                switches: Switch.allSwitches,
                objects: GenericObject.all_objects,
                settings: {
-                  zoom: window.stage.scale,
-                  scrollX: window.stage.x,
-                  scrollY: window.stage.y,
-                  renderer: window.renderer instanceof window.trackRendering_textured ? "textured" : "basic",
+                  zoom: Application.getInstance().renderingManager.stage.scale,
+                  scrollX: Application.getInstance().renderingManager.stage.x,
+                  scrollY: Application.getInstance().renderingManager.stage.y,
+                  renderer: Application.getInstance().renderingManager.renderer instanceof trackRendering_textured ? "textured" : "basic",
                },
             },
             STORAGE.replacer
@@ -60,14 +64,14 @@ export const STORAGE = {
    },
 
    restoreLastUndoStep() {
-      if (window.undoHistory.length <= 1) return;
-      window.undoHistory.pop();
-      const last = ArrayUtils.last(window.undoHistory);
+      if (Application.getInstance().undoHistory.length <= 1) return;
+      Application.getInstance().undoHistory.pop();
+      const last = ArrayUtils.last(Application.getInstance().undoHistory);
       if (last) {
          STORAGE.loadFromJson(last);
       } else Track.allTracks = [];
 
-      window.updateUndoButtonState();
+      Application.getInstance().uiManager.updateUndoButtonState();
    },
 
    linkObjects() {
@@ -100,14 +104,14 @@ export const STORAGE = {
    },
 
    loadFromJson(json) {
-      RENDERING.clear();
+      Application.getInstance().renderingManager.clear();
       let loaded = JSON.parse(json, STORAGE.receiver);
       if (loaded.settings) {
-         window.stage.x = loaded.settings.scrollX;
-         window.stage.y = loaded.settings.scrollY;
-         window.stage.scale = loaded.settings.zoom;
+         Application.getInstance().renderingManager.stage.x = loaded.settings.scrollX;
+         Application.getInstance().renderingManager.stage.y = loaded.settings.scrollY;
+         Application.getInstance().renderingManager.stage.scale = loaded.settings.zoom;
          if (loaded.settings.renderer) {
-            window.selectRenderer(loaded.settings.renderer === "textured");
+            Application.getInstance().renderingManager.selectRenderer(loaded.settings.renderer === "textured");
          }
       }
       if (loaded.objects) GenericObject.all_objects = loaded.objects;
@@ -131,10 +135,10 @@ export const STORAGE = {
    },
 
    saveUndoHistory() {
-      window.undoHistory.push(JSON.stringify({ tracks: Track.allTracks, objects: GenericObject.all_objects }, STORAGE.replacer));
-      if (window.undoHistory.length > window.MOST_UNDO) window.undoHistory.shift();
+      Application.getInstance().undoHistory.push(JSON.stringify({ tracks: Track.allTracks, objects: GenericObject.all_objects }, STORAGE.replacer));
+      if (Application.getInstance().undoHistory.length > CONFIG.MOST_UNDO) Application.getInstance().undoHistory.shift();
 
-      window.updateUndoButtonState();
+      Application.getInstance().uiManager.updateUndoButtonState();
    },
 
    save() {
@@ -156,7 +160,7 @@ export const STORAGE = {
       } catch (error) {
          ui.showErrorToast(error);
       }
-      window.updateUndoButtonState();
+      Application.getInstance().uiManager.updateUndoButtonState();
    },
 
    loadPrebuildbyName(name) {
