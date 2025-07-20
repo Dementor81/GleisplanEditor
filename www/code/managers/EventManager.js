@@ -128,7 +128,7 @@ export class EventManager {
       // Action buttons
       $("#btnClear").click(() => this.#app.renderingManager.clear());
       $("#btnCenter").click(() => this.#app.renderingManager.center());
-      $("#btnRedraw").click(() => this.#app.renderingManager.renderer.reDrawEverything(true));
+      $("#btnRedraw").click(() => this.#app.renderingManager.forceRedraw());
       $("#btnImage").click(this.#handleImageExport.bind(this));
       $("#btnDraw").click(this.#handleDrawToggle.bind(this));
       $("#btnDrawingClear").click(this.#handleDrawingClear.bind(this));
@@ -202,10 +202,6 @@ export class EventManager {
     */
    handleStageMouseDown(event) {
       let hittest = this.getHitTest();
-
-      console.log(hittest ? hittest : "nothing hit");
-
-      const app = this.#app;
       let mouseAction = {
          action: app.customMouseMode != CUSTOM_MOUSE_ACTION.NONE ? MOUSE_DOWN_ACTION.CUSTOM : MOUSE_DOWN_ACTION.NONE,
          container: hittest,
@@ -230,18 +226,18 @@ export class EventManager {
          mouseAction.endpoint = mouseAction.container.endpoint;
       }
 
-      if (this.#app.customMouseMode == CUSTOM_MOUSE_ACTION.DRAWING) {
+      if (app.customMouseMode == CUSTOM_MOUSE_ACTION.DRAWING) {
          const color = document.querySelector('input[name="DrawingColor"]:checked').value;
          const width = document.querySelector('input[name="DrawingWidth"]:checked').value;
 
-         this.#app.renderingManager.containers.drawing.addChild((mouseAction.shape = new createjs.Shape()));
+         app.renderingManager.containers.drawing.addChild((mouseAction.shape = new createjs.Shape()));
          mouseAction.shape.graphics.setStrokeStyle(width, "round", "round").beginStroke(color);
          mouseAction.old_point = new Point(event.stageX, event.stageY);
       }
 
-      this.#app.mouseAction = mouseAction;
+      app.mouseAction = mouseAction;
 
-      this.#app.renderingManager.stage.addEventListener("stagemousemove", this.#boundHandleMouseMove);
+      app.renderingManager.stage.addEventListener("stagemousemove", this.#boundHandleMouseMove);
    }
 
    /**
@@ -277,11 +273,15 @@ export class EventManager {
                if (ma.nodes.length > 0) {
                   Track.checkNodesAndCreateTracks(ma.nodes);
                   Track.createRailNetwork();
-                  this.#app.renderingManager.renderer.reDrawEverything(true);
                   Train.allTrains.forEach((t) => t.restore());
+                  this.#app.renderingManager.renderer.reDrawEverything(true);
                   STORAGE.saveUndoHistory();
                   STORAGE.save();
                }
+            } else if (ma.action === MOUSE_DOWN_ACTION.DND_TRACK) {
+               this.#app.renderingManager.renderer.reDrawEverything(true);
+               STORAGE.saveUndoHistory();
+               STORAGE.save();
             } else if (ma.action === MOUSE_DOWN_ACTION.ADD_TRAIN) {
                this.#app.renderingManager.containers.overlay.removeChild(ma.container);
                const hit = this.getHitTest(this.#app.renderingManager.containers.tracks);
@@ -420,7 +420,7 @@ export class EventManager {
             this.#app.renderingManager.containers.overlay.removeAllChildren();
             this.#app.renderingManager.containers.overlay.addChild((this.#app.mouseAction.shape = new createjs.Shape()));
             this.#app.mouseAction.shape.graphics
-               .beginStroke("#111111")
+               .beginStroke(COLORS.DRAWING_PLATTFORM)
                .drawRect(
                   this.#app.mouseAction.startPoint.x,
                   this.#app.mouseAction.startPoint.y,
@@ -449,18 +449,24 @@ export class EventManager {
          this.#app.renderingManager.renderer.updateSelection();
       } else if (this.#app.mouseAction.action === MOUSE_DOWN_ACTION.BUILD_TRACK) {
          const grid_snap_point = this.getSnapPoint(local_point);
+         let valid = Track.isValidTrackNodePoint(grid_snap_point, this.#app.mouseAction.nodes);
+
 
          if (geometry.distance(local_point, grid_snap_point) <= CONFIG.SNAP_TO_GRID) {
-            if (Track.isValidTrackNodePoint(local_point)) {
+            // If the node already exists, revert to that node by removing any nodes after it
+            const existingIndex = this.#app.mouseAction.nodes.findIndex(node => node.equals(grid_snap_point));
+            if (existingIndex !== -1) {
+               // Keep nodes up to and including the found node
+               this.#app.mouseAction.nodes = this.#app.mouseAction.nodes.slice(0, existingIndex + 1);
+            } else if (valid) {
                this.addTrackAnchorPoint(grid_snap_point);
+            } else {
+               valid = false;
             }
          }
-         this.drawBluePrintTrack();
+         this.drawBluePrintTrack(!valid);
       } else if (this.#app.mouseAction.action === MOUSE_DOWN_ACTION.SCROLL) {
-         this.#app.renderingManager.stage.x += event.nativeEvent.movementX;
-         this.#app.renderingManager.stage.y += event.nativeEvent.movementY;
-         this.#app.renderingManager.drawGrid(false);
-         this.#app.renderingManager.reDrawEverything();
+         app.renderingManager.scroll(event.nativeEvent.movementX, event.nativeEvent.movementY);
       } else if (this.#app.mouseAction.action === MOUSE_DOWN_ACTION.MOVE_TRAIN) {
          Train.moveTrain(this.#app.mouseAction.container.data, event.nativeEvent.movementX);
          this.#app.renderingManager.reDrawEverything();
@@ -608,7 +614,7 @@ export class EventManager {
    /**
     * Draw blueprint track
     */
-   drawBluePrintTrack() {
+   drawBluePrintTrack(invalid = false) {
       if (this.#app.mouseAction.nodes == null) return;
       const g = this.#app.mouseAction.lineShape.graphics;
       g.c()
@@ -626,7 +632,7 @@ export class EventManager {
          this.#app.renderingManager.stage.mouseX,
          this.#app.renderingManager.stage.mouseY
       );
-      g.beginStroke(COLORS.DRAWING_ACTIVE).moveTo(last.x, last.y).lt(p.x, p.y).endStroke();
+      g.beginStroke(invalid ? COLORS.DRAWING_INVALID : COLORS.DRAWING_ACTIVE).moveTo(last.x, last.y).lt(p.x, p.y).endStroke();
    }
 
    /**
@@ -636,14 +642,6 @@ export class EventManager {
    addTrackAnchorPoint(p) {
       if (this.#app.mouseAction.nodes == null) {
          this.#app.mouseAction.nodes = [];
-      }
-
-      //wenn der letzte Punkt gleich dem aktuellen ist, dann nichts tun
-      if (ArrayUtils.last(this.#app.mouseAction.nodes)?.equals(p)) return;
-      //wenn der Startpunkt gleich dem aktuellen ist, dann Track zurücksetzen
-      if (ArrayUtils.first(this.#app.mouseAction.nodes)?.equals(p)) {
-         this.#app.mouseAction.nodes = [this.#app.mouseAction.nodes[0]];
-         return;
       }
 
       this.#app.mouseAction.nodes.push(p);
@@ -832,21 +830,21 @@ export class EventManager {
       }
    }
 
-      /**
+   /**
     * Get bound mouse move handler for external use
     * @returns {Function} The bound mouse move handler
     */
    get boundMouseMoveHandler() {
       return this.#boundHandleMouseMove;
    }
-   
+
    /**
     * Clean up all event listeners
     */
    cleanup() {
       // Remove all event listeners
       this.#eventListeners.clear();
-      
+
       // Remove stage event listeners
       if (this.#app?.renderingManager?.stage) {
          const stage = this.#app.renderingManager.stage;
@@ -854,17 +852,17 @@ export class EventManager {
          stage.removeEventListener("stagemouseup", this.#boundHandleStageMouseUp);
          stage.removeEventListener("stagemousemove", this.#boundHandleMouseMove);
       }
-      
+
       // Remove canvas event listeners
       if (myCanvas) {
          myCanvas.removeEventListener("wheel", this.#boundHandleWheelEvent);
          myCanvas.removeEventListener("touchstart", this.#boundHandleTouchStart);
          myCanvas.removeEventListener("touchmove", this.#boundHandleTouchMove);
       }
-      
+
       // Remove document event listeners
       document.removeEventListener("keydown", this.#boundHandleKeyDown);
-      
+
       // Remove window event listeners
       $(window).off("resize", this.#boundHandleWindowResize);
    }

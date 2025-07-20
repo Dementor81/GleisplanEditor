@@ -187,13 +187,13 @@ export class trackRendering_basic {
       }
       if (this.app.selection.isSelectedObject(track)) this.isSelected(shape);
 
-      const text = new createjs.Text(track.id, "Italic 10px Arial", "black");
+      /* const text = new createjs.Text(track.id, "Italic 10px Arial", "black");
       const p = track.along(track.start, track.length / 2).add(geometry.perpendicular(track.unit).multiply(15));
 
       text.x = p.x;
       text.y = p.y;
       text.textBaseline = "alphabetic";
-      this.app.renderingManager.containers.ui.addChild(text);
+      this.app.renderingManager.containers.ui.addChild(text); */
 
       shape.setBounds(
          params.start.x - trackRendering_basic.HIT_TEST_DISTANCE,

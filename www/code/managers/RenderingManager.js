@@ -166,6 +166,13 @@ export class RenderingManager {
          myCanvas.prevent_input = false;
       }
    }
+
+   scroll(deltaX, deltaY) {
+      this.#stage.x += deltaX;
+      this.#stage.y += deltaY;
+      this.drawGrid();
+      this.reDrawEverything();
+   }
    /**
     * Handle renderer change event
     * @param {boolean} textured - Whether to use textured renderer
@@ -279,37 +286,6 @@ export class RenderingManager {
       this.drawGrid();
       this.update();
    }
-
-   /**
-    * Clear all content
-    */
-   clear() {
-      this.#application.selectObject();
-      // Stop any moving trains first
-      Train.stopAllTrains();
-
-      Track.allTracks = [];
-      Switch.allSwitches = [];
-      Signal.allSignals = new Set();
-      Train.allTrains = [];
-      GenericObject.all_objects = [];
-
-      this.#application.renderer?.reDrawEverything(true);
-   }
-
-   /**
-    * Center the view
-    */
-   center() {
-      this.#stage.scale = 1;
-      this.#stage.x = 0;
-      this.#stage.y = 0;
-      STORAGE.save();
-      this.drawGrid();
-      this.reDrawEverything();
-   }
-   
-
    
    /**
     * Set grid visibility
@@ -338,7 +314,6 @@ export class RenderingManager {
    forceRedraw() {
       this.drawGrid(true);
       this.#renderer.reDrawEverything(true);
-      this.update();
    }
    
    // Getters for accessing rendering state

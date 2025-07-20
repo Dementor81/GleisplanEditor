@@ -81,8 +81,10 @@ export const COLORS = {
     GRID: "#ccc",
     SIGNAL_POSITION_LINE: "#e00",
     DRAWING_BLUEPRINT: "blue",
-    DRAWING_ACTIVE: "red",
+    DRAWING_ACTIVE: "#0000ff90",
+    DRAWING_INVALID: "red",
     TRANSPARENT: "#00000000",
+    DRAWING_PLATTFORM: "#111111",
     
     // Train colors
     TRAIN_COLORS: ["#ff0000", "#ffff00", "#00ff00", "#0000ff"],

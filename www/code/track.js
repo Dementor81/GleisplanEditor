@@ -1,17 +1,85 @@
 "use strict";
 
 // ES6 Module imports
-import { geometry, V2, Point, type } from './tools.js';
-import { Switch } from './switch.js';
-import { Signal } from './signal.js';
-import { ArrayUtils } from './utils.js';
-import { CONFIG } from './config.js';
+import { geometry, V2, Point, type } from "./tools.js";
+import { Switch } from "./switch.js";
+import { Signal } from "./signal.js";
+import { ArrayUtils } from "./utils.js";
+import { CONFIG } from "./config.js";
 
 export class Track {
    static allTracks = [];
 
-   //track drawing
-   static isValidTrackNodePoint(p) {
+   //this function checks if the point is a valid node point for the track drawing
+   //nodes is an array of points that are already used as nodes, the array can be null
+   static isValidTrackNodePoint(p, nodes) {
+      if (!nodes || nodes.length === 0) {
+         return true; // First point is always valid
+      }
+      const lastNode = nodes[nodes.length - 1];
+
+      if(p.equals(lastNode)) return true;
+
+      // 1. Disallow vertical movement
+      if (p.x === lastNode.x && p.y != lastNode.y) {
+         return false;
+      }
+
+      if (nodes.length >= 2) {
+         const secondLastNode = nodes[nodes.length - 2];
+
+         // 2. Check for consistent X movement direction
+         const xDirection = Math.sign(lastNode.x - secondLastNode.x);
+         const newXDirection = Math.sign(p.x - lastNode.x);
+         if (xDirection !== 0 && newXDirection !== xDirection) {
+            return false;
+         }
+
+         // 3. Check if the slope change is less than 45°
+         const v1 = { x: lastNode.x - secondLastNode.x, y: lastNode.y - secondLastNode.y };
+         const v2 = { x: p.x - lastNode.x, y: p.y - lastNode.y };
+
+         const angle1 = Math.atan2(v1.y, v1.x);
+         const angle2 = Math.atan2(v2.y, v2.x);
+         let angleDiff = Math.abs(angle1 - angle2);
+
+         if (angleDiff > Math.PI) {
+            angleDiff = 2 * Math.PI - angleDiff;
+         }
+
+         if (angleDiff > Math.PI / 4) {
+            return false;
+         }
+      }
+
+      //check against the existing rail network    
+      for (const track of Track.allTracks) {
+         if (geometry.doLineSegmentsIntersect( p,lastNode, track.start, track.end)) {
+            
+            // if the new segment starts at an endpoint of the track, it is considered a valid connection, not an overlap.
+            if (lastNode.equals(track.start) || lastNode.equals(track.end) || p.equals(track.start) || p.equals(track.end) ) {
+               //todo: check the angle between the new segment and the existing track
+               continue;
+            }
+
+            const newAngle = Math.atan2(p.y - lastNode.y, p.x - lastNode.x);
+            const existingAngle = track.rad;
+            let angleDiff = Math.abs(newAngle - existingAngle);
+
+            if (angleDiff > Math.PI) {
+               angleDiff = 2 * Math.PI - angleDiff;
+            }
+
+            // The difference must be approximately 45 degrees for a valid intersection
+            const requiredAngle = Math.PI / 4; // 45 degrees
+            const tolerance = 0.02; // radians, approx 1 degree
+
+            if (Math.abs(angleDiff - requiredAngle) > tolerance) {
+               return false;
+            }
+         }
+      }
+
       return true;
    }
 
@@ -75,7 +143,10 @@ export class Track {
       const new_tracks = [];
 
       //reverse the points array if the user drew it from right to left, or if the user drew straight from bottom to top
-      if (ArrayUtils.first(points).x > ArrayUtils.last(points).x || (ArrayUtils.first(points).x == ArrayUtils.last(points).x && ArrayUtils.first(points).y > ArrayUtils.last(points).y)) {
+      if (
+         ArrayUtils.first(points).x > ArrayUtils.last(points).x ||
+         (ArrayUtils.first(points).x == ArrayUtils.last(points).x && ArrayUtils.first(points).y > ArrayUtils.last(points).y)
+      ) {
          points.reverse();
       }
 
@@ -180,8 +251,6 @@ export class Track {
                         }
                         t1.switchAtTheStart = startSwitch;
                      }
-
-                     
                   }
 
                   const endSwitch = track1.switchAtTheEnd;
@@ -333,7 +402,7 @@ export class Track {
 
       if (type(track.switchAtTheStart) == "Track") track.switchAtTheStart.switchAtTheEnd = null;
       if (type(track.switchAtTheEnd) == "Track") track.switchAtTheEnd.switchAtTheStart = null;
-      
+
       // Update switches at the former track's endpoints
       Switch.updateSwitchAtPoint(track.start, startSwitch instanceof Switch ? startSwitch : null);
       Switch.updateSwitchAtPoint(track.end, endSwitch instanceof Switch ? endSwitch : null);
@@ -562,5 +631,3 @@ export class Track {
       this.#resetCache();
    }
 }
-
-
