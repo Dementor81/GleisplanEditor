@@ -124,6 +124,7 @@ export class EventManager {
       $("#btnAddSignals").click(() => this.#app.uiManager.showMenu(MENU.NEW_SIGNAL));
       $("#btnAddTrain").click(() => this.#app.uiManager.showMenu(MENU.NEW_TRAIN));
       $("#btnAddObject").click(() => this.#app.uiManager.showMenu(MENU.NEW_OBJECT));
+      $("#btnDownload").click(() => STORAGE.downloadAsFile());
 
       // Action buttons
       $("#btnClear").click(() => this.#app.renderingManager.clear());
@@ -202,6 +203,7 @@ export class EventManager {
     */
    handleStageMouseDown(event) {
       let hittest = this.getHitTest();
+      console.log(hittest);
       let mouseAction = {
          action: app.customMouseMode != CUSTOM_MOUSE_ACTION.NONE ? MOUSE_DOWN_ACTION.CUSTOM : MOUSE_DOWN_ACTION.NONE,
          container: hittest,

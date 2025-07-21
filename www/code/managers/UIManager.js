@@ -1,29 +1,23 @@
 "use strict";
 
 // ES6 Module imports
-import { MENU, CUSTOM_MOUSE_ACTION } from '../config.js';
-import { ui } from '../ui.js';
-import { Sig_UI, SignalRenderer } from '../signal.js';
-import { Train } from '../train.js';
-import { GenericObject } from '../generic_object.js';
-import { STORAGE } from '../storage.js';
-import { MOUSE_DOWN_ACTION } from '../config.js';
-
-
-
+import { MENU, CUSTOM_MOUSE_ACTION } from "../config.js";
+import { ui } from "../ui.js";
+import { Sig_UI, SignalRenderer } from "../signal.js";
+import { Train } from "../train.js";
+import { GenericObject } from "../generic_object.js";
+import { STORAGE } from "../storage.js";
+import { MOUSE_DOWN_ACTION } from "../config.js";
 
 /**
  * UIManager handles all UI-related functionality
  * This class manages menus, modals, and UI state
  */
 export class UIManager {
-   
    #activeMenu = null;
-   
-   constructor(application) {
-      
-   }
-   
+
+   constructor(application) {}
+
    /**
     * Initialize UI components
     */
@@ -32,16 +26,16 @@ export class UIManager {
       this.#initializePreBuildScreen();
       this.#initializeInterManagerCommunication();
    }
-   
+
    #initializeInterManagerCommunication() {
-      app.eventManager.on('editModeChanged', (data) => {
+      app.eventManager.on("editModeChanged", (data) => {
          this.toggleEditMode(data.editMode, data.showGrid);
       });
-      app.eventManager.on('rendererChanged', (data) => {
+      app.eventManager.on("rendererChanged", (data) => {
          this.handleRendererUIUpdate(data.textured);
       });
    }
-   
+
    /**
     * Initialize signal menu
     * @private
@@ -52,11 +46,24 @@ export class UIManager {
          ui.createAccordionItem(
             "Hauptsignale",
             accordionId,
-            this.#createNewItemButtons(app.signalTemplates.hv_hp, app.signalTemplates.ks, app.signalTemplates.ls, app.signalTemplates.zusatzSignal),
+            this.#createNewItemButtons(
+               app.signalTemplates.hv_hp,
+               app.signalTemplates.ks,
+               app.signalTemplates.ls,
+               app.signalTemplates.zusatzSignal
+            ),
             true
          ),
-         ui.createAccordionItem("Vorsignale", accordionId, this.#createNewItemButtons(app.signalTemplates.hv_vr, app.signalTemplates.ks_vr)),
-         ui.createAccordionItem("Lf-Signale", accordionId, this.#createNewItemButtons(app.signalTemplates.lf6, app.signalTemplates.lf7)),
+         ui.createAccordionItem(
+            "Vorsignale",
+            accordionId,
+            this.#createNewItemButtons(app.signalTemplates.hv_vr, app.signalTemplates.ks_vr)
+         ),
+         ui.createAccordionItem(
+            "Lf-Signale",
+            accordionId,
+            this.#createNewItemButtons(app.signalTemplates.lf6, app.signalTemplates.lf7)
+         ),
          ui.createAccordionItem(
             "Ne-Signale",
             accordionId,
@@ -65,11 +72,16 @@ export class UIManager {
          ui.createAccordionItem(
             "Weitere",
             accordionId,
-            this.#createNewItemButtons(app.signalTemplates.zs3, app.signalTemplates.zs6, app.signalTemplates.zs10, app.signalTemplates.ra10)
+            this.#createNewItemButtons(
+               app.signalTemplates.zs3,
+               app.signalTemplates.zs6,
+               app.signalTemplates.zs10,
+               app.signalTemplates.ra10
+            )
          ),
       ]);
    }
-   
+
    /**
     * Initialize pre-build screen
     * @private
@@ -77,39 +89,41 @@ export class UIManager {
    #initializePreBuildScreen() {
       // Pre-build screen initialization will be moved here
    }
-   
+
    /**
     * Create new item buttons for UI
     * @private
     */
    #createNewItemButtons(...templates) {
-      return templates.map((template) => {
-         if (!template) return null;
-         
-         return ui
-            .div("d-flex newSignalItem align-items-center user-select-none", [
-               ui
-                  .div("flex-shrink-0 newItem_image")
-                  .css("background-image", "url(" + this.#getDataURLFromTemplate(template) + ")")
-                  .css("background-size", template.previewsize ?? 45),
-               ui.div("flex-grow-5 ms-2", template.title),
-            ])
-            .on("mousedown", (e) => {
-               // This will be handled by the original event system for now
-               app.mouseAction = {
-                  action: MOUSE_DOWN_ACTION.DND_SIGNAL,
-                  template: template,
-               };
-               
-               document.addEventListener("mouseup", (e) => app.eventManager.handleStageMouseUp({ nativeEvent: e }), {
-                  once: true,
+      return templates
+         .map((template) => {
+            if (!template) return null;
+
+            return ui
+               .div("d-flex newSignalItem align-items-center user-select-none", [
+                  ui
+                     .div("flex-shrink-0 newItem_image")
+                     .css("background-image", "url(" + this.#getDataURLFromTemplate(template) + ")")
+                     .css("background-size", template.previewsize ?? 45),
+                  ui.div("flex-grow-5 ms-2", template.title),
+               ])
+               .on("mousedown", (e) => {
+                  // This will be handled by the original event system for now
+                  app.mouseAction = {
+                     action: MOUSE_DOWN_ACTION.DND_SIGNAL,
+                     template: template,
+                  };
+
+                  document.addEventListener("mouseup", (e) => app.eventManager.handleStageMouseUp({ nativeEvent: e }), {
+                     once: true,
+                  });
+                  app.renderingManager.stage.addEventListener("stagemousemove", app.eventManager.boundMouseMoveHandler);
+                  app.eventManager.startDragAndDropSignal(e.offsetX, e.offsetY);
                });
-               app.renderingManager.stage.addEventListener("stagemousemove", app.eventManager.boundMouseMoveHandler);
-               app.eventManager.startDragAndDropSignal(e.offsetX, e.offsetY);
-            });
-      }).filter(Boolean);
+         })
+         .filter(Boolean);
    }
-   
+
    /**
     * Generate data URL from signal template for preview
     * @private
@@ -117,16 +131,16 @@ export class UIManager {
    #getDataURLFromTemplate(template) {
       const tmpStage = new createjs.Stage($("<canvas>").attr({ width: 450, height: 450 })[0]);
       tmpStage.scale = template.scale;
-      
+
       SignalRenderer.drawPreview(template, tmpStage);
       tmpStage.update();
-      
+
       const sig_bounds = tmpStage.getBounds();
       if (sig_bounds == null) throw Error(template.title + " has no visual Element visible");
       tmpStage.cache(sig_bounds.x, sig_bounds.y, sig_bounds.width, sig_bounds.height, 0.5);
       return tmpStage.bitmapCache.getCacheDataURL();
    }
-   
+
    /**
     * Show a menu
     * @param {number} menu - The menu type to show
@@ -140,10 +154,10 @@ export class UIManager {
          this.#activeMenu = null;
          return;
       }
-      
+
       const current_id = $('#sidebar>div:not([style*="display: none"])');
       let div_id;
-      
+
       switch (menu) {
          case MENU.EDIT_SIGNAL:
             div_id = "signalEditMenu";
@@ -184,7 +198,7 @@ export class UIManager {
       bsOffcanvas.show();
       this.#activeMenu = menu;
    }
-   
+
    /**
     * Initialize new train menu
     * @private
@@ -201,7 +215,10 @@ export class UIManager {
 
          app.renderingManager.stage.addEventListener("stagemousemove", app.eventManager.boundMouseMoveHandler);
 
-         let local_point = app.renderingManager.stage.globalToLocal(app.renderingManager.stage.mouseX, app.renderingManager.stage.mouseY);
+         let local_point = app.renderingManager.stage.globalToLocal(
+            app.renderingManager.stage.mouseX,
+            app.renderingManager.stage.mouseY
+         );
          app.mouseAction.container = new createjs.Bitmap("zug.png").set({
             x: local_point.x,
             y: local_point.y,
@@ -212,7 +229,7 @@ export class UIManager {
          app.renderingManager.containers.overlay.addChild(app.mouseAction.container);
       });
    }
-   
+
    /**
     * Initialize new object menu
     * @private
@@ -223,13 +240,11 @@ export class UIManager {
          this.activateCustomMouseMode();
       });
       $("#btnAddPlatform").click(() => {
-         app.customMouseMode = $("#btnAddPlatform").hasClass("active")
-            ? CUSTOM_MOUSE_ACTION.PLATTFORM
-            : CUSTOM_MOUSE_ACTION.NONE;
+         app.customMouseMode = $("#btnAddPlatform").hasClass("active") ? CUSTOM_MOUSE_ACTION.PLATTFORM : CUSTOM_MOUSE_ACTION.NONE;
          this.activateCustomMouseMode();
       });
    }
-   
+
    /**
     * Activate custom mouse mode
     */
@@ -249,19 +264,17 @@ export class UIManager {
     */
    toggleEditMode(mode) {
       const newMode = mode != undefined ? mode : $(btnDrawTracks).is(":checked");
-      
+
       // Update UI state
       if (mode != undefined) $(btnDrawTracks).prop(":checked", newMode);
-      
+
       // Emit event for other managers to handle
-      app.eventManager.emit('editModeChanged', { 
-         editMode: newMode, 
-         showGrid: newMode 
+      app.eventManager.emit("editModeChanged", {
+         editMode: newMode,
+         showGrid: newMode,
       });
    }
 
-
-   
    /**
     * Handle renderer UI update (called by Application)
     * @param {boolean} textured - Whether to use textured renderer
@@ -271,7 +284,6 @@ export class UIManager {
       $("#switch_renderer").prop("checked", !textured);
    }
 
-   
    /**
     * Update undo button state
     */
@@ -289,13 +301,13 @@ export class UIManager {
       app.renderingManager.update();
       this.updateUndoButtonState();
    }
-   
+
    /**
     * Show pre-build screen
     */
    showPreBuildScreen() {
       if (localStorage.getItem("bahnhof_last1") == null) $(btnLoadRecent).attr("disabled", "disabled");
-      
+
       $(btnStartFromZero).click(() => {
          this.hideStartScreen();
          app.renderingManager.drawGrid();
@@ -307,7 +319,7 @@ export class UIManager {
          app.renderingManager.drawGrid();
          app.renderingManager.renderer.reDrawEverything(true);
       });
-      
+
       $("#btnLoad2Gleisig,#btnLoad1Gleisig").on("click", (e) => {
          const name = $(e.target).attr("data");
          STORAGE.loadPrebuildbyName(name).then(() => {
@@ -317,7 +329,15 @@ export class UIManager {
             STORAGE.saveUndoHistory();
          });
       });
-      
+      $(btnLoadFromFile).click(() => {
+         STORAGE.restoreFromFile().then(() => {
+            this.hideStartScreen();
+            app.renderingManager.drawGrid();
+            app.renderingManager.renderer.reDrawEverything(true);
+            STORAGE.saveUndoHistory();
+         });
+      });
+
       let m = bootstrap.Modal.getOrCreateInstance(loadModal);
       m._element.addEventListener(
          "hidden.bs.modal",
@@ -331,7 +351,7 @@ export class UIManager {
       );
       m.show();
    }
-   
+
    /**
     * Hide start screen
     */
@@ -339,7 +359,7 @@ export class UIManager {
       $("myCanvas").focus();
       bootstrap.Modal.getInstance(loadModal).hide();
    }
-   
+
    /**
     * Show modal dialog
     * @param {*} content - The content to show in the modal
@@ -348,7 +368,7 @@ export class UIManager {
    showModalDialog(content, onConfirm) {
       // Modal dialog functionality will be implemented here
    }
-   
+
    /**
     * Show error toast
     * @param {Error} error - The error to display
@@ -356,7 +376,7 @@ export class UIManager {
    showErrorToast(error) {
       ui.showErrorToast(error);
    }
-   
+
    /**
     * Show info toast
     * @param {string} message - The message to display
@@ -364,7 +384,7 @@ export class UIManager {
    showInfoToast(message) {
       ui.showInfoToast(message);
    }
-   
+
    /**
     * Get the currently active menu
     * @returns {number|null} The active menu type
@@ -372,13 +392,11 @@ export class UIManager {
    get activeMenu() {
       return this.#activeMenu;
    }
-   
+
    /**
     * Hide the current menu
     */
    hideMenu() {
       this.showMenu(null);
    }
-
-
-} 
+}

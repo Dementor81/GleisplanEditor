@@ -66,10 +66,13 @@
          <button id="btnCenter" type="button" class="btn btn-secondary btn-nav" title="Ansicht zentrieren">
             <i class="bi bi-bullseye"></i>
          </button>
-         <button id="btnImage" type="button" class="btn btn-secondary btn-nav" title="Ansicht als Bild herunterladen">
+         <button id="btnImage" type="button" class="btn btn-secondary btn-nav" title="Plan als Bild herunterladen">
             <i class="bi bi-camera"></i>
          </button>
-         <button id="btnRedraw" type="button" class="btn btn-secondary btn-nav" title="Ansicht als Bild herunterladen">
+         <button id="btnDownload" type="button" class="btn btn-secondary btn-nav" title="Plan in einer Datei speichern">
+            <i class="bi bi-download"></i>
+         </button>
+         <button id="btnRedraw" type="button" class="btn btn-secondary btn-nav invisible" title="Ansicht neu zeichnen">
             <i class="bi bi-arrow-clockwise"></i>
          </button>
          <span class="nav-spacer"></span>
@@ -207,9 +210,8 @@
                   <option value="locomotive">Lokomotive</option>
                   <option value="passenger">Personenwagen</option>
                </select>
-            </div>
+            </div>            
             
-            <!-- Train Movement Controls -->
             <div id="trainMovementControls" class="mb-3">
                <h6>Zugsteuerung</h6>
                <div class="btn-group m-2 webkit-fill-width" role="group">
@@ -351,7 +353,7 @@
                <div class="modal-header bg-light">
                   <img src="logo.svg" alt="" width="70" height="70" />
                   <div>
-                     <h5 class="modal-title">Willkommen beim Gleisplan Zeichner</h5>
+                     <h5 class="modal-title">Willkommen beim Bahn Baukasten</h5>
                      <p style="margin-bottom: auto">Wähle aus, wie du beginnen möchtest</p>
                   </div>
                   <button type="button" class="btn-close" data-bs-dismiss="modal" ></button>
@@ -454,7 +456,7 @@
                            <p class="card-text">Lade einen Gleisplan, den du auf deinem Gerät gespeicht hast.</p>
                         </div>
                         <div class="card-footer d-grid" style="background-color: white; border-top: none">
-                           <button id="btnLoadFromFile" class="btn btn-sm btn-primary" disabled>Start</button>
+                           <button id="btnLoadFromFile" class="btn btn-sm btn-primary">Start</button>
                         </div>
                      </div>
                   </div>

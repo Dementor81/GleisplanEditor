@@ -95,11 +95,11 @@ Big Features:
 
 
 Rebuild:
-    ☐ Zeichenroutine darf nur regelkonforme Strecken zulassen
+    ✔ Zeichenroutine darf nur regelkonforme Strecken zulassen @done(25-07-21 09:33)
     ✔ Signale patzieren @done(25-06-01 09:30)
     ✔ selektion anzeigen @done(25-06-01 13:09)
     ☐ caching track und signale
-    ☐ hitarea für gleise
+    ✔ hitarea für gleise @done(25-07-21 09:33)
 
 
 

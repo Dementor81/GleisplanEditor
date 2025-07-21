@@ -18,7 +18,7 @@ export class Track {
       }
       const lastNode = nodes[nodes.length - 1];
 
-      if(p.equals(lastNode)) return true;
+      if (p.equals(lastNode)) return true;
 
       // 1. Disallow vertical movement
       if (p.x === lastNode.x && p.y != lastNode.y) {
@@ -52,12 +52,11 @@ export class Track {
          }
       }
 
-      //check against the existing rail network    
+      //check against the existing rail network
       for (const track of Track.allTracks) {
-         if (geometry.doLineSegmentsIntersect( p,lastNode, track.start, track.end)) {
-            
+         if (geometry.doLineSegmentsIntersect(p, lastNode, track.start, track.end)) {
             // if the new segment starts at an endpoint of the track, it is considered a valid connection, not an overlap.
-            if (lastNode.equals(track.start) || lastNode.equals(track.end) || p.equals(track.start) || p.equals(track.end) ) {
+            if (lastNode.equals(track.start) || lastNode.equals(track.end) || p.equals(track.start) || p.equals(track.end)) {
                //todo: check the angle between the new segment and the existing track
                continue;
             }
@@ -117,28 +116,72 @@ export class Track {
       return [t1, t2];
    }
 
+   /**
+    * Joins two tracks together, track2 will be removed and track1 will be extended
+    * the tracks will be ordered automatically, so it doesn't matter which track is passed first
+    * @param {Track} track1 - The first track
+    * @param {Track} track2 - The second track
+    */
    static joinTrack(track1, track2) {
+      if (track1.slope !== track2.slope) {
+         throw new Error("Tracks have different slopes and cannot be joined");
+      }
+
+      // Order track1 and track2 so that track1 is always "in front" of track2 by x and y
+      // "In front" means: track1.start.x < track2.start.x, or if equal, track1.start.y < track2.start.y
+      if (track1.start.x > track2.start.x || (track1.start.x === track2.start.x && track1.start.y > track2.start.y)) {
+         // Swap track1 and track2
+         const tmp = track1;
+         track1 = track2;
+         track2 = tmp;
+      }
+
+      if (
+         (track1.switchAtTheEnd && track1.switchAtTheEnd != track2) ||
+         (track2.switchAtTheStart && track2.switchAtTheStart != track1)
+      ) {
+         throw new Error("Tracks are connected and cannot be joined together");
+      }
+
       let cut_km = track1.length;
       track1.setNewEnd(track2.end);
 
-      // Remove any existing switch between the two tracks
-      if (track2.switchAtTheStart) {
-         Switch.removeSwitch(track2.switchAtTheStart);
-      }
+      track1.switchAtTheEnd = null;
 
-      if (track1.switchAtTheEnd) {
-         Switch.removeSwitch(track1.switchAtTheEnd);
+      // Remove any existing switch between the two tracks
+      if (track2.switchAtTheEnd) {
+         if (track2.switchAtTheEnd instanceof Switch) {
+            track2.switchAtTheEnd.replaceTrackReference(track2, track1);
+         }
+         track1.switchAtTheEnd = track2.switchAtTheEnd;
       }
 
       track2.signals.forEach((s) => {
          s._positioning.track = track1;
          s._positioning.km += cut_km;
-         track1.AddSignal(s);
       });
    }
 
    static checkNodesAndCreateTracks(points) {
       if (points == null || points.length <= 1) return;
+
+      points = (() => {
+         const filtered = [];
+         let curr_point = points[0];
+         let prev_slope = null;
+         for (let i = 0; i < points.length - 1; i++) {
+            const next_point = points[i + 1];
+            const slope = geometry.slope(curr_point, next_point);
+            if (slope !== prev_slope) {
+               filtered.push(curr_point);
+            }
+            prev_slope = slope;
+            curr_point = next_point;
+         }
+
+         filtered.push(ArrayUtils.last(points));
+         return filtered;
+      })();
 
       const new_tracks = [];
 
@@ -156,42 +199,49 @@ export class Track {
       //iterate over all points and create tracks
       while (points.length > 0) {
          const next_point = points.shift();
+         const current_track = new Track(current_point, next_point);
 
          // Check if the new segment would overlap with any existing track
-         const overlapping_tracks = Track.allTracks.filter((track) => {
-            return geometry.areSegmentsOverlapping2D(current_point, next_point, track.start, track.end);
-         });
+         const overlapping_tracks = Track.allTracks
+            .filter((track) => current_track.slope === track.slope)
+            .filter((track) => {
+               return geometry.areSegmentsOverlapping2D(current_point, next_point, track.start, track.end);
+            });
 
          if (overlapping_tracks.length === 0) {
             // No overlap, create a new track
-            tmp_points.push(next_point);
-            if (tmp_points.length >= 2) {
-               new_tracks.push(new Track(tmp_points[0], tmp_points[1]));
-               tmp_points = [next_point];
-            }
+            new_tracks.push(current_track);
          } else {
             // Handle overlapping tracks
-            const overlapping_track = overlapping_tracks[0];
+            for (const overlapping_track of overlapping_tracks) {
+               // Helper: get distances along the overlapping track
+               const startOn = geometry.pointOnLine(overlapping_track.start, overlapping_track.end, current_point);
+               const endOn = geometry.pointOnLine(overlapping_track.start, overlapping_track.end, next_point);
 
-            // If we have a partial track before the overlap, create it
-            if (tmp_points.length >= 2) {
-               new_tracks.push(new Track(tmp_points[0], tmp_points[1]));
-            }
-
-            // Check if we need to create a track from the last point to the overlap point
-            if (!current_point.equals(overlapping_track.start) && !current_point.equals(overlapping_track.end)) {
-               // Find the overlap point
-               const overlap_point = geometry.getIntersectionPoint(
-                  current_point,
-                  next_point,
-                  overlapping_track.start,
-                  overlapping_track.end
-               );
-
-               if (overlap_point) {
-                  new_tracks.push(new Track(current_point, overlap_point));
-                  tmp_points = [overlap_point];
+               // Case 1: new track is fully inside the overlapping track
+               if (startOn && endOn) {
+                  //we do nothing, the new track is fully inside the overlapping track
                }
+               // Case 2: new track fully covers the overlapping track
+               else if (
+                  !startOn &&
+                  !endOn &&
+                  geometry.pointOnLine(current_point, next_point, overlapping_track.start) &&
+                  geometry.pointOnLine(current_point, next_point, overlapping_track.end)
+               ) {
+                  // Remove the overlapping track, add the new track
+                  overlapping_track.setNewStart(current_point);
+                  overlapping_track.setNewEnd(next_point);
+               }
+               // Case 3: new track starts before and ends inside the overlapping track
+               else if (!startOn && endOn) {
+                  overlapping_track.setNewStart(current_point);
+               }
+               // Case 4: new track starts inside and ends after the overlapping track
+               else if (startOn && !endOn) {
+                  overlapping_track.setNewEnd(next_point);
+               }
+               // If none of the above, just skip (or handle as needed)
             }
          }
 
@@ -272,6 +322,7 @@ export class Track {
                   // Remove the original track
                   ArrayUtils.remove(Track.allTracks, track1);
                   ArrayUtils.remove(remainingTracks, track1);
+                  ArrayUtils.remove(new_tracks, track1);
 
                   // Add new tracks
                   new_tracks.push(t1, t2);
@@ -333,7 +384,7 @@ export class Track {
                   // Remove the original track
                   ArrayUtils.remove(Track.allTracks, track2);
                   ArrayUtils.remove(remainingTracks, track2);
-
+                  ArrayUtils.remove(new_tracks, track2);
                   // Add new tracks
                   new_tracks.push(t1, t2);
 
@@ -617,8 +668,14 @@ export class Track {
     */
    setNewStart(newStart) {
       if (!newStart) return;
+      const old_start = this.start;
       this.#_start = newStart;
+      const added_length = geometry.distance(old_start, newStart);
       this.#resetCache();
+
+      this.signals.forEach((s) => {
+         s._positioning.km += added_length;
+      });
    }
 
    /**

@@ -562,20 +562,8 @@ export class trackRendering_textured {
       }
       sleepers_container.hitArea = hitArea;
 
-      this.drawTrackSleepers(points, sleepers_container);
-
-      // Draw rails
-      const railShape = this.renderRails(track, points);
-
-      // Get bounds from the rail shape
-      const bounds = railShape.getBounds();
-
-      // Create a track object that combines rail and sleeper information
-      track._renderData = {
-         bounds: bounds,
-         points: points,
-      };
-
+      this.drawTrackSleepers(points, sleepers_container);      
+      this.renderRails(track, points);
       this.drawBumper(track, this._rendering.rails_container);
    }
 

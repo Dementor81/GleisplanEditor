@@ -57,15 +57,15 @@ export class trackRendering_basic {
    }
 
    updateSelection() {
-      this.app.renderingManager.containers.tracks.children.forEach((c) => {
+      app.renderingManager.containers.tracks.children.forEach((c) => {
          if (c.data) {
-            if (this.app.selection.isSelectedObject(c.data)) this.isSelected(c);
+            if (app.selection.isSelectedObject(c.data)) this.isSelected(c);
             else c.color.style = trackRendering_basic.TRACK_COLOR;
          }
       });
-      this.app.renderingManager.containers.signals.children.forEach(function (c) {
+      app.renderingManager.containers.signals.children.forEach(function (c) {
          if (c.data) {
-            if (this.app.selection.isSelectedObject(c.data)) c.shadow = new createjs.Shadow("#ff0000", 0, 0, 3);
+            if (app.selection.isSelectedObject(c.data)) c.shadow = new createjs.Shadow("#ff0000", 0, 0, 3);
             else c.shadow = null;
          }
       });
@@ -76,8 +76,8 @@ export class trackRendering_basic {
       this.app.renderingManager.containers.objects.removeAllChildren();
       GenericObject.all_objects.forEach((o) => {
          const c = new createjs.Container();
-         c.name = "object";
-         c.object = o;
+         c.name = "GenericObject";
+         c.data = o;
          c.mouseChildren = false;
          c.x = o.pos().x;
          c.y = o.pos().y;
