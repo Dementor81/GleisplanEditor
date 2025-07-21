@@ -14,10 +14,10 @@ import { Application } from "./application.js";
 
 export class trackRendering_textured {
    static SWITCH_UI_STROKE = 3;
-   static TRACK_SCALE = 0.3;
+   static TRACK_SCALE = 0.25;
    static signale_scale = 0.5;
    static SCHWELLEN_VARIANTEN = 24;
-   static CURVATURE_4WAY_SWITCH = 70;
+   static CURVATURE_4WAY_SWITCH = 16;
    static RAILS = [
       [3.2, "#222"],
       [2.8, "#999"],
@@ -27,12 +27,9 @@ export class trackRendering_textured {
    // Define sleeper pattern for 4-way switch
    static FOUR_WAY_SLEEPER_PATTERN = [
       { offset: 1, length: 1.0 }, // Start straight
-      { offset: 1, length: 1.4 }, // Start straight
-      { offset: 1.1, length: 1.7 }, // Begin transition
-      { offset: 1.2, length: 1.9 }, // Peak of curve
-      { offset: 1.4, length: 1.8 }, // Peak of curve
-      { offset: 1.5, length: 1.7 }, // Curve
-      { offset: 1.7, length: 1.65 }, // Curve
+      { offset: 1.1, length: 1.2 }, // Start straight
+      { offset: 1.2, length: 1.5 }, // Begin transition
+      { offset: 1.3, length: 1.5 }, // Peak of curve
    ];
 
    constructor() {
@@ -562,6 +559,43 @@ export class trackRendering_textured {
       }
       sleepers_container.hitArea = hitArea;
 
+      // Draw main points for debugging using a debug container
+      if (true) {
+         const debugContainer = new createjs.Container();
+         debugContainer.name = "debug_points";
+         for (const p of points) {
+            // Start point (green)
+            const startShape = new createjs.Shape();
+            startShape.graphics.beginFill("#00ff00").drawCircle(p.start.x, p.start.y, 4).endFill();
+            debugContainer.addChild(startShape);
+
+            // Straight end (blue)
+            const straightEndShape = new createjs.Shape();
+            straightEndShape.graphics.beginFill("#0000ff").drawCircle(p.straightEnd.x, p.straightEnd.y, 4).endFill();
+            debugContainer.addChild(straightEndShape);
+
+            // End point (red)
+            const endShape = new createjs.Shape();
+            endShape.graphics.beginFill("#ff0000").drawCircle(p.end.x, p.end.y, 4).endFill();
+            debugContainer.addChild(endShape);
+
+            // Curve end (purple)
+            if (p.curveEnd) {
+               const curveEndShape = new createjs.Shape();
+               curveEndShape.graphics.beginFill("#800080").drawCircle(p.curveEnd.x, p.curveEnd.y, 4).endFill();
+               debugContainer.addChild(curveEndShape);
+            }
+
+            // Control point (orange)
+            if (p.controlPoint) {
+               const controlPointShape = new createjs.Shape();
+               controlPointShape.graphics.beginFill("#ffa500").drawCircle(p.controlPoint.x, p.controlPoint.y, 4).endFill();
+               debugContainer.addChild(controlPointShape);
+            }
+         }
+         sleepers_container.addChild(debugContainer);
+      }
+
       this.drawTrackSleepers(points, sleepers_container);      
       this.renderRails(track, points);
       this.drawBumper(track, this._rendering.rails_container);
@@ -1011,7 +1045,12 @@ export class trackRendering_textured {
 
          // Create a full symmetric pattern from the half pattern
          const pattern = trackRendering_textured.FOUR_WAY_SLEEPER_PATTERN;
-         const reversed_pattern = pattern.slice(0, -1).reverse(); //remove the last element because its right on the point of the switch
+         let reversed_pattern
+         if(pattern.length % 2 == 0) {
+            reversed_pattern = pattern.slice().reverse(); //remove the last element because its right on the point of the switch
+         } else {
+            reversed_pattern = pattern.slice(0, -1).reverse(); //remove the last element because its right on the point of the switch
+         }
          const point_symmetric_pattern = reversed_pattern.map((p) => ({ offset: 2 * p.length - p.offset, length: p.length }));
          const fullPattern = [...pattern, ...point_symmetric_pattern];
 

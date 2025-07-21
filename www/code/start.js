@@ -31,7 +31,7 @@ async function initializeApplication() {
       console.error("Failed to initialize application:", error);
       ui.showErrorToast(error);
    }
-}
+}                       
 
 function drawPoint(point, displayObject, label = "", color = "#000", size = 0.5) {
    const s = new createjs.Shape();

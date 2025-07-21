@@ -4,7 +4,7 @@
 import { NumberUtils, ArrayUtils } from './utils.js';
 import { Track } from './track.js';
 import { V2, Point, geometry, type, swap } from './tools.js';
-import { CONFIG } from './config.js';
+import { COMPUTED, CONFIG } from './config.js';
 
 export class Switch {
    static allSwitches = [];
@@ -208,7 +208,7 @@ export class Switch {
       this.location = location;
       this.type = Switch.SWITCH_TYPE.NONE;
 
-      this.size = CONFIG.GRID_SIZE;
+      this.size = COMPUTED.GRID_SIZE_2;
 
       this.tracks = new Array(4).fill(null);
 

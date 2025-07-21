@@ -30,8 +30,8 @@ export class Train {
    }
 
    // Constants for different car types
-   static LOCO_LENGTH = 80;
-   static PASSENGER_LENGTH = 100;
+   static LOCO_LENGTH = 40;
+   static PASSENGER_LENGTH = 50;
    static MULTIPLE_UNIT_CAR_LENGTH = 50;
    static MULTIPLE_UNIT_HEAD_FRONT_LENGTH = 50;
    static MULTIPLE_UNIT_HEAD_BACK_LENGTH = 50;
@@ -416,21 +416,26 @@ export class Train {
          this.pos = t.getKmfromPoint(this._coordinates);
       }
 
-      if (this.trainCoupledFrontId) {
+      if (this.trainCoupledFrontId != null) {
          const frontCar = Train.allTrains.find((t) => t._id === this.trainCoupledFrontId);
          if (frontCar) {
             this.trainCoupledFront = frontCar;
+         }
+         else {
+            console.error("Front car not found");
          }
 
          
       }
 
-      if (this.trainCoupledBackId) {
+      if (this.trainCoupledBackId != null) {
          const backCar = Train.allTrains.find((t) => t._id === this.trainCoupledBackId);
          if (backCar) {
             this.trainCoupledBack = backCar;
          }
-
+         else {
+            console.error("Back car not found");
+         }
          
       }
    }
