@@ -53,7 +53,7 @@ export class Track {
       }
 
       //check against the existing rail network
-      for (const track of Track.allTracks) {
+      /* for (const track of Track.allTracks) {
          if (geometry.doLineSegmentsIntersect(p, lastNode, track.start, track.end)) {
             // if the new segment starts at an endpoint of the track, it is considered a valid connection, not an overlap.
             if (lastNode.equals(track.start) || lastNode.equals(track.end) || p.equals(track.start) || p.equals(track.end)) {
@@ -77,7 +77,7 @@ export class Track {
                return false;
             }
          }
-      }
+      } */
 
       return true;
    }

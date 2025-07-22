@@ -559,42 +559,7 @@ export class trackRendering_textured {
       }
       sleepers_container.hitArea = hitArea;
 
-      // Draw main points for debugging using a debug container
-      if (true) {
-         const debugContainer = new createjs.Container();
-         debugContainer.name = "debug_points";
-         for (const p of points) {
-            // Start point (green)
-            const startShape = new createjs.Shape();
-            startShape.graphics.beginFill("#00ff00").drawCircle(p.start.x, p.start.y, 4).endFill();
-            debugContainer.addChild(startShape);
-
-            // Straight end (blue)
-            const straightEndShape = new createjs.Shape();
-            straightEndShape.graphics.beginFill("#0000ff").drawCircle(p.straightEnd.x, p.straightEnd.y, 4).endFill();
-            debugContainer.addChild(straightEndShape);
-
-            // End point (red)
-            const endShape = new createjs.Shape();
-            endShape.graphics.beginFill("#ff0000").drawCircle(p.end.x, p.end.y, 4).endFill();
-            debugContainer.addChild(endShape);
-
-            // Curve end (purple)
-            if (p.curveEnd) {
-               const curveEndShape = new createjs.Shape();
-               curveEndShape.graphics.beginFill("#800080").drawCircle(p.curveEnd.x, p.curveEnd.y, 4).endFill();
-               debugContainer.addChild(curveEndShape);
-            }
-
-            // Control point (orange)
-            if (p.controlPoint) {
-               const controlPointShape = new createjs.Shape();
-               controlPointShape.graphics.beginFill("#ffa500").drawCircle(p.controlPoint.x, p.controlPoint.y, 4).endFill();
-               debugContainer.addChild(controlPointShape);
-            }
-         }
-         sleepers_container.addChild(debugContainer);
-      }
+      
 
       this.drawTrackSleepers(points, sleepers_container);      
       this.renderRails(track, points);

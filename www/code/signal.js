@@ -430,6 +430,7 @@ export const Sig_UI = {
          Application.getInstance().renderingManager.update();
          STORAGE.save();
       };
+      $("#btnGrundstellung").click(Sig_UI.handleGrundstellung);
       $("#btnRemoveSignal").click((e) => Application.getInstance().uiManager.deleteSelectedObject());
       $("#navFeatures").empty();
                if (Application.getInstance().selection.object.check("HPsig"))
@@ -579,6 +580,24 @@ export const Sig_UI = {
          }
       }
    },
+
+   /**
+    * Handle Grundstellung
+    * @private
+    */
+   handleGrundstellung(e) {
+      const selection = app.selection;
+      if (selection.type == "Signal") {
+         [].concat(selection.object).forEach((s) => {
+            s._signalStellung = {};
+            if (s._template.initialSignalStellung)
+               s._template.initialSignalStellung.forEach((i) => s.set_stellung(i, null, true));
+            STORAGE.save();
+            app.renderingManager.renderer.reDrawEverything(true);
+            app.renderingManager.update();
+         });
+      }
+   }
 };
 
 

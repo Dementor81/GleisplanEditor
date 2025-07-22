@@ -58,10 +58,11 @@ export const MOUSE_DOWN_ACTION = {
 export const CUSTOM_MOUSE_ACTION = {
     NONE: 0,
     DRAWING: 1,
-    TEXT: 2,
-    PLATTFORM: 3,
-    TRAIN_COUPLE: 4,
-    TRAIN_DECOUPLE: 5,
+    ERASER: 2,
+    TEXT: 3,
+    PLATTFORM: 4,
+    TRAIN_COUPLE: 5,
+    TRAIN_DECOUPLE: 6,
 };
 
 // Menu constants

@@ -133,7 +133,16 @@ export class EventManager {
       $("#btnImage").click(this.#handleImageExport.bind(this));
       $("#btnDraw").click(this.#handleDrawToggle.bind(this));
       $("#btnDrawingClear").click(this.#handleDrawingClear.bind(this));
-      $("#btnGrundstellung").click(this.#handleGrundstellung.bind(this));
+
+      // Eraser button for drawing annotations
+      $("#btnDrawingEraser").click(() => {
+         const mode_active = this.#app.customMouseMode === CUSTOM_MOUSE_ACTION.ERASER;
+
+         $("#btnDrawingEraser").toggleClass("active", !mode_active);
+
+         this.#app.customMouseMode = !mode_active ? CUSTOM_MOUSE_ACTION.ERASER : CUSTOM_MOUSE_ACTION.DRAWING;
+      });
+
       $("#btnUndo").click(this.#handleUndo.bind(this));
 
       // Signal edit menu
@@ -234,7 +243,7 @@ export class EventManager {
 
          app.renderingManager.containers.drawing.addChild((mouseAction.shape = new createjs.Shape()));
          mouseAction.shape.graphics.setStrokeStyle(width, "round", "round").beginStroke(color);
-         mouseAction.old_point = new Point(event.stageX, event.stageY);
+         mouseAction.shape.graphics.mt(event.stageX, event.stageY);
       }
 
       app.mouseAction = mouseAction;
@@ -320,7 +329,9 @@ export class EventManager {
                STORAGE.save();
                STORAGE.saveUndoHistory();
             } else if (ma.action === MOUSE_DOWN_ACTION.CUSTOM) {
-               if (this.#app.customMouseMode == CUSTOM_MOUSE_ACTION.TEXT) {
+               if (this.#app.customMouseMode == CUSTOM_MOUSE_ACTION.DRAWING) {
+                  this.#app.mouseAction.shape.graphics.endStroke();
+               } else if (this.#app.customMouseMode == CUSTOM_MOUSE_ACTION.TEXT) {
                   const o = new GenericObject(GenericObject.OBJECT_TYPE.text).pos(local_point).content("Text");
                   GenericObject.all_objects.push(o);
                   this.#app.selectObject(o);
@@ -392,6 +403,8 @@ export class EventManager {
     * @param {Event} event - The mouse move event
     */
    handleMouseMove(event) {
+      // Eraser drag logic
+
       if (!event.primary) return;
       if (this.#app.mouseAction == null) {
          this.#app.renderingManager.stage.removeEventListener("stagemousemove", this.#boundHandleMouseMove);
@@ -413,11 +426,18 @@ export class EventManager {
          this.determineMouseAction(event, local_point);
       } else if (this.#app.mouseAction.action === MOUSE_DOWN_ACTION.CUSTOM) {
          if (this.#app.customMouseMode == CUSTOM_MOUSE_ACTION.DRAWING) {
-            this.#app.mouseAction.shape.graphics
-               .mt(this.#app.mouseAction.startPoint.x, this.#app.mouseAction.startPoint.y)
-               .lt(local_point.x, local_point.y);
-            this.#app.mouseAction.startPoint.x = local_point.x;
-            this.#app.mouseAction.startPoint.y = local_point.y;
+            this.#app.mouseAction.shape.graphics.lt(local_point.x, local_point.y);
+         } else if (this.#app.customMouseMode == CUSTOM_MOUSE_ACTION.ERASER) {
+            const local = this.#app.renderingManager.stage.globalToLocal(
+               this.#app.renderingManager.stage.mouseX,
+               this.#app.renderingManager.stage.mouseY
+            );
+            const drawingContainer = this.#app.renderingManager.containers.drawing;
+            const hit = drawingContainer.getObjectUnderPoint(local.x, local.y, 1);
+            if (hit) {
+               drawingContainer.removeChild(hit);
+               this.#app.renderingManager.update();
+            }
          } else if (this.#app.customMouseMode == CUSTOM_MOUSE_ACTION.PLATTFORM) {
             this.#app.renderingManager.containers.overlay.removeAllChildren();
             this.#app.renderingManager.containers.overlay.addChild((this.#app.mouseAction.shape = new createjs.Shape()));
@@ -453,10 +473,9 @@ export class EventManager {
          const grid_snap_point = this.getSnapPoint(local_point);
          let valid = Track.isValidTrackNodePoint(grid_snap_point, this.#app.mouseAction.nodes);
 
-
          if (geometry.distance(local_point, grid_snap_point) <= CONFIG.SNAP_TO_GRID) {
             // If the node already exists, revert to that node by removing any nodes after it
-            const existingIndex = this.#app.mouseAction.nodes.findIndex(node => node.equals(grid_snap_point));
+            const existingIndex = this.#app.mouseAction.nodes.findIndex((node) => node.equals(grid_snap_point));
             if (existingIndex !== -1) {
                // Keep nodes up to and including the found node
                this.#app.mouseAction.nodes = this.#app.mouseAction.nodes.slice(0, existingIndex + 1);
@@ -634,7 +653,10 @@ export class EventManager {
          this.#app.renderingManager.stage.mouseX,
          this.#app.renderingManager.stage.mouseY
       );
-      g.beginStroke(invalid ? COLORS.DRAWING_INVALID : COLORS.DRAWING_ACTIVE).moveTo(last.x, last.y).lt(p.x, p.y).endStroke();
+      g.beginStroke(invalid ? COLORS.DRAWING_INVALID : COLORS.DRAWING_ACTIVE)
+         .moveTo(last.x, last.y)
+         .lt(p.x, p.y)
+         .endStroke();
    }
 
    /**
@@ -712,7 +734,7 @@ export class EventManager {
     */
    #handleDrawToggle(e) {
       this.#app.customMouseMode = $("#btnDraw").hasClass("active") ? CUSTOM_MOUSE_ACTION.DRAWING : CUSTOM_MOUSE_ACTION.NONE;
-
+      $("#btnDrawingEraser").removeClass("active");
       const bsOffcanvas = bootstrap.Offcanvas.getOrCreateInstance(document.getElementById("drawingPanel"));
       if (this.#app.customMouseMode === CUSTOM_MOUSE_ACTION.DRAWING) {
          bsOffcanvas.show();
@@ -728,24 +750,6 @@ export class EventManager {
    #handleDrawingClear(e) {
       this.#app.renderingManager.containers.drawing.removeAllChildren();
       this.#app.renderingManager.update();
-   }
-
-   /**
-    * Handle Grundstellung
-    * @private
-    */
-   #handleGrundstellung(e) {
-      const selection = this.#app.selection;
-      if (selection.type == "Signal") {
-         [].concat(selection.object).forEach((s) => {
-            s._signalStellung = {};
-            if (s._template.initialSignalStellung)
-               s._template.initialSignalStellung.forEach((i) => s.set_stellung(i, null, true));
-            STORAGE.save();
-            this.#app.renderingManager.renderer.reDrawEverything(true);
-            this.#app.renderingManager.update();
-         });
-      }
    }
 
    /**
