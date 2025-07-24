@@ -41,7 +41,7 @@ Detailing:
 
 Intern:
     ✔ swichtes Array entfernen @done(25-01-01 14:12)
-    ☐ start.js aufräumen
+    ✔ start.js aufräumen @done(25-07-24 22:22)
     ☐ signal.js und signaling.js sauber trennen und aufräumen
     ☐ auf TypeScript umbauen
 

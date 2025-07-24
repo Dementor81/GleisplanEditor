@@ -448,6 +448,9 @@ export const geometry = {
    invert: function(v) {
       return new Point(-v.x, -v.y);
    },
+   dotProduct: function(v1, v2) {
+      return v1.x * v2.x + v1.y * v2.y;
+   },
 };
 
 export class V2 {
@@ -491,6 +494,9 @@ export class V2 {
    }
    invert() {
       return new V2(geometry.invert(this));
+   }
+   dot(v) {
+      return geometry.dotProduct(this, v);
    }
 }
 

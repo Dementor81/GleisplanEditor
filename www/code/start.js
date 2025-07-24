@@ -8,6 +8,7 @@ import { Signal } from './signal.js';
 import { Switch } from './switch.js';
 import { GenericObject } from './generic_object.js';
 import { Train } from './train.js';
+import { geometry } from './tools.js';
 
 
 
@@ -22,6 +23,7 @@ async function initializeApplication() {
       window.Switch = Switch;
       window.GenericObject = GenericObject;
       window.Train = Train;
+      window.geometry = geometry;
 
       window.app = Application.getInstance();
       await app.initialize();    

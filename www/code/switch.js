@@ -1,10 +1,11 @@
 "use strict";
 
 // ES6 Module imports
-import { NumberUtils, ArrayUtils } from './utils.js';
-import { Track } from './track.js';
-import { V2, Point, geometry, type, swap } from './tools.js';
-import config, { COMPUTED, CONFIG } from './config.js';
+import { NumberUtils, ArrayUtils } from "./utils.js";
+import { Track } from "./track.js";
+import { V2, Point, geometry, type, swap } from "./tools.js";
+import config, { COMPUTED, CONFIG } from "./config.js";
+import { ui } from "./ui.js";
 
 export class Switch {
    static allSwitches = [];
@@ -23,6 +24,57 @@ export class Switch {
       DKW: 9,
       CROSSING: 10,
    };
+
+   static getAngleBetweenTracks(track1, track2) {
+      let intersection = null;
+      if (track1.start.equals(track2.start) || track1.start.equals(track2.end)) {
+         intersection = track1.start;
+      } else if (track1.end.equals(track2.start) || track1.end.equals(track2.end)) {
+         intersection = track1.end;
+      } else {
+         // No intersection found
+         return null;
+      }
+      let v1_p;
+      if (track2.start.equals(intersection)) {
+         v1_p = track2.end;
+      } else {
+         v1_p = track2.start;
+      }
+      let v2_p;
+      if (track1.start.equals(intersection)) {
+         v2_p = track1.end;
+      } else {
+         v2_p = track1.start;
+      }
+      const angle = geometry.calculateAngle(intersection, v1_p, v2_p);
+      return angle;
+   }
+
+   /* static getAngleBetweenTracks(track1, track2) {
+      // Find the intersection point (shared endpoint)
+      let intersection = null;
+      if (track1.start.equals(track2.start) || track1.start.equals(track2.end)) {
+         intersection = track1.start;
+      } else if (track1.end.equals(track2.start) || track1.end.equals(track2.end)) {
+         intersection = track1.end;
+      } else {
+         // No intersection found
+         return null;
+      }
+
+      // Find the other endpoint of track2 (not the intersection)
+      let otherPoint;
+      if (track2.start.equals(intersection)) {
+         otherPoint = track2.end;
+      } else {
+         otherPoint = track2.start;
+      }
+
+      // Use findAngle to get the angle between the tracks
+      // Pass in the intersection as sw, the other point as c, and track1.rad as the reference angle
+      return Switch.findAngle(intersection, otherPoint, track1.rad);
+   } */
 
    //sw=switch location
    //rad= angle of track_1 in rad
@@ -90,9 +142,7 @@ export class Switch {
       if (sw.track2 == null) throw new Error("couldnt find 2 tracks with the same slope");
 
       //find the other two tracks and sort them by their start point
-      [sw.track3, sw.track4] = tracks
-         .filter((t) => t != sw.track1 && t != sw.track2)
-         .sort((a, b) => a.start.x - b.start.x);
+      [sw.track3, sw.track4] = tracks.filter((t) => t != sw.track1 && t != sw.track2).sort((a, b) => a.start.x - b.start.x);
 
       // Calculate direction vectors for each track branch
       sw.calculateParameters();
@@ -113,14 +163,12 @@ export class Switch {
     * @param {Switch} [existingSwitch=null] - An optional, pre-existing switch to re-evaluate.
     */
    static updateSwitchAtPoint(point, existingSwitch = null) {
-      const tracksAtPoint = Track.allTracks.filter(
-         (t) => t.start.equals(point) || t.end.equals(point)
-      );
+      const tracksAtPoint = Track.allTracks.filter((t) => t.start.equals(point) || t.end.equals(point));
 
       if (!existingSwitch) {
-         existingSwitch = Switch.allSwitches.find(sw => sw.location.equals(point));
-      }else{
-         if(!existingSwitch.location.equals(point)) throw new Error("existing switch at wrong point");
+         existingSwitch = Switch.allSwitches.find((sw) => sw.location.equals(point));
+      } else {
+         if (!existingSwitch.location.equals(point)) throw new Error("existing switch at wrong point");
       }
 
       if (tracksAtPoint.length === 2) {
@@ -128,12 +176,14 @@ export class Switch {
          const track1 = tracksAtPoint[0];
          const track2 = tracksAtPoint[1];
 
-         if (track1.start.equals(point)) track1.switchAtTheStart = track2;
-         else track1.switchAtTheEnd = track2;
-         
-         if (track2.start.equals(point)) track2.switchAtTheStart = track1;
-         else track2.switchAtTheEnd = track1;
+         const angle = Switch.getAngleBetweenTracks(track1, track2);
+         if (angle > 90) {
+            if (track1.start.equals(point)) track1.switchAtTheStart = track2;
+            else track1.switchAtTheEnd = track2;
 
+            if (track2.start.equals(point)) track2.switchAtTheStart = track1;
+            else track2.switchAtTheEnd = track1;
+         }
          if (existingSwitch) {
             Switch.removeSwitch(existingSwitch);
          }
@@ -149,9 +199,7 @@ export class Switch {
                ].filter((t) => t);
                const tracksMatch =
                   existingTracks.length === tracksAtPoint.length &&
-                  existingTracks.every((existingTrack) =>
-                     tracksAtPoint.some((currentTrack) => currentTrack === existingTrack)
-                  );
+                  existingTracks.every((existingTrack) => tracksAtPoint.some((currentTrack) => currentTrack === existingTrack));
 
                if (!tracksMatch) {
                   Switch.removeSwitch(existingSwitch);
@@ -179,13 +227,11 @@ export class Switch {
     */
    static removeSwitch(switchToRemove) {
       // Remove switch from all tracks that reference it
-      [switchToRemove.track1, switchToRemove.track2, switchToRemove.track3, switchToRemove.track4].forEach(
-         (track) => {
-            if (track) {
-               track.switches = track.switches.map((sw) => (sw === switchToRemove ? null : sw));
-            }
+      [switchToRemove.track1, switchToRemove.track2, switchToRemove.track3, switchToRemove.track4].forEach((track) => {
+         if (track) {
+            track.switches = track.switches.map((sw) => (sw === switchToRemove ? null : sw));
          }
-      );
+      });
 
       // Remove switch from the global switches array
       ArrayUtils.remove(Switch.allSwitches, switchToRemove);
@@ -258,10 +304,13 @@ export class Switch {
 
       if (this.track4) this.type = Switch.SWITCH_TYPE.DKW;
       else {
-         const angle = Switch.findAngle(this.location, this.track3.end.equals(this.location) ? this.track3.start : this.track3.end, this.track1.rad);
+         const angle = Switch.findAngle(
+            this.location,
+            this.track3.end.equals(this.location) ? this.track3.start : this.track3.end,
+            this.track1.rad
+         );
          this.type = Math.ceil((angle % 360) / 90);
       }
-
    }
 
    /**
@@ -310,5 +359,3 @@ export class Switch {
       return s;
    }
 }
-
-
