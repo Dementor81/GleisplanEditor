@@ -480,6 +480,10 @@ export class Track {
          STORAGE.saveUndoHistory();
          app.renderingManager.renderer.reDrawEverything(true);
       });
+      $("#btnRemoveTrack").off("click");
+      $("#btnRemoveTrack").on("click", () => {
+         app.deleteSelectedObject();
+      });
    }
 
    #_start = null;
