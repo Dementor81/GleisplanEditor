@@ -6,7 +6,7 @@ import { STORAGE } from "../storage.js";
 import { ui } from "../ui.js";
 import { Point, geometry, TOOLS } from "../tools.js";
 import { ArrayUtils, NumberUtils } from "../utils.js";
-import { Signal, SignalRenderer } from "../signal.js";
+import { Signal, SignalRenderer,Sig_UI } from "../signal.js";
 import { Train } from "../train.js";
 import { Track } from "../track.js";
 import { Switch } from "../switch.js";
@@ -707,8 +707,18 @@ export class EventManager {
     * @private
     */
    #handleKeyDown(e) {
-      if (e.target.tagName != "INPUT" && (e.code == "Delete" || e.code == "Backspace")) {
-         this.#app.deleteSelectedObject();
+      if (e.target.tagName != "INPUT"){
+         if (e.code == "Delete" || e.code == "Backspace") {
+            this.#app.deleteSelectedObject();
+         }
+         if (e.code == "Escape") {
+            this.#app.selectObject();
+         }
+         // Handle Ctrl+Z / Cmd+Z for undo
+         if ((e.ctrlKey || e.metaKey) && (e.key === "z" || e.key === "Z")) {
+            e.preventDefault();
+            this.#app.undo();
+         }
       }
    }
 
@@ -820,15 +830,15 @@ export class EventManager {
             "keydown",
             function (e) {
                if (e.key === "Enter") {
-                  this.#app.selection.object.set_stellung("bez", $(this).val());
+                  app.selection.object.set_stellung("bez", $(this).val());
                   $("#signalEditMenuHeader .card-text").show();
                   $("#signalEditMenuHeader input").hide();
-                  Sig_UI.syncSignalMenu(this.#app.selection.object);
+                  Sig_UI.syncSignalMenu(app.selection.object);
                   STORAGE.save();
-                  this.#app.renderingManager.renderer.reDrawEverything(true);
-                  this.#app.renderingManager.update();
+                  app.renderingManager.renderer.reDrawEverything(true);
+                  app.renderingManager.update();
                }
-            }.bind(this)
+            }
          )
          .on("blur", () => {
             $("#signalEditMenuHeader .card-text").show();

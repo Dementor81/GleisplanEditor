@@ -12,11 +12,11 @@ Bugs:
     ✔ bounds werden bei Strecken mit bögen falsch gesetzt @done(24-07-06 12:50)
     ✔ lf6 lf7 signalisieren sich nicht automatisch vor @done(24-07-15 17:46)
     ✔ lange bezeichnungen sprengen das schild, Text muss sich autom. verkleinern @done(24-12-08 15:36)
-    ☐ Züge bleiben auf gelöschten/geänderten phantom Gleisen
+    ✔ Züge bleiben auf gelöschten/geänderten phantom Gleisen @done(25-07-24 23:45)
     ☐ manchmal werden Signale verdoppelt
     ☐ navbar funktioniert bei kleinen Bildschirmen nicht
     ☐ züge sehr schnell über weichen bewegen, macht sie kaputt
-    ☐ Bahnsteige mit grüße 0 können gebaut werden
+    ☐ Bahnsteige mit Größe 0 können gebaut werden
 
 Content:
     ✔ Ne 2 @done(24-10-05 12:13)
@@ -37,7 +37,7 @@ Detailing:
     ✔ Skalierung überarbeiten, Gleise dichter zusammen, dafür Weichen überarbeiten @started(24-05-30 08:52) @done(24-06-01 19:53) @lasted(2d11h1m49s)
     ✔ Navbar überarbeiten @done(24-11-17 12:57)
     ✔ "Neues Signal" Menü überarbeiten @done(24-11-17 12:57)
-    ☐ Zeichnen Leiste überarbeiten, Dicke per Zahl setzen
+    ☐ Zeichnen Leiste überarbeiten, symbole für Radierer und Löschen, eventuell mehr Farben
 
 Intern:
     ✔ swichtes Array entfernen @done(25-01-01 14:12)
@@ -66,14 +66,14 @@ Features:
     ✔ Textfelder für Beschriftung von Gleisen hinzufügen @done(24-11-02 12:50)
     ✔ Bahnsteige einzeichen @done(24-11-02 18:59)
     ☐ mehrere Gleise, ganze Bahnhöfe verschieben
-    ☐ Auswahlrahmen ziehen
+    ☐ Auswahlrahmen ziehen (unklar, ob das sinnvoll ist)
     ☐ Signale kopieren, per drag&drop
     ☐ Wagen verhalten sich korrekt in Bögen
     ✔ Züge kuppeln @done(25-06-01 09:36)
     ☐ Wenn Signale übereinander liegen, dann die Reihenfolge sicherstellen
     ☐ Bemahlungen automatisch an einem Gleis ausrichten
-    ☐ Bemahlungen Radieren können
-    ☐ Prellbock am gleisende ein/ausblenden
+    ✔ Bemahlungen Radieren können @done(25-07-24 23:47)
+    ✔ Prellbock am gleisende ein/ausblenden @done(25-07-24 23:47)
     ☐ weiteres Performance Update
 
     
