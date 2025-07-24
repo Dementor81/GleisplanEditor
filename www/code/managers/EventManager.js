@@ -725,7 +725,53 @@ export class EventManager {
     * @private
     */
    #handleImageExport(e) {
-      // Image export functionality will be moved here
+      const stage = this.#app.renderingManager.stage;
+      let backup = { x: stage.x, y: stage.y, scale: stage.scale, canvas: stage.canvas };
+
+      try {
+         const custom_scale = 2;
+         stage.enableDOMEvents(false);
+
+         stage.scale = custom_scale;
+
+         this.#app.renderingManager.reDrawEverything(true, true);
+
+         let bounds = this.#app.renderingManager.containers.main.getBounds();
+         if (!bounds) {
+            ui.showInfoToast("Nix zu sehen");
+            return;
+         }
+         const anotherCanvas = $("<canvas>", { id: "test" })
+            .attr("width", bounds.width * custom_scale)
+            .attr("height", bounds.height * custom_scale);
+         stage.canvas = anotherCanvas[0];
+         stage.x = bounds.x * -custom_scale;
+         stage.y = bounds.y * -custom_scale;
+         this.#app.renderingManager.setGridVisible(false);
+         this.#app.renderingManager.containers.drawing.visible = false;
+         this.#app.renderingManager.containers.ui.visible = false;
+         stage.update();
+
+         let img_data = stage.toDataURL("#00000000", "image/png");
+         const img = $("<img>", { src: img_data, width: "100%" }).css("object-fit", "scale-down").css("max-height", "50vh");
+         ui.showModalDialog(img, (e) => {
+            const a = $("<a>", { download: "gleisplan.png", href: img_data });
+            a[0].click();
+         });
+      } catch (error) {
+         ui.showErrorToast(error);
+      } finally {
+         stage.x = backup.x;
+         stage.y = backup.y;
+         stage.scale = backup.scale;
+         stage.canvas = backup.canvas;
+         this.#app.renderingManager.setGridVisible(this.#app.showGrid);
+         this.#app.renderingManager.containers.drawing.visible = true;
+         this.#app.renderingManager.containers.ui.visible = true;
+         this.#app.renderingManager.reDrawEverything(true);
+         stage.enableDOMEvents(true);
+         stage.update();
+      }
    }
 
    /**

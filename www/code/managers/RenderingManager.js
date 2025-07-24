@@ -131,8 +131,8 @@ export class RenderingManager {
       this.reDrawEverything(true);
    }
 
-   reDrawEverything(force = false) {
-      this.#renderer.reDrawEverything(force);
+   reDrawEverything(force = false, dont_optimize = false) {
+      this.#renderer.reDrawEverything(force, dont_optimize);
    }
 
    update() {
@@ -236,7 +236,7 @@ export class RenderingManager {
          this.#grid.name = "grid";
          this.#grid.mouseEnabled = false;
          this.#stage.addChildAt(this.#grid, 0);
-         this.#grid.graphics.setStrokeStyle(1, "round");
+         this.#grid.graphics.setStrokeStyle(CONFIG.GRID_STROKE_STYLE, "round");
       }
 
       this.#grid.visible = this.#application.showGrid;
@@ -255,7 +255,7 @@ export class RenderingManager {
          // Add padding to prevent gaps during panning
          const padding = CONFIG.GRID_SIZE * 2;
 
-         this.#grid.graphics.clear().setStrokeStyle(1, "round").setStrokeDash([5, 5], 2).beginStroke(COLORS.GRID);
+         this.#grid.graphics.clear().setStrokeStyle(CONFIG.GRID_STROKE_STYLE, "round").setStrokeDash([5, 5], 2).beginStroke(COLORS.GRID);
 
          // Draw vertical lines
          for (let x = -padding; x <= size.width + padding; x += CONFIG.GRID_SIZE) {

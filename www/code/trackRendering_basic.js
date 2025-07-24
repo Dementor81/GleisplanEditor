@@ -123,7 +123,7 @@ export class trackRendering_basic {
          corr_end = track.end;
       let bumper_start, bumper_end;
 
-      if (!track.switchAtTheStart) {
+      if (!track.switchAtTheStart && track.hasBumper) {
          //prellbock beim start
          const B1 = track.start.add(geometry.perpendicular(track.unit).multiply(-trackRendering_basic.BUMPER_SIZE));
          const B2 = track.start.add(geometry.perpendicular(track.unit).multiply(trackRendering_basic.BUMPER_SIZE));
@@ -132,7 +132,7 @@ export class trackRendering_basic {
          corr_start = track.along(track.switchAtTheStart.location, track.switchAtTheStart.size);
       }
 
-      if (!track.switchAtTheEnd) {
+      if (!track.switchAtTheEnd && track.hasBumper) {
          //prellbock beim ende
          const B1 = track.end.add(geometry.perpendicular(track.unit).multiply(-trackRendering_basic.BUMPER_SIZE));
          const B2 = track.end.add(geometry.perpendicular(track.unit).multiply(trackRendering_basic.BUMPER_SIZE));

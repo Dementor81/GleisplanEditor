@@ -186,6 +186,10 @@ export class UIManager {
             div_id = "editObjectMenu";
             GenericObject.initEditMenu(app.selection.object);
             break;
+         case MENU.EDIT_TRACK:
+            div_id = "editTrackMenu";
+            Track.initEditTrackMenu(app.selection.object);
+            break;
          default:
             throw new Error("unknown Menu");
       }
@@ -305,7 +309,7 @@ export class UIManager {
    /**
     * Show pre-build screen
     */
-   showPreBuildScreen() {
+   showStartScreen() {
       if (localStorage.getItem("bahnhof_last1") == null) $(btnLoadRecent).attr("disabled", "disabled");
 
       $(btnStartFromZero).click(() => {

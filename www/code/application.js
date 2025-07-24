@@ -141,7 +141,7 @@ export class Application {
    }
 
    start() {
-      this.#uiManager.showPreBuildScreen();
+      this.#uiManager.showStartScreen();
    }
      
 
@@ -213,6 +213,9 @@ export class Application {
             break;
          case "GenericObject":
             menu = MENU.EDIT_OBJECT;
+            break;
+         case "Track":
+            menu = MENU.EDIT_TRACK;
             break;
          default:
             menu = null;

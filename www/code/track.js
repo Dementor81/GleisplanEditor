@@ -6,6 +6,7 @@ import { Switch } from "./switch.js";
 import { Signal } from "./signal.js";
 import { ArrayUtils } from "./utils.js";
 import { CONFIG } from "./config.js";
+import { STORAGE } from "./storage.js";
 
 export class Track {
    static allTracks = [];
@@ -460,7 +461,7 @@ export class Track {
 
       // Remove any signals on the track
       track.signals.forEach((signal) => {
-         ArrayUtils.remove(Signal.allSignals, signal);
+         Signal.allSignals.delete(signal);
       });
    }
 
@@ -470,8 +471,20 @@ export class Track {
       Track.createSwitches();
    }
 
+   static initEditTrackMenu(track) {
+      $("#inputBumper").off("change");
+      $("#inputBumper").prop("checked", track.hasBumper);
+      $("#inputBumper").on("change", (e) => {
+         track.hasBumper = e.target.checked;
+         STORAGE.save();
+         STORAGE.saveUndoHistory();
+         app.renderingManager.renderer.reDrawEverything(true);
+      });
+   }
+
    #_start = null;
    #_end = null;
+   #_has_bumper = true;
    signals = [];
 
    switches = [null, null];
@@ -497,6 +510,14 @@ export class Track {
 
    get end() {
       return this.#_end;
+   }
+
+   get hasBumper() {
+      return this.#_has_bumper;
+   }   
+
+   set hasBumper(value) {
+      this.#_has_bumper = value;
    }
 
    get vector() {
@@ -648,6 +669,7 @@ export class Track {
          end: this.end,
          signals: this.signals,
          switches: switchData,
+         hasBumper: this.hasBumper,
       };
    }
 
@@ -656,6 +678,7 @@ export class Track {
       t.id = o.id;
       t.signals = o.signals;
       t.switches_data = o.switches;
+      t.hasBumper = o.hasBumper!=null? o.hasBumper : true;
       t.signals.forEach(function (s) {
          s._positioning.track = t;
       });

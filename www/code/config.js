@@ -13,8 +13,9 @@ export const CONFIG = {
     DEFAULT_SIMPLIFIED_VIEW: true,
     
     // Grid and layout settings
-    GRID_SIZE: 100,
-    SNAP_TO_GRID: 10,
+    GRID_SIZE: 50,
+    SNAP_TO_GRID: 5,
+    GRID_STROKE_STYLE: 0.25,
     
     // Zoom and scaling
     MAX_SCALE: 8,
@@ -73,6 +74,7 @@ export const MENU = {
     NEW_TRAIN: 3,
     NEW_OBJECT: 4,
     EDIT_OBJECT: 5,
+    EDIT_TRACK: 6,
 };
 
 

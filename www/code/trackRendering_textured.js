@@ -383,11 +383,11 @@ export class trackRendering_textured {
       // Handle the start of the track
       if (startConnection) {
          // If there's a connection, shorten the track to make space
-         const size = startConnection instanceof Switch ? startConnection.size : COMPUTED.GRID_SIZE_2;
+         const size = startConnection instanceof Switch ? startConnection.size : CONFIG.GRID_SIZE;
          startPoint = startPoint.add(geometry.multiply(track.unit, size));
       } else {
          // If there's no connection, extend it for the bumper
-         startPoint = startPoint.sub(geometry.multiply(track.unit, COMPUTED.GRID_SIZE_2));
+         startPoint = startPoint.sub(geometry.multiply(track.unit, CONFIG.GRID_SIZE));
       }
 
       let straightEndPoint = endPoint;
@@ -398,7 +398,7 @@ export class trackRendering_textured {
       // Handle the end of the track
       if (endConnection) {
          // If there's a connection, shorten the track to make space for the switch or curve
-         const size = endConnection instanceof Switch ? endConnection.size : COMPUTED.GRID_SIZE_2;
+         const size = endConnection instanceof Switch ? endConnection.size : CONFIG.GRID_SIZE;
          straightEndPoint = endPoint.sub(geometry.multiply(track.unit, size));
 
          if (endConnection instanceof Track) {
@@ -406,12 +406,12 @@ export class trackRendering_textured {
             const nextTrack = endConnection;
             nextUnit = nextTrack.unit;
             // The curve should end at the *shortened* start of the next track
-            curveEnd = nextTrack.start.add(geometry.multiply(nextUnit, COMPUTED.GRID_SIZE_2));
+            curveEnd = nextTrack.start.add(geometry.multiply(nextUnit, CONFIG.GRID_SIZE));
             controlPoint = geometry.getIntersectionPointX(straightEndPoint, track.unit, curveEnd, nextUnit);
          }
       } else {
          // If there's no connection, extend the track for the bumper.
-         straightEndPoint = endPoint.add(geometry.multiply(track.unit, COMPUTED.GRID_SIZE_2));
+         straightEndPoint = endPoint.add(geometry.multiply(track.unit, CONFIG.GRID_SIZE));
       }
 
       const centerLine = {
@@ -563,7 +563,7 @@ export class trackRendering_textured {
 
       this.drawTrackSleepers(points, sleepers_container);      
       this.renderRails(track, points);
-      this.drawBumper(track, this._rendering.rails_container);
+      if (track.hasBumper) this.drawBumper(track, this._rendering.rails_container);
    }
 
    calculateRailBounds(points) {
