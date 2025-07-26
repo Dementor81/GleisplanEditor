@@ -664,7 +664,7 @@ export class Track {
    stringify() {
       const switchData = this.switches.map((s) => {
          if (!s) return null;
-         return { type: s.constructor.name, id: s.id };
+         return { type: s instanceof Switch ? "Switch" : "Track", id: s.id };
       });
       return {
          _class: "Track",
