@@ -128,7 +128,7 @@ export class trackRendering_basic {
          const B1 = track.start.add(geometry.perpendicular(track.unit).multiply(-trackRendering_basic.BUMPER_SIZE));
          const B2 = track.start.add(geometry.perpendicular(track.unit).multiply(trackRendering_basic.BUMPER_SIZE));
          bumper_start = [B1, B2];
-      } else if (type(track.switchAtTheStart) == "Switch") {
+      } else if (track.switchAtTheStart instanceof Switch) {
          corr_start = track.along(track.switchAtTheStart.location, track.switchAtTheStart.size);
       }
 
@@ -137,7 +137,7 @@ export class trackRendering_basic {
          const B1 = track.end.add(geometry.perpendicular(track.unit).multiply(-trackRendering_basic.BUMPER_SIZE));
          const B2 = track.end.add(geometry.perpendicular(track.unit).multiply(trackRendering_basic.BUMPER_SIZE));
          bumper_end = [B1, B2];
-      } else if (type(track.switchAtTheEnd) == "Switch") {
+      } else if (track.switchAtTheEnd instanceof Switch) {
          corr_end = track.along(track.switchAtTheEnd.location, -track.switchAtTheEnd.size);
       }
 

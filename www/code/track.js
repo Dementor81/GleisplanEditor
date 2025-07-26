@@ -452,8 +452,8 @@ export class Track {
       // Remove track from allTracks array
       ArrayUtils.remove(Track.allTracks, track);
 
-      if (type(track.switchAtTheStart) == "Track") track.switchAtTheStart.switchAtTheEnd = null;
-      if (type(track.switchAtTheEnd) == "Track") track.switchAtTheEnd.switchAtTheStart = null;
+      if (track.switchAtTheStart instanceof Track) track.switchAtTheStart.switchAtTheEnd = null;
+      if (track.switchAtTheEnd instanceof Track) track.switchAtTheEnd.switchAtTheStart = null;
 
       // Update switches at the former track's endpoints
       Switch.updateSwitchAtPoint(track.start, startSwitch instanceof Switch ? startSwitch : null);

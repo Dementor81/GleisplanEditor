@@ -212,7 +212,7 @@ export class EventManager {
     */
    handleStageMouseDown(event) {
       let hittest = this.getHitTest();
-      console.log(hittest);
+      //console.log(hittest);
       let mouseAction = {
          action: app.customMouseMode != CUSTOM_MOUSE_ACTION.NONE ? MOUSE_DOWN_ACTION.CUSTOM : MOUSE_DOWN_ACTION.NONE,
          container: hittest,
@@ -595,7 +595,7 @@ export class EventManager {
       if (hitInformation) {
          hitInformation.flipped = flipped;
          ma.hit_track = hitInformation;
-         console.log(hitInformation);
+         //console.log(hitInformation);
          this.#app.alignSignalContainerWithTrack(ma.container, hitInformation);
       } else {
          ma.hit_track = null;

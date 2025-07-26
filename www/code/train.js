@@ -255,7 +255,7 @@ export class Train {
             const sw = new_pos <= 0 ? currentTrack.switchAtTheStart : currentTrack.switchAtTheEnd;
 
             if (sw) {
-               if (type(sw) == "Track") newTrack = sw;
+               if (sw instanceof Track) newTrack = sw;
                else if (sw.from == currentTrack) newTrack = sw.branch;
                else if (sw.branch == currentTrack) newTrack = sw.from;
 
@@ -284,7 +284,7 @@ export class Train {
       if (NumberUtils.outoff(new_pos, 0 + train.length / 2, currentTrack.length - train.length / 2)) {
          const sw = new_pos <= 0 + train.length / 2 ? currentTrack.switchAtTheStart : currentTrack.switchAtTheEnd;
 
-         return sw != null && (type(sw) == "Track" || sw.from == currentTrack || sw.branch == currentTrack);
+         return sw != null && (sw instanceof Track || sw.from == currentTrack || sw.branch == currentTrack);
       } else return true;
    }
 

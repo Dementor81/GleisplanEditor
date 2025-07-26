@@ -372,7 +372,7 @@ export class Signal {
          }
 
          if ((sw = track.switches[dir == 1 ? 1 : 0])) {
-            if (type(sw) == "Track") track = sw;
+            if (sw instanceof Track) track = sw;
             else track = getTrackAtBranch(sw, track);
 
             if (track) {

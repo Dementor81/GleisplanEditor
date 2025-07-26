@@ -1,35 +1,19 @@
 "use strict";
 
 // ES6 Module imports
-import { preLoader } from './preLoader.js';
-import { SignalRenderer, Signal } from './signal.js';
-import { Train } from './train.js';
-import { Switch } from './switch.js';
-import { Track } from './track.js';
-import { GenericObject } from './generic_object.js';
-import { STORAGE } from './storage.js';
-import { trackRendering_basic } from './trackRendering_basic.js';
-import { trackRendering_textured } from './trackRendering_textured.js';
-import { initSignals } from './signal_library.js';
-import { 
-   type, 
-   geometry, 
-   Point, 
-} from './tools.js';
-import { ArrayUtils } from './utils.js';
-import { ui } from './ui.js';
-import { 
-   CONFIG, 
-   DIRECTION, 
-   MOUSE_DOWN_ACTION, 
-   CUSTOM_MOUSE_ACTION, 
-   MENU,
-   CONTAINERS,
-   PATHS 
-} from './config.js';
-import { EventManager } from './managers/EventManager.js';
-import { RenderingManager } from './managers/RenderingManager.js';
-import { UIManager } from './managers/UIManager.js';
+import { preLoader } from "./preLoader.js";
+import { Signal } from "./signal.js";
+import { Train } from "./train.js";
+import { Track } from "./track.js";
+import { GenericObject } from "./generic_object.js";
+import { STORAGE } from "./storage.js";
+import { initSignals } from "./signal_library.js";
+import { geometry } from "./tools.js";
+import { ui } from "./ui.js";
+import { CONFIG, CUSTOM_MOUSE_ACTION, MENU, PATHS } from "./config.js";
+import { EventManager } from "./managers/EventManager.js";
+import { RenderingManager } from "./managers/RenderingManager.js";
+import { UIManager } from "./managers/UIManager.js";
 
 /**
  * Main Application class that manages the entire application lifecycle
@@ -37,7 +21,7 @@ import { UIManager } from './managers/UIManager.js';
  */
 export class Application {
    static #instance = null;
-   
+
    // Core application state
    #preLoader = null;
    #signalTemplates = {};
@@ -46,23 +30,23 @@ export class Application {
       type: "",
       object: null,
       isSelectedObject: function (test) {
-         if (!test || !this.object || this.type != type(test)) return false;
+         if (!test || !this.object || this.type != Application.getInstance().getObjectType(test)) return false;
          if (Array.isArray(this.object)) return this.object.includes(test);
          else return this.object === test;
       },
    };
-   
+
    // Application state
    #editMode = true;
    #showGrid = true;
    #customMouseMode = CUSTOM_MOUSE_ACTION.NONE;
    #mouseAction = null;
-   
+
    // Managers
    #eventManager = null;
    #renderingManager = null;
    #uiManager = null;
-   
+
    /**
     * Get the singleton instance of the Application
     * @returns {Application} The application instance
@@ -73,7 +57,7 @@ export class Application {
       }
       return Application.#instance;
    }
-   
+
    /**
     * Private constructor to enforce singleton pattern
     */
@@ -82,7 +66,7 @@ export class Application {
          throw new Error("Application is a singleton. Use Application.getInstance() instead.");
       }
    }
-   
+
    /**
     * Initialize the application
     * @returns {Promise} Promise that resolves when initialization is complete
@@ -91,7 +75,7 @@ export class Application {
       try {
          await this.#initializePreLoader();
          this.#initializeManagers();
-         
+
          console.log("Application initialized successfully");
          return Promise.resolve();
       } catch (error) {
@@ -100,7 +84,7 @@ export class Application {
          return Promise.reject(error);
       }
    }
-   
+
    /**
     * Initialize the preloader and signal templates
     * @private
@@ -108,18 +92,16 @@ export class Application {
    async #initializePreLoader() {
       this.#preLoader = new preLoader(PATHS.IMAGES);
       initSignals(this.#signalTemplates);
-      
+
       // Add basic images
-      this.#preLoader.addImage("schwellen.png", "schwellen");      
+      this.#preLoader.addImage("schwellen.png", "schwellen");
       this.#preLoader.addImage("bumper1.svg", "bumper");
-      
+
       // Start preloading
       await this.#preLoader.start();
       console.log(`Preloader completed: ${this.#preLoader._loadedItems}/${this.#preLoader._totalItems}`);
    }
-   
 
-   
    /**
     * Initialize managers
     * @private
@@ -129,12 +111,12 @@ export class Application {
       this.#renderingManager = new RenderingManager(this);
       this.#eventManager = new EventManager(this);
       this.#uiManager = new UIManager(this);
-      
+
       // Initialize each manager
       this.#renderingManager.initialize();
       this.#eventManager.initialize();
       this.#uiManager.initialize();
-      
+
       // Initialize renderer
       this.#renderingManager.selectRenderer(!CONFIG.DEFAULT_SIMPLIFIED_VIEW);
       this.#uiManager.updateUndoButtonState();
@@ -143,9 +125,7 @@ export class Application {
    start() {
       this.#uiManager.showStartScreen();
    }
-     
 
-   
    /**
     * Align signal container with track
     * @param {*} container - Signal container
@@ -153,27 +133,39 @@ export class Application {
     */
    alignSignalContainerWithTrack(container, pos) {
       const point = pos.track.getPointFromKm(pos.km);
-      
+
       let p;
       if (pos.above) {
          container.rotation = 270 + pos.track.deg;
          p = point.add(
             geometry
                .perpendicular(pos.track.unit)
-               .multiply(-this.#renderingManager.renderer.SIGNAL_DISTANCE_FROM_TRACK - container.data._template.distance_from_track)
+               .multiply(
+                  -this.#renderingManager.renderer.SIGNAL_DISTANCE_FROM_TRACK - container.data._template.distance_from_track
+               )
          );
       } else {
          container.rotation = 90 + pos.track.deg;
          p = point.add(
             geometry
                .perpendicular(pos.track.unit)
-               .multiply(this.#renderingManager.renderer.SIGNAL_DISTANCE_FROM_TRACK + container.data._template.distance_from_track)
+               .multiply(
+                  this.#renderingManager.renderer.SIGNAL_DISTANCE_FROM_TRACK + container.data._template.distance_from_track
+               )
          );
       }
       if (pos.flipped) container.rotation += 180;
-      
+
       container.x = p.x;
       container.y = p.y;
+   }
+
+   getObjectType(object) {
+      if (object instanceof Signal) return "Signal";
+      else if (object instanceof Train) return "Train";
+      else if (object instanceof GenericObject) return "GenericObject";
+      else if (object instanceof Track) return "Track";
+      else return null;
    }
 
    /**
@@ -189,37 +181,32 @@ export class Application {
          this.uiManager.showMenu();
          return;
       }
-      
-      const t = type(object);
-      if (object) console.log(object);
-      
+
+      let t = this.getObjectType(object);
+
       if (t != this.selection.type) {
          this.selection.object = object;
          this.selection.type = t;
       } else {
          if (e?.nativeEvent?.ctrlKey)
-            this.selection.object = Array.isArray(this.selection.object) ? [...this.selection.object, object] : [this.selection.object, object];
+            this.selection.object = Array.isArray(this.selection.object)
+               ? [...this.selection.object, object]
+               : [this.selection.object, object];
          else this.selection.object = object;
       }
       this.renderingManager.renderer?.updateSelection();
-      
+
       let menu;
-      switch (t) {
-         case "Signal":
-            if (!Array.isArray(this.selection.object)) menu = MENU.EDIT_SIGNAL;
-            break;
-         case "Train":
-            menu = MENU.EDIT_TRAIN;
-            break;
-         case "GenericObject":
-            menu = MENU.EDIT_OBJECT;
-            break;
-         case "Track":
-            menu = MENU.EDIT_TRACK;
-            break;
-         default:
-            menu = null;
-            break;
+      if (object instanceof Signal) {
+         if (!Array.isArray(this.selection.object)) menu = MENU.EDIT_SIGNAL;
+      } else if (object instanceof Train) {
+         menu = MENU.EDIT_TRAIN;
+      } else if (object instanceof GenericObject) {
+         menu = MENU.EDIT_OBJECT;
+      } else if (object instanceof Track) {
+         menu = MENU.EDIT_TRACK;
+      } else {
+         menu = null;
       }
 
       this.uiManager.showMenu(menu);
@@ -250,7 +237,6 @@ export class Application {
       }
    }
 
-   
    /**
     * Toggle edit mode
     * @param {boolean} mode - The edit mode to set
@@ -262,7 +248,7 @@ export class Application {
       this.renderingManager.update();
       if (mode != undefined) $(btnDrawTracks).prop(":checked", this.editMode);
    }
-   
+
    /**
     * Undo the last action
     */
@@ -273,29 +259,55 @@ export class Application {
       this.renderingManager.update();
       this.uiManager.updateUndoButtonState();
    }
-   
+
    // Getters for accessing internal state
-   get preLoader() { return this.#preLoader; }
-   get signalTemplates() { return this.#signalTemplates; }
-   get selection() { return this.#selection; }
-   get undoHistory() { return this.#undoHistory; }
-   get editMode() { return this.#editMode; }
-   get showGrid() { return this.#showGrid; }
-   get customMouseMode() { return this.#customMouseMode; }
-   get mouseAction() { return this.#mouseAction; }
-   
+   get preLoader() {
+      return this.#preLoader;
+   }
+   get signalTemplates() {
+      return this.#signalTemplates;
+   }
+   get selection() {
+      return this.#selection;
+   }
+   get undoHistory() {
+      return this.#undoHistory;
+   }
+   get editMode() {
+      return this.#editMode;
+   }
+   get showGrid() {
+      return this.#showGrid;
+   }
+   get customMouseMode() {
+      return this.#customMouseMode;
+   }
+   get mouseAction() {
+      return this.#mouseAction;
+   }
+
    // Manager getters
-   get eventManager() { return this.#eventManager; }
-   get renderingManager() { return this.#renderingManager; }
-   get uiManager() { return this.#uiManager; }
-   
+   get eventManager() {
+      return this.#eventManager;
+   }
+   get renderingManager() {
+      return this.#renderingManager;
+   }
+   get uiManager() {
+      return this.#uiManager;
+   }
+
    // Setters for controlled state changes
-   set editMode(mode) { this.#editMode = mode; }
-   set showGrid(show) { this.#showGrid = show; }
-   set customMouseMode(mode) { 
+   set editMode(mode) {
+      this.#editMode = mode;
+   }
+   set showGrid(show) {
+      this.#showGrid = show;
+   }
+   set customMouseMode(mode) {
       this.#customMouseMode = mode;
    }
-   set mouseAction(action) { 
-      this.#mouseAction = action; 
+   set mouseAction(action) {
+      this.#mouseAction = action;
    }
-} 
+}
