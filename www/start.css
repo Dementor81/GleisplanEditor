@@ -175,7 +175,7 @@ html, body {
 
 .dropdown-item.active::before {
     content: "";
-    background: url(check.svg);
+    background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="25" height="25" viewBox="0 0 25 25"><polyline points="6,13 11,18 19,7" fill="none" stroke="black" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>');
     background-size: 25px 25px;
     width: 30px;
     height: 30px;
@@ -205,9 +205,3 @@ html, body {
     width: -webkit-fill-available;
 }
 
-/* .dropdown-item::before{
-    content: ' ';
-  background: url(check.svg);
-    width: 30px;
-    height: 30px;
-} */

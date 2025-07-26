@@ -1,4 +1,6 @@
-.DS_Store
-.DS_Store?
+# Dependencies
+/node_modules
+/www/dist
 
-www/dist*
+# Password file
+.password

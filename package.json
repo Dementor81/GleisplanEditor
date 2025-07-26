@@ -8,13 +8,14 @@
     "build:dev": "webpack --mode=development",
     "start": "webpack serve --mode=development",
     "analyze": "webpack-bundle-analyzer www/dist/bundle.js",
-    "deploy": "npm run build && echo 'Production build complete! Check www/dist/ for deployment files.'"
+    "deploy": "bash deploy.sh"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "description": "",
   "devDependencies": {
+    "copy-webpack-plugin": "^13.0.0",
     "html-webpack-plugin": "^5.6.3",
     "webpack": "^5.100.1",
     "webpack-cli": "^6.0.1",

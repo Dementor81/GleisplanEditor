@@ -1,154 +1,48 @@
 # Gleisplan Editor - Deployment Guide
 
-## Overview
+This document provides instructions for deploying the Gleisplan Editor project to a remote web server. The process is designed to be simple, secure, and automated.
 
-This guide covers everything you need to deploy the Gleisplan Editor project to production. The project uses webpack for bundling and can be deployed to any static web server.
+## Deployment Overview
+
+The deployment process is managed by a single command that automates the following steps:
+1.  **Build:** The project is bundled for production using webpack. This process creates an optimized set of files in the `www/dist` directory.
+2.  **Copy Assets:** All necessary static assets (images, fonts, stylesheets, etc.) are copied into the `www/dist` directory to create a self-contained, deployable package.
+3.  **Deploy:** The contents of the `www/dist` directory are securely uploaded to the remote server using `rsync` over SSH.
+
+## Key Components
+
+### `npm run deploy`
+This is the main command you will use to deploy the project. It's a script defined in `package.json` that executes the `deploy.sh` script.
+
+### `deploy.sh`
+This is the core deployment script. It handles the build process and the file transfer to the remote server. The script is configured with your server's details (user, host, and target directory).
+
+### `sshpass` and the `.password` file
+To handle the server login securely without SSH keys, we use `sshpass`. The script reads the server password from a local, untracked file named `.password`. This prevents your password from being stored in version control.
 
 ## Prerequisites
 
-- Node.js (v14 or higher)
-- npm (comes with Node.js)
-- A web server or hosting service
+Before you can deploy, you need to have the following installed on your local machine:
+- Node.js and npm
+- `sshpass` (You can install it via Homebrew: `brew install sshpass`)
 
-## Build Process
+## One-Time Setup
 
-### Development Build
-```bash
-npm run build:dev
-```
-- Creates unminified bundle with source maps
-- Larger file size (~699KB)
-- Easier debugging
-- Use for testing
+1.  **Configure `deploy.sh`**:
+    Open `deploy.sh` and ensure the following variables are set correctly for your server:
+    - `REMOTE_USER`: Your SSH username.
+    - `REMOTE_HOST`: Your server's hostname or IP address.
+    - `REMOTE_TARGET_DIR`: The destination directory on your server.
 
-### Production Build
-```bash
-npm run build
-```
-- Creates optimized, minified bundle (~101KB)
-- Includes content hash for cache busting
-- Smaller file size, faster loading
-- Use for deployment
+2.  **Set Your Password**:
+    Open the `.password` file in the root of the project and replace the placeholder text with your actual server password. This file is already in `.gitignore`, so it will not be committed.
 
-### Quick Deploy Command
+## How to Deploy
+
+Once the one-time setup is complete, you can deploy your project at any time by running a single command in your terminal:
+
 ```bash
 npm run deploy
 ```
-- Runs production build
-- Shows confirmation message
-- Files ready in `www/dist/`
 
-## Files Required for Deployment
-
-### Generated Files (from `www/dist/`)
-After running `npm run build`, these files are automatically generated:
-
-- `start.html` - Main application entry point (auto-generated with correct bundle references)
-- `bundle.[hash].js` - Optimized JavaScript bundle
-- `bundle.[hash].js.map` - Source map (optional, for debugging)
-
-### Static Assets (from `www/`)
-Copy these files and folders to your web server:
-
-#### Required Files:
-- `favicon.ico`
-- `logo.svg` 
-- `start.css`
-- `gleisplan.png`
-- `welcome.png`
-- `train-front.svg`
-- `check.svg`
-- `zug.png`
-- `prebuilds.xml`
-
-#### Required Folders:
-- `dev/` - Bootstrap, jQuery, CreateJS dependencies
-- `font/` - Custom fonts
-- `images/` - Signal and track images with JSON data
-- `intro_1.jpg`, `intro_2.jpg`, `intro_3.jpg` - Intro images
-
-## Deployment Steps
-
-### Step 1: Build for Production
-```bash
-cd /path/to/your/project
-npm run deploy
-```
-
-### Step 2: Prepare Deployment Package
-Create a deployment folder with the following structure:
-```
-deployment/
-├── index.html (copy from www/dist/start.html)
-├── bundle.[hash].js (from www/dist/)
-├── bundle.[hash].js.map (from www/dist/)
-├── favicon.ico
-├── logo.svg
-├── start.css
-├── gleisplan.png
-├── welcome.png
-├── train-front.svg
-├── check.svg
-├── zug.png
-├── prebuilds.xml
-├── dev/
-│   ├── bootstrap-5.3.3/
-│   ├── jquery-3.7.1.min.js
-│   └── createjs.js
-├── font/
-│   ├── D-DINCondensed.otf
-│   └── intodotmatrix.ttf
-├── images/
-│   ├── basis.json
-│   ├── basis.png
-│   ├── hv.json
-│   ├── hv.png
-│   ├── ks.json
-│   ├── ks.png
-│   ├── ls.json
-│   ├── ls.png
-│   ├── schwellen.png
-│   ├── bumper1.svg
-│   ├── weiche.svg
-│   ├── weiche2.svg
-│   ├── dkw.svg
-│   ├── dkw2.svg
-│   └── kleineisen.png
-├── intro_1.jpg
-├── intro_2.jpg
-└── intro_3.jpg
-```
-
-### Step 3: Upload to Server
-Upload all files to your web server's document root or a subdirectory.
-
-
-### Essential Commands
-```bash
-# Install dependencies
-npm install
-
-# Development server
-npm run start
-
-# Development build
-npm run build:dev
-
-# Production build
-npm run build
-
-# Deploy (build + confirmation)
-npm run deploy
-
-# Analyze bundle
-npm run analyze
-```
-
-### File Locations
-- **Source**: `www/code/`
-- **Build output**: `www/dist/`
-- **Static assets**: `www/`
-- **Config**: `webpack.config.js`
-- **Dependencies**: `package.json`
-
-This deployment guide should provide everything needed to successfully deploy the Gleisplan Editor project to production. 
+This command will build the latest version of your project and upload it to the server. You can monitor the progress in your terminal. When the script finishes, your changes will be live. 
