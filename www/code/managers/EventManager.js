@@ -1,11 +1,11 @@
 "use strict";
 
 // ES6 Module imports
-import { CONFIG, INPUT, CUSTOM_MOUSE_ACTION, MOUSE_DOWN_ACTION, COLORS, COMPUTED, MENU } from "../config.js";
+import { CONFIG, INPUT, CUSTOM_MOUSE_ACTION, MOUSE_DOWN_ACTION, COLORS, COMPUTED, MENU } from "../config.ts";
 import { STORAGE } from "../storage.js";
-import { ui } from "../ui.js";
+import { ui } from "../ui.ts";
 import { Point, geometry, TOOLS } from "../tools.js";
-import { ArrayUtils, NumberUtils } from "../utils.js";
+import { ArrayUtils, NumberUtils } from "../utils.ts";
 import { Signal, SignalRenderer,Sig_UI } from "../signal.js";
 import { Train } from "../train.js";
 import { Track } from "../track.js";

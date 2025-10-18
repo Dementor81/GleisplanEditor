@@ -12,6 +12,33 @@ module.exports = (env, argv) => {
       path: path.resolve(__dirname, 'www', 'dist'),
       clean: true, // Clean dist folder before each build
     },
+    resolve: {
+      // Support TypeScript and JavaScript files
+      extensions: ['.ts', '.tsx', '.js', '.jsx'],
+      alias: {
+        '@': path.resolve(__dirname, 'www/code'),
+        '@managers': path.resolve(__dirname, 'www/code/managers'),
+      },
+    },
+    module: {
+      rules: [
+        {
+          test: /\.tsx?$/,
+          use: 'ts-loader',
+          exclude: /node_modules/,
+        },
+        {
+          test: /\.jsx?$/,
+          exclude: /node_modules/,
+          use: {
+            loader: 'ts-loader',
+            options: {
+              allowTsInNodeModules: false,
+            },
+          },
+        },
+      ],
+    },
     devServer: {
       static: {
         directory: path.join(__dirname, 'www'),

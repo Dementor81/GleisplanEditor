@@ -1,13 +1,13 @@
 "use strict";
 
 // ES6 Module imports
-import { MENU, CUSTOM_MOUSE_ACTION } from "../config.js";
-import { ui } from "../ui.js";
+import { MENU, CUSTOM_MOUSE_ACTION } from "../config.ts";
+import { ui } from "../ui.ts";
 import { Sig_UI, SignalRenderer } from "../signal.js";
 import { Train } from "../train.js";
 import { GenericObject } from "../generic_object.js";
 import { STORAGE } from "../storage.js";
-import { MOUSE_DOWN_ACTION } from "../config.js";
+import { MOUSE_DOWN_ACTION } from "../config.ts";
 
 /**
  * UIManager handles all UI-related functionality
@@ -364,14 +364,7 @@ export class UIManager {
       bootstrap.Modal.getInstance(loadModal).hide();
    }
 
-   /**
-    * Show modal dialog
-    * @param {*} content - The content to show in the modal
-    * @param {Function} onConfirm - Callback for confirmation
-    */
-   showModalDialog(content, onConfirm) {
-      // Modal dialog functionality will be implemented here
-   }
+   
 
    /**
     * Show error toast

@@ -8,17 +8,26 @@
     "build:dev": "webpack --mode=development",
     "start": "webpack serve --mode=development",
     "analyze": "webpack-bundle-analyzer www/dist/bundle.js",
-    "deploy": "bash deploy.sh"
+    "deploy": "bash deploy.sh",
+    "type-check": "tsc --noEmit",
+    "type-check:watch": "tsc --noEmit --watch"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "description": "",
   "devDependencies": {
+    "@types/bootstrap": "^5.2.10",
+    "@types/jquery": "^3.5.33",
     "copy-webpack-plugin": "^13.0.0",
     "html-webpack-plugin": "^5.6.3",
+    "ts-loader": "^9.5.1",
+    "typescript": "^5.7.3",
     "webpack": "^5.100.1",
     "webpack-cli": "^6.0.1",
     "webpack-dev-server": "^5.2.2"
+  },
+  "dependencies": {
+    "bootstrap": "^5.3.8"
   }
 }

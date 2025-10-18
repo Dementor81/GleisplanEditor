@@ -1,13 +1,13 @@
 "use strict";
 
 // ES6 Module imports
-import { ui } from './ui.js';
-import { ArrayUtils } from './utils.js';
+import { ui } from './ui.ts';
+import { ArrayUtils } from './utils.ts';
 import { clone, findFieldNameForObject, type } from './tools.js';
 import { VisualElement, TextElement } from './signaling.js';
 import { Track } from './track.js';
 import { STORAGE } from './storage.js';
-import { DIRECTION } from './config.js';
+import { DIRECTION } from './config.ts';
 import { Application } from './application.js';
 
 export class SignalRenderer {

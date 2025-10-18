@@ -1,7 +1,7 @@
 "use strict";
 
 // ES6 Module imports
-import { CONFIG, COLORS, CONTAINERS, INPUT } from '../config.js';
+import { CONFIG, COLORS, CONTAINERS, INPUT } from '../config.ts';
 import { STORAGE } from '../storage.js';
 import { Train } from '../train.js';
 import { Track } from '../track.js';

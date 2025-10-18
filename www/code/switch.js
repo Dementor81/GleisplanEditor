@@ -1,11 +1,11 @@
 "use strict";
 
 // ES6 Module imports
-import { NumberUtils, ArrayUtils } from "./utils.js";
+import { NumberUtils, ArrayUtils } from "./utils.ts";
 import { Track } from "./track.js";
 import { V2, Point, geometry, type, swap } from "./tools.js";
-import config, { COMPUTED, CONFIG } from "./config.js";
-import { ui } from "./ui.js";
+import config, { COMPUTED, CONFIG } from "./config.ts";
+import { ui } from "./ui.ts";
 
 export class Switch {
    static allSwitches = [];

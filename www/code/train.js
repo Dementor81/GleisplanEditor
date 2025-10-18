@@ -1,13 +1,13 @@
 "use strict";
 
 // ES6 Module imports
-import { ArrayUtils, NumberUtils } from './utils.js';
+import { ArrayUtils, NumberUtils } from './utils.ts';
 import { STORAGE } from './storage.js';
-import { ui } from './ui.js';
+import { ui } from './ui.ts';
 import { Track } from './track.js';
 import { Point, type } from './tools.js';
 import { Application } from './application.js';
-import { CUSTOM_MOUSE_ACTION } from './config.js';
+import { CUSTOM_MOUSE_ACTION } from './config.ts';
 
 export class Train {
    static allTrains = [];

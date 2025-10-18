@@ -1,0 +1,76 @@
+{
+  "compilerOptions": {
+    // Target and Module
+    "target": "ES2020",
+    "module": "ES2020",
+    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+    "moduleResolution": "node",
+    
+    // JavaScript Interop (allows JS and TS to coexist during migration)
+    "allowJs": true,
+    "checkJs": false,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    
+    // Output Configuration
+    "outDir": "./dist/types",
+    "rootDir": "./www/code",
+    "declaration": false,  // Disable to avoid conflicts
+    "declarationMap": false,
+    "sourceMap": true,
+    "removeComments": false,
+    
+    // Type Checking
+    "strict": true,
+    "noImplicitAny": true,
+    "strictNullChecks": true,
+    "strictFunctionTypes": true,
+    "strictBindCallApply": true,
+    "strictPropertyInitialization": true,
+    "noImplicitThis": true,
+    "alwaysStrict": true,
+    
+    // Additional Checks
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUncheckedIndexedAccess": false,
+    "noImplicitOverride": true,
+    "noPropertyAccessFromIndexSignature": false,
+    
+    // Advanced
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    
+    // Experimental
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    
+    // Path Mapping (optional, for cleaner imports)
+    "baseUrl": "./www/code",
+    "paths": {
+      "@/*": ["./*"],
+      "@managers/*": ["./managers/*"]
+    }
+  },
+  "include": [
+    "www/code/**/*",
+    "types/**/*"
+  ],
+  "exclude": [
+    "node_modules",
+    "www/dist",
+    "www/dev",
+    "**/*.spec.ts",
+    "**/*.test.ts"
+  ],
+  "ts-node": {
+    "compilerOptions": {
+      "module": "commonjs"
+    }
+  }
+}
+

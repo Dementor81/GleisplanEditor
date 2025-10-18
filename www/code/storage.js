@@ -6,9 +6,9 @@ import { Switch } from './switch.js';
 import { Signal } from './signal.js';
 import { Train } from './train.js';
 import { GenericObject } from './generic_object.js';
-import { ArrayUtils } from './utils.js';
-import { ui } from './ui.js';
-import { CONFIG } from './config.js';
+import { ArrayUtils } from './utils.ts';
+import { ui } from './ui.ts';
+import { CONFIG } from './config.ts';
 import { Application } from './application.js';
 import { trackRendering_textured } from './trackRendering_textured.js';
 

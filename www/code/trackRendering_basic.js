@@ -7,7 +7,7 @@ import { Signal, SignalRenderer } from './signal.js';
 import { Train } from './train.js';
 import { GenericObject } from './generic_object.js';
 import { geometry, type } from './tools.js';
-import { NumberUtils } from './utils.js';
+import { NumberUtils } from './utils.ts';
 import { Application } from './application.js';
 
 export class trackRendering_basic {

@@ -1,6 +1,6 @@
 "use strict";
 
-import { NumberUtils } from './utils.js';
+import { NumberUtils } from './utils.ts';
 
 // Utility functions
 export function findFieldNameForObject(container, ref) {

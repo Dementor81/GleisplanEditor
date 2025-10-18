@@ -4,8 +4,8 @@
 import { geometry, V2, Point, type } from "./tools.js";
 import { Switch } from "./switch.js";
 import { Signal } from "./signal.js";
-import { ArrayUtils } from "./utils.js";
-import { CONFIG } from "./config.js";
+import { ArrayUtils } from "./utils.ts";
+import { CONFIG } from "./config.ts";
 import { STORAGE } from "./storage.js";
 
 export class Track {
@@ -489,10 +489,10 @@ export class Track {
    #_start = null;
    #_end = null;
    #_has_bumper = true;
-   signals = [];
+   #_signals = [];
 
-   switches = [null, null];
-   id = 0;
+   #_switches = [null, null];
+   #_id = 0;
 
    // Vector calculations (moved from TrackNode)
    #_vector = null;
@@ -505,7 +505,11 @@ export class Track {
    #_cos = null;
 
    get id() {
-      return this.id;
+      return this.#_id;
+   }
+
+   set id(value) {
+      this.#_id = value;
    }
 
    get start() {
@@ -579,24 +583,36 @@ export class Track {
       this.#_cos = null;
    }
 
+   get signals() {
+      return this.#_signals;
+   }
+
+   set signals(value) {
+      this.#_signals = value;
+   }
+
    get switches() {
-      return this.switches;
+      return this.#_switches;
+   }
+
+   set switches(value) {
+      this.#_switches = value;
    }
 
    get switchAtTheEnd() {
-      return this.switches[1];
+      return this.#_switches[1];
    }
 
    set switchAtTheEnd(value) {
-      this.switches[1] = value;
+      this.#_switches[1] = value;
    }
 
    get switchAtTheStart() {
-      return this.switches[0];
+      return this.#_switches[0];
    }
 
    set switchAtTheStart(value) {
-      this.switches[0] = value;
+      this.#_switches[0] = value;
    }
 
    constructor(start, end) {

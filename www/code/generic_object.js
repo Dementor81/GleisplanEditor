@@ -1,7 +1,7 @@
 "use strict";
 
 // ES6 Module imports
-import { ArrayUtils } from './utils.js';
+import { ArrayUtils } from './utils.ts';
 import { STORAGE } from './storage.js';
 import { Application } from './application.js';
 

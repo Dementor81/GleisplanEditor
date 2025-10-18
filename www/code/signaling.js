@@ -1,7 +1,7 @@
 "use strict";
 
 // ES6 Module imports
-import { ArrayUtils } from './utils.js';
+import { ArrayUtils } from './utils.ts';
 import { Application } from './application.js';
 
 //Signals are build of Visual elements. Some elements are always been drawn, like the "Mast", others have a varianty of

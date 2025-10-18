@@ -9,7 +9,7 @@ export const NumberUtils = {
     * @param {number} b - Second boundary  
     * @returns {boolean} True if value is between a and b
     */
-   between(value, a, b) {
+   between(value: number, a: number, b: number): boolean {
       const min = Math.min(a, b);
       const max = Math.max(a, b);
       return value >= min && value <= max;
@@ -22,7 +22,7 @@ export const NumberUtils = {
     * @param {number} b - Second boundary
     * @returns {boolean} True if value is outside the range
     */
-   outoff(value, a, b) {
+   outoff(value: number, a: number, b: number): boolean {
       return !this.between(value, a, b);
    },
 
@@ -32,7 +32,7 @@ export const NumberUtils = {
     * @param {...number} args - Values to compare against
     * @returns {boolean} True if value matches any argument
     */
-   is(value, ...args) {
+   is(value:number, ...args: number[]): boolean {
       return args.includes(value);
    },
 
@@ -42,20 +42,9 @@ export const NumberUtils = {
     * @param {number} places - Number of decimal places
     * @returns {number} Rounded number
     */
-   round(value, places) {
-      return Number(Math.round(value + "e" + places) + "e-" + places);
-   },
-
-   /**
-    * Check if a value is close to a multiple of another value within tolerance
-    * @param {number} value - The value to check
-    * @param {number} multiple - The multiple to check against
-    * @param {number} tolerance - Allowed tolerance
-    * @returns {boolean} True if value is close to a multiple
-    */
-   closeToBy(value, multiple, tolerance) {
-      const mod = value % multiple;
-      return Math.min(mod, multiple - mod) < tolerance;
+   round(value: number, places: number): number {
+      let factor = Math.pow(10, places);
+      return Number(Math.round(value*factor) / factor);
    },
 
    /**
@@ -65,7 +54,7 @@ export const NumberUtils = {
     * @param {number} max - Maximum value
     * @returns {number} Constrained value
     */
-   minmax(min, value, max) {
+   minmax(min: number, value: number, max: number): number {
       return Math.max(min, Math.min(max, value));
    },
 
@@ -74,10 +63,10 @@ export const NumberUtils = {
     * @param {number} max - Maximum value
     * @returns {number} Random integer
     */
-   randomInt(max) {
+   randomInt(max: number): number {
       return Math.floor(Math.random() * (max + 1));
    }
-};
+} as const;
 
 // Array utilities
 export const ArrayUtils = {
@@ -87,7 +76,7 @@ export const ArrayUtils = {
     * @param {*} item - The item to remove
     * @returns {boolean} True if item was found and removed
     */
-   remove(array, item) {
+   remove(array: unknown[], item: unknown): boolean {
       const index = array.indexOf(item);
       if (index !== -1) {
          array.splice(index, 1);
@@ -103,7 +92,7 @@ export const ArrayUtils = {
     * @param {Array} array - The array
     * @returns {*} Last element or undefined if empty
     */
-   last(array) {
+   last(array: unknown[]): unknown {
       return array[array.length - 1];
    },
 
@@ -112,7 +101,7 @@ export const ArrayUtils = {
     * @param {Array} array - The array
     * @returns {*} First element or undefined if empty
     */
-   first(array) {
+   first(array: unknown[]): unknown {
       return array[0];
    },
 
@@ -121,7 +110,7 @@ export const ArrayUtils = {
     * @param {Array} array - The array to clean
     * @returns {Array} Array with null/undefined values removed
     */
-   cleanUp(array) {
+   cleanUp(array: unknown[]): unknown[] {
       return array.filter(item => item != null);
    },
 
@@ -130,24 +119,24 @@ export const ArrayUtils = {
     * @param {Array} array - The array
     * @returns {*} Random element or undefined if empty
     */
-   random(array) {
+   random(array: unknown[]): unknown {
       return array[Math.floor(Math.random() * array.length)];
    },
 
    /**
-    * Count elements that appear more than once
+    * Counts elements that appear more than once
     * @param {Array} array - The array to analyze
     * @returns {number} Count of non-unique elements
     */
-   countNonUnique(array) {
-      const counts = {};
+   countNonUnique(array: unknown[]): number {
+      const counts: Record<string | number | symbol, number> = {} as Record<string | number | symbol, number>;
       let nonUniqueCount = 0;
       
       for (const item of array) {
-         if (counts[item] === 1) {
+         if (counts[item as string | number | symbol] === 1) {
             nonUniqueCount++; // Only increment on second occurrence
          }
-         counts[item] = (counts[item] || 0) + 1;
+         counts[item as string | number | symbol] = (counts[item as string | number | symbol] || 0) + 1;
       }
       return nonUniqueCount;
    },
@@ -158,7 +147,7 @@ export const ArrayUtils = {
     * @param {*} element - The element to add
     * @returns {boolean} True if element was added, false if it already existed
     */
-   pushUnique(array, element) {
+   pushUnique(array: unknown[], element: unknown): boolean {
       if (array.indexOf(element) === -1) {
          array.push(element);
          return true;
@@ -166,35 +155,5 @@ export const ArrayUtils = {
       return false;
    },
 
-   /**
-    * Group array items by a property path
-    * @param {Array} array - The array to group
-    * @param {string} propertyPath - Dot-separated property path
-    * @returns {Array} Array of grouped arrays, sorted by group size descending
-    */
-   groupBy(array, propertyPath) {
-      const groups = array.reduce((storage, item) => {
-         const property = propertyPath.split('.').reduce((acc, key) => acc[key], item);
-         const group = property;
-         
-         storage[group] = storage[group] || [];
-         storage[group].push(item);
-         return storage;
-      }, {});
-
-      return Object.keys(groups)
-         .map(key => groups[key])
-         .sort((a, b) => b.length - a.length);
-   },
-
-   /**
-    * Return a copy of the array without the specified item
-    * @param {Array} array - The source array
-    * @param {*} item - The item to exclude
-    * @returns {Array} New array without the item
-    */
-   without(array, item) {
-      return array.filter(element => element !== item);
-   }
-};
+} as const;
 

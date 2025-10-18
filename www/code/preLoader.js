@@ -1,8 +1,8 @@
 "use strict";
 
 // ES6 Module imports
-import { ArrayUtils } from './utils.js';
-import { ui } from './ui.js';
+import { ArrayUtils } from './utils.ts';
+import { ui } from './ui.ts';
 
 export class preLoader {
     constructor(basefolder) {

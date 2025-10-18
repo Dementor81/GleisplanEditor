@@ -1,9 +1,11 @@
 "use strict";
 
 import { uuidv4 } from './tools.js';
+import * as bootstrap from 'bootstrap';
+
 
 export const ui = {
-    create_toggleButton: function (text) {
+    create_toggleButton: function (text: string): JQuery {
        return $("<button>", {
           type: "button",
           id: "btn_" + text.replace(" ", "_"),
@@ -11,19 +13,23 @@ export const ui = {
        }).html(text);
     },
     
-    create_buttonGroup: function (items) {
+    create_buttonGroup: function (items: JQuery): JQuery {
        return $("<div>", { class: "btn-group", role: "group" }).append(items);
     },
 
-    create_buttonToolbar: function (items) {
+    create_buttonToolbar: function (items: JQuery): JQuery {
         return ui.div("btn-toolbar", items).attr("role", "toolbar");
      },
     
-    div: function (c, i) {
-       return $("<div>", { class: c }).append(i);
+    div: function (c:string, i?:any): JQuery {
+      if (i) {
+        return $("<div>", { class: c }).append(i);
+      } else {
+        return $("<div>", { class: c });
+      }
     },
  
-    showModalDialog: function (content, ok_function) {
+    showModalDialog: function (content: JQuery, ok_function: () => void): bootstrap.Modal {
        // Create modal div
        let modal_div = $("<div/>", {
           id: "myModal",
@@ -62,7 +68,7 @@ export const ui = {
        modal.show();
        return modal;
     },// Function to create a toast element
-    createToast: function (title, txt) {   
+    createToast: function (title: string, txt: string): JQuery {   
        return ui
           .div("toast")
           .attr({ role: "alert", "aria-live": "assertive", "aria-atomic": "true" })
@@ -79,7 +85,7 @@ export const ui = {
           ]);
     },
     
-    getToastContainer: function () {
+    getToastContainer: function (): JQuery {
        let container = $("#toast-container");
        if (container.length === 0) {
           container = ui.div("toast-container").attr("id", "toast-container").css({ position: "fixed", bottom: "0", right: "0" });
@@ -89,7 +95,7 @@ export const ui = {
     },
     
     // Function to show the toast
-    showErrorToast: function (error) {
+    showErrorToast: function (error: Error): void {
        console.error(error);
        const toast = ui.createToast("Ups, Da gabs einen Fehler", error.message);
        ui.getToastContainer().prepend(ui.div("p-3").append(toast));
@@ -99,7 +105,7 @@ export const ui = {
        });
     },
     
-    showInfoToast: function (txt) {
+    showInfoToast: function (txt: string): void {
        console.info(txt);
        const toast = ui.createToast("Information:", txt);
        ui.getToastContainer().prepend(ui.div("p-3").append(toast));
@@ -108,7 +114,7 @@ export const ui = {
           $(this).parent().remove();
        });
     },
-    create_DropDownItem(text, value) {
+    create_DropDownItem(text: string, value: string): JQuery {
         return $("<a>", {
            class: "dropdown-item",
            text: text,
@@ -117,7 +123,7 @@ export const ui = {
         });
      },
   
-     createAccordionItem(title, parent, items, open = false) {
+     createAccordionItem(title: string, parent: string, items: JQuery, open = false): JQuery {
         let id = uuidv4();
         return ui.div("accordion-item", [
            $("<h2>", { class: "accordion-header" }).append(
@@ -135,7 +141,7 @@ export const ui = {
         ]);
      },
   
-     create_DropDown(items, text, onChange) {
+     create_DropDown(items: string[], text: string, onChange: (value: string) => void): JQuery {
         return ui
            .div("dropdown d-grid", [
               $("<button>", {
@@ -146,17 +152,18 @@ export const ui = {
               }).attr("data-bs-toggle", "dropdown"),
               ui.div(
                  "dropdown-menu",
-                 items.map((item) => ui.create_DropDownItem(...item.split("|")))
+                 items.map((item) => ui.create_DropDownItem(item.split("|")[0], item.split("|")[1]))
               ),
            ])
-           .on("hide.bs.dropdown", (e) => {
-              if (e.clickEvent?.target && e.clickEvent?.target.nodeName == "A") {
-                 const value = $(e.clickEvent.target).attr("value");
-                 $(e.currentTarget).attr("value", value);
-                 if (onChange) onChange(value);
+           .on("hide.bs.dropdown", (e: JQuery.TriggeredEvent) => {
+              const originalEvent = e.originalEvent as any;
+              if (originalEvent?.target && originalEvent?.target.nodeName == "A") {
+                 const value = $(originalEvent.target).attr("value");
+                 $(e.currentTarget).attr("value", value ?? "");
+                 if (onChange) onChange(value ?? "");
               }
            })
-           .on("show.bs.dropdown", (e) => {
+           .on("show.bs.dropdown", (e: JQuery.TriggeredEvent) => {
               const targetValue = $(e.currentTarget).attr("value");
               if (!targetValue) return;
               $(".dropdown-item", e.currentTarget)
@@ -169,7 +176,11 @@ export const ui = {
            });
      },
   
-     createSwitchStructure(mainLabel, subLabels, onchange) {
+     createSwitchStructure(
+        mainLabel: [string, string?, boolean?], 
+        subLabels: [string, string?, boolean?][], 
+        onchange: (value: string, checked: boolean) => void
+     ): JQuery|null {
         let [text, value, enabled] = mainLabel;
         if (!enabled && subLabels.length == 0) return null;
         let $mainDiv;
@@ -185,7 +196,7 @@ export const ui = {
                       .on("change", function () {
                          const isChecked = $(this).is(":checked");
                          /* $("input", $mainDiv.children()[1]).prop("disabled", !isChecked); */
-                         if (onchange) onchange($(this).attr("value"), isChecked);
+                         if (onchange) onchange($(this).attr("value") ?? "", isChecked);
                       })
                       .attr("value", value ?? text)
                       .attr("data-master_switch", ""),
@@ -205,24 +216,24 @@ export const ui = {
               subLabels
                  .filter((x) => x[2] == null || x[2] == true)
                  .map(function (label) {
-                    [text, value, enabled] = label;
+                    let [labelText, labelValue, _labelEnabled] = label;
                     return ui.div("form-check form-switch", [
                        $("<input/>", {
                           class: "form-check-input",
                           type: "checkbox",
                           role: "switch",
-                          id: "switch_" + text,
+                          id: "switch_" + labelText,
                           checked: true, // Default to checked as per your example
                        })
                           .on("change", function () {
                              const isChecked = $(this).is(":checked");
-                             if (onchange) onchange($(this).attr("value"), isChecked);
+                             if (onchange) onchange($(this).attr("value") ?? "", isChecked);
                           })
-                          .attr("value", value ?? text),
+                          .attr("value", labelValue ?? labelText),
                        $("<label/>", {
                           class: "form-check-label",
-                          for: "switch_" + text,
-                          text: text,
+                          for: "switch_" + labelText,
+                          text: labelText,
                        }),
                     ]);
                  })
@@ -230,7 +241,12 @@ export const ui = {
         ]);
         return $mainDiv;
      },
-     createOptionGroup(header, options, inputType = "radio", onchange) {
+     createOptionGroup(
+        header: string, 
+        options: [string, string?, boolean?][], 
+        inputType = "radio", 
+        onchange: (value: string, checked: boolean) => void
+     ): JQuery {
         return ui.div("", [
            $("<label>").text(header),
            ui.div(
@@ -246,10 +262,10 @@ export const ui = {
                        .attr("name", "OptionGroup_" + header)
                        .attr("type", inputType)
                        .attr("value", value ?? text)
-                       .attr("disabled", enabled != null && !enabled)
+                       .prop("disabled", enabled != null && enabled === false)
                        .on("change", function () {
                           const isChecked = $(this).is(":checked");
-                          if (onchange) onchange($(this).attr("value"), isChecked);
+                          if (onchange) onchange($(this).attr("value") ?? "", isChecked);
                        }),
                     $("<label>").addClass("form-check-label").attr("for", id).text(text),
                  ]);
@@ -259,8 +275,3 @@ export const ui = {
      },
  };
 
- // Backward compatibility: Still expose utilities on window during transition
-// TODO: Remove this once all files are converted to modules
-if (typeof window !== 'undefined') {
-    window.ui = ui;
- }

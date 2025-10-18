@@ -7,9 +7,9 @@ import { Signal, SignalRenderer } from "./signal.js";
 import { Train } from "./train.js";
 import { GenericObject } from "./generic_object.js";
 import { geometry, Point } from "./tools.js";
-import { NumberUtils } from "./utils.js";
-import { ui } from "./ui.js";
-import { CONFIG, COMPUTED } from "./config.js";
+import { NumberUtils } from "./utils.ts";
+import { ui } from "./ui.ts";
+import { CONFIG, COMPUTED } from "./config.ts";
 import { Application } from "./application.js";
 
 export class trackRendering_textured {
