@@ -1,0 +1,768 @@
+"use strict";
+
+// ES6 Module imports
+import { ArrayUtils, NumberUtils } from "./utils.ts";
+import { STORAGE } from "./storage.ts";
+import { ui } from "./ui.ts";
+import { Track } from "./track.ts";
+import { Point, type } from "./tools.ts";
+import { Application } from "./application.ts";
+import { CUSTOM_MOUSE_ACTION } from "./config.ts";
+import { COLORS } from "./config.ts";
+
+export class Train {
+   static allTrains: Train[] = [];
+   static nextId: number = 0;
+   static movingTrains: Set<Train> = new Set(); // To track which trains are currently moving
+   static movementTimer: number | null = null; // Timer for automatic movement
+   static MOVEMENT_INTERVAL: number = 50; // Milliseconds between movement updates
+   static MOVEMENT_SPEED: number = 2; // Units to move per update
+
+   static CAR_TYPES = {
+      LOCOMOTIVE: "locomotive",
+      PASSENGER: "passenger",
+      MULTIPLE_UNIT_CAR: "multiple_unit_car",
+      MULTIPLE_UNIT_HEAD_FRONT: "multiple_unit_head_front",
+      MULTIPLE_UNIT_HEAD_BACK: "multiple_unit_head_back",
+   };
+
+   static getNextId(): number {
+      return Train.nextId++;
+   }
+
+   // Constants for different car types
+   static LOCO_LENGTH: number = 40;
+   static PASSENGER_LENGTH: number = 50;
+   static MULTIPLE_UNIT_CAR_LENGTH: number = 50;
+   static MULTIPLE_UNIT_HEAD_FRONT_LENGTH: number = 50;
+   static MULTIPLE_UNIT_HEAD_BACK_LENGTH: number = 50;
+
+   // Car spacing
+   static CAR_SPACING: number = 5;
+
+   static addTrain(track: Track, number_of_cars: number, km: number, type: string = Train.CAR_TYPES.PASSENGER, number: string = ""): Train {
+      let train;
+      const color = ArrayUtils.random(COLORS.TRAIN_COLORS) as string;
+
+      // Create locomotive as the first car
+      train = Train.addTrainCar(null, track, km, color, Train.CAR_TYPES.LOCOMOTIVE, number);
+
+      // Add cars
+      for (let i = 1; i <= number_of_cars; i++) {
+         Train.addTrainCar(train, track, km, color, type, number);
+      }
+      // Update train positions
+      Train.moveTrain(train, 0);
+      return train;
+   }
+
+   static addTrainCar(train: Train | null, track: Track, km: number, color: string, type: string = Train.CAR_TYPES.LOCOMOTIVE, number: string = ""): Train {
+      const car = new Train();
+      car.track = track;
+      car.pos = km;
+      car._color = color;
+      car._type = type;
+      car._number = number;
+
+      Train.allTrains.push(car);
+
+      if (train) {
+         const lastCar = Train.getLastCar(train);
+         if (lastCar) lastCar.coupleBack(car);
+         else throw new Error("can not retrieve last car of a train");
+      }
+
+      return car;
+   }
+
+   static initEditTrainMenu(train: Train): void {
+      $("#colorInputTrain")
+         .off()
+         .val(train.color)
+         .on("change", function (e) {
+            train.color = $(this).val() as string;
+            app.renderingManager!.renderer.renderAllTrains();
+            app.renderingManager!.update();
+            STORAGE.save();
+         });
+
+      $("#inputZugnummer")
+         .off()
+         .val(train.number)
+         .on("change", function (e) {
+            train.number = $(this).val() as string;
+            app.renderingManager!.renderer.renderAllTrains();
+            app.renderingManager!.update();
+            STORAGE.save();
+         });
+
+      $("#selectTrainType")
+         .off()
+         .val(train.type)
+         .on("change", function (e) {
+            train.type = $(this).val() as string;
+            app.renderingManager!.renderer.renderAllTrains();
+            app.renderingManager!.update();
+            STORAGE.save();
+         });
+
+      $("#btnRemoveTrain")
+         .off()
+         .click(() => Train.deleteTrain(train));
+
+      $("#btnCoupleTrain")
+         .off()
+         .click(() => {
+            // Set global state for coupling mode
+            if (app.customMouseMode === CUSTOM_MOUSE_ACTION.NONE) {
+               // First check if there are any coupling points available
+               if (Train.showCouplingPoints(train)) {
+                  // Add active class to button
+                  $("#btnCoupleTrain").addClass("active");
+
+                  app.customMouseMode = CUSTOM_MOUSE_ACTION.TRAIN_COUPLE;
+
+                  // Show coupling message
+                  $("#couplingMessage")
+                     .text("Klicke auf einen Kupplungspunkt um Züge zu kuppeln oder überall anders um abzubrechen")
+                     .show();
+               } else {
+                  // Points are already cleared and message shown by showCouplingPoints
+               }
+            } else {
+               Train.exitCouplingMode();
+            }
+         });
+
+      $("#btnUncoupleTrain")
+         .off()
+         .click(() => {
+            // Set global state for decoupling mode
+            if (app.customMouseMode === CUSTOM_MOUSE_ACTION.NONE) {
+               // First check if there are any decoupling points available
+               if (Train.showDecouplingPoints(train)) {
+                  // Add active class to button
+                  $("#btnUncoupleTrain").addClass("active");
+
+                  app.customMouseMode = CUSTOM_MOUSE_ACTION.TRAIN_DECOUPLE;
+
+                  // Show decoupling message
+                  $("#couplingMessage")
+                     .text("Klicke zwischen Wagen um Züge zu entkuppeln oder überall anders um abzubrechen")
+                     .show();
+               } else {
+                  // Points are already cleared and message shown by showDecouplingPoints
+               }
+            } else {
+               Train.exitDecouplingMode();
+            }
+         });
+
+      // Only show movement controls for locomotives (first car of a train)
+      const isLocomotive = train.type === Train.CAR_TYPES.LOCOMOTIVE;
+      $("#trainMovementControls").toggle(isLocomotive);
+
+      if (isLocomotive) {
+         // Initialize movement direction buttons
+         if (!(train as any).movementDirection) {
+            (train as any).movementDirection = 1; // Default to forward
+         }
+
+         // Update button states based on current direction
+         $("#btnDirectionForward").toggleClass("active", (train as any).movementDirection > 0);
+         $("#btnDirectionBackward").toggleClass("active", (train as any).movementDirection < 0);
+
+         // Update start/stop button based on movement state
+         const isMoving = Train.movingTrains.has(train);
+         $("#btnStartStopTrain")
+            .toggleClass("btn-success", !isMoving)
+            .toggleClass("btn-danger", isMoving)
+            .html(isMoving ? '<i class="bi bi-stop-fill"></i> Stop' : '<i class="bi bi-play-fill"></i> Start');
+
+         // Set up direction button handlers
+         $("#btnDirectionForward")
+            .off()
+            .click(() => {
+               (train as any).movementDirection = 1;
+               $("#btnDirectionForward").addClass("active");
+               $("#btnDirectionBackward").removeClass("active");
+            });
+
+         $("#btnDirectionBackward")
+            .off()
+            .click(() => {
+               (train as any).movementDirection = -1;
+               $("#btnDirectionBackward").addClass("active");
+               $("#btnDirectionForward").removeClass("active");
+            });
+
+         // Set up start/stop button handler
+         $("#btnStartStopTrain")
+            .off()
+            .click(() => {
+               if (Train.movingTrains.has(train)) {
+                  // Stop the train
+                  Train.stopTrain(train);
+               } else {
+                  // Start the train
+                  Train.startTrain(train);
+               }
+            });
+      }
+   }
+
+   static deleteTrain(train: Train): void {
+      // Stop the train if it's moving
+      if (Train.movingTrains.has(train)) {
+         Train.stopTrain(train);
+      }
+
+      // Get the last car in the train that will be deleted
+      let currentCar: Train | null = train;
+      while (currentCar!.trainCoupledBack) {
+         currentCar = currentCar!.trainCoupledBack;
+      }
+
+      // Remove all cars in this train from allTrains
+      while (currentCar) {
+         ArrayUtils.remove(this.allTrains, currentCar);
+         //save the next car before removing all references to other objects
+         const nextCar:Train|null = currentCar.trainCoupledFront;
+         currentCar.trainCoupledFront = null;
+         currentCar.trainCoupledBack = null;
+         currentCar.track = null;
+         currentCar = nextCar;
+      }
+
+      app.renderingManager!.renderer.renderAllTrains();
+      app.renderingManager!.update();
+      STORAGE.save();
+   }
+
+   static moveTrain(train: Train, movementX: number): void {
+      // Find the head of the train (first car with no front coupling)
+      let firstCar = train;
+      while (firstCar.trainCoupledFront != null) {
+         firstCar = firstCar.trainCoupledFront;
+      }
+
+      // Find the last car
+      let lastCar = firstCar;
+      while (lastCar.trainCoupledBack != null) {
+         lastCar = lastCar.trainCoupledBack;
+      }
+
+      if (!Train.movementPossible(firstCar, movementX) || !Train.movementPossible(lastCar, movementX)) return;
+
+      // Move each car starting from the first
+      let car: Train | null = firstCar;
+      let new_pos: number;
+      let currentTrack: Track;
+
+      currentTrack = car.track!;
+
+      // Calculate new position using the node's unit vector
+      new_pos = car.pos! + movementX / app.renderingManager!.stage.scale / car.track!.cos;
+
+      while (car) {
+         if (car != firstCar) {
+            // Calculate position based on previous car and car length
+            // Take into account the spacing between cars (5 units)
+            const prevCar = car.trainCoupledFront!;
+            const spacing = 5; // Gap between cars
+            new_pos = prevCar.pos! + prevCar.length / 2 + spacing + car.length / 2;
+         }
+
+         let newTrack;
+         if (NumberUtils.outoff(new_pos, 0, currentTrack.length)) {
+            const sw = new_pos <= 0 ? currentTrack.switchAtTheStart : currentTrack.switchAtTheEnd;
+
+            if (sw) {
+               if (sw instanceof Track) newTrack = sw;
+               else if ((sw as any).from == currentTrack) newTrack = (sw as any).branch;
+               else if ((sw as any).branch == currentTrack) newTrack = (sw as any).from;
+
+               if (newTrack) {
+                  car.track = newTrack;
+                  car.pos = new_pos <= 0 ? newTrack.length + new_pos : new_pos - currentTrack.length;
+                  currentTrack = newTrack;
+                  new_pos = car.pos!;
+               }
+            }
+         } else {
+            car.track = currentTrack;
+            car.pos = new_pos;
+         }
+
+         car = car.trainCoupledBack;
+      }
+   }
+
+   static movementPossible(train: Train, movementX: number): boolean {
+      const currentTrack = train.track!;
+
+      // Calculate new position using the node's unit vector
+      let new_pos = train.pos! + movementX / app.renderingManager!.stage.scale / train.track!.cos;
+
+      if (NumberUtils.outoff(new_pos, 0 + train.length / 2, currentTrack.length - train.length / 2)) {
+         const sw = new_pos <= 0 + train.length / 2 ? currentTrack.switchAtTheStart : currentTrack.switchAtTheEnd;
+
+         return sw != null && (sw instanceof Track || (sw as any).from == currentTrack || (sw as any).branch == currentTrack);
+      } else return true;
+   }
+
+   static FromObject(o: any): Train {
+      const train = new Train();
+      train._id = o._id;
+      Train.nextId = Math.max(Train.nextId, o._id + 1);
+      train._color = o.color;
+      train._coordinates = Point.fromPoint(o.coordinates);
+      train._type = o.type || Train.CAR_TYPES.LOCOMOTIVE;
+      train._number = o.number || "";
+      (train as any).trainCoupledBackId = o.trainCoupledBackId;
+      (train as any).trainCoupledFrontId = o.trainCoupledFrontId;
+      return train;
+   }
+
+   _id: number = Train.getNextId();
+   _track: Track | null = null;
+   _pos: number | null = null;
+   _coordinates: Point | null = null;
+   _color: string = "#000000";
+   _number: string = "";
+   _type: string = Train.CAR_TYPES.LOCOMOTIVE;
+   trainCoupledBack: Train | null = null;
+   trainCoupledFront: Train | null = null;
+
+   get track(): Track | null {
+      return this._track;
+   }
+
+   set track(t: Track | null) {
+      this._track = t;
+   }
+
+   get pos(): number | null {
+      return this._pos;
+   }
+
+   set pos(km: number | null) {
+      this._pos = km;
+      if (this._track && km !== null) this._coordinates = this._track.getPointFromKm(km);
+   }
+
+   get color(): string {
+      return this._color;
+   }
+
+   set color(c: string) {
+      this._color = c;
+   }
+
+   get number(): string {
+      return this._number;
+   }
+
+   set number(n: string) {
+      this._number = n;
+   }
+
+   get type(): string {
+      return this._type;
+   }
+
+   set type(t: string) {
+      this._type = t;
+   }
+
+   get length(): number {
+      switch (this._type) {
+         case Train.CAR_TYPES.LOCOMOTIVE:
+            return Train.LOCO_LENGTH;
+         case Train.CAR_TYPES.PASSENGER:
+            return Train.PASSENGER_LENGTH;
+         case Train.CAR_TYPES.MULTIPLE_UNIT_CAR:
+            return Train.MULTIPLE_UNIT_CAR_LENGTH;
+         case Train.CAR_TYPES.MULTIPLE_UNIT_HEAD_FRONT:
+            return Train.MULTIPLE_UNIT_HEAD_FRONT_LENGTH;
+         case Train.CAR_TYPES.MULTIPLE_UNIT_HEAD_BACK:
+            return Train.MULTIPLE_UNIT_HEAD_BACK_LENGTH;
+         default:
+            return Train.PASSENGER_LENGTH; // Default to passenger length if type is unknown
+      }
+   }
+
+   coupleBack(train: Train): void {
+      if (train === this) return; // Can't couple to self
+
+      // First uncouple the train from any previous connections
+      if (train.trainCoupledFront) {
+         train.trainCoupledFront.trainCoupledBack = null;
+         train.trainCoupledFront = null;
+      }
+
+      this.trainCoupledBack = train;
+      train.trainCoupledFront = this;
+   }
+
+   uncouple(): void {
+      if (this.trainCoupledBack) {
+         this.trainCoupledBack.trainCoupledFront = null;
+         this.trainCoupledBack = null;
+      }
+   }
+
+   // Find the locomotive (head) of this train
+   getLocomotive(): Train {
+      let loco: Train = this;
+      while (loco.trainCoupledFront) {
+         loco = loco.trainCoupledFront;
+      }
+      return loco;
+   }
+
+   // Count all cars in this train
+   getCarCount(): number {
+      let count = 1;
+      let car = this.trainCoupledBack;
+      while (car) {
+         count++;
+         car = car.trainCoupledBack;
+      }
+      return count;
+   }
+
+   restore(): void {
+      const t = Track.findTrackByPoint(this._coordinates!);
+      if (t) {
+         this.track = t;
+         this.pos = t.getKmfromPoint(this._coordinates!);
+      }
+
+      if ((this as any).trainCoupledFrontId != null) {
+         const frontCar = Train.allTrains.find((t) => t._id === (this as any).trainCoupledFrontId);
+         if (frontCar) {
+            this.trainCoupledFront = frontCar;
+         } else {
+            console.error("Front car not found");
+         }
+      }
+
+      if ((this as any).trainCoupledBackId != null) {
+         const backCar = Train.allTrains.find((t) => t._id === (this as any).trainCoupledBackId);
+         if (backCar) {
+            this.trainCoupledBack = backCar;
+         } else {
+            console.error("Back car not found");
+         }
+      }
+   }
+
+   stringify(): any {
+      return {
+         _class: "Train",
+         _id: this._id,
+         coordinates: this._coordinates,
+         color: this._color,
+         number: this._number,
+         type: this._type,
+         trainCoupledBackId: this.trainCoupledBack ? this.trainCoupledBack._id : null,
+         trainCoupledFrontId: this.trainCoupledFront ? this.trainCoupledFront._id : null,
+      };
+   }
+
+   static showDecouplingPoints(train: Train): boolean {
+      // Clear any existing overlay
+      app.renderingManager!.containers.overlay.removeAllChildren();
+      const overlay = app.renderingManager!.containers.overlay;
+
+      // Find the first car in the train
+      let firstCar:Train|null = train;
+      while (firstCar.trainCoupledFront) {
+         firstCar = firstCar.trainCoupledFront;
+      }
+
+      // Start with the first car
+      let currentCar: Train | null = firstCar;
+      let decouplingPointsFound = 0;
+
+      // Add decoupling points between each car
+      while (currentCar && currentCar.trainCoupledBack) {
+         const nextCar:Train|null = currentCar.trainCoupledBack;
+
+         // Get positions of the two cars
+         const currentPos = currentCar.track!.getPointFromKm(currentCar.pos!);
+         const nextPos = nextCar.track!.getPointFromKm(nextCar.pos!);
+
+         // Calculate midpoint between cars for decoupling point
+         const midX = (currentPos.x + nextPos.x) / 2;
+         const midY = (currentPos.y + nextPos.y) / 2;
+
+         // Create a decoupling point (circle)
+         const decouplingPoint = new createjs.Shape();
+         decouplingPoint.graphics.beginFill("#ff0000").drawCircle(0, 0, 6);
+         decouplingPoint.x = midX;
+         decouplingPoint.y = midY;
+         // Store the cars to decouple in the shape's data
+         decouplingPoint.data = {
+            carToDeCoupleFrom: currentCar,
+            carToDeCouple: nextCar,
+         };
+         decouplingPoint.name = "decouplingPoint";
+
+         // Add to overlay container
+         overlay.addChild(decouplingPoint);
+         decouplingPointsFound++;
+
+         // Move to the next car
+         currentCar = nextCar;
+      }
+
+      // If no decoupling points found, show a message
+      if (decouplingPointsFound === 0) {
+         // Show a message
+         ui.showInfoToast("Keine Wagen in der Nähe zum entkuppeln gefunden, dieser Zug hat nur einen Wagen");
+         return false;
+      } else {
+         app.renderingManager!.update();
+         return true;
+      }
+   }
+
+   static handleDecouplingClick(data: any): void {
+      if (!data) throw new Error("No train provided");
+      // Decouple at this point
+      data.carToDeCoupleFrom.uncouple();
+
+      // Exit decoupling mode
+      Train.exitDecouplingMode();
+
+      // Update display
+      app.renderingManager!.renderer.renderAllTrains();
+      app.renderingManager!.update();
+      STORAGE.save();
+   }
+
+   static exitDecouplingMode(): void {
+      // Remove decoupling points
+      app.renderingManager!.containers.overlay.removeAllChildren();
+
+      // Reset custom action mode
+      app.customMouseMode = CUSTOM_MOUSE_ACTION.NONE;
+
+      // Hide message with a small delay to ensure it's fully shown first
+      setTimeout(() => {
+         $("#couplingMessage").hide();
+      }, 50);
+
+      // Deactivate any active buttons
+      $("#btnUncoupleTrain").removeClass("active");
+
+      app.renderingManager!.update();
+   }
+
+   static showCouplingPoints(train: Train): boolean {
+      // Clear any existing overlay
+      app.renderingManager!.containers.overlay.removeAllChildren();
+
+      // Get the head and tail of the train
+      let firstCar = train;
+      while (firstCar.trainCoupledFront) {
+         firstCar = firstCar.trainCoupledFront;
+      }
+
+      const lastCar = Train.getLastCar(train);
+
+      // Get positions of the train ends
+      const firstCarPos = firstCar.pos!;
+      const lastCarPos = lastCar.pos!;
+      let distance = 0;
+      let couplingPointsFound = 0;
+
+      // Check all other trains for possible coupling points
+      Train.allTrains.forEach((otherCar) => {
+         // Skip cars in the same train
+         if (
+            otherCar === firstCar ||
+            otherCar === lastCar ||
+            (otherCar.trainCoupledFront != null && otherCar.trainCoupledBack != null) ||
+            otherCar.track != train.track
+         ) {
+            return;
+         }
+
+         // Get positions of the other train ends
+         const otherCarPos = otherCar.pos!;
+
+         // Check distance between train ends (front to front)
+         const maxCouplingDistance = 80; // Maximum distance for coupling
+
+         // Check front of our train to back of other train
+         if (otherCar.trainCoupledBack == null) {
+            distance = firstCarPos - otherCarPos;
+            if (NumberUtils.between(distance, 0, maxCouplingDistance)) {
+               addCouplingPoint(otherCar, firstCar);
+               couplingPointsFound++;
+            }
+         }
+
+         // Check back of our train to front of other train
+         if (otherCar.trainCoupledFront == null) {
+            distance = otherCarPos - lastCarPos;
+            if (NumberUtils.between(distance, 0, maxCouplingDistance)) {
+               addCouplingPoint(lastCar, otherCar);
+               couplingPointsFound++;
+            }
+         }
+      });
+
+      // If no coupling points found, show a message
+      if (couplingPointsFound === 0) {
+         // Show a message
+         ui.showInfoToast("Keine Wagen in der Nähe zum kuppeln gefunden");
+         return false;
+      } else {
+         app.renderingManager!.update();
+         return true;
+      }
+
+      // Helper function to add a coupling point
+      function addCouplingPoint(car1: Train, car2: Train) {
+         // Calculate midpoint between cars for coupling point
+         const car1Pos = car1.track!.getPointFromKm(car1.pos!);
+         const car2Pos = car2.track!.getPointFromKm(car2.pos!);
+         const midX = (car1Pos.x + car2Pos.x) / 2;
+         const midY = (car1Pos.y + car2Pos.y) / 2;
+
+         // Create a coupling point (circle)
+         const couplingPoint = new createjs.Shape();
+         couplingPoint.graphics.beginFill("#00ff00").drawCircle(0, 0, 6);
+         couplingPoint.x = midX;
+         couplingPoint.y = midY;
+
+         // Store the cars to couple in the shape's data
+         couplingPoint.data = {
+            car1: car1,
+            car2: car2,
+         };
+         couplingPoint.name = "couplingPoint";
+
+         // Add to overlay container
+         app.renderingManager!.containers.overlay.addChild(couplingPoint);
+      }
+   }
+
+   static handleCouplingClick(data: any): void {
+      if (!data) throw new Error("No train data provided");
+
+      // Determine which cars to couple
+      data.car1.coupleBack(data.car2);
+
+      // Exit coupling mode
+      Train.exitCouplingMode();
+
+      // Update display
+      app.renderingManager!.renderer.renderAllTrains();
+      app.renderingManager!.update();
+      STORAGE.save();
+   }
+
+   static exitCouplingMode(): void {
+      // Remove coupling points
+      app.renderingManager!.containers.overlay.removeAllChildren();
+
+      // Reset custom action mode
+      app.customMouseMode = CUSTOM_MOUSE_ACTION.NONE;
+
+      $("#couplingMessage").hide();
+
+      // Deactivate any active buttons
+      $("#btnCoupleTrain").removeClass("active");
+
+      app.renderingManager!.update();
+   }
+
+   // Add new methods for automatic train movement
+
+   static startTrain(train: Train): void {
+      // Add train to the set of moving trains
+      Train.movingTrains.add(train);
+
+      // Update button state
+      $("#btnStartStopTrain").removeClass("btn-success").addClass("btn-danger").html('<i class="bi bi-stop-fill"></i> Stop');
+
+      // Start movement timer if not already running
+      if (!Train.movementTimer) {
+         Train.movementTimer = setInterval(Train.updateMovingTrains, Train.MOVEMENT_INTERVAL) as any;
+      }
+   }
+
+   static stopTrain(train: Train): void {
+      // Remove train from the set of moving trains
+      Train.movingTrains.delete(train);
+
+      // Update button state
+      $("#btnStartStopTrain").removeClass("btn-danger").addClass("btn-success").html('<i class="bi bi-play-fill"></i> Start');
+
+      // If no trains are moving, stop the timer
+      if (Train.movingTrains.size === 0 && Train.movementTimer) {
+         clearInterval(Train.movementTimer);
+         Train.movementTimer = null;
+      }
+   }
+
+   static stopAllTrains(): void {
+      // Stop all moving trains
+      for (const train of Train.movingTrains) {
+         Train.stopTrain(train);
+      }
+
+      // Clear the set of moving trains
+      Train.movingTrains.clear();
+
+      // Stop the timer
+      if (Train.movementTimer) {
+         clearInterval(Train.movementTimer);
+         Train.movementTimer = null;
+      }
+   }
+
+   static updateMovingTrains(): void {
+      let needsUpdate = false;
+
+      // Move each train in the set of moving trains
+      for (const train of Train.movingTrains) {
+         // Calculate movement amount based on direction and speed
+         const movementAmount = (train as any).movementDirection * Train.MOVEMENT_SPEED;
+
+         // Check if movement is possible
+         const firstCar = train.getLocomotive();
+         const lastCar = Train.getLastCar(firstCar);
+
+         if (Train.movementPossible(firstCar, movementAmount) && Train.movementPossible(lastCar, movementAmount)) {
+            // Move the train
+            Train.moveTrain(firstCar, movementAmount);
+            needsUpdate = true;
+         } else {
+            // Stop the train if movement is not possible
+            Train.stopTrain(train);
+            ui.showInfoToast("Zug kann nicht weiter fahren");
+         }
+      }
+
+      // Update the display if any trains moved
+      if (needsUpdate) {
+         app.renderingManager!.renderer.renderAllTrains();
+         app.renderingManager!.update();
+      }
+   }
+
+   static getLastCar(train: Train): Train {
+      let lastCar = train;
+      while (lastCar.trainCoupledBack) {
+         lastCar = lastCar.trainCoupledBack;
+      }
+      return lastCar;
+   }
+}
+

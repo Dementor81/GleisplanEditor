@@ -6,15 +6,16 @@
     "lib": ["ES2020", "DOM", "DOM.Iterable"],
     "moduleResolution": "node",
     
-    // JavaScript Interop (allows JS and TS to coexist during migration)
-    "allowJs": true,
-    "checkJs": false,
+    // JavaScript Interop (no longer needed now that code is migrated)
+    "allowJs": false,
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
+    "noEmit": true,
+    "allowImportingTsExtensions": true,
     
     // Output Configuration
     "outDir": "./dist/types",
-    "rootDir": "./www/code",
+    "rootDir": "app/code",
     "declaration": false,  // Disable to avoid conflicts
     "declarationMap": false,
     "sourceMap": true,
@@ -50,20 +51,20 @@
     "emitDecoratorMetadata": true,
     
     // Path Mapping (optional, for cleaner imports)
-    "baseUrl": "./www/code",
+    "baseUrl": "app/code",
     "paths": {
       "@/*": ["./*"],
       "@managers/*": ["./managers/*"]
     }
   },
   "include": [
-    "www/code/**/*",
+    "app/code/**/*",
     "types/**/*"
   ],
   "exclude": [
     "node_modules",
-    "www/dist",
-    "www/dev",
+    "app/dist",
+    "app/dev",
     "**/*.spec.ts",
     "**/*.test.ts"
   ],

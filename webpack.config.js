@@ -1,30 +1,36 @@
 const path = require('path');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const CopyWebpackPlugin = require('copy-webpack-plugin');
+const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 
 module.exports = (env, argv) => {
   const isProduction = argv.mode === 'production';
   
   return {
-    entry: './www/code/start.js',
+    entry: './app/code/start.ts',
     output: {
       filename: isProduction ? 'bundle.[contenthash].js' : 'bundle.js',
-      path: path.resolve(__dirname, 'www', 'dist'),
+      path: path.resolve(__dirname, 'app', 'dist'),
       clean: true, // Clean dist folder before each build
     },
     resolve: {
       // Support TypeScript and JavaScript files
-      extensions: ['.ts', '.tsx', '.js', '.jsx'],
+      extensions: ['.ts', '.js'],
       alias: {
-        '@': path.resolve(__dirname, 'www/code'),
-        '@managers': path.resolve(__dirname, 'www/code/managers'),
+        '@': path.resolve(__dirname, 'app/code'),
+        '@managers': path.resolve(__dirname, 'app/code/managers'),
       },
     },
     module: {
       rules: [
         {
           test: /\.tsx?$/,
-          use: 'ts-loader',
+          use: {
+            loader: 'ts-loader',
+            options: {
+              transpileOnly: true, // Skip type checking, just transpile
+            },
+          },
           exclude: /node_modules/,
         },
         {
@@ -34,29 +40,32 @@ module.exports = (env, argv) => {
             loader: 'ts-loader',
             options: {
               allowTsInNodeModules: false,
+              transpileOnly: true, // Skip type checking, just transpile
             },
           },
+        },
+        {
+          test: /\.css$/,
+          use: [
+            isProduction ? MiniCssExtractPlugin.loader : 'style-loader',
+            'css-loader',
+          ],
         },
       ],
     },
     devServer: {
       static: {
-        directory: path.join(__dirname, 'www'),
+        directory: path.join(__dirname, 'app'),
       },
       compress: true,
       port: 9000,
-      open: {
-        app: {
-          name: 'google chrome', 
-        },
-      },
       hot: true, // Enable hot module replacement
     },
     devtool: isProduction ? 'source-map' : 'eval-source-map',
     mode: argv.mode || 'development',
     plugins: [
       new HtmlWebpackPlugin({
-        template: 'www/start.html',
+        template: 'app/start.html',
         filename: 'start.html',
         inject: 'head',
         scriptLoading: 'blocking'
@@ -64,7 +73,7 @@ module.exports = (env, argv) => {
       new CopyWebpackPlugin({
         patterns: [
           {
-            from: 'www',
+            from: 'app',
             to: '',
             globOptions: {
               ignore: ['**/code/**', '**/start.html'],
@@ -72,6 +81,9 @@ module.exports = (env, argv) => {
           },
         ],
       }),
+      ...(isProduction ? [new MiniCssExtractPlugin({
+        filename: 'styles.[contenthash].css',
+      })] : []),
     ],
   };
 }; 

@@ -3,13 +3,13 @@
  * This file declares types for global variables and window extensions
  */
 
-import type { Application } from '../www/code/application';
-import type { Track } from '../www/code/track';
-import type { Signal } from '../www/code/signal';
-import type { Switch } from '../www/code/switch';
-import type { GenericObject } from '../www/code/generic_object';
-import type { Train } from '../www/code/train';
-import type { geometry } from '../www/code/tools';
+import type { Application } from '../app/code/application';
+import type { Track } from '../app/code/track';
+import type { Signal } from '../app/code/signal';
+import type { Switch } from '../app/code/switch';
+import type { GenericObject } from '../app/code/generic_object';
+import type { Train } from '../app/code/train';
+import type { geometry } from '../app/code/tools';
 
 // ============================================================================
 // Global Window Extensions
