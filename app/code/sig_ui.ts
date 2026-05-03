@@ -23,13 +23,13 @@ export class Sig_UI {
       if (!selectedSignal) return;
 
       const conditions = selectedSignal._template.getAllVisualElementConditions();
-      
+
       const update = function (command: any, isOn?: any) {
          selectedSignal.setSignalAspect(command, isOn);
          Sig_UI.syncSignalMenu(selectedSignal);
          Application.getInstance().renderingManager!.reDrawEverything();
          Application.getInstance().renderingManager!.update();
-         STORAGE.save();  
+         STORAGE.save();
       };
       let signalConfigurationTab = $("#SignalConfigurationTab");
 
@@ -97,7 +97,8 @@ export class Sig_UI {
          if (input.attr("data-master_switch") != null) $("input", input.parent().next()).prop("disabled", !v);
       });
    }
-   static getHTML(signal: any) {
+
+   static initSignalAspectsMenu(signal: any) {
       if (signal._template.signalMenu?.length) {
          const ul = ui.div("d-flex flex-column bd-highlight mb-3");
 
@@ -105,22 +106,23 @@ export class Sig_UI {
             signal.setSignalAspect(command, !active);
             Application.getInstance().renderingManager!.reDrawEverything();
             Application.getInstance().renderingManager!.update();
-            Sig_UI.checkBootstrapMenu(signal, signal._template.signalMenu, ul);
+            Sig_UI.checkSignalAspectMenu(signal, signal._template.signalMenu, ul);
             STORAGE.save();
          };
 
-         ul.append(signal._template.signalMenu.map((data: any) => Sig_UI.createBootstrapMenuItems(signal, data, updateFunc)));
+         ul.append(signal._template.signalMenu.map((data: any) => Sig_UI.createSignalAspectsMenuItems(signal, data, updateFunc)));
 
-         Sig_UI.checkBootstrapMenu(signal, signal._template.signalMenu, ul);
+         Sig_UI.checkSignalAspectMenu(signal, signal._template.signalMenu, ul);
 
-         return ul;
+         const tab = $("#signalAspectTab");
+         tab.empty();
+         tab.append(ul);
       }
-      return "";
    }
-   static createBootstrapMenuItems(signal: any, menu_item: any, update: any) {
+   static createSignalAspectsMenuItems(signal: any, menu_item: any, update: any) {
       if (menu_item) {
          if (Array.isArray(menu_item)) {
-            let items = ArrayUtils.cleanUp(menu_item.map((item) => Sig_UI.createBootstrapMenuItems(signal, item, update)));
+            let items = ArrayUtils.cleanUp(menu_item.map((item) => Sig_UI.createSignalAspectsMenuItems(signal, item, update)));
             if (items) {
                return ui.div("p-3 border-bottom", ui.create_buttonToolbar(items as any));
             } else return null;
@@ -156,30 +158,30 @@ export class Sig_UI {
       }
       return null;
    }
-   static checkBootstrapMenu(signal: any, data: any, popup: any) {
-      if (data) {
-         if (Array.isArray(data)) {
-            data.forEach((item) => Sig_UI.checkBootstrapMenu(signal, item, popup));
-         } else if (data.type == "buttonGroup") {
-            data.items.forEach((item: any) => {
-               let button = $("#btn_" + item.text.replace(" ", "_"), popup);
+   static checkSignalAspectMenu(signal: any, menu_configuration: any, html_menu: any) {
+      if (menu_configuration) {
+         if (Array.isArray(menu_configuration)) {
+            menu_configuration.forEach((item) => Sig_UI.checkSignalAspectMenu(signal, item, html_menu));
+         } else if (menu_configuration.type == "buttonGroup") {
+            menu_configuration.items.forEach((item: any) => {
+               let button = $("#btn_" + item.text.replace(" ", "_"), html_menu);
                if (button.length == 1) {
                   button.toggleClass("active", signal.check(item.command));
                   if (item.visual_elements.every((ve: any) => ve.isAllowed(signal))) button.removeAttr("disabled");
                   else button.attr("disabled", "disabled");
                }
             });
-         } else if (data.type == "dropdown") {
-            let button = $("#btn_" + data.text.replace(" ", "_"), popup);
+         } else if (menu_configuration.type == "dropdown") {
+            let button = $("#btn_" + menu_configuration.text.replace(" ", "_"), html_menu);
             if (button.length == 1) {
-               const v = signal.get(data.command);
-               button.text(data.text + (v > 0 ? " Kz " + v : " aus"));
+               const v = signal.get(menu_configuration.command);
+               button.text(menu_configuration.text + (v > 0 ? " Kz " + v : " aus"));
             }
-         } else if (data.type == "btn") {
-            let button = $("#btn_" + data.text.replace(" ", "_"), popup);
+         } else if (menu_configuration.type == "btn") {
+            let button = $("#btn_" + menu_configuration.text.replace(" ", "_"), html_menu);
             if (button.length == 1) {
-               button.toggleClass("active", signal.check(data.command));
-               if (data.visual_elements.every((ve: any) => ve.isAllowed(signal))) button.removeAttr("disabled");
+               button.toggleClass("active", signal.check(menu_configuration.command));
+               if (menu_configuration.visual_elements.every((ve: any) => ve.isAllowed(signal))) button.removeAttr("disabled");
                else button.attr("disabled", "disabled");
             }
          }
