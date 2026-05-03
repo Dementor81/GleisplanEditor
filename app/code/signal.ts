@@ -8,6 +8,12 @@ import { DIRECTION } from './config.ts';
 import { Application } from './application.ts';
 import { SignalRenderer } from './signalRenderer.ts';
 
+
+/**
+ * Represents any signal. It mainly manages the signal aspect and the signal positioning.
+ * @class Signal
+ * @param template {any} - The template of the signal
+ */
 export class Signal {
    static allSignals = new Set<any>();
 
@@ -43,7 +49,7 @@ export class Signal {
          flipped: false
       };
       Signal.allSignals.add(this);
-      if (template.initialSignalStellung) template.initialSignalStellung.forEach((i: any) => this.set_stellung(i, true, false));
+      if (template.initialSignalStellung) template.initialSignalStellung.forEach((i: any) => this.setSignalAspect(i, true, false));
    }
 
    get title() {
@@ -76,7 +82,14 @@ export class Signal {
       return title;
    }
 
-   set_stellung(command: any, overideValue: any = true, chain: boolean = true) {
+   /**
+    * Sets the signal aspect. Supports two ways of seeting the aspect, you could either set the aspect by a 
+    * command like "hp=1" or you could set the aspect by a command "zs3" and the override Value 20.
+    * @param command {any} - The command to set the signal aspect
+    * @param overideValue {any} - The value to override the signal aspect
+    * @param chain {boolean} - Whether to chain the signal aspect
+    */
+   setSignalAspect(command: any, overideValue: any = true, chain: boolean = true) {
       let setting, value;
       [setting, value] = command.split("=");
       if (overideValue === false) value = null;
@@ -115,7 +128,7 @@ export class Signal {
             function (this: any, rule: any) {
                let trigger = rule[0];
                let signal_aspect = rule[1];
-               if (!this.check(signal_aspect) && this.check(trigger)) this.set_stellung(signal_aspect);
+               if (!this.check(signal_aspect) && this.check(trigger)) this.setSignalAspect(signal_aspect);
             }.bind(this)
          );
    }

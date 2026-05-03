@@ -5,6 +5,7 @@ import { ui } from './ui.ts';
 import { ArrayUtils } from './utils.ts';
 import { STORAGE } from './storage.ts';
 import { Application } from './application.ts';
+import { Signal } from './signal.ts';
 
 export class Sig_UI {
    static create_SpeedDropDown(signal: any, text: string, onChange: any) {
@@ -12,21 +13,30 @@ export class Sig_UI {
       items[0] = `aus|${signal}=-1`;
       return ui.create_DropDown(items, text, onChange);
    }
-   static initSignalMenu() {
-      const conditions = Application.getInstance().selection.object._template.getAllVisualElementConditions();
-      const update = function (this: any, command: any, isOn: any) {
-         Application.getInstance().selection.object.set_stellung(command, isOn);
-         Sig_UI.syncSignalMenu(Application.getInstance().selection.object);
+
+   /**
+    * Builds the signal configuration menu based on the selected signals template and its Conditions.
+    */
+   static initSignalConfigurationMenu() {
+
+      let selectedSignal: Signal | null = Application.getInstance().selection.object as Signal | null;
+      if (!selectedSignal) return;
+
+      const conditions = selectedSignal._template.getAllVisualElementConditions();
+      
+      const update = function (command: any, isOn?: any) {
+         selectedSignal.setSignalAspect(command, isOn);
+         Sig_UI.syncSignalMenu(selectedSignal);
          Application.getInstance().renderingManager!.reDrawEverything();
          Application.getInstance().renderingManager!.update();
-         STORAGE.save();
+         STORAGE.save();  
       };
       let signalConfigurationTab = $("#SignalConfigurationTab");
 
       $("#btnGrundstellung").on("click", Sig_UI.handleGrundstellung as any);
       $("#btnRemoveSignal").on("click", () => Application.getInstance().deleteSelectedObject());
       signalConfigurationTab.empty();
-      if (Application.getInstance().selection.object.check("HPsig"))
+      if (selectedSignal.check("HPsig"))
          signalConfigurationTab.append(
             ui.div(
                "p-3 border-bottom",
@@ -37,16 +47,16 @@ export class Sig_UI {
                )
             )
          );
-      signalConfigurationTab.append(
-         ui.createSwitchStructure(
-            ["Vorsignalfunktion", "VRsig", conditions.includes("VRsig")],
-            [
-               ...(conditions.includes("vr_op=verk") ? [["verkürzt", "vr_op=verk"]] : []),
-               ...(conditions.includes("vr_op=wdh") ? [["wiederholer", "vr_op=wdh"]] : []),
-            ],
-            update
-         )?.addClass("p-3 border-bottom")
+      const vorsignalOptions: [string, string?][] = [];
+      if (conditions.includes("vr_op=verk")) vorsignalOptions.push(["verkürzt", "vr_op=verk"]);
+      if (conditions.includes("vr_op=wdh")) vorsignalOptions.push(["wiederholer", "vr_op=wdh"]);
+
+      const vorsignalSwitch = ui.createSwitchStructure(
+         ["Vorsignalfunktion", "VRsig", conditions.includes("VRsig")],
+         vorsignalOptions,
+         update
       );
+      if (vorsignalSwitch) signalConfigurationTab.append(vorsignalSwitch.addClass("p-3 border-bottom"));
       if (conditions.includes("mastschild=wrw") && conditions.includes("mastschild=wgwgw"))
          signalConfigurationTab.append(
             ui.createOptionGroup(
@@ -69,6 +79,7 @@ export class Sig_UI {
          signalConfigurationTab.append(ui.createOptionGroup("Zusatzanzeiger", a, "checkbox", update).addClass("p-3 border-bottom"));
       }
    }
+
    static syncSignalMenu(signal: any) {
       //header
       $("#signalEditMenuHeader .card-title").text(signal._template.title);
@@ -91,7 +102,7 @@ export class Sig_UI {
          const ul = ui.div("d-flex flex-column bd-highlight mb-3");
 
          const updateFunc = function (this: any, command: any, active: boolean) {
-            signal.set_stellung(command, !active);
+            signal.setSignalAspect(command, !active);
             Application.getInstance().renderingManager!.reDrawEverything();
             Application.getInstance().renderingManager!.update();
             Sig_UI.checkBootstrapMenu(signal, signal._template.signalMenu, ul);
@@ -111,7 +122,7 @@ export class Sig_UI {
          if (Array.isArray(menu_item)) {
             let items = ArrayUtils.cleanUp(menu_item.map((item) => Sig_UI.createBootstrapMenuItems(signal, item, update)));
             if (items) {
-               return ui.div("p-3 border-bottom", ui.create_buttonToolbar(items));
+               return ui.div("p-3 border-bottom", ui.create_buttonToolbar(items as any));
             } else return null;
          } else if (menu_item.type == "buttonGroup" || menu_item.type == "btn") {
             let buttons = menu_item.type == "buttonGroup" ? menu_item.items : [menu_item];
@@ -122,7 +133,10 @@ export class Sig_UI {
                      mi.visual_elements.every((ve: any) => {
                         let on = ve.on();
                         if (Array.isArray(on)) {
-                           if (on.includes(mi.command)) on = on.toSpliced(on.indexOf(mi.command), 1);
+                           if (on.includes(mi.command)) {
+                              on = [...on];
+                              ArrayUtils.remove(on, mi.command);
+                           }
                         } else if (on == mi.command) return true;
 
                         return signal.check(on);
@@ -130,16 +144,17 @@ export class Sig_UI {
                )
                .map((item: any) =>
                   ui
-                     .create_toggleButton(item.text, item.command)
+                     .create_toggleButton(item.text)
                      .on("click", (e: any) => update.bind(signal)(item.command, $(e.target).hasClass("active")))
                )
             buttons = ArrayUtils.cleanUp(buttons);
-            if (buttons) return ui.create_buttonGroup(buttons);
+            if (buttons) return ui.create_buttonGroup(buttons as any);
             else return null;
          } else if (menu_item.type == "dropdown") {
             return Sig_UI.create_SpeedDropDown(menu_item.command, menu_item.text, update.bind(signal));
          }
       }
+      return null;
    }
    static checkBootstrapMenu(signal: any, data: any, popup: any) {
       if (data) {
@@ -174,13 +189,13 @@ export class Sig_UI {
     * Handle Grundstellung
     * @private
     */
-   static handleGrundstellung(e: any) {
+   static handleGrundstellung() {
       const selection = (window as any).app.selection;
       if (selection.type == "Signal") {
          [].concat(selection.object).forEach((s: any) => {
             s._signalStellung = {};
             if (s._template.initialSignalStellung)
-               s._template.initialSignalStellung.forEach((i: any) => s.set_stellung(i, null, true));
+               s._template.initialSignalStellung.forEach((i: any) => s.setSignalAspect(i, null, true));
             STORAGE.save();
             (window as any).app.renderingManager.renderer.reDrawEverything(true);
             (window as any).app.renderingManager.update();

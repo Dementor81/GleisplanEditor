@@ -155,13 +155,11 @@ export const ui = {
                  items.map((item) => ui.create_DropDownItem(item.split("|")[0], item.split("|")[1]))
               ),
            ])
-           .on("hide.bs.dropdown", (e: JQuery.TriggeredEvent) => {
-              const originalEvent = e.originalEvent as any;
-              if (originalEvent?.target && originalEvent?.target.nodeName == "A") {
-                 const value = $(originalEvent.target).attr("value");
-                 $(e.currentTarget).attr("value", value ?? "");
-                 if (onChange) onChange(value ?? "");
-              }
+           .on("click", ".dropdown-item", function (e: JQuery.ClickEvent) {
+              e.preventDefault();
+              const value = $(e.currentTarget).attr("value") ?? "";
+              $(e.delegateTarget).attr("value", value); //writes the value to the surrounding div, used to highlight the selected value when opening the dropdown next time.
+              if (onChange) onChange(value);
            })
            .on("show.bs.dropdown", (e: JQuery.TriggeredEvent) => {
               const targetValue = $(e.currentTarget).attr("value");
@@ -176,6 +174,13 @@ export const ui = {
            });
      },
   
+     /**
+      * Creates a structured menu with HTML switches. Each switch contains a label, a setting for the signal and a condition to enable the switch.
+      * @param mainLabel - The main switch, like "Vorsignalfunktion"
+      * @param subLabels - a array of sub switches, like ["verkürzt", "wiederholer"]
+      * @param onchange - The function to call when any of the switches is changed
+      * @returns The switch structure
+      */
      createSwitchStructure(
         mainLabel: [string, string?, boolean?], 
         subLabels: [string, string?, boolean?][], 

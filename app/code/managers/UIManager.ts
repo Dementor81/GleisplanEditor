@@ -180,7 +180,7 @@ export class UIManager {
             const body = $("#signalAspectTab");
             body.empty();
             body.append(Sig_UI.getHTML(app.selection.object));
-            Sig_UI.initSignalMenu();
+            Sig_UI.initSignalConfigurationMenu();
             Sig_UI.syncSignalMenu(app.selection.object);
             break;
          case MENU.NEW_SIGNAL:

@@ -46,7 +46,7 @@ export function initSignals(signalTemplatesRef: Record<string, any>) {
                case "hv_hp":
                case "hv_vr":
                   {
-                     signal.set_stellung("vr", hp.get("hp") >= 0 ? hp.get("hp") : 0, false);
+                     signal.setSignalAspect("vr", hp.get("hp") >= 0 ? hp.get("hp") : 0, false);
                      if (!signal.check("vr_op=wdh")) stop_propagation = true;
                   }
                   break;
@@ -54,17 +54,17 @@ export function initSignals(signalTemplatesRef: Record<string, any>) {
                case "ks":
                case "ks_vr":
                   {
-                     signal.set_stellung("vr", hp.get("hp") <= 0 ? 0 : 1, false);
+                     signal.setSignalAspect("vr", hp.get("hp") <= 0 ? 0 : 1, false);
                      if (!signal.check("vr_op=wdh")) stop_propagation = true;
                   }
                   break;
             }
 
             if (hp.get("zs3") == 4) {
-               signal.set_stellung("zs3v", 0, false);
+               signal.setSignalAspect("zs3v", 0, false);
 
-               if (signal.get("vr") > 0) signal.set_stellung("vr", 2, false);
-            } else signal.set_stellung("zs3v", hp.get("zs3"), false);
+               if (signal.get("vr") > 0) signal.setSignalAspect("vr", 2, false);
+            } else signal.setSignalAspect("zs3v", hp.get("zs3"), false);
          }
       }
 
@@ -98,7 +98,7 @@ export function initSignals(signalTemplatesRef: Record<string, any>) {
                case "hv_hp":
                case "hv_vr":
                   {
-                     signal.set_stellung("hp", x >= 1 ? 1 : 2, false);
+                     signal.setSignalAspect("hp", x >= 1 ? 1 : 2, false);
                      if (x == 2 && anderes_zs3 <= 0) anderes_zs3 = 4;
 
                      if (!signal.check("vr_op=wdh")) stop_propagation = true;
@@ -108,7 +108,7 @@ export function initSignals(signalTemplatesRef: Record<string, any>) {
                case "ks":
                case "ks_vr":
                   {
-                     signal.set_stellung("hp", x <= 0 ? 2 : 1, false);
+                     signal.setSignalAspect("hp", x <= 0 ? 2 : 1, false);
 
                      if (!signal.check("vr_op=wdh")) stop_propagation = true;
                   }
@@ -116,7 +116,7 @@ export function initSignals(signalTemplatesRef: Record<string, any>) {
             }
          }
          if (eigenes_zs3 <= anderes_zs3 && eigenes_zs3 > 0) anderes_zs3 = -1;
-         signal.set_stellung("zs3v", anderes_zs3, false);
+         signal.setSignalAspect("zs3v", anderes_zs3, false);
       }
 
       return stop_propagation;
@@ -134,7 +134,7 @@ export function initSignals(signalTemplatesRef: Record<string, any>) {
 
    (signalTemplates.lf7 as any).checkSignalDependency = (signalTemplates.lf6 as any).checkSignalDependency = function (signal: any, hp: any) {
       if (signal._template.id == "lf6" && hp._template.id == "lf7") {
-         signal.set_stellung("geschw", hp.get("geschw"), false);
+         signal.setSignalAspect("geschw", hp.get("geschw"), false);
          return true;
       }
       return false;

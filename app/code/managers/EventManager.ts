@@ -881,7 +881,7 @@ export class EventManager {
             "keydown",
             (e) => {
                if (e.key === "Enter") {
-                  this.#app.selection.object.set_stellung("bez", (e.target as HTMLInputElement).value);
+                  this.#app.selection.object.setSignalAspect("bez", (e.target as HTMLInputElement).value);
                   $("#signalEditMenuHeader .card-text").show();
                   $("#signalEditMenuHeader input").hide();
                   Sig_UI.syncSignalMenu(this.#app.selection.object);
