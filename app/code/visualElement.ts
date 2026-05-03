@@ -9,7 +9,7 @@
 export class VisualElement {
    #_blinkt: any = null;
    #_image: any = null;
-   #_pos: number = 0;
+   #_pos: any = 0;
    #_enabled: ((signal: any) => boolean) | null = null;
    #_on: any = [];
    #_off: any = null;
@@ -47,15 +47,15 @@ export class VisualElement {
       }
    }
 
-   blinkt(blinkt?: any): any {
-      if (blinkt === undefined) return this.#_blinkt;
+   blinks(blinks?: any): any {
+      if (blinks === undefined) return this.#_blinkt;
       else {
-         this.#_blinkt = blinkt;
+         this.#_blinkt = blinks;
          return this;
       }
    }
 
-   pos(pos?: number): any {
+   pos(pos?: any): any {
       if (pos === undefined) return this.#_pos;
       else {
          this.#_pos = pos;

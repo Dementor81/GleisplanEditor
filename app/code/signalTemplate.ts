@@ -116,8 +116,8 @@ export class SignalTemplate {
 
    getVisualElementsByOnCondition(condition: any) {
       let results: any[] = [];
-      function iterateItems(this: any, ve: any) {
-         if (Array.isArray(ve)) return ve.some((item) => iterateItems.call(this, item));
+      function iterateItems(this: any, ve: any): boolean {
+         if (Array.isArray(ve)) return ve.some((item: any) => iterateItems.call(this, item));
          else if (ve instanceof VisualElement) {
             if (ve.childs()?.some((item: any) => iterateItems.call(this, item)) || [].concat(ve.on()).some((c) => c === condition)) {
                results.push(ve);

@@ -177,7 +177,7 @@ export class UIManager {
       switch (menu) {
          case MENU.EDIT_SIGNAL:
             div_id = "signalEditMenu";
-            const body = $("#nav-home");
+            const body = $("#signalAspectTab");
             body.empty();
             body.append(Sig_UI.getHTML(app.selection.object));
             Sig_UI.initSignalMenu();

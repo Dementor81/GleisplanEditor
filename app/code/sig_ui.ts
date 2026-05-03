@@ -21,11 +21,13 @@ export class Sig_UI {
          Application.getInstance().renderingManager!.update();
          STORAGE.save();
       };
-      $("#btnGrundstellung").click(Sig_UI.handleGrundstellung as any);
-      $("#btnRemoveSignal").click((e) => Application.getInstance().uiManager!.deleteSelectedObject());
-      $("#navFeatures").empty();
-               if (Application.getInstance().selection.object.check("HPsig"))
-         $("#navFeatures").append(
+      let signalConfigurationTab = $("#SignalConfigurationTab");
+
+      $("#btnGrundstellung").on("click", Sig_UI.handleGrundstellung as any);
+      $("#btnRemoveSignal").on("click", () => Application.getInstance().deleteSelectedObject());
+      signalConfigurationTab.empty();
+      if (Application.getInstance().selection.object.check("HPsig"))
+         signalConfigurationTab.append(
             ui.div(
                "p-3 border-bottom",
                ui.create_DropDown(
@@ -35,7 +37,7 @@ export class Sig_UI {
                )
             )
          );
-      $("#navFeatures").append(
+      signalConfigurationTab.append(
          ui.createSwitchStructure(
             ["Vorsignalfunktion", "VRsig", conditions.includes("VRsig")],
             [
@@ -46,7 +48,7 @@ export class Sig_UI {
          )?.addClass("p-3 border-bottom")
       );
       if (conditions.includes("mastschild=wrw") && conditions.includes("mastschild=wgwgw"))
-         $("#navFeatures").append(
+         signalConfigurationTab.append(
             ui.createOptionGroup(
                "Mastschild",
                [
@@ -64,7 +66,7 @@ export class Sig_UI {
          ];
          a.forEach((x) => x.push(conditions.includes(x[1])));
 
-         $("#navFeatures").append(ui.createOptionGroup("Zusatzanzeiger", a, "checkbox", update).addClass("p-3 border-bottom"));
+         signalConfigurationTab.append(ui.createOptionGroup("Zusatzanzeiger", a, "checkbox", update).addClass("p-3 border-bottom"));
       }
    }
    static syncSignalMenu(signal: any) {
@@ -72,12 +74,12 @@ export class Sig_UI {
       $("#signalEditMenuHeader .card-title").text(signal._template.title);
       $("#signalEditMenuHeader .card-text>span").text(signal.title);
       //feature Menu
-      $("#navFeatures>div a").each(function () {
+      $("#SignalConfigurationTab>div a").each(function () {
          const $a = $(this);
          $a.toggleClass("active", signal.check($a.attr("value")));
       });
 
-      $("#navFeatures>div input").each(function () {
+      $("#SignalConfigurationTab>div input").each(function () {
          const input = $(this);
          const v = signal.check(input.attr("value"));
          input.prop("checked", v ? "checked" : null);

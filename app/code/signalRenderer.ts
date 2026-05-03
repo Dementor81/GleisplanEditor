@@ -53,7 +53,7 @@ export class SignalRenderer {
          this.drawTextElement(signal, ve);
       } else if (ve instanceof VisualElement) {
          if (ve.isAllowed(signal) && ve.isEnabled(signal)) {
-            if (ve.image) this.addImageElement(signal, ve, ve.blinkt());
+            if (ve.image) this.addImageElement(signal, ve, ve.blinks());
             ve.childs()?.forEach((c: any) => this.drawVisualElement(signal, c));
          }
       } else console.log("unknown type of VisualElement: " + ve);
@@ -88,7 +88,7 @@ export class SignalRenderer {
       }
    }
 
-   static addImageElement(signal: any, ve: any, blinkt: boolean = false) {
+   static addImageElement(signal: any, ve: any, blinks: boolean = false) {
       const textureName = typeof ve == "string" ? ve : ve.image;
 
       if (textureName == null || textureName == "") return;
@@ -102,7 +102,7 @@ export class SignalRenderer {
             if (bmp != null) {
                state.container.addChild(bmp);
 
-               if (blinkt) {
+               if (blinks) {
                   signal._dontCache = true;
                   createjs.Tween.get(bmp, { loop: true }).wait(1000).to({ alpha: 0 }, 200).wait(800).to({ alpha: 1 }, 50);
                }

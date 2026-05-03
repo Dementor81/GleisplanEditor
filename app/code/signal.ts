@@ -1,11 +1,9 @@
 "use strict";
 
 // ES6 Module imports
-import { ui } from './ui.ts';
 import { ArrayUtils } from './utils.ts';
 import { findFieldNameForObject } from './tools.ts';
 import { Track } from './track.ts';
-import { STORAGE } from './storage.ts';
 import { DIRECTION } from './config.ts';
 import { Application } from './application.ts';
 import { SignalRenderer } from './signalRenderer.ts';
@@ -214,7 +212,7 @@ export class Signal {
 
             if (track) {
                index = track.signals.length - 1;
-               if (dir == DIRECTION.LEFT_2_RIGTH) index = Math.min(0, index);
+               if (dir == DIRECTION.LEFT_2_RIGHT) index = Math.min(0, index);
             }
          } else track = null;
       }

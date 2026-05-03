@@ -1,7 +1,7 @@
 "use strict";
 
 // ES6 Module imports
-import { geometry, V2, Point, type } from "./tools.ts";
+import { geometry, V2, Point } from "./tools.ts";
 import { Switch } from "./switch.ts";
 import { Signal } from "./signal.ts";
 import { ArrayUtils } from "./utils.ts";

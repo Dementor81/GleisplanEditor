@@ -1,0 +1,139 @@
+{
+  "id": "hv_hp",
+  "title": "Hv Hauptsignal",
+  "atlas": "hv",
+  "scale": 0.15,
+  "previewsize": 20,
+  "distanceFromTrack": 5,
+  "initial": ["hp=0", "vr=0", "HPsig", "verw=asig", "mastschild=wrw"],
+  "rules": [
+    ["hp>0 && zs3>6", "hp=1"],
+    ["hp>0 && zs3<=6 && zs3>0", "hp=2"]
+  ],
+  "menu": [
+    ["hp=0,hp=1,hp=2", "zs3"],
+    ["vr=0,vr=1,vr=2", "verk=1(verk)", "zs3v"],
+    "ersatz=zs1,ersatz=zs7,ersatz=zs8,ersatz=sh1,ersatz=kennlicht",
+    "zs6=1(Zs 6)"
+  ],
+  "elements": [
+    "mast,hp_schirm",
+    { "image": "wrw", "on": "mastschild=wrw" },
+    { "image": "wgwgw", "on": "mastschild=wgwgw" },
+    { "image": "hp_asig_lichtp", "on": "verw=asig||verw=zsig" },
+    { "image": "hp_bk_lichtp_unten", "on": "verw=bksig||verw=sbk||verw=esig" },
+    { "image": "hp_bk_lichtp_oben", "on": "verw=bksig||verw=esig" },
+    {
+      "on": "hp=0",
+      "children": [
+        { "image": "hp_asig_rot_re", "on": "verw=asig||verw=zsig", "off": "ersatz=sh1" },
+        { "image": "hp_asig_rot_li", "on": "verw=asig||verw=zsig" },
+        { "image": "hp_bk_rot_unten_li", "on": "verw=bksig||verw=sbk||verw=esig" }
+      ]
+    },
+    {
+      "on": "hp=1",
+      "off": "zs3<=6 && zs3>0",
+      "children": [
+        { "image": "hp_asig_gr", "on": "verw=asig||verw=zsig" },
+        { "image": "hp_bk_gr_unten_re", "on": "verw=sbk" },
+        { "image": "hp_bk_gr_oben_re", "on": "verw=bksig||verw=esig" }
+      ]
+    },
+    {
+      "on": "hp=2",
+      "off": "zs3>6",
+      "children": [
+        { "image": "hp_asig_gelb,hp_asig_gr", "on": "verw=asig||verw=zsig" },
+        { "image": "hp_bk_gelb_unten_re,hp_bk_gr_oben_re", "on": "verw=bksig||verw=esig" }
+      ]
+    },
+    { "image": "hp_asig_schuten", "on": "verw=asig||verw=zsig" },
+    { "image": "hp_bk_schute_unten", "on": "verw=bksig||verw=sbk||verw=esig" },
+    { "image": "hp_bk_schute_oben", "on": "verw=bksig||verw=esig" },
+    {
+      "on": "VRsig",
+      "children": [
+        "vr_schirm",
+        "vr_lichtp",
+        { "image": "vr_zusatz_schirm,vr_zusatz_lichtp", "on": "vr_op=verk" },
+        { "image": "vr_zusatz_licht", "on": ["vr_op=verk", "verk=1"], "off": "hp=0" },
+        {
+          "off": "hp=0",
+          "children": [
+            { "image": "vr_gelb_oben,vr_gelb_unten", "on": "vr=0" },
+            { "image": "vr_grün_oben,vr_grün_unten", "on": "vr=1" },
+            { "image": "vr_gelb_unten,vr_grün_oben", "on": "vr=2" }
+          ]
+        },
+        "vr_schuten",
+        { "image": "vr_zusatz_schute", "on": "vr_op=verk" }
+      ]
+    },
+    {
+      "on": "verw=asig||verw=zsig",
+      "children": [
+        "hp_asig_kennlicht_lichtp",
+        { "image": "hp_asig_kennlicht_licht", "on": "ersatz=kennlicht", "off": "hp>=0" },
+        "hp_asig_kennlicht_schute"
+      ]
+    },
+    {
+      "on": "verw=asig||verw=zsig",
+      "children": [
+        "hp_asig_sh1_lichtp",
+        { "image": "hp_asig_sh1_licht", "on": "ersatz=sh1", "off": "hp>0" },
+        "hp_asig_sh1_schute"
+      ]
+    },
+    {
+      "on": "verw=asig||verw=zsig||verw=sbk",
+      "children": ["hp_zs1_lichtp", { "image": "hp_zs1_licht", "on": "ersatz=zs1", "off": "hp>0" }, "hp_zs1_schuten"]
+    },
+    {
+      "on": "verw=esig||verw=zsig",
+      "children": ["hp_zs7_lichtp", { "image": "hp_zs7_licht", "on": "ersatz=zs7", "off": "hp>0" }, "hp_zs7_schuten"]
+    },
+    {
+      "on": "verw=asig||verw=bksig",
+      "children": [
+        "hp_zs1_lichtp",
+        { "image": "hp_zs1_licht", "on": "ersatz=zs8", "off": "hp>0", "blinks": true },
+        "hp_zs1_schuten"
+      ]
+    },
+    {
+      "on": "zs3>0",
+      "off": "zs3=40||zusatz_oben",
+      "children": ["zs3", { "text": "zs3", "format": [80, "Arial", 1], "pos": [115, 80] }]
+    },
+    {
+      "on": "zs3v>0",
+      "off": "zusatz_unten",
+      "children": ["zs3v", { "text": "zs3v", "format": [80, "Arial", 1], "color": "#ffde36", "pos": [115, 890] }]
+    },
+    {
+      "image": "zs3_licht",
+      "on": "zusatz_oben",
+      "children": [{ "text": "zs3", "format": [60, "DOT"], "pos": [120, 78], "on": "zs3>0", "off": "hp<=0" }]
+    },
+    {
+      "image": "zs3v_licht",
+      "on": "zusatz_unten",
+      "children": [{ "text": "zs3v", "format": [60, "DOT"], "color": "#ffde36", "pos": [120, 885], "on": "zs3v>0", "off": "hp<=0" }]
+    },
+    {
+      "on": ["verw=asig||verw=bksig", "zs6=1"],
+      "off": "zs3v>0",
+      "children": [
+        { "image": "zs6_blech_unten", "off": "zusatz_unten" },
+        { "image": "zs6_licht_unten", "on": ["zusatz_unten", "hp>0"] }
+      ]
+    },
+    {
+      "image": "schild",
+      "on": "bez",
+      "children": [{ "text": "bez", "format": [55, "condenced", 1], "color": "#333", "pos": [116, 1033], "bounds": [52, 63] }]
+    }
+  ]
+}

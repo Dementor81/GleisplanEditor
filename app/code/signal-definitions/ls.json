@@ -1,0 +1,30 @@
+{
+  "id": "ls",
+  "title": "Lichtsperrsignal",
+  "atlas": "ls",
+  "scale": 0.07,
+  "initial": "hp=0",
+  "menu": ["hp=0,hp=1(Sh 1)", "ersatz=kennlicht(Kennlicht)"],
+  "elements": [
+    "basis",
+    "wrw",
+    "lp_r_links",
+    "lp_r_rechts",
+    "lp_w_oben",
+    "lp_w_unten",
+    { "image": "r_links,r_rechts", "on": "hp=0" },
+    { "image": "w_oben,w_unten", "on": "hp=1" },
+    { "image": "w_oben", "on": "ersatz=kennlicht" },
+    "schute_r_links",
+    "schute_r_rechts",
+    "schute_w_oben",
+    "schute_w_unten",
+    {
+      "image": "schild",
+      "on": "bez",
+      "children": [
+        { "text": "bez", "format": [55, "condenced", 1], "color": "#333", "pos": [210, 125] }
+      ]
+    }
+  ]
+}

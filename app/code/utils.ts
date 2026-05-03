@@ -92,7 +92,7 @@ export const ArrayUtils = {
     * @param {Array} array - The array
     * @returns {*} Last element or undefined if empty
     */
-   last(array: unknown[]): unknown {
+   last<T>(array: T[]): T {
       return array[array.length - 1];
    },
 
@@ -101,7 +101,7 @@ export const ArrayUtils = {
     * @param {Array} array - The array
     * @returns {*} First element or undefined if empty
     */
-   first(array: unknown[]): unknown {
+   first<T>(array: T[]): T {
       return array[0];
    },
 

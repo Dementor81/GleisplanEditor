@@ -1,0 +1,40 @@
+{
+  "id": "ks_vr",
+  "title": "Ks Vorsignal",
+  "atlas": "ks",
+  "scale": 0.13,
+  "distanceFromTrack": 15,
+  "initial": ["VRsig", "hp=2"],
+  "menu": ["hp=1(Ks 1),hp=2(Ks 2)", "zs3v", "ersatz=kennlicht"],
+  "elements": [
+    "mast",
+    "schirm_vr",
+    { "image": "ks2_vr", "on": "hp=2" },
+    {
+      "on": "hp=1",
+      "children": [
+        { "image": "ks1_vr", "on": "zs3v>0", "blinks": true },
+        { "image": "ks1_vr", "off": "zs3v>0" }
+      ]
+    },
+    {
+      "on": "vr_op.wdh",
+      "children": ["sh1_optik", { "image": "verk", "off": "hp=0||hp=1&&zs3v<=0" }]
+    },
+    { "image": "ne2", "off": "vr_op.wdh" },
+    {
+      "on": "vr_op.verk",
+      "children": ["verk_optik", { "image": "verk", "off": "hp=0||hp=1&&zs3v<=0" }]
+    },
+    {
+      "on": "zs3v>0",
+      "off": "zusatz_unten",
+      "children": ["zs3v", { "text": "zs3v", "format": [80, "Arial", 1], "color": "#ffde36", "pos": [85, 490] }]
+    },
+    {
+      "image": "zs3v_licht",
+      "on": "zusatz_unten",
+      "children": [{ "text": "zs3v", "format": [85, "DOT"], "color": "#ffde36", "on": "zs3v>0", "off": "hp<=0", "pos": [90, 520] }]
+    }
+  ]
+}
