@@ -18,7 +18,7 @@ REMOTE_TARGET_DIR="web/signal/bahnhof/"
 
 # The local directory containing the build artifacts to be deployed.
 # This should match the output path in your webpack.config.js
-SOURCE_DIR="www/dist/"
+SOURCE_DIR="app/dist/"
 
 # --- Deployment Steps ---
 

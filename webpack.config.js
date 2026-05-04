@@ -76,7 +76,7 @@ module.exports = (env, argv) => {
             from: 'app',
             to: '',
             globOptions: {
-              ignore: ['**/code/**', '**/start.html'],
+              ignore: ['code/**', 'dist/**', '**/code/**', '**/dist/**', 'start.html', '**/start.html'],
             },
           },
         ],
