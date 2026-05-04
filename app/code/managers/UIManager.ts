@@ -223,7 +223,7 @@ export class UIManager {
     */
    #initializeNewTrainMenu(): void {
       const app = (window as any).app;
-      $("#newTrain").on("mousedown", (_e: JQuery.MouseDownEvent) => {
+      $("#newTrain").off("mousedown").on("mousedown", (_e: JQuery.MouseDownEvent) => {
          app.eventManager.startTrainPlacementDrag();
       });
    }
@@ -234,11 +234,11 @@ export class UIManager {
     */
    #initializeNewObjectMenu(): void {
       const app = (window as any).app;
-      $("#btnAddText").click(() => {
+      $("#btnAddText").onclick(() => {
          app.customMouseMode = $("#btnAddText").hasClass("active") ? CUSTOM_MOUSE_ACTION.TEXT : CUSTOM_MOUSE_ACTION.NONE;
          this.activateCustomMouseMode();
       });
-      $("#btnAddPlatform").click(() => {
+      $("#btnAddPlatform").onclick(() => {
          app.customMouseMode = $("#btnAddPlatform").hasClass("active") ? CUSTOM_MOUSE_ACTION.PLATTFORM : CUSTOM_MOUSE_ACTION.NONE;
          this.activateCustomMouseMode();
       });
@@ -321,12 +321,12 @@ export class UIManager {
       
       if (localStorage.getItem("bahnhof_last1") == null) $(btnLoadRecent).attr("disabled", "disabled");
 
-      $(btnStartFromZero).click(() => {
+      $(btnStartFromZero).onclick(() => {
          this.hideStartScreen();
          app.renderingManager.drawGrid();
          app.renderingManager.renderer.reDrawEverything(true);
       });
-      $(btnLoadRecent).click(() => {
+      $(btnLoadRecent).onclick(() => {
          STORAGE.loadRecent();
          this.hideStartScreen();
          app.renderingManager.drawGrid();
@@ -344,7 +344,7 @@ export class UIManager {
             });
          }
       });
-      $(btnLoadFromFile).click(() => {
+      $(btnLoadFromFile).onclick(() => {
          STORAGE.restoreFromFile().then(() => {
             this.hideStartScreen();
             app.renderingManager.drawGrid();

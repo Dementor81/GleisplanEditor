@@ -177,7 +177,7 @@ export class EventManager {
     */
    #initializeButtonEvents(): void {
       // Edit mode toggle
-      $("#btnDrawTracks,#btnPlay").click(() => this.#app.toggleEditMode());
+      $("#btnDrawTracks,#btnPlay").onclick(() => this.#app.toggleEditMode());
 
       // Renderer switch
       $("#switch_renderer").on("change", (e) => {
@@ -186,21 +186,21 @@ export class EventManager {
       });
 
       // Menu buttons
-      $("#btnAddSignals").click(() => this.#app.uiManager?.showMenu(MENU.NEW_SIGNAL));
-      $("#btnAddTrain").click(() => this.#app.uiManager?.showMenu(MENU.NEW_TRAIN));
-      $("#btnAddObject").click(() => this.#app.uiManager?.showMenu(MENU.NEW_OBJECT));
-      $("#btnDownload").click(() => STORAGE.downloadAsFile());
+      $("#btnAddSignals").onclick(() => this.#app.uiManager?.showMenu(MENU.NEW_SIGNAL));
+      $("#btnAddTrain").onclick(() => this.#app.uiManager?.showMenu(MENU.NEW_TRAIN));
+      $("#btnAddObject").onclick(() => this.#app.uiManager?.showMenu(MENU.NEW_OBJECT));
+      $("#btnDownload").onclick(() => STORAGE.downloadAsFile());
 
       // Action buttons
-      $("#btnClear").click(() => this.#app.renderingManager?.clear());
-      $("#btnCenter").click(() => this.#app.renderingManager?.center());
-      $("#btnRedraw").click(() => this.#app.renderingManager?.forceRedraw());
-      $("#btnImage").click(this.#handleImageExport.bind(this));
-      $("#btnDraw").click(this.#handleDrawToggle.bind(this));
-      $("#btnDrawingClear").click(this.#handleDrawingClear.bind(this));
+      $("#btnClear").onclick(() => this.#app.renderingManager?.clear());
+      $("#btnCenter").onclick(() => this.#app.renderingManager?.center());
+      $("#btnRedraw").onclick(() => this.#app.renderingManager?.forceRedraw());
+      $("#btnImage").onclick(this.#handleImageExport.bind(this));
+      $("#btnDraw").onclick(this.#handleDrawToggle.bind(this));
+      $("#btnDrawingClear").onclick(this.#handleDrawingClear.bind(this));
 
       // Eraser button for drawing annotations
-      $("#btnDrawingEraser").click(() => {
+      $("#btnDrawingEraser").onclick(() => {
          const mode_active = this.#app.customMouseMode === CUSTOM_MOUSE_ACTION.ERASER;
 
          $("#btnDrawingEraser").toggleClass("active", !mode_active);
@@ -208,7 +208,7 @@ export class EventManager {
          this.#app.customMouseMode = !mode_active ? CUSTOM_MOUSE_ACTION.ERASER : CUSTOM_MOUSE_ACTION.DRAWING;
       });
 
-      $("#btnUndo").click(this.#handleUndo.bind(this));
+      $("#btnUndo").onclick(this.#handleUndo.bind(this));
 
       // Signal edit menu
       $("#signalEditMenuHeader a").on("click", this.#handleSignalEditClick.bind(this));

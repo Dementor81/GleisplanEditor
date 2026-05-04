@@ -16,7 +16,12 @@ import { ui } from './ui.ts';
 // Make Bootstrap available globally for data-attribute API
 (window as any).bootstrap = bootstrap;
 
-
+$.fn.onclick = function (
+   this: JQuery,
+   handler: JQuery.TypeEventHandler<HTMLElement, undefined, HTMLElement, HTMLElement, "click">
+): JQuery {
+   return this.on("click", handler);
+};
 
 $(() => {
    initializeApplication();

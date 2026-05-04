@@ -41,18 +41,43 @@ export class Train {
    static CAR_SPACING: number = 5;
 
    static addTrain(track: Track, number_of_cars: number, km: number, type: string = Train.CAR_TYPES.PASSENGER, number: string = ""): Train {
-      let train;
+      let train: Train;
+      const cars: Train[] = [];
+      const offsets: number[] = [0];
       const color = ArrayUtils.random(COLORS.TRAIN_COLORS) as string;
 
       // Create locomotive as the first car
       train = Train.addTrainCar(null, track, km, color, Train.CAR_TYPES.LOCOMOTIVE, number);
+      cars.push(train);
 
       // Add cars
       for (let i = 1; i <= number_of_cars; i++) {
-         Train.addTrainCar(train, track, km, color, type, number);
+         const car = Train.addTrainCar(train, track, km, color, type, number);
+         const previousCar = cars[cars.length - 1];
+         offsets.push(offsets[offsets.length - 1] + previousCar.length / 2 + Train.CAR_SPACING + car.length / 2);
+         cars.push(car);
       }
-      // Update train positions
-      Train.moveTrain(train, 0);
+
+      const lastCar = cars[cars.length - 1];
+      const minKm = train.length / 2;
+      const maxKm = track.length - offsets[offsets.length - 1] - lastCar.length / 2;
+
+      if (minKm > maxKm) {
+         cars.forEach((car) => {
+            ArrayUtils.remove(Train.allTrains, car);
+            car.trainCoupledFront = null;
+            car.trainCoupledBack = null;
+            car.track = null;
+         });
+         throw new Error("Zug passt nicht auf das ausgewählte Gleis");
+      }
+
+      const startKm = Math.min(Math.max(km, minKm), maxKm);
+      cars.forEach((car, index) => {
+         car.track = track;
+         car.pos = startKm + offsets[index];
+      });
+
       return train;
    }
 
@@ -108,11 +133,11 @@ export class Train {
 
       $("#btnRemoveTrain")
          .off()
-         .click(() => Train.deleteTrain(train));
+         .onclick(() => Train.deleteTrain(train));
 
       $("#btnCoupleTrain")
          .off()
-         .click(() => {
+         .onclick(() => {
             // Set global state for coupling mode
             if (app.customMouseMode === CUSTOM_MOUSE_ACTION.NONE) {
                // First check if there are any coupling points available
@@ -136,7 +161,7 @@ export class Train {
 
       $("#btnUncoupleTrain")
          .off()
-         .click(() => {
+         .onclick(() => {
             // Set global state for decoupling mode
             if (app.customMouseMode === CUSTOM_MOUSE_ACTION.NONE) {
                // First check if there are any decoupling points available
@@ -182,7 +207,7 @@ export class Train {
          // Set up direction button handlers
          $("#btnDirectionForward")
             .off()
-            .click(() => {
+            .onclick(() => {
                (train as any).movementDirection = 1;
                $("#btnDirectionForward").addClass("active");
                $("#btnDirectionBackward").removeClass("active");
@@ -190,7 +215,7 @@ export class Train {
 
          $("#btnDirectionBackward")
             .off()
-            .click(() => {
+            .onclick(() => {
                (train as any).movementDirection = -1;
                $("#btnDirectionBackward").addClass("active");
                $("#btnDirectionForward").removeClass("active");
@@ -199,7 +224,7 @@ export class Train {
          // Set up start/stop button handler
          $("#btnStartStopTrain")
             .off()
-            .click(() => {
+            .onclick(() => {
                if (Train.movingTrains.has(train)) {
                   // Stop the train
                   Train.stopTrain(train);

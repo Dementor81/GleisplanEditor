@@ -14,6 +14,12 @@
 /// <reference types="jquery" />
 /// <reference types="bootstrap" />
 
+interface JQuery {
+  onclick(
+    handler: JQuery.TypeEventHandler<HTMLElement, undefined, HTMLElement, HTMLElement, "click">
+  ): JQuery;
+}
+
 // ============================================================================
 // CreateJS Type Definitions
 // ============================================================================

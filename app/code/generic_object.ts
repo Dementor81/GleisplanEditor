@@ -58,7 +58,7 @@ export class GenericObject {
 
       $("#btnRemoveObject")
          .off()
-         .click(() => {
+         .onclick(() => {
             this.removeObject(o);
             Application.getInstance().selectObject();
          });
