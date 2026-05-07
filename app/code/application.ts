@@ -90,7 +90,7 @@ export class Application {
    async initialize(): Promise<void> {
       try {
          await this.#initializePreLoader();
-         this.#initializeManagers();
+         await this.#initializeManagers();
 
          console.log("Application initialized successfully");
          return Promise.resolve();
@@ -122,10 +122,10 @@ export class Application {
     * Initialize managers
     * @private
     */
-   #initializeManagers(): void {     
+   async #initializeManagers(): Promise<void> {     
 
       // Initialize each manager
-      this.#renderingManager.initialize();
+      await this.#renderingManager.initialize();
       this.#eventManager.initialize();
       this.#uiManager.initialize();
 
@@ -151,7 +151,7 @@ export class Application {
 
       let p: any;
       if (pos.above) {
-         container.rotation = 270 + pos.track.deg;
+         container.angle = 270 + pos.track.deg;
          p = point.add(
             geometry
                .perpendicular(pos.track.unit)
@@ -160,7 +160,7 @@ export class Application {
                )
          );
       } else {
-         container.rotation = 90 + pos.track.deg;
+         container.angle = 90 + pos.track.deg;
          p = point.add(
             geometry
                .perpendicular(pos.track.unit)
@@ -169,7 +169,7 @@ export class Application {
                )
          );
       }
-      if (pos.flipped) container.rotation += 180;
+      if (pos.flipped) container.angle += 180;
 
       container.x = p.x;
       container.y = p.y;

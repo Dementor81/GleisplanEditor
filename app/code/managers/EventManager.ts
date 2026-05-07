@@ -16,6 +16,7 @@ import { Switch } from "../switch.ts";
 import { GenericObject } from "../generic_object.ts";
 import { trackRendering_basic } from "../trackRendering_basic.ts";
 import { Application } from "../application.ts";
+import { Sketch } from "../pixiPrimitives.ts";
 
 /**
  * EventManager handles all event-related functionality
@@ -97,14 +98,10 @@ export class EventManager {
          action: MOUSE_DOWN_ACTION.ADD_TRAIN,
       } as any;
 
-      // Create preview bitmap at current mouse location
+      // Create preview marker at current mouse location
       const local_point = stage.globalToLocal(stage.mouseX, stage.mouseY);
-      this.#mouseAction.container = new (createjs as any).Bitmap("zug.png").set({
-         x: local_point.x,
-         y: local_point.y,
-         scale: 0.5,
-         regY: 96 / 2,
-      });
+      this.#mouseAction.container = new Sketch("trainPreview").set({ x: local_point.x, y: local_point.y });
+      this.#mouseAction.container.graphics.beginFill("#333").drawRoundRect(-20, -8, 40, 16, 4);
 
       this.#app.renderingManager?.containers.overlay.addChild(this.#mouseAction.container);
 
@@ -164,7 +161,7 @@ export class EventManager {
     * @private
     */
    #initializeTouchEvents(): void {
-      if (!createjs.Touch.isSupported()) return;
+      if (!("ontouchstart" in window) && navigator.maxTouchPoints === 0) return;
 
       const canvas = myCanvas;
       canvas.addEventListener("touchstart", this.#boundHandleTouchStart!);
@@ -180,7 +177,7 @@ export class EventManager {
       $("#btnDrawTracks,#btnPlay").onclick(() => this.#app.toggleEditMode());
 
       // Renderer switch
-      $("#switch_renderer").on("change", (e) => {
+      $("#switch_renderer").on("change", () => {
          this.#app.renderingManager?.selectRenderer(!$("#switch_renderer").is(":checked"));
          STORAGE.save();
       });
@@ -245,8 +242,7 @@ export class EventManager {
     */
    #handleTouchStart(event: TouchEvent): void {
       if (event.touches.length === 1) {
-         let touch = event.touches[0];
-         //startTrackDrawing(this.#application.stage.globalToLocal(touch.clientX, touch.clientY));
+         // Single-touch drawing can be added here if needed.
       }
    }
 
@@ -287,12 +283,11 @@ export class EventManager {
             app.renderingManager?.stage.mouseY
          ),
          _distancePoint: new Point(event.stageX, event.stageY),
-         offset: hittest?.globalToLocal(app.renderingManager?.stage.mouseX, app.renderingManager?.stage.mouseY),
+         offset: hittest ? null : undefined,
          distance: function () {
-            return geometry.distance(
-               this._distancePoint,
-               new Point(app.renderingManager?.stage.mouseX, app.renderingManager?.stage.mouseY)
-            );
+            const st = app.renderingManager?.stage;
+            const cur = st.globalToLocal(st.mouseX, st.mouseY);
+            return geometry.distance(this._distancePoint, new Point(cur.x, cur.y));
          },
       } as any;
 
@@ -307,12 +302,18 @@ export class EventManager {
          const color = (document.querySelector('input[name="DrawingColor"]:checked') as HTMLInputElement)?.value;
          const width = (document.querySelector('input[name="DrawingWidth"]:checked') as HTMLInputElement)?.value;
 
-         app.renderingManager?.containers.drawing.addChild((mouseAction.shape = new createjs.Shape()));
+         app.renderingManager?.containers.drawing.addChild((mouseAction.shape = new Sketch()));
          mouseAction.shape.graphics.setStrokeStyle(width, "round", "round").beginStroke(color);
          mouseAction.shape.graphics.mt(event.stageX, event.stageY);
       }
 
       this.#mouseAction = mouseAction;
+      if (hittest) {
+         mouseAction.offset = {
+            x: mouseAction.startPoint.x - hittest.x,
+            y: mouseAction.startPoint.y - hittest.y,
+         };
+      }
 
       this.#app.renderingManager?.stage?.addEventListener("stagemousemove", this.#boundHandleMouseMove!);
    }
@@ -331,8 +332,10 @@ export class EventManager {
 
          let local_point = Point.fromPoint(stage.globalToLocal(stage.mouseX, stage.mouseY));
 
-         //left button
-         if (event.nativeEvent.which == 1) {
+         const ev = event.nativeEvent as MouseEvent;
+         // DOM pointer events use button===0; legacy mouse events used which===1
+         const primaryClick = ev.button === 0 || ev.which === 1;
+         if (primaryClick) {
             if (ma.action === MOUSE_DOWN_ACTION.DND_SIGNAL) {
                this.#app.renderingManager?.containers.overlay.removeChild(ma.container);
 
@@ -481,14 +484,14 @@ export class EventManager {
                this.#app.renderingManager?.stage.mouseY
             );
             const drawingContainer = this.#app.renderingManager?.containers.drawing;
-            const hit = drawingContainer.getObjectUnderPoint(local.x, local.y, 1);
+            const hit = this.#app.renderingManager?.stage.findAt(local, drawingContainer);
             if (hit) {
                drawingContainer.removeChild(hit);
                this.#app.renderingManager?.update();
             }
          } else if (this.#app.customMouseMode == CUSTOM_MOUSE_ACTION.PLATTFORM) {
             this.#app.renderingManager?.containers.overlay.removeAllChildren();
-            this.#app.renderingManager?.containers.overlay.addChild((this.#mouseAction.shape = new createjs.Shape()));
+            this.#app.renderingManager?.containers.overlay.addChild((this.#mouseAction.shape = new Sketch()));
             this.#mouseAction.shape.graphics
                .beginStroke(COLORS.DRAWING_PLATTFORM)
                .drawRect(
@@ -503,13 +506,8 @@ export class EventManager {
          const o = this.#mouseAction.container.data;
          o.pos(local_point);
          if (this.#mouseAction.offset) {
-            let p = this.#mouseAction.container.localToLocal(
-               this.#mouseAction.offset.x,
-               this.#mouseAction.offset.y,
-               this.#app.renderingManager?.stage
-            );
-            local_point.x -= p.x - this.#mouseAction.container.x;
-            local_point.y -= p.y - this.#mouseAction.container.y;
+            local_point.x -= this.#mouseAction.offset.x;
+            local_point.y -= this.#mouseAction.offset.y;
          }
          this.#mouseAction.container.x = local_point.x;
          this.#mouseAction.container.y = local_point.y;
@@ -574,7 +572,7 @@ export class EventManager {
          this.#app.renderingManager?.stage.mouseX,
          this.#app.renderingManager?.stage.mouseY
       );
-      return (container ? container : this.#app.renderingManager?.stage).getObjectUnderPoint(local_point.x, local_point.y, 1);
+      return this.#app.renderingManager?.stage.findAt(local_point, container);
    }
 
    /**
@@ -622,7 +620,7 @@ export class EventManager {
                } else if (ma.container?.name == "track" || ma.container?.name == "switch" || ma.container == null) {
                   ma.action = MOUSE_DOWN_ACTION.BUILD_TRACK;
                   this.addTrackAnchorPoint(this.getSnapPoint(local_point));
-                  this.#app.renderingManager?.containers.overlay.addChild((ma.lineShape = new createjs.Shape()));
+                  this.#app.renderingManager?.containers.overlay.addChild((ma.lineShape = new Sketch()));
                }
             }
             if (ma.container?.name == "train") {
@@ -650,11 +648,10 @@ export class EventManager {
          this.#app.alignSignalContainerWithTrack(ma.container, hitInformation);
       } else {
          ma.hit_track = null;
-         ma.container.rotation = 0;
+         ma.container.angle = 0;
          if (ma.offset) {
-            let p = ma.container.localToLocal(ma.offset.x, ma.offset.y, this.#app.renderingManager?.stage);
-            local_point.x -= p.x - ma.container.x;
-            local_point.y -= p.y - ma.container.y;
+            local_point.x -= ma.offset.x;
+            local_point.y -= ma.offset.y;
          }
          ma.container.x = local_point.x;
          ma.container.y = local_point.y;
@@ -671,7 +668,7 @@ export class EventManager {
 
       if (this.#mouseAction.hit_track) {
          const point = this.#mouseAction.hit_track.point;
-         shape = new createjs.Shape();
+         shape = new Sketch("SignalPositionLine");
          shape.name = "SignalPositionLine";
          shape.graphics
             .setStrokeStyle(1)
@@ -785,35 +782,28 @@ export class EventManager {
     * Handle image export
     * @private
     */
-   #handleImageExport(e: any): void {
+   async #handleImageExport(): Promise<void> {
       const stage = this.#app.renderingManager?.stage;
-      let backup = { x: stage.x, y: stage.y, scale: stage.scale, canvas: stage.canvas };
+      let backup = { x: stage.x, y: stage.y, scale: stage.scale };
 
       try {
-         const custom_scale = 2;
-         stage.enableDOMEvents(false);
-
-         stage.scale = custom_scale;
-
          this.#app.renderingManager?.reDrawEverything(true, true);
 
-         let bounds = this.#app.renderingManager?.containers.main.getBounds();
+         let bounds = this.#app.renderingManager?.containers.main.getLocalBounds();
          if (!bounds) {
             ui.showInfoToast("Nix zu sehen");
             return;
          }
-         const anotherCanvas = $("<canvas>", { id: "test" })
-            .attr("width", bounds.width * custom_scale)
-            .attr("height", bounds.height * custom_scale);
-         stage.canvas = anotherCanvas[0];
-         stage.x = bounds.x * -custom_scale;
-         stage.y = bounds.y * -custom_scale;
          this.#app.renderingManager!.setGridVisible(false);
          this.#app.renderingManager!.containers.drawing.visible = false;
          this.#app.renderingManager!.containers.ui.visible = false;
          stage.update();
 
-         let img_data = stage.toDataURL("#00000000", "image/png");
+         let img_data = await this.#app.renderingManager!.pixiApp.renderer.extract.base64({
+            target: this.#app.renderingManager!.containers.main,
+            resolution: 2,
+            clearColor: "#00000000",
+         });
          const img = $("<img>", { src: img_data, width: "100%" }).css("object-fit", "scale-down").css("max-height", "50vh");
          ui.showModalDialog(img, () => {
             const a = $("<a>", { download: "gleisplan.png", href: img_data });
@@ -825,12 +815,10 @@ export class EventManager {
          stage.x = backup.x;
          stage.y = backup.y;
          stage.scale = backup.scale;
-         stage.canvas = backup.canvas;
          this.#app.renderingManager!.setGridVisible(this.#app.showGrid);
          this.#app.renderingManager!.containers.drawing.visible = true;
          this.#app.renderingManager!.containers.ui.visible = true;
          this.#app.renderingManager?.reDrawEverything(true);
-         stage.enableDOMEvents(true);
          stage.update();
       }
    }
@@ -839,7 +827,7 @@ export class EventManager {
     * Handle draw toggle
     * @private
     */
-   #handleDrawToggle(e: any): void {
+   #handleDrawToggle(): void {
       this.#app.customMouseMode = $("#btnDraw").hasClass("active") ? CUSTOM_MOUSE_ACTION.DRAWING : CUSTOM_MOUSE_ACTION.NONE;
       $("#btnDrawingEraser").removeClass("active");
       const bsOffcanvas = Offcanvas.getOrCreateInstance(document.getElementById("drawingPanel")!);
@@ -854,7 +842,7 @@ export class EventManager {
     * Handle drawing clear
     * @private
     */
-   #handleDrawingClear(e: any): void {
+   #handleDrawingClear(): void {
       this.#app.renderingManager?.containers.drawing.removeAllChildren();
       this.#app.renderingManager?.update();
    }
@@ -863,7 +851,7 @@ export class EventManager {
     * Handle undo
     * @private
     */
-   #handleUndo(e: any): void {
+   #handleUndo(): void {
       this.#app.undo();
    }
 

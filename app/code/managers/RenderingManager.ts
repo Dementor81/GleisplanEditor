@@ -11,6 +11,7 @@ import { GenericObject } from '../generic_object.ts';
 import { trackRendering_basic } from '../trackRendering_basic.ts';
 import { trackRendering_textured } from '../trackRendering_textured.ts';
 import type { Application } from '../application.ts';
+import { createPixiScene, DisplayGroup, Sketch } from '../pixiPrimitives.ts';
 
 // ============================================================================
 // Type Definitions
@@ -54,8 +55,8 @@ export class RenderingManager {
    /**
     * Initialize the rendering manager
     */
-   initialize(): void {
-      this.#initializeStage();
+   async initialize(): Promise<void> {
+      await this.#initializeStage();
       this.#initializeContainers();
       this.#initializeRenderer();
       
@@ -69,20 +70,15 @@ export class RenderingManager {
    }
    
    /**
-    * Initialize the CreateJS stage
+    * Initialize the PixiJS scene
     * @private
     */
-   #initializeStage(): void {
+   async #initializeStage(): Promise<void> {
       const myCanvas = (window as any).myCanvas;
-      const createjs = (window as any).createjs;
       
       // Disable context menu
       myCanvas.oncontextmenu = () => false;
-      this.#stage = new createjs.Stage(myCanvas);
-      this.#stage.autoClear = true;
-      this.#stage.enableDOMEvents(true);
-      createjs.Ticker.framerate = CONFIG.TICKER_FRAMERATE;
-      createjs.Ticker.addEventListener("tick", this.#stage);
+      this.#stage = await createPixiScene(myCanvas);
    }
    
    /**
@@ -90,13 +86,8 @@ export class RenderingManager {
     * @private
     */
    #initializeContainers(): void {
-      const createjs = (window as any).createjs;
-      
       const createContainer = (name: string) => {
-         const container = new createjs.Container();
-         container.name = name;
-         container.mouseChildren = true;
-         return container;
+         return new DisplayGroup(name);
       };
       
       // Create all containers
@@ -189,13 +180,12 @@ export class RenderingManager {
     */
    zoom(deltaY: number): void {
       const myCanvas = (window as any).myCanvas as any;
-      const createjs = (window as any).createjs;
       
       if (!myCanvas.prevent_input) {
          myCanvas.prevent_input = true;
 
          const stage = this.stage;
-         const point = new createjs.Point(stage.mouseX, stage.mouseY);
+         const point = { x: stage.mouseX, y: stage.mouseY };
          const localPoint = stage.globalToLocal(point.x, point.y);
          const old_scale = stage.scale;
          const step = deltaY / (INPUT.ZOOM_STEP_DIVISOR / stage.scale);
@@ -288,14 +278,10 @@ export class RenderingManager {
     * @param repaint - Whether to repaint the grid
     */
    drawGrid(repaint: boolean = true): void {
-      const createjs = (window as any).createjs;
-      
       if (!this.#grid) {
-         this.#grid = new createjs.Shape();
+         this.#grid = new Sketch("grid");
          this.#grid.name = "grid";
-         this.#grid.mouseEnabled = false;
          this.#stage.addChildAt(this.#grid, 0);
-         this.#grid.graphics.setStrokeStyle(CONFIG.GRID_STROKE_STYLE, "round");
       }
 
       this.#grid.visible = this.#application.showGrid;
@@ -314,7 +300,7 @@ export class RenderingManager {
          // Add padding to prevent gaps during panning
          const padding = CONFIG.GRID_SIZE * 2;
 
-         this.#grid.graphics.clear().setStrokeStyle(CONFIG.GRID_STROKE_STYLE, "round").setStrokeDash([5, 5], 2).beginStroke(COLORS.GRID);
+         this.#grid.graphics.clear().setStrokeStyle(CONFIG.GRID_STROKE_STYLE, "round").setStrokeDash([5, 5]).beginStroke(COLORS.GRID);
 
          // Draw vertical lines
          for (let x = -padding; x <= size.width + padding; x += CONFIG.GRID_SIZE) {
@@ -327,7 +313,6 @@ export class RenderingManager {
          }
 
          // Cache with padding to prevent artifacts
-         this.#grid.cache(-padding, -padding, size.width + padding * 2, size.height + padding * 2, scale);
       }
 
       // Align grid to nearest grid line to prevent floating point artifacts
@@ -346,12 +331,15 @@ export class RenderingManager {
       const height = $(CanvasContainer).height();
       const width = $(CanvasContainer).width();
       
-      if (height !== undefined) {
-         $(myCanvas).attr("height", height - 5);
-      }
-      if (width !== undefined) {
-         $(myCanvas).attr("width", width);
-      }
+      if (height === undefined || width === undefined) return;
+
+      const canvasHeight = height;
+      const canvasWidth = width;
+      myCanvas.width = canvasWidth;
+      myCanvas.height = canvasHeight;
+      myCanvas.style.width = `${canvasWidth}px`;
+      myCanvas.style.height = `${canvasHeight}px`;
+      this.#stage?.app?.renderer?.resize(canvasWidth, canvasHeight);
       
       this.drawGrid();
       this.update();
@@ -388,6 +376,7 @@ export class RenderingManager {
    
    // Getters for accessing rendering state
    get stage(): any { return this.#stage; }
+   get pixiApp(): any { return this.#stage?.app; }
    get containers(): any { return this.#containers; }
    get renderer(): any { return this.#renderer; }
    get grid(): any { return this.#grid; }

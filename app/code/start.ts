@@ -12,6 +12,7 @@ import { GenericObject } from './generic_object.ts';
 import { Train } from './train.ts';
 import { geometry } from './tools.ts';
 import { ui } from './ui.ts';
+import { LabelText, Sketch } from './pixiPrimitives.ts';
 
 // Make Bootstrap available globally for data-attribute API
 (window as any).bootstrap = bootstrap;
@@ -46,8 +47,8 @@ async function initializeApplication() {
    }
 }                       
 
-function drawPoint(point: any, displayObject: any, label: string = "", color: string = "#000", size: number = 0.5) {
-   const s = new createjs.Shape();
+function drawPoint(point: any, _displayObject: any, label: string = "", color: string = "#000", size: number = 0.5) {
+   const s = new Sketch();
    s.graphics.setStrokeStyle(1).beginStroke(color).beginFill(color).drawCircle(0, 0, size);
    s.x = point.x;
    s.y = point.y;
@@ -55,12 +56,13 @@ function drawPoint(point: any, displayObject: any, label: string = "", color: st
    (window as any).app.renderingManager.containers.debug.addChild(s);
 
    if (label) {
-      const text = new createjs.Text(label, "Italic 6px Arial", color);
+      const text = new LabelText(label, "Italic 6px Arial", color);
       text.x = s.x;
       text.y = s.y - 5;
-      text.textBaseline = "alphabetic";
       (window as any).app.renderingManager.containers.debug.addChild(text);
    }
 }
+
+(window as any).drawPoint = drawPoint;
 
 

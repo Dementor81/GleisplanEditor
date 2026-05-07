@@ -5,10 +5,10 @@ import { ArrayUtils, NumberUtils } from "./utils.ts";
 import { STORAGE } from "./storage.ts";
 import { ui } from "./ui.ts";
 import { Track } from "./track.ts";
-import { Point, type } from "./tools.ts";
-import { Application } from "./application.ts";
+import { Point } from "./tools.ts";
 import { CUSTOM_MOUSE_ACTION } from "./config.ts";
 import { COLORS } from "./config.ts";
+import { Sketch, circleHitArea } from "./pixiPrimitives.ts";
 
 export class Train {
    static allTrains: Train[] = [];
@@ -104,7 +104,7 @@ export class Train {
       $("#colorInputTrain")
          .off()
          .val(train.color)
-         .on("change", function (e) {
+         .on("change", function () {
             train.color = $(this).val() as string;
             app.renderingManager!.renderer.renderAllTrains();
             app.renderingManager!.update();
@@ -114,7 +114,7 @@ export class Train {
       $("#inputZugnummer")
          .off()
          .val(train.number)
-         .on("change", function (e) {
+         .on("change", function () {
             train.number = $(this).val() as string;
             app.renderingManager!.renderer.renderAllTrains();
             app.renderingManager!.update();
@@ -124,7 +124,7 @@ export class Train {
       $("#selectTrainType")
          .off()
          .val(train.type)
-         .on("change", function (e) {
+         .on("change", function () {
             train.type = $(this).val() as string;
             app.renderingManager!.renderer.renderAllTrains();
             app.renderingManager!.update();
@@ -524,8 +524,9 @@ export class Train {
          const midY = (currentPos.y + nextPos.y) / 2;
 
          // Create a decoupling point (circle)
-         const decouplingPoint = new createjs.Shape();
+         const decouplingPoint = new Sketch("decouplingPoint");
          decouplingPoint.graphics.beginFill("#ff0000").drawCircle(0, 0, 6);
+         decouplingPoint.hitArea = circleHitArea(0, 0, 6);
          decouplingPoint.x = midX;
          decouplingPoint.y = midY;
          // Store the cars to decouple in the shape's data
@@ -660,8 +661,9 @@ export class Train {
          const midY = (car1Pos.y + car2Pos.y) / 2;
 
          // Create a coupling point (circle)
-         const couplingPoint = new createjs.Shape();
+         const couplingPoint = new Sketch("couplingPoint");
          couplingPoint.graphics.beginFill("#00ff00").drawCircle(0, 0, 6);
+         couplingPoint.hitArea = circleHitArea(0, 0, 6);
          couplingPoint.x = midX;
          couplingPoint.y = midY;
 

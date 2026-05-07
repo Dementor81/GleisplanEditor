@@ -6,8 +6,11 @@ import { Switch } from './switch.ts';
 import { Signal } from './signal.ts';
 import { SignalRenderer } from './signalRenderer.ts';
 import { GenericObject } from './generic_object.ts';
+import { Train } from './train.ts';
 import { geometry } from './tools.ts';
 import { Application } from './application.ts';
+import { CONFIG } from './config.ts';
+import { DisplayGroup, LabelText, Sketch, polygonHitArea } from './pixiPrimitives.ts';
 
 export class trackRendering_basic {
    static TRACK_COLOR = "#111111";
@@ -34,7 +37,55 @@ export class trackRendering_basic {
       this.renderAllSwitches();
       this.renderAllGenericObjects();
       this.renderAllSignals();
+      this.renderAllTrains();
       this.app.renderingManager!.update();
+   }
+
+   renderAllTrains() {
+      const rm = this.app.renderingManager!;
+      rm.containers.trains.removeAllChildren();
+
+      Train.allTrains
+         .filter((train: any) => !train.trainCoupledFront)
+         .forEach((train: any) => {
+            const c = new DisplayGroup("train");
+            c.name = "train";
+            (c as any).train = train;
+            c.interactiveChildren = true;
+
+            this.renderCar(train, c);
+
+            rm.containers.trains.addChild(c);
+         });
+   }
+
+   renderCar(car: any, container: any) {
+      const carWidth = car.length;
+      const carHeight = CONFIG.GRID_SIZE * 0.65;
+      const corner = car.type == Train.CAR_TYPES.LOCOMOTIVE ? 8 : 1.5;
+      const s = new Sketch("train", car);
+      s.graphics.setStrokeStyle(1).beginStroke("#000").beginFill(car.color).drawRoundRect(0, 0, carWidth, carHeight, corner);
+      s.data = car;
+      s.name = "train";
+
+      const p = car.track.getPointFromKm(car.pos);
+
+      s.x = p.x;
+      s.y = p.y;
+      s.pivot.set(carWidth / 2, carHeight / 2);
+      s.angle = car.track.deg;
+
+      container.addChild(s);
+      if (car.number && car.type == Train.CAR_TYPES.LOCOMOTIVE) {
+         const text = new LabelText(car.number, "10px Arial", "#000000");
+         text.anchor.set(0.5);
+         text.x = p.x;
+         text.y = p.y;
+         container.addChild(text);
+      }
+      if (car.trainCoupledBack) {
+         this.renderCar(car.trainCoupledBack, container);
+      }
    }
 
    renderAllSignals() {
@@ -43,7 +94,7 @@ export class trackRendering_basic {
          let container = this.app.renderingManager!.containers.signals.addChild(SignalRenderer.createSignalContainer(signal));
          this.app.alignSignalContainerWithTrack(container, signal._positioning);
          if (this.app.selection.isSelectedObject(signal)) {
-            container.shadow = new createjs.Shadow("#ff0000", 0, 0, 3);
+            container.tint = 0xff0000;
          }
       });
    }
@@ -55,20 +106,20 @@ export class trackRendering_basic {
    }
 
    isSelected(c: any) {
-      c.color.style = "#ff0000";
+      c.tint = 0xff0000;
    }
 
    updateSelection() {
       app.renderingManager!.containers.tracks.children.forEach((c: any) => {
          if (c.data) {
             if (app.selection.isSelectedObject(c.data)) this.isSelected(c);
-            else c.color.style = trackRendering_basic.TRACK_COLOR;
+            else c.tint = 0xffffff;
          }
       });
       app.renderingManager!.containers.signals.children.forEach(function (c: any) {
          if (c.data) {
-            if (app.selection.isSelectedObject(c.data)) c.shadow = new createjs.Shadow("#ff0000", 0, 0, 3);
-            else c.shadow = null;
+            if (app.selection.isSelectedObject(c.data)) c.tint = 0xff0000;
+            else c.tint = 0xffffff;
          }
       });
       this.app.renderingManager!.update();
@@ -77,10 +128,10 @@ export class trackRendering_basic {
    renderAllGenericObjects() {
       this.app.renderingManager!.containers.objects.removeAllChildren();
       GenericObject.all_objects.forEach((o: any) => {
-         const c = new createjs.Container();
+         const c = new DisplayGroup("GenericObject", o);
          c.name = "GenericObject";
          c.data = o;
-         c.mouseChildren = false;
+         c.interactiveChildren = false;
          c.x = o.pos().x;
          c.y = o.pos().y;
 
@@ -93,27 +144,22 @@ export class trackRendering_basic {
    }
 
    renderTextObject(text_object: any, container: any) {
-      var text = new createjs.Text(text_object.content(), "20px Arial", "#000000");
-      text.textBaseline = "alphabetic";
+      var text = new LabelText(text_object.content(), "20px Arial", "#000000");
       const height = text.getMeasuredHeight();
       const width = text.getMeasuredWidth();
 
-      const hit = new createjs.Shape();
-      hit.graphics.beginFill("#000").mt(0, 0).lt(width, 0).lt(width, -height).lt(0, -height).lt(0, 0);
-
-      text.hitArea = hit;
+      text.hitArea = polygonHitArea([{ x: 0, y: 0 }, { x: width, y: 0 }, { x: width, y: -height }, { x: 0, y: -height }]);
 
       container.addChild(text);
    }
 
    renderPlattformObject(plattform: any, container: any) {
-      const shape = new createjs.Shape();
+      const shape = new Sketch();
       container.addChild(shape);
       shape.graphics.beginStroke("#111111").beginFill("#444").drawRect(0, 0, plattform.size().width, plattform.size().height);
 
-      var text = new createjs.Text(plattform.content(), "20px Arial", "#eee");
-      text.textBaseline = "middle";
-      text.textAlign = "center";
+      var text = new LabelText(plattform.content(), "20px Arial", "#eee");
+      text.anchor.set(0.5);
       text.x = plattform.size().width / 2;
       text.y = plattform.size().height / 2;
 
@@ -157,20 +203,11 @@ export class trackRendering_basic {
 
    renderTrack(container: any, track: Track) {
       let params = this.calculateTrackDrawingParameters(track);
-      let shape = new createjs.Shape();
+      let shape = new Sketch("track", track);
       shape.name = "track";
       shape.data = track;
 
-      let hit = new createjs.Shape();
-
-      hit.graphics
-         .beginFill("#000")
-         .mt(params.hit_area[0].x, params.hit_area[0].y)
-         .lt(params.hit_area[1].x, params.hit_area[1].y)
-         .lt(params.hit_area[2].x, params.hit_area[2].y)
-         .lt(params.hit_area[3].x, params.hit_area[3].y)
-         .lt(params.hit_area[0].x, params.hit_area[0].y);
-      shape.hitArea = hit;
+      shape.hitArea = polygonHitArea(params.hit_area);
 
       //container.addChild(hit);
       container.addChild(shape);
@@ -188,14 +225,6 @@ export class trackRendering_basic {
          shape.graphics.moveTo(params.bumper[1][0].x, params.bumper[1][0].y).lineTo(params.bumper[1][1].x, params.bumper[1][1].y);
       }
       if (this.app.selection.isSelectedObject(track)) this.isSelected(shape);
-
-      /* const text = new createjs.Text(track.id, "Italic 10px Arial", "black");
-      const p = track.along(track.start, track.length / 2).add(geometry.perpendicular(track.unit).multiply(15));
-
-      text.x = p.x;
-      text.y = p.y;
-      text.textBaseline = "alphabetic";
-      this.app.renderingManager.containers.ui.addChild(text); */
 
       shape.setBounds(
          params.start.x - trackRendering_basic.HIT_TEST_DISTANCE,
@@ -221,7 +250,7 @@ export class trackRendering_basic {
             console.log(sw);
             throw new Error("switch is falty");
          }
-         let switch_shape = new createjs.Shape();
+         let switch_shape = new Sketch("switch", sw);
          switch_shape.name = "switch";
          switch_shape.data = sw;
          this.app.renderingManager!.containers.tracks.addChild(switch_shape);
@@ -268,14 +297,14 @@ export class trackRendering_basic {
          container.removeAllChildren();
       } else {
          // Create a new container if none exists
-         container = new createjs.Container();
-         container.mouseChildren = false;
+         container = new DisplayGroup("switch", sw);
+         container.interactiveChildren = false;
          container.name = "switch";
          container.data = sw;
          this.app.renderingManager!.containers.ui.addChild(container);
       }
 
-      const ui_shape = new createjs.Shape();
+      const ui_shape = new Sketch();
       ui_shape.graphics.setStrokeStyle(trackRendering_basic.STROKE / 2, "round");
       container.addChild(ui_shape);
 

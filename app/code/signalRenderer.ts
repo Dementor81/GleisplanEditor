@@ -1,10 +1,10 @@
 "use strict";
 
 // ES6 Module imports
-import { ui } from './ui.ts';
 import { clone } from './tools.ts';
 import { TextElement, VisualElement } from './visualElement.ts';
 import { Application } from './application.ts';
+import { DisplayGroup, LabelText, rectHitArea } from './pixiPrimitives.ts';
 
 export class SignalRenderer {
    static #renderingState = new WeakMap<any, any>();
@@ -23,23 +23,21 @@ export class SignalRenderer {
    }
 
    static createSignalContainer(signal: any) {
-      let c = new createjs.Container();
+      let c = new DisplayGroup("signal");
       c.name = "signal";
       c.data = signal;
-      c.mouseChildren = false;
+      c.interactiveChildren = false;
       c.snapToPixel = true;
-      c.scale = signal._template.scale;
+      c.scale.set(signal._template.scale);
    
       signal.draw(c, true);
-      let sig_bounds = c.getBounds();
+      let sig_bounds = c.getLocalBounds();
       if (sig_bounds) {
          // schläft fehl, wenn nichts gezeichnet wurde
-         let hit = new createjs.Shape();
-         hit.graphics.beginFill("#000").drawRect(sig_bounds.x, sig_bounds.y, sig_bounds.width, sig_bounds.height);
-         c.hitArea = hit;
+         c.hitArea = rectHitArea(sig_bounds.x, sig_bounds.y, sig_bounds.width, sig_bounds.height);
    
-         c.regX = sig_bounds.width / 2 + sig_bounds.x;
-         c.regY = sig_bounds.height + sig_bounds.y;
+         c.pivot.x = sig_bounds.width / 2 + sig_bounds.x;
+         c.pivot.y = sig_bounds.height + sig_bounds.y;
       } else console.error("Wahrscheinlich fehler beim Zeichen des Signals!");
    
       return c;
@@ -60,18 +58,18 @@ export class SignalRenderer {
       return false;
    }
 
-   static drawTextElement(signal: any, ve: any) {
+   static drawTextElement(signal: any, ve: any): void {
       if (!ve.pos()) throw new Error("TextElement doesnt have a position");
       if (ve.isAllowed(signal) && ve.isEnabled(signal)) {
          const formatString = (f: any) => `${f[2] ? "bold" : ""} ${f[0]}px ${f[1]}`;
 
         let txt = ve.getText(signal);
-        if (txt == null) return false;
+        if (txt == null) return;
         if (typeof txt == "string") txt = txt.replace("-", "\n");
         let ar = clone(ve.format);
-        const displayObject = new createjs.Text(txt, formatString(ar), ve.color);
+        const displayObject = new LabelText(txt, formatString(ar), ve.color);
         [displayObject.x, displayObject.y] = ve.pos();
-        displayObject.textAlign = "center";
+        displayObject.anchor.x = 0.5;
 
         let current_bounds, max_bounds;
         do {
@@ -104,7 +102,12 @@ export class SignalRenderer {
 
                if (blinks) {
                   signal._dontCache = true;
-                  createjs.Tween.get(bmp, { loop: true }).wait(1000).to({ alpha: 0 }, 200).wait(800).to({ alpha: 1 }, 50);
+                  const ticker = Application.getInstance().renderingManager?.pixiApp?.ticker;
+                  let elapsed = 0;
+                  ticker?.add((tick: any) => {
+                     elapsed = (elapsed + tick.deltaMS) % 2050;
+                     bmp.alpha = elapsed < 1000 || elapsed >= 2000 ? 1 : elapsed < 1200 ? 1 - (elapsed - 1000) / 200 : 0;
+                  });
                }
 
                return bmp;

@@ -3,6 +3,8 @@
 // ES6 Module imports
 import { ArrayUtils } from './utils.ts';
 import { ui } from './ui.ts';
+import { Rectangle, type Texture } from 'pixi.js';
+import { TextureSprite, loadTexture, textureRegion } from './pixiPrimitives.ts';
 
 // ============================================================================
 // Type Definitions
@@ -24,24 +26,6 @@ interface SpriteManifestItem {
    };
 }
 
-interface LoadQueueItem {
-   id: string;
-   src: string;
-   type: string;
-}
-
-// CreateJS LoadQueue types (simplified for our usage)
-interface CreateJSLoadQueue {
-   loaded: boolean;
-   setMaxConnections(num: number): void;
-   loadManifest(manifest: SpriteManifestItem[], loadNow: boolean, basePath?: string): void;
-   loadFile(item: LoadQueueItem, loadNow: boolean, basePath?: string): void;
-   addEventListener(type: string, listener: (event?: any) => void): void;
-   setPaused(paused: boolean): void;
-   getResult(id: string): any;
-   _loadItemsById: Record<string, SpriteManifestItem>;
-}
-
 // ============================================================================
 // PreLoader Class
 // ============================================================================
@@ -52,7 +36,10 @@ export class preLoader {
    private _jsonFiles: string[] = [];
    private _loadedItems: number = 0;
    private _totalItems: number = 0;
-   private _loadQueue: CreateJSLoadQueue;
+   private _loaded: boolean = false;
+   private _imageRequests: { src: string; id: string }[] = [];
+   private _textures: Record<string, Texture> = {};
+   private _spriteItems: Record<string, SpriteManifestItem> = {};
    
    public onProgress: (progress: number) => void = () => {};
 
@@ -60,18 +47,10 @@ export class preLoader {
       this._basefolder = basefolder;
       if (basefolder.length > 0) this._basefolder += "/";
       
-      // Initialize CreateJS LoadQueue
-      this._loadQueue = new (createjs as any).LoadQueue(false, basefolder, false);
-      this._loadQueue.setMaxConnections(99);
-      
-      /* this._loadQueue.on("fileload", (e) => {
-         this._loadedItems++;
-         this.onProgress(this._loadedItems / this._totalItems);
-      }); */
    }
 
    get loaded(): boolean {
-      return this._loadQueue.loaded;
+      return this._loaded;
    }
 
    /**
@@ -93,8 +72,10 @@ export class preLoader {
                   img.id = json_file + img.signal;
                   i++;
                }
-               this._totalItems += imgCatalog.length;
-               this._loadQueue.loadManifest(imgCatalog, false, this._basefolder);
+               this._totalItems++;
+               imgCatalog.forEach((item) => {
+                  this._spriteItems[item.id] = item;
+               });
                resolve();
             })
             .catch(reject);
@@ -111,15 +92,7 @@ export class preLoader {
     */
    addImage(src: string, id: string): void {
       this._totalItems++;
-      this._loadQueue.loadFile(
-         { 
-            id: id, 
-            src: src, 
-            type: (createjs as any).LoadQueue.IMAGE 
-         }, 
-         false, 
-         this._basefolder
-      );
+      this._imageRequests.push({ src, id });
    }
 
    /**
@@ -128,21 +101,29 @@ export class preLoader {
     */
    start(): Promise<void> {
       return new Promise<void>((resolve, reject) => {
-         Promise.all(this._promises).then(() => {
-            this._loadQueue.addEventListener("error", (e: any) => {
-               ui.showInfoToast(e.title + ":" + e.data.id);
-            });
-            
-            this._loadQueue.addEventListener("fileload", () => { 
-               this._loadedItems++; 
-            });
-            
-            this._loadQueue.addEventListener("complete", () => {
-               resolve();
-            });
+         Promise.all(this._promises)
+            .then(async () => {
+               const sheetNames = Array.from(new Set(Object.values(this._spriteItems).map((item) => item.src)));
+               const imageRequests = [
+                  ...this._imageRequests,
+                  ...sheetNames.map((src) => ({ src, id: src })),
+               ];
 
-            this._loadQueue.setPaused(false);
-         }).catch(reject);
+               try {
+                  await Promise.all(
+                     imageRequests.map(async ({ src, id }) => {
+                        this._textures[id] = await loadTexture(this._basefolder + src);
+                        this._loadedItems++;
+                     })
+                  );
+                  this._loaded = true;
+                  resolve();
+               } catch (error: any) {
+                  ui.showInfoToast(error?.message ?? String(error));
+                  reject(error);
+               }
+            })
+            .catch(reject);
       });
    }
 
@@ -150,7 +131,7 @@ export class preLoader {
     * Get a sprite from a loaded sprite sheet
     * @param json_file - Name of the sprite sheet JSON file
     * @param texture_name - Name of the texture within the sprite sheet
-    * @returns CreateJS Bitmap or null if not found
+    * @returns Pixi sprite or null if not found
     */
    getSprite(json_file: string, texture_name: string): any | null {
       if (texture_name == null || texture_name == "") {
@@ -161,20 +142,20 @@ export class preLoader {
       }
       
       const id = json_file + texture_name;
-      const img = this._loadQueue.getResult(id);
+      const item = this._spriteItems[id];
       
-      if (img != null) {
-         const item = this._loadQueue._loadItemsById[id];
-         return new (createjs as any).Bitmap(img).set({
+      if (item != null) {
+         const texture = this._textures[item.src];
+         if (!texture) return null;
+         return new TextureSprite(
+            textureRegion(
+               texture,
+               new Rectangle(item.sourceRect.x, item.sourceRect.y, item.sourceRect.width, item.sourceRect.height)
+            )
+         ).set({
             name: texture_name,
             y: item.pos.top,
             x: item.pos.left,
-            sourceRect: new (createjs as any).Rectangle(
-               item.sourceRect.x, 
-               item.sourceRect.y, 
-               item.sourceRect.width, 
-               item.sourceRect.height
-            ),
          });
       } else {
          console.log(id + " nicht gefunden, nicht vom preLoader geladen");
@@ -189,7 +170,7 @@ export class preLoader {
     * @returns The loaded image or undefined
     */
    getImage(id: string): any {
-      return this._loadQueue.getResult(id);
+      return this._textures[id];
    }
 
    /**

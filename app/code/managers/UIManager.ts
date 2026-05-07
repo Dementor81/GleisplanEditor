@@ -9,6 +9,7 @@ import { Train } from "../train.ts";
 import { GenericObject } from "../generic_object.ts";
 import { STORAGE } from "../storage.ts";
 import type { Application } from "../application.ts";
+import { DisplayGroup } from "../pixiPrimitives.ts";
 
 // ============================================================================
 // Type Definitions
@@ -144,16 +145,19 @@ export class UIManager {
     * @private
     */
    #getDataURLFromTemplate(template: SignalTemplate): string {
-      const tmpStage = new (createjs as any).Stage($("<canvas>").attr({ width: 450, height: 450 })[0]);
-      tmpStage.scale = template.scale;
+      const app = (window as any).app;
+      const tmpStage = new DisplayGroup("signalPreview");
+      tmpStage.scale.set(template.scale);
 
       SignalRenderer.drawPreview(template, tmpStage);
-      tmpStage.update();
 
-      const sig_bounds = tmpStage.getBounds();
+      const sig_bounds = tmpStage.getLocalBounds();
       if (sig_bounds == null) throw Error(template.title + " has no visual Element visible");
-      tmpStage.cache(sig_bounds.x, sig_bounds.y, sig_bounds.width, sig_bounds.height, 0.5);
-      return tmpStage.bitmapCache.getCacheDataURL();
+      const canvas = app.renderingManager.pixiApp.renderer.extract.canvas({
+         target: tmpStage,
+         resolution: 0.5,
+      }) as HTMLCanvasElement;
+      return canvas.toDataURL("image/png");
    }
 
    /**
