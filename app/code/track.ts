@@ -7,6 +7,7 @@ import { Signal } from "./signal.ts";
 import { ArrayUtils } from "./utils.ts";
 import { CONFIG } from "./config.ts";
 import { STORAGE } from "./storage.ts";
+import { Application } from "./application.ts";
 
 export class Track {
    static allTracks: Track[] = [];
@@ -476,11 +477,11 @@ export class Track {
          track.hasBumper = e.target.checked;
          STORAGE.save();
          STORAGE.saveUndoHistory();
-         app.renderingManager!.renderer.reDrawEverything(true);
+         Application.getInstance().renderingManager!.reDrawEverything(true);
       });
       $("#btnRemoveTrack").off("click");
       $("#btnRemoveTrack").on("click", () => {
-         app.deleteSelectedObject();
+         Application.getInstance().deleteSelectedObject();
       });
    }
 

@@ -18,6 +18,14 @@ import { gleisGraphics } from './pixiPrimitives.ts';
 // Make Bootstrap available globally for data-attribute API
 (window as any).bootstrap = bootstrap;
 
+declare global {
+  interface JQuery {
+   onclick(
+     handler: JQuery.TypeEventHandler<HTMLElement, undefined, HTMLElement, HTMLElement, "click">
+   ): JQuery;
+ }
+}
+
 $.fn.onclick = function (
    this: JQuery,
    handler: JQuery.TypeEventHandler<HTMLElement, undefined, HTMLElement, HTMLElement, "click">

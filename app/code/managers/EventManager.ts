@@ -42,6 +42,8 @@ import { findChildByLabel } from "../pixiUtils.ts";
 export class EventManager {
    #app: Application;
    #eventListeners: Map<string, Function[]> = new Map();
+   #mainCanvas: HTMLCanvasElement = (window as any).myCanvas as HTMLCanvasElement;
+
    #previousTouch: Touch | null = null;
    #mouseAction: any = null;
 
@@ -115,6 +117,7 @@ export class EventManager {
     * Initialize all event listeners
     */
    initialize(): void {
+      
       // Create bound function references for proper event listener removal
       this.#boundHandleStageMouseDown = this.handleStageMouseDown.bind(this);
       this.#boundHandleStageMouseUp = this.handleStageMouseUp.bind(this);
@@ -138,10 +141,11 @@ export class EventManager {
     * @private
     */
    #initializeCanvasEvents(): void {
-      myCanvas?.addEventListener("wheel", this.#boundHandleWheelEvent!, { passive: false });
-      myCanvas?.addEventListener("pointerdown", this.#boundHandleStageMouseDown!);
-      myCanvas?.addEventListener("pointerup", this.#boundHandleStageMouseUp!);
-      myCanvas?.addEventListener("pointermove", this.#boundHandleCanvasPointerMove!);
+      const c = this.#mainCanvas;
+      c?.addEventListener("wheel", this.#boundHandleWheelEvent!, { passive: false });
+      c?.addEventListener("pointerdown", this.#boundHandleStageMouseDown!);
+      c?.addEventListener("pointerup", this.#boundHandleStageMouseUp!);
+      c?.addEventListener("pointermove", this.#boundHandleCanvasPointerMove!);
    }
 
    /** Keeps pointer coords in sync with {@link RenderingManager.recordCanvasPointer}; forwards moves during an interaction. */
@@ -157,7 +161,8 @@ export class EventManager {
    #initializeTouchEvents(): void {
       if (!("ontouchstart" in window) && navigator.maxTouchPoints === 0) return;
 
-      const canvas = myCanvas;
+      const canvas = this.#mainCanvas;
+      if (!canvas) return;
       canvas.addEventListener("touchstart", this.#boundHandleTouchStart!);
       canvas.addEventListener("touchmove", this.#boundHandleTouchMove!);
    }
@@ -332,7 +337,7 @@ export class EventManager {
             : (event as MouseEvent);
       rm.recordCanvasPointer(native);
       try {
-         myCanvas.style.cursor = "auto";
+         this.#mainCanvas.style.cursor = "auto";
          if (ma == null) return;
 
          let local_point = Point.fromPoint(rm.viewportPointerLocal());
@@ -607,13 +612,13 @@ export class EventManager {
          if (event.buttons == 1) {
             if (this.#app.editMode) {
                if (ma.container?.label == "signal") {
-                  myCanvas.style.cursor = "move";
+                  this.#mainCanvas.style.cursor = "move";
                   ma.action = MOUSE_DOWN_ACTION.DND_SIGNAL;
                   const sig = this.#app.renderingManager!.getGameObjFromDisplayObj(ma.container) as any;
                   sig._positioning.track.removeSignal(sig);
                   this.startDragAndDropSignal();
                } else if (ma.container?.label == "GenericObject") {
-                  myCanvas.style.cursor = "move";
+                  this.#mainCanvas.style.cursor = "move";
                   ma.action = MOUSE_DOWN_ACTION.MOVE_OBJECT;
                } else if (ma.container?.label == "track" || ma.container?.label == "switch" || ma.container == null) {
                   ma.action = MOUSE_DOWN_ACTION.BUILD_TRACK;
@@ -790,22 +795,33 @@ export class EventManager {
       let backup = { x: viewport.x, y: viewport.y, scale: viewport.scale.x };
 
       try {
-         this.#app.renderingManager?.reDrawEverything(true, true);
+         const rm = this.#app.renderingManager!;
+         const renderer = rm.pixiApp.renderer;
 
-         let bounds = this.#app.renderingManager?.containers.main.getLocalBounds();
-         if (!bounds) {
+         rm.reDrawEverything(true, true);
+
+         const b = rm.containers.main.getLocalBounds();
+         if (!(b.width > 0 && b.height > 0 && Number.isFinite(b.width + b.height))) {
             ui.showInfoToast("Nix zu sehen");
             return;
          }
-         this.#app.renderingManager!.setGridVisible(false);
-         this.#app.renderingManager!.containers.drawing.visible = false;
-         this.#app.renderingManager!.containers.ui.visible = false;
-         this.#app.renderingManager!.update();
 
-         let img_data = await this.#app.renderingManager!.pixiApp.renderer.extract.base64({
-            target: this.#app.renderingManager!.containers.main,
-            resolution: 2,
+         const bw = Math.max(1, Math.ceil(b.width));
+         const bh = Math.max(1, Math.ceil(b.height));
+         const gl = (renderer as { gl?: WebGLRenderingContext }).gl;
+         const maxDim = gl ? gl.getParameter(gl.MAX_TEXTURE_SIZE) : 8192;
+         const exportResolution = Math.min(2, maxDim / Math.max(bw, bh));
+
+         rm.setGridVisible(false);
+         rm.containers.drawing.visible = false;
+         rm.containers.ui.visible = false;
+         rm.update();
+
+         const img_data = await renderer.extract.base64({
+            target: rm.containers.main,
+            resolution: exportResolution,
             clearColor: "#00000000",
+            antialias: false,
          });
          const img = $("<img>", { src: img_data, width: "100%" }).css("object-fit", "scale-down").css("max-height", "50vh");
          ui.showModalDialog(img, () => {
@@ -950,12 +966,13 @@ export class EventManager {
       this.#eventListeners.clear();
 
       // Remove canvas event listeners
-      myCanvas?.removeEventListener("wheel", this.#boundHandleWheelEvent!);
-      myCanvas?.removeEventListener("pointerdown", this.#boundHandleStageMouseDown!);
-      myCanvas?.removeEventListener("pointerup", this.#boundHandleStageMouseUp!);
-      myCanvas?.removeEventListener("pointermove", this.#boundHandleCanvasPointerMove!);
-      myCanvas?.removeEventListener("touchstart", this.#boundHandleTouchStart!);
-      myCanvas?.removeEventListener("touchmove", this.#boundHandleTouchMove!);
+      const c = this.#mainCanvas;
+      c?.removeEventListener("wheel", this.#boundHandleWheelEvent!);
+      c?.removeEventListener("pointerdown", this.#boundHandleStageMouseDown!);
+      c?.removeEventListener("pointerup", this.#boundHandleStageMouseUp!);
+      c?.removeEventListener("pointermove", this.#boundHandleCanvasPointerMove!);
+      c?.removeEventListener("touchstart", this.#boundHandleTouchStart!);
+      c?.removeEventListener("touchmove", this.#boundHandleTouchMove!);
 
       // Remove document event listeners
       document.removeEventListener("keydown", this.#boundHandleKeyDown!);

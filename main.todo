@@ -55,9 +55,9 @@ Rebuild after typeScript and PixiJS update:
     ☐ switch drawing improvements
         ☐ end of strokes
         ☐ better sleepers
-    ☐ save as image
+    ✔ save as image @done(26-05-09 19:00)
     ☐ bad performance
-    ☐ simple mode, switch triangle broken
+    ✔ simple mode, switch triangle broken @done(26-05-09 19:00)
 
 
 

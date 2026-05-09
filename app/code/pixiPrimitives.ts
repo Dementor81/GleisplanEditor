@@ -50,6 +50,7 @@ export async function createPixiApplicationWithViewport(
       antialias: true,
       autoDensity: true,
       resolution: window.devicePixelRatio || 1,
+      preference: "webgl", // extract.base64 / canvas previews need 2D toDataURL (WebGPU path does not)
    });
    const viewport = createLayerContainer("viewport");
    app.stage.addChild(viewport);
