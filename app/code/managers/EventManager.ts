@@ -16,7 +16,9 @@ import { Switch } from "../switch.ts";
 import { GenericObject } from "../generic_object.ts";
 import { trackRendering_basic } from "../trackRendering_basic.ts";
 import { Application } from "../application.ts";
-import { Sketch } from "../pixiPrimitives.ts";
+import type { Graphics } from "pixi.js";
+import { gleisGraphics } from "../pixiPrimitives.ts";
+import { findChildByLabel } from "../pixiUtils.ts";
 
 /**
  * EventManager handles all event-related functionality
@@ -52,7 +54,7 @@ export class EventManager {
    #boundHandleWindowResize: () => void = () => {};
    #boundHandleTouchStart: (event: TouchEvent) => void = () => {};
    #boundHandleTouchMove: (event: TouchEvent) => void = () => {};
-   
+   #boundHandleCanvasPointerMove: (event: PointerEvent) => void = () => {};
 
    constructor(application: Application) {
       this.#app = application;
@@ -63,21 +65,17 @@ export class EventManager {
     * Moved from UI layer to centralize mouseAction handling.
     */
    startSignalDragFromTemplate(template: any): void {
-      const stage = this.#app.renderingManager?.stage;
-      if (!stage) return;
+      const rm = this.#app.renderingManager;
+      if (!rm) return;
 
-      // Initialize mouse action state
       this.#mouseAction = {
          action: MOUSE_DOWN_ACTION.DND_SIGNAL,
          template: template,
       } as any;
 
-      // Compute current local mouse position and spawn preview
-      const local = stage.globalToLocal(stage.mouseX, stage.mouseY);
+      const local = rm.viewportPointerLocal();
       this.startDragAndDropSignal(local.x, local.y);
 
-      // Wire move + one-time mouseup
-      stage.addEventListener("stagemousemove", this.#boundHandleMouseMove!);
       document.addEventListener(
          "mouseup",
          (e: MouseEvent) => this.handleStageMouseUp({ nativeEvent: e }),
@@ -90,23 +88,22 @@ export class EventManager {
     * Moved from UI layer to centralize mouseAction handling.
     */
    startTrainPlacementDrag(): void {
-      const stage = this.#app.renderingManager?.stage;
-      if (!stage) return;
+      const rm = this.#app.renderingManager;
+      if (!rm) return;
 
-      // Initialize mouse action state
       this.#mouseAction = {
          action: MOUSE_DOWN_ACTION.ADD_TRAIN,
       } as any;
 
-      // Create preview marker at current mouse location
-      const local_point = stage.globalToLocal(stage.mouseX, stage.mouseY);
-      this.#mouseAction.container = new Sketch("trainPreview").set({ x: local_point.x, y: local_point.y });
-      this.#mouseAction.container.graphics.beginFill("#333").drawRoundRect(-20, -8, 40, 16, 4);
+      const local_point = rm.viewportPointerLocal();
+      const preview = gleisGraphics("trainPreview");
+      preview.x = local_point.x;
+      preview.y = local_point.y;
+      preview.roundRect(-20, -8, 40, 16, 4).fill("#333");
+      this.#mouseAction.container = preview;
 
-      this.#app.renderingManager?.containers.overlay.addChild(this.#mouseAction.container);
+      rm.containers.overlay.addChild(this.#mouseAction.container);
 
-      // Wire move + one-time mouseup
-      stage.addEventListener("stagemousemove", this.#boundHandleMouseMove!);
       document.addEventListener(
          "mouseup",
          (e: MouseEvent) => this.handleStageMouseUp({ nativeEvent: e }),
@@ -127,8 +124,8 @@ export class EventManager {
       this.#boundHandleWindowResize = this.#handleWindowResize.bind(this);
       this.#boundHandleTouchStart = this.#handleTouchStart.bind(this);
       this.#boundHandleTouchMove = this.#handleTouchMove.bind(this);
+      this.#boundHandleCanvasPointerMove = this.#handleCanvasPointerMove.bind(this);
 
-      this.#initializeStageEvents();
       this.#initializeCanvasEvents();
       this.#initializeTouchEvents();
       this.#initializeButtonEvents();
@@ -137,23 +134,20 @@ export class EventManager {
    }
 
    /**
-    * Initialize stage-specific events
-    * @private
-    */
-   #initializeStageEvents(): void {
-      const stage = this.#app.renderingManager?.stage;
-
-      stage?.addEventListener("stagemousedown", this.#boundHandleStageMouseDown!);
-      stage?.addEventListener("stagemouseup", this.#boundHandleStageMouseUp!);
-   }
-
-   /**
     * Initialize canvas-specific events
     * @private
     */
    #initializeCanvasEvents(): void {
-      // Wheel event for zooming
       myCanvas?.addEventListener("wheel", this.#boundHandleWheelEvent!, { passive: false });
+      myCanvas?.addEventListener("pointerdown", this.#boundHandleStageMouseDown!);
+      myCanvas?.addEventListener("pointerup", this.#boundHandleStageMouseUp!);
+      myCanvas?.addEventListener("pointermove", this.#boundHandleCanvasPointerMove!);
+   }
+
+   /** Keeps pointer coords in sync with {@link RenderingManager.recordCanvasPointer}; forwards moves during an interaction. */
+   #handleCanvasPointerMove(event: PointerEvent): void {
+      this.#app.renderingManager?.recordCanvasPointer(event);
+      if (this.#mouseAction) this.handleMouseMove(event);
    }
 
    /**
@@ -233,6 +227,7 @@ export class EventManager {
     */
    #handleWheelEvent(event: WheelEvent): void {
       event.preventDefault();
+      this.#app.renderingManager?.recordCanvasPointer(event);
       this.#app.renderingManager?.zoom(event.deltaY);
    }
 
@@ -255,9 +250,9 @@ export class EventManager {
          let touch = event.touches[0];
 
          if (this.#previousTouch) {
-            // be aware that these only store the movement of the first touch in the touches array
-            this.#app.renderingManager!.stage.x += touch.clientX - this.#previousTouch.clientX;
-            this.#app.renderingManager!.stage.y += touch.clientY - this.#previousTouch.clientY;
+            const vp = this.#app.renderingManager!.viewport;
+            vp.x += touch.clientX - this.#previousTouch.clientX;
+            vp.y += touch.clientY - this.#previousTouch.clientY;
 
             this.#app.renderingManager?.drawGrid(false);
             this.#app.renderingManager?.reDrawEverything();
@@ -271,40 +266,48 @@ export class EventManager {
     * Handle stage mouse down event
     * @param {Event} event - The mouse down event
     */
-   handleStageMouseDown(event: any): void {
+   handleStageMouseDown(event: PointerEvent): void {
+      const rm = this.#app.renderingManager!;
+      rm.recordCanvasPointer(event);
+
       let hittest = this.getHitTest();
-      //console.log(hittest);
       const app = this.#app;
+      const startLocal = rm.viewportPointerLocal();
       let mouseAction = {
          action: app.customMouseMode != CUSTOM_MOUSE_ACTION.NONE ? MOUSE_DOWN_ACTION.CUSTOM : MOUSE_DOWN_ACTION.NONE,
          container: hittest,
-         startPoint: app.renderingManager?.stage.globalToLocal(
-            app.renderingManager?.stage.mouseX,
-            app.renderingManager?.stage.mouseY
-         ),
-         _distancePoint: new Point(event.stageX, event.stageY),
+         startPoint: startLocal,
+         _distancePoint: new Point(startLocal.x, startLocal.y),
          offset: hittest ? null : undefined,
          distance: function () {
-            const st = app.renderingManager?.stage;
-            const cur = st.globalToLocal(st.mouseX, st.mouseY);
+            const cur = rm.viewportPointerLocal();
             return geometry.distance(this._distancePoint, new Point(cur.x, cur.y));
          },
       } as any;
 
       // Check if we clicked on a track endpoint
-      if (mouseAction.container?.name === "track_endpoint") {
-         mouseAction.action = MOUSE_DOWN_ACTION.DND_TRACK;
-         mouseAction.track = mouseAction.container.track;
-         mouseAction.endpoint = mouseAction.container.endpoint;
+      if (mouseAction.container?.label === "track_endpoint") {
+         const ep = rm.getGameObjFromDisplayObj(mouseAction.container) as { track: any; endpoint: string } | undefined;
+         if (ep) {
+            mouseAction.action = MOUSE_DOWN_ACTION.DND_TRACK;
+            mouseAction.track = ep.track;
+            mouseAction.endpoint = ep.endpoint;
+         }
       }
 
       if (app.customMouseMode == CUSTOM_MOUSE_ACTION.DRAWING) {
          const color = (document.querySelector('input[name="DrawingColor"]:checked') as HTMLInputElement)?.value;
          const width = (document.querySelector('input[name="DrawingWidth"]:checked') as HTMLInputElement)?.value;
 
-         app.renderingManager?.containers.drawing.addChild((mouseAction.shape = new Sketch()));
-         mouseAction.shape.graphics.setStrokeStyle(width, "round", "round").beginStroke(color);
-         mouseAction.shape.graphics.mt(event.stageX, event.stageY);
+         const drawShape = gleisGraphics();
+         app.renderingManager?.containers.drawing.addChild((mouseAction.shape = drawShape));
+         mouseAction._drawStroke = {
+            width: Number(width),
+            color,
+            cap: "round" as const,
+            join: "round" as const,
+         };
+         mouseAction._lastDraw = { x: startLocal.x, y: startLocal.y };
       }
 
       this.#mouseAction = mouseAction;
@@ -314,25 +317,27 @@ export class EventManager {
             y: mouseAction.startPoint.y - hittest.y,
          };
       }
-
-      this.#app.renderingManager?.stage?.addEventListener("stagemousemove", this.#boundHandleMouseMove!);
    }
 
    /**
     * Handle stage mouse up event
     * @param {Event} event - The mouse up event
     */
-   handleStageMouseUp(event: any): void {
+   handleStageMouseUp(event: PointerEvent | MouseEvent | { nativeEvent: MouseEvent }): void {
       let ma = this.#mouseAction;
-      const stage = this.#app.renderingManager?.stage;
+      const rm = this.#app.renderingManager!;
+      const native =
+         "nativeEvent" in event && event.nativeEvent
+            ? event.nativeEvent
+            : (event as MouseEvent);
+      rm.recordCanvasPointer(native);
       try {
-         stage.removeEventListener("stagemousemove", this.#boundHandleMouseMove);
          myCanvas.style.cursor = "auto";
          if (ma == null) return;
 
-         let local_point = Point.fromPoint(stage.globalToLocal(stage.mouseX, stage.mouseY));
+         let local_point = Point.fromPoint(rm.viewportPointerLocal());
 
-         const ev = event.nativeEvent as MouseEvent;
+         const ev = native;
          // DOM pointer events use button===0; legacy mouse events used which===1
          const primaryClick = ev.button === 0 || ev.which === 1;
          if (primaryClick) {
@@ -341,10 +346,10 @@ export class EventManager {
 
                if (ma.hit_track) {
                   this.#app.renderingManager?.containers.signals.addChild(ma.container);
-                  const signal = ma.container.data;
+                  const signal = rm.getGameObjFromDisplayObj(ma.container);
                   ma.hit_track.track.AddSignal(signal, ma.hit_track.km, ma.hit_track.above, ma.hit_track.flipped);
                } else {
-                  Signal.removeSignal(ma.container.data);
+                  Signal.removeSignal(rm.getGameObjFromDisplayObj(ma.container));
                }
                this.#app.renderingManager?.renderer.reDrawEverything(true);
                STORAGE.save();
@@ -365,11 +370,11 @@ export class EventManager {
             } else if (ma.action === MOUSE_DOWN_ACTION.ADD_TRAIN) {
                this.#app.renderingManager?.containers.overlay.removeChild(ma.container);
                const hit = this.getHitTest(this.#app.renderingManager?.containers.tracks);
-               if (hit?.name == "track") {                  
-                  const track = hit.data;
+               if (hit?.label == "track") {
+                  const track = rm.getGameObjFromDisplayObj(hit);
                   const hitInfo = this.getHitInfoForSignalPositioning(local_point);
                   const km = hitInfo.km;
-                  Train.addTrain(track, 3,km,Train.CAR_TYPES.PASSENGER)
+                  Train.addTrain(track as Track, 3, km, Train.CAR_TYPES.PASSENGER);
                   this.#app.renderingManager?.renderer.renderAllTrains();
                   STORAGE.save();
                }
@@ -377,9 +382,7 @@ export class EventManager {
                STORAGE.save();
                STORAGE.saveUndoHistory();
             } else if (ma.action === MOUSE_DOWN_ACTION.CUSTOM) {
-               if (this.#app.customMouseMode == CUSTOM_MOUSE_ACTION.DRAWING) {
-                  this.#mouseAction.shape.graphics.endStroke();
-               } else if (this.#app.customMouseMode == CUSTOM_MOUSE_ACTION.TEXT) {
+               if (this.#app.customMouseMode == CUSTOM_MOUSE_ACTION.TEXT) {
                   const o = new GenericObject(GenericObject.OBJECT_TYPE.text);
                   o.pos(local_point);
                   o.content("Text");
@@ -390,7 +393,7 @@ export class EventManager {
                   STORAGE.saveUndoHistory();
                   STORAGE.save();
                } else if (this.#app.customMouseMode == CUSTOM_MOUSE_ACTION.PLATTFORM) {
-                  this.#app.renderingManager?.containers.overlay.removeAllChildren();
+                  this.#app.renderingManager?.containers.overlay.removeChildren();
                   const o = new GenericObject(GenericObject.OBJECT_TYPE.plattform);
                   o.content("Bahnsteig");
                   o.pos(ma.startPoint);
@@ -402,36 +405,37 @@ export class EventManager {
                   STORAGE.saveUndoHistory();
                   STORAGE.save();
                } else if (this.#app.customMouseMode === CUSTOM_MOUSE_ACTION.TRAIN_DECOUPLE) {
-                  if (ma.container?.name == "decouplingPoint") {
-                     Train.handleDecouplingClick(ma.container.data);
+                  if (ma.container?.label == "decouplingPoint") {
+                     Train.handleDecouplingClick(rm.getGameObjFromDisplayObj(ma.container));
                   } else {
                      Train.exitDecouplingMode();
                   }
                } else if (this.#app.customMouseMode === CUSTOM_MOUSE_ACTION.TRAIN_COUPLE) {
-                  if (ma.container?.name == "couplingPoint") {
-                     Train.handleCouplingClick(ma.container.data);
+                  if (ma.container?.label == "couplingPoint") {
+                     Train.handleCouplingClick(rm.getGameObjFromDisplayObj(ma.container));
                   } else {
                      Train.exitCouplingMode();
                   }
                }
             } else if (ma.action === MOUSE_DOWN_ACTION.NONE && ma.distance() < INPUT.MOUSE_MOVEMENT_THRESHOLD) {
-               if (ma.container?.name == "signal") {
-                  this.#app.selectObject(ma.container.data, event);
+               if (ma.container?.label == "signal") {
+                  this.#app.selectObject(rm.getGameObjFromDisplayObj(ma.container), event);
                } else if (
-                  ma.container?.name == "couplingPoint" &&
+                  ma.container?.label == "couplingPoint" &&
                   this.#app.customMouseMode === CUSTOM_MOUSE_ACTION.TRAIN_COUPLE
                ) {
                   // Handle coupling at this point
-                  Train.handleCouplingClick(ma.container.data);
-               } else if (ma.container?.name == "train") {
-                  this.#app.selectObject(ma.container.data, event);
-               } else if (ma.container?.name == "track") {
-                  this.#app.selectObject(ma.container.data, event);
-               } else if (ma.container?.name == "GenericObject") {
-                  this.#app.selectObject(ma.container.data, event);
-               } else if (ma.container?.name == "switch") {
-                  Switch.switch_A_Switch(ma.container.data, local_point.x);
-                  this.#app.renderingManager?.renderer.renderSwitchUI(ma.container.data);
+                  Train.handleCouplingClick(rm.getGameObjFromDisplayObj(ma.container));
+               } else if (ma.container?.label == "train") {
+                  this.#app.selectObject(rm.getGameObjFromDisplayObj(ma.container), event);
+               } else if (ma.container?.label == "track") {
+                  this.#app.selectObject(rm.getGameObjFromDisplayObj(ma.container), event);
+               } else if (ma.container?.label == "GenericObject") {
+                  this.#app.selectObject(rm.getGameObjFromDisplayObj(ma.container), event);
+               } else if (ma.container?.label == "switch") {
+                  const sw = rm.getGameObjFromDisplayObj(ma.container) as Switch;
+                  Switch.switch_A_Switch(sw, local_point.x);
+                  this.#app.renderingManager?.renderer.renderSwitchUI(sw);
                } else {
                   this.#app.selectObject();
                }
@@ -444,7 +448,7 @@ export class EventManager {
       } finally {
          ma = null;
          this.#mouseAction = null;
-         this.#app.renderingManager?.containers.overlay.removeAllChildren();
+         this.#app.renderingManager?.containers.overlay.removeChildren();
          this.#app.renderingManager?.update();
       }
    }
@@ -453,57 +457,52 @@ export class EventManager {
     * Handle mouse move event
     * @param {Event} event - The mouse move event
     */
-   handleMouseMove(event: any): void {
-      // Eraser drag logic
-
-      if (!event.primary) return;
+   handleMouseMove(event: PointerEvent): void {
+      if (!event.isPrimary) return;
       if (this.#mouseAction == null) {
-         this.#app.renderingManager?.stage.removeEventListener("stagemousemove", this.#boundHandleMouseMove);
          return;
       }
       //falls mouseMove noch läuft, obwohl der User keinen button mehr drückt
       //tritt vor allem beim debugging auf
-      if (event.nativeEvent.buttons == 0) {
+      if (event.buttons == 0) {
          console.log("debug mouse error");
          return this.handleStageMouseUp(event);
       }
 
-      let local_point = this.#app.renderingManager?.stage.globalToLocal(
-         this.#app.renderingManager?.stage.mouseX,
-         this.#app.renderingManager?.stage.mouseY
-      );
+      const rm = this.#app.renderingManager!;
+      let local_point = Point.fromPoint(rm.viewportPointerLocal());
 
       if (this.#mouseAction.action === MOUSE_DOWN_ACTION.NONE) {
          this.determineMouseAction(event, local_point);
       } else if (this.#mouseAction.action === MOUSE_DOWN_ACTION.CUSTOM) {
          if (this.#app.customMouseMode == CUSTOM_MOUSE_ACTION.DRAWING) {
-            this.#mouseAction.shape.graphics.lt(local_point.x, local_point.y);
+            const ma = this.#mouseAction;
+            const last = ma._lastDraw;
+            ma.shape.moveTo(last.x, last.y).lineTo(local_point.x, local_point.y).stroke(ma._drawStroke);
+            ma._lastDraw = { x: local_point.x, y: local_point.y };
          } else if (this.#app.customMouseMode == CUSTOM_MOUSE_ACTION.ERASER) {
-            const local = this.#app.renderingManager?.stage.globalToLocal(
-               this.#app.renderingManager?.stage.mouseX,
-               this.#app.renderingManager?.stage.mouseY
-            );
-            const drawingContainer = this.#app.renderingManager?.containers.drawing;
-            const hit = this.#app.renderingManager?.stage.findAt(local, drawingContainer);
+            const drawingContainer = rm.containers.drawing;
+            const hit = rm.hitTest(drawingContainer);
             if (hit) {
                drawingContainer.removeChild(hit);
                this.#app.renderingManager?.update();
             }
          } else if (this.#app.customMouseMode == CUSTOM_MOUSE_ACTION.PLATTFORM) {
-            this.#app.renderingManager?.containers.overlay.removeAllChildren();
-            this.#app.renderingManager?.containers.overlay.addChild((this.#mouseAction.shape = new Sketch()));
-            this.#mouseAction.shape.graphics
-               .beginStroke(COLORS.DRAWING_PLATTFORM)
-               .drawRect(
+            this.#app.renderingManager?.containers.overlay.removeChildren();
+            const plat = gleisGraphics();
+            plat
+               .rect(
                   this.#mouseAction.startPoint.x,
                   this.#mouseAction.startPoint.y,
                   local_point.x - this.#mouseAction.startPoint.x,
                   local_point.y - this.#mouseAction.startPoint.y
-               );
+               )
+               .stroke({ width: 1, color: COLORS.DRAWING_PLATTFORM, cap: "round", join: "round" });
+            this.#app.renderingManager?.containers.overlay.addChild((this.#mouseAction.shape = plat));
             this.#app.renderingManager?.update();
          }
       } else if (this.#mouseAction.action === MOUSE_DOWN_ACTION.MOVE_OBJECT) {
-         const o = this.#mouseAction.container.data;
+         const o = rm.getGameObjFromDisplayObj(this.#mouseAction.container) as GenericObject;
          o.pos(local_point);
          if (this.#mouseAction.offset) {
             local_point.x -= this.#mouseAction.offset.x;
@@ -513,7 +512,7 @@ export class EventManager {
          this.#mouseAction.container.y = local_point.y;
          this.#app.renderingManager?.renderer.updateSelection();
       } else if (this.#mouseAction.action === MOUSE_DOWN_ACTION.DND_SIGNAL) {
-         this.dragnDropSignal(local_point, event.nativeEvent.altKey);
+         this.dragnDropSignal(local_point, event.altKey);
          this.#app.renderingManager?.renderer.updateSelection();
       } else if (this.#mouseAction.action === MOUSE_DOWN_ACTION.BUILD_TRACK) {
          const grid_snap_point = this.getSnapPoint(local_point);
@@ -536,9 +535,9 @@ export class EventManager {
          }
          this.drawBluePrintTrack(!valid);
       } else if (this.#mouseAction.action === MOUSE_DOWN_ACTION.SCROLL) {
-         this.#app.renderingManager?.scroll(event.nativeEvent.movementX, event.nativeEvent.movementY);
+         this.#app.renderingManager?.scroll(event.movementX, event.movementY);
       } else if (this.#mouseAction.action === MOUSE_DOWN_ACTION.MOVE_TRAIN) {
-         Train.moveTrain(this.#mouseAction.container.data, event.nativeEvent.movementX);
+         Train.moveTrain(rm.getGameObjFromDisplayObj(this.#mouseAction.container) as Train, event.movementX);
          this.#app.renderingManager?.reDrawEverything();
       } else if (this.#mouseAction.action === MOUSE_DOWN_ACTION.ADD_TRAIN) {
          this.#mouseAction.container.x = local_point.x;
@@ -568,11 +567,9 @@ export class EventManager {
     * @returns {*} The hit object
     */
    getHitTest(container?: any): any {
-      let local_point = this.#app.renderingManager?.stage.globalToLocal(
-         this.#app.renderingManager?.stage.mouseX,
-         this.#app.renderingManager?.stage.mouseY
-      );
-      return this.#app.renderingManager?.stage.findAt(local_point, container);
+      const rm = this.#app.renderingManager!;
+      const root = container ?? rm.viewport;
+      return rm.hitTest(root);
    }
 
    /**
@@ -603,30 +600,31 @@ export class EventManager {
     * @param {Event} event - The mouse event
     * @param {Point} local_point - Local point coordinates
     */
-   determineMouseAction(event: any, local_point: Point): void {
+   determineMouseAction(event: PointerEvent, local_point: Point): void {
       let ma = this.#mouseAction;
       //wie weit wurde die maus seit mousedown bewegt
       if (ma.distance() > INPUT.MOUSE_MOVEMENT_THRESHOLD) {
-         if (event.nativeEvent.buttons == 1) {
+         if (event.buttons == 1) {
             if (this.#app.editMode) {
-               if (ma.container?.name == "signal") {
+               if (ma.container?.label == "signal") {
                   myCanvas.style.cursor = "move";
                   ma.action = MOUSE_DOWN_ACTION.DND_SIGNAL;
-                  ma.container.data._positioning.track.removeSignal(ma.container.data);
+                  const sig = this.#app.renderingManager!.getGameObjFromDisplayObj(ma.container) as any;
+                  sig._positioning.track.removeSignal(sig);
                   this.startDragAndDropSignal();
-               } else if (ma.container?.name == "GenericObject") {
+               } else if (ma.container?.label == "GenericObject") {
                   myCanvas.style.cursor = "move";
                   ma.action = MOUSE_DOWN_ACTION.MOVE_OBJECT;
-               } else if (ma.container?.name == "track" || ma.container?.name == "switch" || ma.container == null) {
+               } else if (ma.container?.label == "track" || ma.container?.label == "switch" || ma.container == null) {
                   ma.action = MOUSE_DOWN_ACTION.BUILD_TRACK;
                   this.addTrackAnchorPoint(this.getSnapPoint(local_point));
-                  this.#app.renderingManager?.containers.overlay.addChild((ma.lineShape = new Sketch()));
+                  this.#app.renderingManager?.containers.overlay.addChild((ma.lineShape = gleisGraphics()));
                }
             }
-            if (ma.container?.name == "train") {
+            if (ma.container?.label == "train") {
                ma.action = MOUSE_DOWN_ACTION.MOVE_TRAIN;
             }
-         } else if (event.nativeEvent.buttons == 2) {
+         } else if (event.buttons == 2) {
             ma.action = MOUSE_DOWN_ACTION.SCROLL;
          }
       }
@@ -663,19 +661,16 @@ export class EventManager {
     * Draw signal position line
     */
    draw_SignalPositionLine(): void {
-      let shape = this.#app.renderingManager?.containers.overlay.getChildByName("SignalPositionLine");
+      let shape = findChildByLabel(this.#app.renderingManager!.containers.overlay, "SignalPositionLine") as Graphics | null;
       if (shape) this.#app.renderingManager?.containers.overlay.removeChild(shape);
 
       if (this.#mouseAction.hit_track) {
          const point = this.#mouseAction.hit_track.point;
-         shape = new Sketch("SignalPositionLine");
-         shape.name = "SignalPositionLine";
-         shape.graphics
-            .setStrokeStyle(1)
-            .beginStroke(COLORS.SIGNAL_POSITION_LINE)
-            .mt(this.#mouseAction.container.x, this.#mouseAction.container.y)
-            .lt(point.x, point.y)
-            .es();
+         shape = gleisGraphics("SignalPositionLine");
+         shape
+            .moveTo(this.#mouseAction.container.x, this.#mouseAction.container.y)
+            .lineTo(point.x, point.y)
+            .stroke({ width: 1, color: COLORS.SIGNAL_POSITION_LINE, cap: "round", join: "round" });
          this.#app.renderingManager?.containers.overlay.addChild(shape);
       }
    }
@@ -685,26 +680,33 @@ export class EventManager {
     */
    drawBluePrintTrack(invalid: boolean = false): void {
       if (this.#mouseAction.nodes == null) return;
-      const g = this.#mouseAction.lineShape.graphics;
-      g.c()
-         .setStrokeStyle(trackRendering_basic.STROKE)
-         .beginStroke(COLORS.DRAWING_BLUEPRINT)
-         .moveTo(this.#mouseAction.nodes[0].x, this.#mouseAction.nodes[0].y);
+      const shape = this.#mouseAction.lineShape as Graphics;
+      shape.clear();
 
+      const blueprintStroke = {
+         width: trackRendering_basic.STROKE,
+         color: COLORS.DRAWING_BLUEPRINT,
+         cap: "round" as const,
+         join: "round" as const,
+      };
+      shape.moveTo(this.#mouseAction.nodes[0].x, this.#mouseAction.nodes[0].y);
       for (let index = 1; index < this.#mouseAction.nodes.length; index++) {
          const point = this.#mouseAction.nodes[index];
-         g.lt(point.x, point.y);
+         shape.lineTo(point.x, point.y);
       }
+      shape.stroke(blueprintStroke);
 
       const last = ArrayUtils.last(this.#mouseAction.nodes) as any;
-      const p = this.#app.renderingManager?.stage.globalToLocal(
-         this.#app.renderingManager?.stage.mouseX,
-         this.#app.renderingManager?.stage.mouseY
-      );
-      g.beginStroke(invalid ? COLORS.DRAWING_INVALID : COLORS.DRAWING_ACTIVE)
+      const p = Point.fromPoint(this.#app.renderingManager!.viewportPointerLocal());
+      shape
          .moveTo(last.x, last.y)
-         .lt(p.x, p.y)
-         .endStroke();
+         .lineTo(p.x, p.y)
+         .stroke({
+            width: trackRendering_basic.STROKE,
+            color: invalid ? COLORS.DRAWING_INVALID : COLORS.DRAWING_ACTIVE,
+            cap: "round",
+            join: "round",
+         });
    }
 
    /**
@@ -741,7 +743,8 @@ export class EventManager {
          this.#mouseAction.container.parent.removeChild(this.#mouseAction.container);
       } else {
          let signal = new Signal(this.#mouseAction.template);
-         this.#mouseAction.container = SignalRenderer.createSignalContainer(signal);
+         const rmDnD = this.#app.renderingManager!;
+         this.#mouseAction.container = SignalRenderer.createSignalContainer(rmDnD, signal);
          this.#mouseAction.container.x = mouseX;
          this.#mouseAction.container.y = mouseY;
       }
@@ -783,8 +786,8 @@ export class EventManager {
     * @private
     */
    async #handleImageExport(): Promise<void> {
-      const stage = this.#app.renderingManager?.stage;
-      let backup = { x: stage.x, y: stage.y, scale: stage.scale };
+      const viewport = this.#app.renderingManager!.viewport;
+      let backup = { x: viewport.x, y: viewport.y, scale: viewport.scale.x };
 
       try {
          this.#app.renderingManager?.reDrawEverything(true, true);
@@ -797,7 +800,7 @@ export class EventManager {
          this.#app.renderingManager!.setGridVisible(false);
          this.#app.renderingManager!.containers.drawing.visible = false;
          this.#app.renderingManager!.containers.ui.visible = false;
-         stage.update();
+         this.#app.renderingManager!.update();
 
          let img_data = await this.#app.renderingManager!.pixiApp.renderer.extract.base64({
             target: this.#app.renderingManager!.containers.main,
@@ -812,14 +815,14 @@ export class EventManager {
       } catch (error) {
          ui.showErrorToast(error as Error);
       } finally {
-         stage.x = backup.x;
-         stage.y = backup.y;
-         stage.scale = backup.scale;
+         viewport.x = backup.x;
+         viewport.y = backup.y;
+         viewport.scale.set(backup.scale);
          this.#app.renderingManager!.setGridVisible(this.#app.showGrid);
          this.#app.renderingManager!.containers.drawing.visible = true;
          this.#app.renderingManager!.containers.ui.visible = true;
          this.#app.renderingManager?.reDrawEverything(true);
-         stage.update();
+         this.#app.renderingManager!.update();
       }
    }
 
@@ -843,7 +846,7 @@ export class EventManager {
     * @private
     */
    #handleDrawingClear(): void {
-      this.#app.renderingManager?.containers.drawing.removeAllChildren();
+      this.#app.renderingManager?.containers.drawing.removeChildren();
       this.#app.renderingManager?.update();
    }
 
@@ -946,16 +949,11 @@ export class EventManager {
       // Remove all event listeners
       this.#eventListeners.clear();
 
-      // Remove stage event listeners
-      if (this.#app?.renderingManager?.stage) {
-         const stage = this.#app.renderingManager?.stage;
-         stage?.removeEventListener("stagemousedown", this.#boundHandleStageMouseDown!);
-         stage?.removeEventListener("stagemouseup", this.#boundHandleStageMouseUp!);
-         stage?.removeEventListener("stagemousemove", this.#boundHandleMouseMove!);
-      }
-
       // Remove canvas event listeners
       myCanvas?.removeEventListener("wheel", this.#boundHandleWheelEvent!);
+      myCanvas?.removeEventListener("pointerdown", this.#boundHandleStageMouseDown!);
+      myCanvas?.removeEventListener("pointerup", this.#boundHandleStageMouseUp!);
+      myCanvas?.removeEventListener("pointermove", this.#boundHandleCanvasPointerMove!);
       myCanvas?.removeEventListener("touchstart", this.#boundHandleTouchStart!);
       myCanvas?.removeEventListener("touchmove", this.#boundHandleTouchMove!);
 

@@ -57,9 +57,11 @@ module.exports = (env, argv) => {
       static: {
         directory: path.join(__dirname, 'app'),
       },
-      compress: true,
+      compress: false,
       port: 9000,
-      hot: true, // Enable hot module replacement
+      hot: false, // Enable hot module replacement
+      liveReload: false,
+      
     },
     devtool: isProduction ? 'source-map' : 'eval-source-map',
     mode: argv.mode || 'development',

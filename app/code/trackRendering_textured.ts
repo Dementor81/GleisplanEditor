@@ -12,8 +12,10 @@ import { NumberUtils } from "./utils.ts";
 import { ui } from "./ui.ts";
 import { CONFIG } from "./config.ts";
 import { Application } from "./application.ts";
-import { Rectangle } from "pixi.js";
-import { DisplayGroup, LabelText, Sketch, TextureSprite, imageSize, polygonHitArea, rectHitArea, textureRegion } from "./pixiPrimitives.ts";
+import { Rectangle, Sprite, Text } from "pixi.js";
+import type { Graphics } from "pixi.js";
+import { gleisGraphics, imageSize, polygonHitArea, rectHitArea, textureRegion, TrackGraphics } from "./pixiPrimitives.ts";
+import { createLayerContainer } from "./pixiUtils.ts";
 
 export class trackRendering_textured {
    static SWITCH_UI_STROKE = 3;
@@ -98,29 +100,29 @@ export class trackRendering_textured {
             });
 
             // Remove tracks and their associated signals
+            const rm = this.app.renderingManager!;
             toBeRemoved.forEach((track) => {
                // Remove associated signals
-               const signalsToBeRemoved = this.app.renderingManager!.containers.signals.children.filter(
-                  (cs: any) => cs.data._positioning.track === track
-               );
+               const signalsToBeRemoved = rm.containers.signals.children.filter((cs: any) => {
+                  const sig = rm.getGameObjFromDisplayObj(cs) as any;
+                  return sig?._positioning?.track === track;
+               });
                signalsToBeRemoved.forEach((cs: any) => {
-                  this.app.renderingManager!.containers.signals.removeChild(cs);
+                  rm.containers.signals.removeChild(cs);
                });
                // Remove track from rendered set
-               this.app.renderingManager!.containers.tracks.renderedTracks.delete(track);
+               rm.containers.tracks.renderedTracks.delete(track);
 
                // Remove track elements from both containers
-               const sleepersToRemove = this.app.renderingManager!.containers.tracks.children[0].children.filter((c: any) => c.data === track);
-               const railsToRemove = this.app.renderingManager!.containers.tracks.children[1].children.filter((c: any) => c.data === track);
+               const sleepersToRemove = rm.containers.tracks.children[0].children.filter((c: any) => rm.getGameObjFromDisplayObj(c) === track);
+               const railsToRemove = rm.containers.tracks.children[1].children.filter((c: any) => rm.getGameObjFromDisplayObj(c) === track);
 
                sleepersToRemove.forEach((c: any) => {
-                  delete c.track;
-                  this.app.renderingManager!.containers.tracks.children[0].removeChild(c);
+                  rm.containers.tracks.children[0].removeChild(c);
                });
 
                railsToRemove.forEach((c: any) => {
-                  delete c.track;
-                  this.app.renderingManager!.containers.tracks.children[1].removeChild(c);
+                  rm.containers.tracks.children[1].removeChild(c);
                });
             });
 
@@ -135,11 +137,13 @@ export class trackRendering_textured {
    }
 
    calcCanvasSize() {
-      const stage = this.app.renderingManager!.stage;
-      const width = (stage.canvas.width + CONFIG.GRID_SIZE * 2) / stage.scaleX,
-         height = (stage.canvas.height + CONFIG.GRID_SIZE * 2) / stage.scaleY,
-         x = (-stage.x - CONFIG.GRID_SIZE) / stage.scaleX,
-         y = (-stage.y - CONFIG.GRID_SIZE) / stage.scaleY;
+      const rm = this.app.renderingManager!;
+      const vp = rm.viewport;
+      const canvas = rm.canvas;
+      const width = (canvas.width + CONFIG.GRID_SIZE * 2) / vp.scale.x,
+         height = (canvas.height + CONFIG.GRID_SIZE * 2) / vp.scale.y,
+         x = (-vp.x - CONFIG.GRID_SIZE) / vp.scale.x,
+         y = (-vp.y - CONFIG.GRID_SIZE) / vp.scale.y;
       return { left: x, top: y, right: x + width, bottom: y + height };
    }
 
@@ -159,7 +163,7 @@ export class trackRendering_textured {
 
                   this.calcRenderValues();
                } else {
-                  if (NumberUtils.between(this.LOD, this._lastRenderScale, this.app.renderingManager!.stage.scale)) {
+                  if (NumberUtils.between(this.LOD, this._lastRenderScale, this.app.renderingManager!.viewport.scale.x)) {
                      this._rendering.lodChanged = true;
                   }
                }
@@ -169,7 +173,7 @@ export class trackRendering_textured {
                   this.renderAllSignals(force);
                   this.renderAllTrains();
                   this.renderAllGenericObjects();
-                  this._lastRenderScale = this.app.renderingManager!.stage.scale;
+                  this._lastRenderScale = this.app.renderingManager!.viewport.scale.x;
                   if (!dont_optimize) this.cleanUp();
                } catch (error) {
                   console.error("Error during rendering:", error);
@@ -207,14 +211,12 @@ export class trackRendering_textured {
    }
 
    renderAllTrains() {
-      this.app.renderingManager!.containers.trains.removeAllChildren();
+      this.app.renderingManager!.containers.trains.removeChildren();
 
       Train.allTrains
          .filter((train: any) => !train.trainCoupledFront)
          .forEach((train: any) => {
-            const c = new DisplayGroup("train");
-            c.name = "train";
-            (c as any).train = train;
+            const c = createLayerContainer("train");
             c.interactiveChildren = true;
 
             this.renderCar(train, c);
@@ -227,10 +229,11 @@ export class trackRendering_textured {
       const carWidth = car.length;
       const carHeight = this.TRAIN_HEIGHT;
       const corner = car.type == Train.CAR_TYPES.LOCOMOTIVE ? 8 : 1.5;
-      const s = new Sketch("train", car);
-      s.graphics.setStrokeStyle(1).beginStroke("#000").beginFill(car.color).drawRoundRect(0, 0, carWidth, carHeight, corner);
-      s.data = car;
-      s.name = "train";
+      const s = gleisGraphics("train");
+      this.app.renderingManager!.bindGameObjToDisplayObj(s, car);
+      s.roundRect(0, 0, carWidth, carHeight, corner)
+         .fill(car.color)
+         .stroke({ width: 1, color: "#000", cap: "round", join: "round" });
 
       const p = car.track.getPointFromKm(car.pos);
 
@@ -241,7 +244,11 @@ export class trackRendering_textured {
 
       container.addChild(s);
       if (car.number && car.type == Train.CAR_TYPES.LOCOMOTIVE) {
-         const text = new LabelText(car.number, "10px Arial", "#000000");
+         const text = new Text({
+            text: car.number,
+            style: { fill: "#000000", fontFamily: "Arial", fontSize: 10 },
+         });
+         text.eventMode = "static";
          text.anchor.set(0.5);
          text.x = p.x;
          text.y = p.y;
@@ -253,11 +260,10 @@ export class trackRendering_textured {
    }
 
    renderAllGenericObjects() {
-      this.app.renderingManager!.containers.objects.removeAllChildren();
+      this.app.renderingManager!.containers.objects.removeChildren();
       GenericObject.all_objects.forEach((o: any) => {
-         const c = new DisplayGroup("GenericObject", o);
-         c.name = "GenericObject";
-         c.data = o;
+         const c = createLayerContainer("GenericObject");
+         this.app.renderingManager!.bindGameObjToDisplayObj(c, o);
          c.interactiveChildren = false;
          c.x = o.pos().x;
          c.y = o.pos().y;
@@ -271,9 +277,13 @@ export class trackRendering_textured {
    }
 
    renderTextObject(text_object: any, container: any) {
-      var text = new LabelText(text_object.content(), "24px Arial", "#000000");
-      const height = text.getMeasuredHeight();
-      const width = text.getMeasuredWidth();
+      var text = new Text({
+         text: text_object.content(),
+         style: { fill: "#000000", fontFamily: "Arial", fontSize: 24 },
+      });
+      text.eventMode = "static";
+      const height = text.height;
+      const width = text.width;
 
       text.hitArea = polygonHitArea([{ x: 0, y: 0 }, { x: width, y: 0 }, { x: width, y: -height }, { x: 0, y: -height }]);
 
@@ -281,13 +291,17 @@ export class trackRendering_textured {
    }
 
    renderPlattformObject(plattform: any, container: any) {
-      const shape = new Sketch();
+      const shape = new TrackGraphics();
       container.addChild(shape);
       const size = plattform.size();
-      shape.graphics.beginStroke("#111111").beginFill("#444").drawRect(0, 0, size.width, size.height);
+      shape.rect(0, 0, size.width, size.height).fill("#444").stroke({ width: 1, color: "#111111", cap: "round", join: "round" });
       shape.setBounds(0, 0, size.width, size.height);
 
-      var text = new LabelText(plattform.content(), "16px Arial", "#eee");
+      var text = new Text({
+         text: plattform.content(),
+         style: { fill: "#eee", fontFamily: "Arial", fontSize: 16 },
+      });
+      text.eventMode = "static";
       text.anchor.set(0.5);
       text.x = plattform.size().width / 2;
       text.y = plattform.size().height / 2;
@@ -296,9 +310,10 @@ export class trackRendering_textured {
    }
 
    renderAllSignals(_force?: boolean) {
-      this.app.renderingManager!.containers.signals.removeAllChildren();
+      const rm = this.app.renderingManager!;
+      rm.containers.signals.removeChildren();
       Signal.allSignals.forEach((signal: any) => {
-         let container = this.app.renderingManager!.containers.signals.addChild(SignalRenderer.createSignalContainer(signal));
+         let container = rm.containers.signals.addChild(SignalRenderer.createSignalContainer(rm, signal));
          this.app.alignSignalContainerWithTrack(container, signal._positioning);
       });
    }
@@ -306,12 +321,10 @@ export class trackRendering_textured {
    renderAllTracks(force?: boolean) {
       const containers = this.app.renderingManager!.containers;
       if (force) {
-         const sleepers_container = new DisplayGroup("global_sleepers");
-         sleepers_container.name = "global_sleepers";
+         const sleepers_container = createLayerContainer("global_sleepers");
          sleepers_container.interactiveChildren = true;
 
-         const rails_container = new DisplayGroup("global_rails");
-         rails_container.name = "global_rails";
+         const rails_container = createLayerContainer("global_rails");
          rails_container.interactiveChildren = true;
 
          this._rendering.sleepers_container = sleepers_container;
@@ -481,10 +494,9 @@ export class trackRendering_textured {
    renderTrack(track: any) {
       const points = this.calculateTrackPoints(track);
 
-      const sleepers_container = new DisplayGroup("track", track);
-      sleepers_container.name = "track";
+      const sleepers_container = createLayerContainer("track");
+      this.app.renderingManager!.bindGameObjToDisplayObj(sleepers_container, track);
       sleepers_container.interactiveChildren = false;
-      sleepers_container.data = track;
       this._rendering.sleepers_container.addChild(sleepers_container);
 
       const hitPoints: any[] = [];
@@ -545,32 +557,40 @@ export class trackRendering_textured {
    }
 
    renderRails(track: any, points: any[]) {
-      const rail_shape = new Sketch("track", track);
-      rail_shape.name = "track";
-      rail_shape.data = track;
+      const rail_shape = new TrackGraphics("track");
+      this.app.renderingManager!.bindGameObjToDisplayObj(rail_shape, track);
       this._rendering.rails_container.addChild(rail_shape);
 
       for (const point of points) {
          const { straight, curve } = point.rails;
 
          trackRendering_textured.RAILS.forEach((rail) => {
-            rail_shape.graphics.setStrokeStyle(rail[0]).beginStroke(rail[1]);
+            const st = {
+               width: rail[0],
+               color: rail[1],
+               cap: "round" as const,
+               join: "round" as const,
+            };
 
-            rail_shape.graphics
-               .mt(straight.inner.start.x, straight.inner.start.y)
-               .lt(straight.inner.end.x, straight.inner.end.y)
-               .mt(straight.outer.start.x, straight.outer.start.y)
-               .lt(straight.outer.end.x, straight.outer.end.y);
+            rail_shape
+               .moveTo(straight.inner.start.x, straight.inner.start.y)
+               .lineTo(straight.inner.end.x, straight.inner.end.y)
+               .stroke(st);
+            rail_shape
+               .moveTo(straight.outer.start.x, straight.outer.start.y)
+               .lineTo(straight.outer.end.x, straight.outer.end.y)
+               .stroke(st);
 
             if (curve) {
-               rail_shape.graphics
-                  .mt(curve.outer.start.x, curve.outer.start.y)
+               rail_shape
+                  .moveTo(curve.outer.start.x, curve.outer.start.y)
                   .quadraticCurveTo(curve.outer.cp.x, curve.outer.cp.y, curve.outer.end.x, curve.outer.end.y)
-                  .mt(curve.inner.start.x, curve.inner.start.y)
-                  .quadraticCurveTo(curve.inner.cp.x, curve.inner.cp.y, curve.inner.end.x, curve.inner.end.y);
+                  .stroke(st);
+               rail_shape
+                  .moveTo(curve.inner.start.x, curve.inner.start.y)
+                  .quadraticCurveTo(curve.inner.cp.x, curve.inner.cp.y, curve.inner.end.x, curve.inner.end.y)
+                  .stroke(st);
             }
-
-            rail_shape.graphics.endStroke();
          });
       }
 
@@ -630,30 +650,28 @@ export class trackRendering_textured {
    }
 
    drawSleeper(i: number, x: number, y: number, angle: number, container: any, length = this.schwellenHöhe, regY?: number) {
-      if (this.app.renderingManager!.stage.scale < this.LOD) {
+      if (this.app.renderingManager!.viewport.scale.x < this.LOD) {
          const yStart = Math.min(0, length);
          const drawLength = Math.abs(length);
          const ry = regY == null ? length / 2 : regY;
          const cacheKey = `shape_${length}`;
          let sleeperShape = this._sleeperCache[cacheKey];
          if (!sleeperShape) {
-            sleeperShape = new Sketch();
-            sleeperShape.graphics
-               .setStrokeStyle(0.2, "round")
-               .beginStroke("black")
-               .beginFill("#99735b")
-               .r(0, yStart, this.schwellenBreite, drawLength)
-               .ef();
+            sleeperShape = new TrackGraphics();
+            const sleeperStroke = { width: 0.2, color: "black", cap: "round" as const, join: "round" as const };
+            sleeperShape
+               .rect(0, yStart, this.schwellenBreite, drawLength)
+               .fill("#99735b")
+               .stroke(sleeperStroke);
             sleeperShape.setBounds(0, yStart, this.schwellenBreite, drawLength);
             this._sleeperCache[cacheKey] = sleeperShape;
          }
 
-         let sleeper = new Sketch();
-         sleeper.graphics
-            .setStrokeStyle(0.2, "round")
-            .beginStroke("black")
-            .beginFill("#99735b")
-            .drawRect(0, yStart, this.schwellenBreite, drawLength);
+         let sleeper = gleisGraphics();
+         sleeper
+            .rect(0, yStart, this.schwellenBreite, drawLength)
+            .fill("#99735b")
+            .stroke({ width: 0.2, color: "black", cap: "round", join: "round" });
          sleeper.x = x;
          sleeper.y = y;
          sleeper.angle = angle;
@@ -673,11 +691,13 @@ export class trackRendering_textured {
                this.schwellenImg.height
             );
 
-            const bitmap = new TextureSprite(textureRegion(this.schwellenImg, sourceRect));
+            const bitmap = new Sprite(textureRegion(this.schwellenImg, sourceRect));
+            bitmap.eventMode = "static";
             this._bitmapCache[i] = bitmap;
          }
 
-         const sleeperBitmap = this._bitmapCache[i].clone();
+         const sleeperBitmap = new Sprite(this._bitmapCache[i].texture);
+         sleeperBitmap.eventMode = "static";
 
          sleeperBitmap.x = x;
          sleeperBitmap.y = y;
@@ -710,52 +730,49 @@ export class trackRendering_textured {
 
    drawBumper(track: any, track_container: any) {
       if (track.switchAtTheEnd == null) {
-         track_container.addChild(
-            new TextureSprite(this.bumperImg).set({
-               y: track.end.y,
-               x: track.end.x,
-               scale: trackRendering_textured.TRACK_SCALE,
-               scaleX: -trackRendering_textured.TRACK_SCALE,
-               rotation: track.deg,
-               regY: imageSize(this.bumperImg).height / 2,
-               regX: imageSize(this.bumperImg).width,
-            })
-         );
+         const bumperEnd = new Sprite(this.bumperImg);
+         bumperEnd.eventMode = "static";
+         bumperEnd.x = track.end.x;
+         bumperEnd.y = track.end.y;
+         bumperEnd.scale.set(-trackRendering_textured.TRACK_SCALE, trackRendering_textured.TRACK_SCALE);
+         bumperEnd.angle = track.deg;
+         bumperEnd.pivot.set(imageSize(this.bumperImg).width, imageSize(this.bumperImg).height / 2);
+         track_container.addChild(bumperEnd);
       }
 
       if (track.switchAtTheStart == null) {
-         track_container.addChild(
-            new TextureSprite(this.bumperImg).set({
-               y: track.start.y,
-               x: track.start.x,
-               scale: trackRendering_textured.TRACK_SCALE,
-               scaleX: trackRendering_textured.TRACK_SCALE,
-               rotation: track.deg,
-               regY: imageSize(this.bumperImg).height / 2,
-               regX: imageSize(this.bumperImg).width,
-            })
-         );
+         const bumperStart = new Sprite(this.bumperImg);
+         bumperStart.eventMode = "static";
+         bumperStart.x = track.start.x;
+         bumperStart.y = track.start.y;
+         bumperStart.scale.set(trackRendering_textured.TRACK_SCALE);
+         bumperStart.angle = track.deg;
+         bumperStart.pivot.set(imageSize(this.bumperImg).width, imageSize(this.bumperImg).height / 2);
+         track_container.addChild(bumperStart);
       }
    }
 
    updateTrack(track: any) {
-      const sleepersContainer = this._rendering.sleepers_container.children.find((c: any) => c.data === track);
+      const rmUp = this.app.renderingManager!;
+      const sleepersContainer = this._rendering.sleepers_container.children.find((c: any) => rmUp.getGameObjFromDisplayObj(c) === track);
       if (!sleepersContainer) return;
 
-      sleepersContainer.removeAllChildren();
+      sleepersContainer.removeChildren();
 
       const points = this.calculateTrackPoints(track);
       this.drawTrackSleepers(points, sleepersContainer);
 
       if (track == (track.switchAtTheEnd as any)?.t1) {
-         const switchSleepersContainer = this._rendering.sleepers_container.children.find((c: any) => c.data === track.switchAtTheEnd);
+         const switchSleepersContainer = this._rendering.sleepers_container.children.find(
+            (c: any) => rmUp.getGameObjFromDisplayObj(c) === track.switchAtTheEnd
+         );
          const switchRenderingParameter = this.getSwitchRenderingParameter(track.switchAtTheEnd);
          this.drawSleepersOnSwitch(track.switchAtTheEnd, switchRenderingParameter, switchSleepersContainer);
       }
 
       if (track == (track.switchAtTheStart as any)?.t1) {
          const switchSleepersContainer = this._rendering.sleepers_container.children.find(
-            (c: any) => c.data === track.switchAtTheStart
+            (c: any) => rmUp.getGameObjFromDisplayObj(c) === track.switchAtTheStart
          );
          const switchRenderingParameter = this.getSwitchRenderingParameter(track.switchAtTheStart);
          this.drawSleepersOnSwitch(track.switchAtTheStart, switchRenderingParameter, switchSleepersContainer);
@@ -763,7 +780,8 @@ export class trackRendering_textured {
    }
 
    updateSwitch(sw: any) {
-      const sleepersContainer = this._rendering.sleepers_container.children.find((c: any) => c.data === sw);
+      const rmSw = this.app.renderingManager!;
+      const sleepersContainer = this._rendering.sleepers_container.children.find((c: any) => rmSw.getGameObjFromDisplayObj(c) === sw);
       if (!sleepersContainer) return;
 
       const switchRenderingParameter = this.getSwitchRenderingParameter(sw);
@@ -773,18 +791,14 @@ export class trackRendering_textured {
 
    createEndpointShape(point: any, track: any, endpointType: string) {
       const RECT_SIZE = 8;
-      const shape = new Sketch("track_endpoint", track);
-
-      shape.name = "track_endpoint";
-      (shape as any).endpoint = endpointType;
-      (shape as any).track = track;
+      const shape = new TrackGraphics("track_endpoint");
+      this.app.renderingManager!.bindGameObjToDisplayObj(shape, { track, endpoint: endpointType });
 
       shape.hitArea = rectHitArea(point.x - RECT_SIZE / 2, point.y - RECT_SIZE / 2, RECT_SIZE, RECT_SIZE);
 
-      shape.graphics
-         .setStrokeStyle(2)
-         .beginStroke("#ff0000")
-         .drawRect(point.x - RECT_SIZE / 2, point.y - RECT_SIZE / 2, RECT_SIZE, RECT_SIZE);
+      shape
+         .rect(point.x - RECT_SIZE / 2, point.y - RECT_SIZE / 2, RECT_SIZE, RECT_SIZE)
+         .stroke({ width: 2, color: "#ff0000", cap: "round", join: "round" });
 
       return shape;
    }
@@ -795,42 +809,41 @@ export class trackRendering_textured {
    }
 
    updateSelection() {
-      this.app.renderingManager!.containers.selection.removeAllChildren();
+      const rmSel = this.app.renderingManager!;
+      rmSel.containers.selection.removeChildren();
 
       if (this.app.selection.type == "Track") {
-         this.app.renderingManager!.containers.tracks.children[0].children.forEach((c: any) => {
-            if (this.app.selection.isSelectedObject(c.data)) {
+         rmSel.containers.tracks.children[0].children.forEach((c: any) => {
+            const d = rmSel.getGameObjFromDisplayObj(c);
+            if (d != null && this.app.selection.isSelectedObject(d)) {
                this.visualizeTrackBounds(c);
-               this.drawTrackEndpoints(c.data);
+               this.drawTrackEndpoints(d);
             }
          });
       } else if (this.app.selection.type == "Signal") {
-         this.app.renderingManager!.containers.signals.children.forEach((c: any) => {
-            if (c.data) {
-               if (this.app.selection.isSelectedObject(c.data)) this.visualizeTrackBounds(c);
-            }
+         rmSel.containers.signals.children.forEach((c: any) => {
+            const d = rmSel.getGameObjFromDisplayObj(c);
+            if (d != null && this.app.selection.isSelectedObject(d)) this.visualizeTrackBounds(c);
          });
       } else if (this.app.selection.type == "GenericObject") {
-         this.app.renderingManager!.containers.objects.children.forEach((c: any) => {
-            if (c.data) {
-               if (this.app.selection.isSelectedObject(c.data)) this.visualizeTrackBounds(c);
-            }
+         rmSel.containers.objects.children.forEach((c: any) => {
+            const d = rmSel.getGameObjFromDisplayObj(c);
+            if (d != null && this.app.selection.isSelectedObject(d)) this.visualizeTrackBounds(c);
          });
       }
-      this.app.renderingManager!.update();
+      rmSel.update();
    }
 
    drawSleepersOnSwitch(sw: any, switchRenderingParameter: any, container?: any) {
       const { mainTrack, straightBranch, curvedBranch, curvedBranch2, flipped, mirrored } = switchRenderingParameter;
 
       if (container == null) {
-         container = new DisplayGroup("switch_sleepers", sw);
-         container.name = "switch_sleepers";
-         container.data = sw;
+         container = createLayerContainer("switch_sleepers");
+         this.app.renderingManager!.bindGameObjToDisplayObj(container, sw);
          container.interactiveChildren = false;
          this._rendering.sleepers_container.addChild(container);
       } else {
-         container.removeAllChildren();
+         container.removeChildren();
       }
 
       const deg = sw.track1.deg;
@@ -920,8 +933,8 @@ export class trackRendering_textured {
    renderSwitch(sw: any, _force?: boolean) {
       const switchRenderingParameter = this.getSwitchRenderingParameter(sw);
 
-      const shape = new Sketch("switch", sw);
-      shape.data = sw;
+      const shape = new TrackGraphics("switch");
+      this.app.renderingManager!.bindGameObjToDisplayObj(shape, sw);
       this._rendering.rails_container.addChild(shape);
 
       if (switchRenderingParameter.curvedBranch2 == null) {
@@ -973,8 +986,8 @@ export class trackRendering_textured {
       return { mainTrack, straightBranch, curvedBranch, curvedBranch2, flipped, mirrored };
    }
 
-   renderThreeWaySwitch(shape: any, switchRenderingParameter: any) {
-      const g = shape.graphics;
+   renderThreeWaySwitch(shape: TrackGraphics, switchRenderingParameter: any) {
+      const g = shape;
       const { mainTrack, straightBranch, curvedBranch, flipped, mirrored } = switchRenderingParameter;
 
       const intersections: any = {
@@ -1011,107 +1024,131 @@ export class trackRendering_textured {
       frogPoints.curveStart = frogPoints.straightStart.add(curvedBranch.unit.multiply(guardRailLength));
 
       for (const rail of trackRendering_textured.RAILS) {
-         g.setStrokeStyle(rail[0]).beginStroke(rail[1]);
+         const st = {
+            width: rail[0],
+            color: rail[1],
+            cap: "round" as const,
+            join: "round" as const,
+         };
 
-         g.mt(mainTrack.rails.outer.x, mainTrack.rails.outer.y).quadraticCurveTo(
+         g.moveTo(mainTrack.rails.outer.x, mainTrack.rails.outer.y).quadraticCurveTo(
             intersections.outerCurve.x,
             intersections.outerCurve.y,
             curvedBranch.rails.outer.x,
             curvedBranch.rails.outer.y
-         );
+         ).stroke(st);
 
-         g.mt(mainTrack.rails.inner.x, mainTrack.rails.inner.y)
+         g.moveTo(mainTrack.rails.inner.x, mainTrack.rails.inner.y)
             .quadraticCurveTo(
                intersections.innerCurve.x - flipped,
                intersections.innerCurve.y - flipped,
                frogPoints.curveEnd.x,
                frogPoints.curveEnd.y
             )
-            .lt(frogPoints.straightEnd.x, frogPoints.straightEnd.y);
+            .lineTo(frogPoints.straightEnd.x, frogPoints.straightEnd.y)
+            .stroke(st);
 
-         g.mt(straightBranch.rails.outer.x, straightBranch.rails.outer.y)
-            .lt(intersections.frog.x, intersections.frog.y)
-            .lt(curvedBranch.rails.inner.x, curvedBranch.rails.inner.y);
+         g.moveTo(straightBranch.rails.outer.x, straightBranch.rails.outer.y)
+            .lineTo(intersections.frog.x, intersections.frog.y)
+            .lineTo(curvedBranch.rails.inner.x, curvedBranch.rails.inner.y)
+            .stroke(st);
 
-         g.mt(mainTrack.rails.inner.x, mainTrack.rails.inner.y).lt(straightBranch.rails.inner.x, straightBranch.rails.inner.y);
+         g.moveTo(mainTrack.rails.inner.x, mainTrack.rails.inner.y)
+            .lineTo(straightBranch.rails.inner.x, straightBranch.rails.inner.y)
+            .stroke(st);
 
-         g.mt(frogPoints.curveStart.x, frogPoints.curveStart.y)
-            .lt(frogPoints.straightStart.x, frogPoints.straightStart.y)
-            .lt(mainTrack.rails.outer.x, mainTrack.rails.outer.y + 2 * flipped);
-
-         g.endStroke();
+         g.moveTo(frogPoints.curveStart.x, frogPoints.curveStart.y)
+            .lineTo(frogPoints.straightStart.x, frogPoints.straightStart.y)
+            .lineTo(mainTrack.rails.outer.x, mainTrack.rails.outer.y + 2 * flipped)
+            .stroke(st);
       }
    }
 
-   renderFourWaySwitch(shape: any, switchRenderingParameter: any) {
+   renderFourWaySwitch(shape: TrackGraphics, switchRenderingParameter: any) {
       const { mainTrack, straightBranch, curvedBranch, curvedBranch2 } = switchRenderingParameter;
 
-      const drawRail = (graphics: any, startTrack: any, endTrack: any, railSide: "inner" | "outer") => {
+      const drawRail = (
+         graphics: Graphics,
+         startTrack: any,
+         endTrack: any,
+         railSide: "inner" | "outer",
+         st: { width: number; color: string; cap: "round"; join: "round" }
+      ) => {
          const startPoint = startTrack.rails[railSide];
          const endPoint = endTrack.rails[railSide];
 
          const cp1 = geometry.add(startPoint, geometry.multiply(startTrack.unit, trackRendering_textured.CURVATURE_4WAY_SWITCH));
          const cp2 = geometry.add(endPoint, geometry.multiply(endTrack.unit, -trackRendering_textured.CURVATURE_4WAY_SWITCH));
 
-         graphics.mt(startPoint.x, startPoint.y).bezierCurveTo(cp1.x, cp1.y, cp2.x, cp2.y, endPoint.x, endPoint.y);
+         graphics
+            .moveTo(startPoint.x, startPoint.y)
+            .bezierCurveTo(cp1.x, cp1.y, cp2.x, cp2.y, endPoint.x, endPoint.y)
+            .stroke(st);
       };
 
-      const g = shape.graphics;
+      const g = shape;
 
       for (const rail of trackRendering_textured.RAILS) {
-         g.setStrokeStyle(rail[0]).beginStroke(rail[1]);
+         const st = {
+            width: rail[0],
+            color: rail[1],
+            cap: "round" as const,
+            join: "round" as const,
+         };
 
-         drawRail(g, straightBranch, curvedBranch2, "outer");
-         drawRail(g, curvedBranch, mainTrack, "inner");
-         drawRail(g, straightBranch, curvedBranch2, "inner");
-         drawRail(g, curvedBranch, mainTrack, "outer");
+         drawRail(g, straightBranch, curvedBranch2, "outer", st);
+         drawRail(g, curvedBranch, mainTrack, "inner", st);
+         drawRail(g, straightBranch, curvedBranch2, "inner", st);
+         drawRail(g, curvedBranch, mainTrack, "outer", st);
 
-         g.mt(mainTrack.rails.inner.x, mainTrack.rails.inner.y).lt(straightBranch.rails.inner.x, straightBranch.rails.inner.y);
+         g.moveTo(mainTrack.rails.inner.x, mainTrack.rails.inner.y)
+            .lineTo(straightBranch.rails.inner.x, straightBranch.rails.inner.y)
+            .stroke(st);
 
-         g.mt(mainTrack.rails.outer.x, mainTrack.rails.outer.y).lt(straightBranch.rails.outer.x, straightBranch.rails.outer.y);
+         g.moveTo(mainTrack.rails.outer.x, mainTrack.rails.outer.y)
+            .lineTo(straightBranch.rails.outer.x, straightBranch.rails.outer.y)
+            .stroke(st);
 
-         g.mt(curvedBranch.rails.inner.x, curvedBranch.rails.inner.y).lt(
-            curvedBranch2.rails.inner.x,
-            curvedBranch2.rails.inner.y
-         );
+         g.moveTo(curvedBranch.rails.inner.x, curvedBranch.rails.inner.y)
+            .lineTo(curvedBranch2.rails.inner.x, curvedBranch2.rails.inner.y)
+            .stroke(st);
 
-         g.mt(curvedBranch.rails.outer.x, curvedBranch.rails.outer.y).lt(
-            curvedBranch2.rails.outer.x,
-            curvedBranch2.rails.outer.y
-         );
-
-         g.endStroke();
+         g.moveTo(curvedBranch.rails.outer.x, curvedBranch.rails.outer.y)
+            .lineTo(curvedBranch2.rails.outer.x, curvedBranch2.rails.outer.y)
+            .stroke(st);
       }
    }
 
    renderSwitchUI(sw: any) {
-      const drawArrow = (graphics: any, length: number, size: number) => {
-         graphics
-            .mt(0, 0)
-            .lt(length, 0)
-            .mt(length - size, -size / 2)
-            .lt(length, 0)
-            .lt(length - size, size / 2);
+      const arrowStroke = {
+         width: trackRendering_textured.SWITCH_UI_STROKE,
+         color: "#333",
+         cap: "round" as const,
+         join: "round" as const,
       };
 
-      let container =  this.app.renderingManager!.containers.ui.children.find((c: any) => c.data === sw);
+      const drawArrow = (g: Graphics, length: number, size: number) => {
+         g.moveTo(0, 0).lineTo(length, 0).stroke(arrowStroke);
+         g.moveTo(length - size, -size / 2).lineTo(length, 0).lineTo(length - size, size / 2).stroke(arrowStroke);
+      };
+
+      const rmUi = this.app.renderingManager!;
+      let container = rmUi.containers.ui.children.find((c: any) => rmUi.getGameObjFromDisplayObj(c) === sw);
 
       if (container) {
-         container.removeAllChildren();
+         container.removeChildren();
       } else {
-         container = new DisplayGroup("switch", sw);
+         container = createLayerContainer("switch");
+         rmUi.bindGameObjToDisplayObj(container, sw);
          container.interactiveChildren = false;
-         container.name = "switch";
-         container.data = sw;
-         this.app.renderingManager!.containers.ui.addChild(container);
+         rmUi.containers.ui.addChild(container);
       }
 
       [sw.from, sw.branch].forEach((t: any) => {
-         const arrow = new Sketch();
+         const arrow = gleisGraphics();
          container.addChild(arrow);
 
-         arrow.graphics.setStrokeStyle(trackRendering_textured.SWITCH_UI_STROKE, "round").beginStroke("#333");
-         drawArrow(arrow.graphics, 20, 5);
+         drawArrow(arrow, 20, 5);
          arrow.x = sw.location.x;
          arrow.y = sw.location.y;
          arrow.angle = Switch.findAngle(sw.location, t.end.equals(sw.location) ? t.start : t.end);
@@ -1160,13 +1197,13 @@ export class trackRendering_textured {
    }
 
    visualizeTrackBounds(container: any) {
-      const bounds = container.getTransformedBounds();
-      const object = container.data;
+      const bounds = container.getBounds();
+      const object = this.app.renderingManager!.getGameObjFromDisplayObj(container);
 
       if (bounds == null) throw new Error("Bounds are null");
-      const stage = this.app.renderingManager!.stage;
-      const topLeft = stage.globalToLocal(bounds.x, bounds.y);
-      const bottomRight = stage.globalToLocal(bounds.x + bounds.width, bounds.y + bounds.height);
+      const vp = this.app.renderingManager!.viewport;
+      const topLeft = vp.toLocal({ x: bounds.x, y: bounds.y });
+      const bottomRight = vp.toLocal({ x: bounds.x + bounds.width, y: bounds.y + bounds.height });
       const localBounds = {
          x: topLeft.x,
          y: topLeft.y,
@@ -1180,17 +1217,13 @@ export class trackRendering_textured {
       localBounds.width += padding * 2;
       localBounds.height += padding * 2;
 
-      const boundsShape = new Sketch("selection", object);
-      boundsShape.name = "selection";
-      boundsShape.data = object;
+      const boundsShape = gleisGraphics("selection");
+      if (object !== undefined) this.app.renderingManager!.bindGameObjToDisplayObj(boundsShape, object);
       boundsShape.alpha = 0.7;
 
-      boundsShape.graphics
-         .setStrokeStyle(2)
-         .setStrokeDash([5, 5])
-         .beginStroke("#000000")
-         .drawRect(localBounds.x, localBounds.y, localBounds.width, localBounds.height)
-         .endStroke();
+      boundsShape
+         .rect(localBounds.x, localBounds.y, localBounds.width, localBounds.height)
+         .stroke({ width: 2, color: "#000000", cap: "round", join: "round" });
 
       this.app.renderingManager!.containers.selection.addChild(boundsShape);
    }

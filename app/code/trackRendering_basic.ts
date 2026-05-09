@@ -10,7 +10,10 @@ import { Train } from './train.ts';
 import { geometry } from './tools.ts';
 import { Application } from './application.ts';
 import { CONFIG } from './config.ts';
-import { DisplayGroup, LabelText, Sketch, polygonHitArea } from './pixiPrimitives.ts';
+import type { Graphics } from 'pixi.js';
+import { gleisGraphics, polygonHitArea, TrackGraphics } from './pixiPrimitives.ts';
+import { Text } from 'pixi.js';
+import { createLayerContainer } from './pixiUtils.ts';
 
 export class trackRendering_basic {
    static TRACK_COLOR = "#111111";
@@ -43,14 +46,12 @@ export class trackRendering_basic {
 
    renderAllTrains() {
       const rm = this.app.renderingManager!;
-      rm.containers.trains.removeAllChildren();
+      rm.containers.trains.removeChildren();
 
       Train.allTrains
          .filter((train: any) => !train.trainCoupledFront)
          .forEach((train: any) => {
-            const c = new DisplayGroup("train");
-            c.name = "train";
-            (c as any).train = train;
+            const c = createLayerContainer("train");
             c.interactiveChildren = true;
 
             this.renderCar(train, c);
@@ -63,10 +64,11 @@ export class trackRendering_basic {
       const carWidth = car.length;
       const carHeight = CONFIG.GRID_SIZE * 0.65;
       const corner = car.type == Train.CAR_TYPES.LOCOMOTIVE ? 8 : 1.5;
-      const s = new Sketch("train", car);
-      s.graphics.setStrokeStyle(1).beginStroke("#000").beginFill(car.color).drawRoundRect(0, 0, carWidth, carHeight, corner);
-      s.data = car;
-      s.name = "train";
+      const s = gleisGraphics("train");
+      this.app.renderingManager!.bindGameObjToDisplayObj(s, car);
+      s.roundRect(0, 0, carWidth, carHeight, corner)
+         .fill(car.color)
+         .stroke({ width: 1, color: "#000", cap: "round", join: "round" });
 
       const p = car.track.getPointFromKm(car.pos);
 
@@ -77,7 +79,11 @@ export class trackRendering_basic {
 
       container.addChild(s);
       if (car.number && car.type == Train.CAR_TYPES.LOCOMOTIVE) {
-         const text = new LabelText(car.number, "10px Arial", "#000000");
+         const text = new Text({
+            text: car.number,
+            style: { fill: "#000000", fontFamily: "Arial", fontSize: 10 },
+         });
+         text.eventMode = "static";
          text.anchor.set(0.5);
          text.x = p.x;
          text.y = p.y;
@@ -89,9 +95,10 @@ export class trackRendering_basic {
    }
 
    renderAllSignals() {
-      this.app.renderingManager!.containers.signals.removeAllChildren();
+      const rm = this.app.renderingManager!;
+      rm.containers.signals.removeChildren();
       Signal.allSignals.forEach((signal: any) => {
-         let container = this.app.renderingManager!.containers.signals.addChild(SignalRenderer.createSignalContainer(signal));
+         let container = rm.containers.signals.addChild(SignalRenderer.createSignalContainer(rm, signal));
          this.app.alignSignalContainerWithTrack(container, signal._positioning);
          if (this.app.selection.isSelectedObject(signal)) {
             container.tint = 0xff0000;
@@ -110,27 +117,29 @@ export class trackRendering_basic {
    }
 
    updateSelection() {
-      app.renderingManager!.containers.tracks.children.forEach((c: any) => {
-         if (c.data) {
-            if (app.selection.isSelectedObject(c.data)) this.isSelected(c);
+      const rm = app.renderingManager!;
+      rm.containers.tracks.children.forEach((c: any) => {
+         const d = rm.getGameObjFromDisplayObj(c);
+         if (d !== undefined) {
+            if (app.selection.isSelectedObject(d)) this.isSelected(c);
             else c.tint = 0xffffff;
          }
       });
-      app.renderingManager!.containers.signals.children.forEach(function (c: any) {
-         if (c.data) {
-            if (app.selection.isSelectedObject(c.data)) c.tint = 0xff0000;
+      rm.containers.signals.children.forEach(function (c: any) {
+         const d = rm.getGameObjFromDisplayObj(c);
+         if (d !== undefined) {
+            if (app.selection.isSelectedObject(d)) c.tint = 0xff0000;
             else c.tint = 0xffffff;
          }
       });
-      this.app.renderingManager!.update();
+      rm.update();
    }
 
    renderAllGenericObjects() {
-      this.app.renderingManager!.containers.objects.removeAllChildren();
+      this.app.renderingManager!.containers.objects.removeChildren();
       GenericObject.all_objects.forEach((o: any) => {
-         const c = new DisplayGroup("GenericObject", o);
-         c.name = "GenericObject";
-         c.data = o;
+         const c = createLayerContainer("GenericObject");
+         this.app.renderingManager!.bindGameObjToDisplayObj(c, o);
          c.interactiveChildren = false;
          c.x = o.pos().x;
          c.y = o.pos().y;
@@ -144,9 +153,13 @@ export class trackRendering_basic {
    }
 
    renderTextObject(text_object: any, container: any) {
-      var text = new LabelText(text_object.content(), "20px Arial", "#000000");
-      const height = text.getMeasuredHeight();
-      const width = text.getMeasuredWidth();
+      var text = new Text({
+         text: text_object.content(),
+         style: { fill: "#000000", fontFamily: "Arial", fontSize: 20 },
+      });
+      text.eventMode = "static";
+      const height = text.height;
+      const width = text.width;
 
       text.hitArea = polygonHitArea([{ x: 0, y: 0 }, { x: width, y: 0 }, { x: width, y: -height }, { x: 0, y: -height }]);
 
@@ -154,11 +167,17 @@ export class trackRendering_basic {
    }
 
    renderPlattformObject(plattform: any, container: any) {
-      const shape = new Sketch();
+      const shape = gleisGraphics();
       container.addChild(shape);
-      shape.graphics.beginStroke("#111111").beginFill("#444").drawRect(0, 0, plattform.size().width, plattform.size().height);
+      const w = plattform.size().width,
+         h = plattform.size().height;
+      shape.rect(0, 0, w, h).fill("#444").stroke({ width: 1, color: "#111111", cap: "round", join: "round" });
 
-      var text = new LabelText(plattform.content(), "20px Arial", "#eee");
+      var text = new Text({
+         text: plattform.content(),
+         style: { fill: "#eee", fontFamily: "Arial", fontSize: 20 },
+      });
+      text.eventMode = "static";
       text.anchor.set(0.5);
       text.x = plattform.size().width / 2;
       text.y = plattform.size().height / 2;
@@ -203,26 +222,32 @@ export class trackRendering_basic {
 
    renderTrack(container: any, track: Track) {
       let params = this.calculateTrackDrawingParameters(track);
-      let shape = new Sketch("track", track);
-      shape.name = "track";
-      shape.data = track;
+      let shape = new TrackGraphics("track");
+      this.app.renderingManager!.bindGameObjToDisplayObj(shape, track);
 
       shape.hitArea = polygonHitArea(params.hit_area);
 
-      //container.addChild(hit);
       container.addChild(shape);
 
-      shape.graphics.setStrokeStyle(trackRendering_basic.STROKE, "round").beginStroke(trackRendering_basic.TRACK_COLOR);
-      shape.color = (shape.graphics as any).command;
-      shape.graphics.moveTo(params.start.x, params.start.y).lineTo(params.end.x, params.end.y);
+      const trackStroke = {
+         width: trackRendering_basic.STROKE,
+         color: trackRendering_basic.TRACK_COLOR,
+         cap: "round" as const,
+         join: "round" as const,
+      };
+      shape.moveTo(params.start.x, params.start.y).lineTo(params.end.x, params.end.y).stroke(trackStroke);
       if (params.bumper[0]) {
-         //prellbock beim start
-         shape.graphics.moveTo(params.bumper[0][0].x, params.bumper[0][0].y).lineTo(params.bumper[0][1].x, params.bumper[0][1].y);
+         shape
+            .moveTo(params.bumper[0][0].x, params.bumper[0][0].y)
+            .lineTo(params.bumper[0][1].x, params.bumper[0][1].y)
+            .stroke(trackStroke);
       }
 
       if (params.bumper[1]) {
-         //prellbock beim ende
-         shape.graphics.moveTo(params.bumper[1][0].x, params.bumper[1][0].y).lineTo(params.bumper[1][1].x, params.bumper[1][1].y);
+         shape
+            .moveTo(params.bumper[1][0].x, params.bumper[1][0].y)
+            .lineTo(params.bumper[1][1].x, params.bumper[1][1].y)
+            .stroke(trackStroke);
       }
       if (this.app.selection.isSelectedObject(track)) this.isSelected(shape);
 
@@ -236,12 +261,8 @@ export class trackRendering_basic {
       return shape;
    }
 
-   static drawTriangle(graphics: any, color: string, p1: any, p2: any, p3: any) {
-      graphics.beginFill(color)
-         .mt(p1.x, p1.y)
-         .lt(p2.x, p2.y)
-         .lt(p3.x, p3.y)
-         .lt(p1.x, p1.y);
+   static drawTriangle(graphics: Graphics, color: string, p1: any, p2: any, p3: any) {
+      graphics.moveTo(p1.x, p1.y).lineTo(p2.x, p2.y).lineTo(p3.x, p3.y).closePath().fill(color);
    }
 
    renderAllSwitches() {
@@ -250,21 +271,22 @@ export class trackRendering_basic {
             console.log(sw);
             throw new Error("switch is falty");
          }
-         let switch_shape = new Sketch("switch", sw);
-         switch_shape.name = "switch";
-         switch_shape.data = sw;
+         let switch_shape = new TrackGraphics("switch");
+         this.app.renderingManager!.bindGameObjToDisplayObj(switch_shape, sw);
          this.app.renderingManager!.containers.tracks.addChild(switch_shape);
-         
-         // Draw the switch branch tracks
-         switch_shape.graphics.setStrokeStyle(trackRendering_basic.STROKE, "round").beginStroke(trackRendering_basic.TRACK_COLOR);
-         switch_shape.color = (switch_shape.graphics as any).command;
 
-         // Draw all track branches using a loop
+         const swStroke = {
+            width: trackRendering_basic.STROKE,
+            color: trackRendering_basic.TRACK_COLOR,
+            cap: "round" as const,
+            join: "round" as const,
+         };
+
          const maxTracks = sw.type == Switch.SWITCH_TYPE.DKW ? 4 : 3;
          for (let i = 0; i < maxTracks; i++) {
             if (sw.track_directions[i]) {
                let end_point = sw.getBranchEndPoint(i);
-               switch_shape.graphics.moveTo(sw.location.x, sw.location.y).lineTo(end_point.x, end_point.y);
+               switch_shape.moveTo(sw.location.x, sw.location.y).lineTo(end_point.x, end_point.y).stroke(swStroke);
             }
          }
 
@@ -273,14 +295,14 @@ export class trackRendering_basic {
          p1 = sw.getBranchEndPoint(1, trackRendering_basic.SWITCH_SIZE);
          p2 = sw.getBranchEndPoint(2, trackRendering_basic.SWITCH_SIZE);
          if (p1 && p2) {
-            trackRendering_basic.drawTriangle(switch_shape.graphics, "black", sw.location, p1, p2);
+            trackRendering_basic.drawTriangle(switch_shape, "black", sw.location, p1, p2);
          }
 
          if (sw.type == Switch.SWITCH_TYPE.DKW) {
             p1 = sw.getBranchEndPoint(0, trackRendering_basic.SWITCH_SIZE);
             p2 = sw.getBranchEndPoint(3, trackRendering_basic.SWITCH_SIZE);
             if (p1 && p2) {
-               trackRendering_basic.drawTriangle(switch_shape.graphics, "black", sw.location, p1, p2);
+               trackRendering_basic.drawTriangle(switch_shape, "black", sw.location, p1, p2);
             }
          }
 
@@ -289,30 +311,34 @@ export class trackRendering_basic {
    }
 
    renderSwitchUI(sw: Switch) {
+      const rm = this.app.renderingManager!;
       // Check if a container already exists for this switch
-      let container = this.app.renderingManager!.containers.ui.children.find((c: any) => c.data === sw);
+      let container = rm.containers.ui.children.find((c: any) => rm.getGameObjFromDisplayObj(c) === sw);
 
       if (container) {
          // If container exists, clear it but keep it
-         container.removeAllChildren();
+         container.removeChildren();
       } else {
          // Create a new container if none exists
-         container = new DisplayGroup("switch", sw);
+         container = createLayerContainer("switch");
+         rm.bindGameObjToDisplayObj(container, sw);
          container.interactiveChildren = false;
-         container.name = "switch";
-         container.data = sw;
-         this.app.renderingManager!.containers.ui.addChild(container);
+         rm.containers.ui.addChild(container);
       }
 
-      const ui_shape = new Sketch();
-      ui_shape.graphics.setStrokeStyle(trackRendering_basic.STROKE / 2, "round");
+      const ui_shape = gleisGraphics();
       container.addChild(ui_shape);
 
+      const uiStroke = {
+         width: trackRendering_basic.STROKE / 2,
+         cap: "round" as const,
+         join: "round" as const,
+      };
+
       const draw_line = function (t: number, color: string) {
-         ui_shape.graphics.beginStroke(color);
          let p1 = sw.getBranchEndPoint(t, trackRendering_basic.SWITCH_SIZE);
          let p0 = sw.getBranchEndPoint(t, trackRendering_basic.SWITCH_SIZE / 2);
-         ui_shape.graphics.moveTo(p0.x, p0.y).lineTo(p1.x, p1.y);
+         ui_shape.moveTo(p0.x, p0.y).lineTo(p1.x, p1.y).stroke({ ...uiStroke, color });
       };
 
       sw.tracks.forEach((t, i) => {

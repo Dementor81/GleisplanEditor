@@ -10,8 +10,13 @@ import { Signal } from '../signal.ts';
 import { GenericObject } from '../generic_object.ts';
 import { trackRendering_basic } from '../trackRendering_basic.ts';
 import { trackRendering_textured } from '../trackRendering_textured.ts';
-import type { Application } from '../application.ts';
-import { createPixiScene, DisplayGroup, Sketch } from '../pixiPrimitives.ts';
+import type { Application as GleisApplication } from '../application.ts';
+import type { Application as PixiApplication } from 'pixi.js';
+import { Container } from 'pixi.js';
+import { createPixiApplicationWithViewport, hitTestFromViewportLocal, TrackGraphics } from '../pixiPrimitives.ts';
+import { createLayerContainer } from '../pixiUtils.ts';
+
+type PointXY = { x: number; y: number };
 
 // ============================================================================
 // Type Definitions
@@ -42,13 +47,18 @@ interface EventData {
  * This class manages grid drawing, clearing, centering, and other rendering operations
  */
 export class RenderingManager {
-   #application: Application;
-   #stage: any = null;
+   #application: GleisApplication;
+   #pixiApp: PixiApplication | null = null;
+   #viewport: Container | null = null;
+   #canvas: HTMLCanvasElement | null = null;
+   #pointerX = 0;
+   #pointerY = 0;
    #containers: ContainersType | Record<string, any> = {};
    #renderer: any = null;
    #grid: any = null;
-   
-   constructor(application: Application) {
+   #domainByDisplay = new WeakMap<Container, unknown>();
+
+   constructor(application: GleisApplication) {
       this.#application = application;
    }
    
@@ -74,11 +84,13 @@ export class RenderingManager {
     * @private
     */
    async #initializeStage(): Promise<void> {
-      const myCanvas = (window as any).myCanvas;
-      
-      // Disable context menu
+      const myCanvas = (window as any).myCanvas as HTMLCanvasElement;
+
       myCanvas.oncontextmenu = () => false;
-      this.#stage = await createPixiScene(myCanvas);
+      this.#canvas = myCanvas;
+      const { app, viewport } = await createPixiApplicationWithViewport(myCanvas);
+      this.#pixiApp = app;
+      this.#viewport = viewport;
    }
    
    /**
@@ -86,9 +98,7 @@ export class RenderingManager {
     * @private
     */
    #initializeContainers(): void {
-      const createContainer = (name: string) => {
-         return new DisplayGroup(name);
-      };
+      const createContainer = (name: string) => createLayerContainer(name);
       
       // Create all containers
       const containers: any = {};
@@ -104,30 +114,30 @@ export class RenderingManager {
       containers.drawing = createContainer(CONTAINERS.DRAWING);
 
       containers.removeAllChildren = () => {
-         containers.debug.removeAllChildren();
-         containers.tracks.removeAllChildren();
-         containers.objects.removeAllChildren();
-         containers.trains.removeAllChildren();
-         containers.signals.removeAllChildren();
-         containers.ui.removeAllChildren();
-         containers.selection.removeAllChildren();
-         containers.overlay.removeAllChildren();
-         containers.drawing.removeAllChildren();
+         containers.debug.removeChildren();
+         containers.tracks.removeChildren();
+         containers.objects.removeChildren();
+         containers.trains.removeChildren();
+         containers.signals.removeChildren();
+         containers.ui.removeChildren();
+         containers.selection.removeChildren();
+         containers.overlay.removeChildren();
+         containers.drawing.removeChildren();
       };
       
       this.#containers = containers;
       
-      // Build container hierarchy
-      this.#stage.addChild(containers.main);
-      this.#stage.addChild(containers.debug);
+      const vp = this.#viewport!;
+      vp.addChild(containers.main);
+      vp.addChild(containers.debug);
       containers.main.addChild(containers.tracks);
       containers.main.addChild(containers.objects);
       containers.main.addChild(containers.trains);
       containers.main.addChild(containers.signals);
-      this.#stage.addChild(containers.ui);
-      this.#stage.addChild(containers.selection);
-      this.#stage.addChild(containers.overlay);
-      this.#stage.addChild(containers.drawing);
+      vp.addChild(containers.ui);
+      vp.addChild(containers.selection);
+      vp.addChild(containers.overlay);
+      vp.addChild(containers.drawing);
    }
    
    /**
@@ -171,7 +181,31 @@ export class RenderingManager {
     * Update the stage
     */
    update(): void {
-      this.#stage?.update();
+      if (this.#pixiApp) this.#pixiApp.renderer.render(this.#pixiApp.stage);
+   }
+
+   recordCanvasPointer(event: MouseEvent): void {
+      if (!this.#canvas) return;
+      const rect = this.#canvas.getBoundingClientRect();
+      this.#pointerX = event.clientX - rect.left;
+      this.#pointerY = event.clientY - rect.top;
+   }
+
+   /** Pointer position in viewport/world layer space (same space as layout coordinates). */
+   viewportPointerLocal(): PointXY {
+      return this.#viewport!.toLocal({ x: this.#pointerX, y: this.#pointerY });
+   }
+
+   hitTest(root: Container, pointViewportLocal?: PointXY): any {
+      return hitTestFromViewportLocal(this.#viewport!, root, pointViewportLocal ?? this.viewportPointerLocal());
+   }
+
+   bindGameObjToDisplayObj(display: Container, domain: unknown): void {
+      this.#domainByDisplay.set(display, domain);
+   }
+
+   getGameObjFromDisplayObj(display: Container): unknown | undefined {
+      return this.#domainByDisplay.get(display);
    }
 
    /**
@@ -184,19 +218,20 @@ export class RenderingManager {
       if (!myCanvas.prevent_input) {
          myCanvas.prevent_input = true;
 
-         const stage = this.stage;
-         const point = { x: stage.mouseX, y: stage.mouseY };
-         const localPoint = stage.globalToLocal(point.x, point.y);
-         const old_scale = stage.scale;
-         const step = deltaY / (INPUT.ZOOM_STEP_DIVISOR / stage.scale);
+         const viewport = this.viewport;
+         const point = { x: this.#pointerX, y: this.#pointerY };
+         const localPoint = viewport.toLocal(point);
+         const old_scale = viewport.scale.x;
+         const step = deltaY / (INPUT.ZOOM_STEP_DIVISOR / viewport.scale.x);
 
-         stage.scale -= step;
-         stage.scale = Math.min(Math.max(CONFIG.MIN_SCALE, stage.scale), CONFIG.MAX_SCALE);
+         let nextScale = viewport.scale.x - step;
+         nextScale = Math.min(Math.max(CONFIG.MIN_SCALE, nextScale), CONFIG.MAX_SCALE);
+         viewport.scale.set(nextScale);
 
-         if (stage.scale != old_scale) {
-            const globalPoint = stage.localToGlobal(localPoint.x, localPoint.y);
-            stage.x -= globalPoint.x - point.x;
-            stage.y -= globalPoint.y - point.y;
+         if (viewport.scale.x != old_scale) {
+            const globalPoint = viewport.toGlobal(localPoint);
+            viewport.x -= globalPoint.x - point.x;
+            viewport.y -= globalPoint.y - point.y;
 
             this.drawGrid();
             this.reDrawEverything();
@@ -214,8 +249,9 @@ export class RenderingManager {
     * @param deltaY - The Y scroll delta
     */
    scroll(deltaX: number, deltaY: number): void {
-      this.#stage.x += deltaX;
-      this.#stage.y += deltaY;
+      const vp = this.#viewport!;
+      vp.x += deltaX;
+      vp.y += deltaY;
       this.drawGrid();
       this.reDrawEverything();
    }
@@ -264,9 +300,10 @@ export class RenderingManager {
     * Center the viewport
     */
    center(): void {
-      this.#stage.scale = 1;
-      this.#stage.x = 0;
-      this.#stage.y = 0;
+      const vp = this.#viewport!;
+      vp.scale.set(1);
+      vp.x = 0;
+      vp.y = 0;
       STORAGE.save();
       this.drawGrid();
       this.reDrawEverything();
@@ -279,17 +316,16 @@ export class RenderingManager {
     */
    drawGrid(repaint: boolean = true): void {
       if (!this.#grid) {
-         this.#grid = new Sketch("grid");
-         this.#grid.name = "grid";
-         this.#stage.addChildAt(this.#grid, 0);
+         this.#grid = new TrackGraphics("grid");
+         this.#viewport!.addChildAt(this.#grid, 0);
       }
 
       this.#grid.visible = this.#application.showGrid;
       if (!this.#application.showGrid) return;
 
       if (repaint) {
-         const bounds = this.#stage.canvas.getBoundingClientRect();
-         const scale = this.#stage.scale;
+         const bounds = this.#canvas!.getBoundingClientRect();
+         const scale = this.#viewport!.scale.x;
 
          // Calculate visible area in grid coordinates
          const size = {
@@ -300,25 +336,28 @@ export class RenderingManager {
          // Add padding to prevent gaps during panning
          const padding = CONFIG.GRID_SIZE * 2;
 
-         this.#grid.graphics.clear().setStrokeStyle(CONFIG.GRID_STROKE_STYLE, "round").setStrokeDash([5, 5]).beginStroke(COLORS.GRID);
+         const gridStroke = {
+            width: CONFIG.GRID_STROKE_STYLE,
+            color: COLORS.GRID,
+            cap: "round" as const,
+            join: "round" as const,
+         };
 
-         // Draw vertical lines
+         this.#grid.clear();
+
          for (let x = -padding; x <= size.width + padding; x += CONFIG.GRID_SIZE) {
-            this.#grid.graphics.moveTo(x, -padding).lineTo(x, size.height + padding);
+            this.#grid.moveTo(x, -padding).lineTo(x, size.height + padding).stroke(gridStroke);
          }
 
-         // Draw horizontal lines
          for (let y = -padding; y <= size.height + padding; y += CONFIG.GRID_SIZE) {
-            this.#grid.graphics.moveTo(-padding, y).lineTo(size.width + padding, y);
+            this.#grid.moveTo(-padding, y).lineTo(size.width + padding, y).stroke(gridStroke);
          }
-
-         // Cache with padding to prevent artifacts
       }
 
       // Align grid to nearest grid line to prevent floating point artifacts
-      const scaled_grid_size = CONFIG.GRID_SIZE * this.#stage.scale;
-      this.#grid.x = Math.floor(this.#stage.x / scaled_grid_size) * -CONFIG.GRID_SIZE;
-      this.#grid.y = Math.floor(this.#stage.y / scaled_grid_size) * -CONFIG.GRID_SIZE;
+      const scaled_grid_size = CONFIG.GRID_SIZE * this.#viewport!.scale.x;
+      this.#grid.x = Math.floor(this.#viewport!.x / scaled_grid_size) * -CONFIG.GRID_SIZE;
+      this.#grid.y = Math.floor(this.#viewport!.y / scaled_grid_size) * -CONFIG.GRID_SIZE;
    }
    
    /**
@@ -339,7 +378,7 @@ export class RenderingManager {
       myCanvas.height = canvasHeight;
       myCanvas.style.width = `${canvasWidth}px`;
       myCanvas.style.height = `${canvasHeight}px`;
-      this.#stage?.app?.renderer?.resize(canvasWidth, canvasHeight);
+      this.#pixiApp?.renderer.resize(canvasWidth, canvasHeight);
       
       this.drawGrid();
       this.update();
@@ -360,9 +399,9 @@ export class RenderingManager {
     */
    updateGrid(): void {
       if (this.#grid && this.#application.showGrid) {
-         const scaled_grid_size = CONFIG.GRID_SIZE * this.#stage.scale;
-         this.#grid.x = Math.floor(this.#stage.x / scaled_grid_size) * -CONFIG.GRID_SIZE;
-         this.#grid.y = Math.floor(this.#stage.y / scaled_grid_size) * -CONFIG.GRID_SIZE;
+         const scaled_grid_size = CONFIG.GRID_SIZE * this.#viewport!.scale.x;
+         this.#grid.x = Math.floor(this.#viewport!.x / scaled_grid_size) * -CONFIG.GRID_SIZE;
+         this.#grid.y = Math.floor(this.#viewport!.y / scaled_grid_size) * -CONFIG.GRID_SIZE;
       }
    }
    
@@ -374,9 +413,17 @@ export class RenderingManager {
       this.#renderer?.reDrawEverything(true);
    }
    
-   // Getters for accessing rendering state
-   get stage(): any { return this.#stage; }
-   get pixiApp(): any { return this.#stage?.app; }
+   get viewport(): Container {
+      return this.#viewport!;
+   }
+
+   get canvas(): HTMLCanvasElement {
+      return this.#canvas!;
+   }
+
+   get pixiApp(): PixiApplication {
+      return this.#pixiApp!;
+   }
    get containers(): any { return this.#containers; }
    get renderer(): any { return this.#renderer; }
    get grid(): any { return this.#grid; }

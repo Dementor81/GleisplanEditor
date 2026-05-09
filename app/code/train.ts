@@ -8,7 +8,7 @@ import { Track } from "./track.ts";
 import { Point } from "./tools.ts";
 import { CUSTOM_MOUSE_ACTION } from "./config.ts";
 import { COLORS } from "./config.ts";
-import { Sketch, circleHitArea } from "./pixiPrimitives.ts";
+import { gleisGraphics, circleHitArea } from "./pixiPrimitives.ts";
 
 export class Train {
    static allTrains: Train[] = [];
@@ -287,7 +287,7 @@ export class Train {
       currentTrack = car.track!;
 
       // Calculate new position using the node's unit vector
-      new_pos = car.pos! + movementX / app.renderingManager!.stage.scale / car.track!.cos;
+      new_pos = car.pos! + movementX / app.renderingManager!.viewport.scale.x / car.track!.cos;
 
       while (car) {
          if (car != firstCar) {
@@ -327,7 +327,7 @@ export class Train {
       const currentTrack = train.track!;
 
       // Calculate new position using the node's unit vector
-      let new_pos = train.pos! + movementX / app.renderingManager!.stage.scale / train.track!.cos;
+      let new_pos = train.pos! + movementX / app.renderingManager!.viewport.scale.x / train.track!.cos;
 
       if (NumberUtils.outoff(new_pos, 0 + train.length / 2, currentTrack.length - train.length / 2)) {
          const sw = new_pos <= 0 + train.length / 2 ? currentTrack.switchAtTheStart : currentTrack.switchAtTheEnd;
@@ -498,7 +498,7 @@ export class Train {
 
    static showDecouplingPoints(train: Train): boolean {
       // Clear any existing overlay
-      app.renderingManager!.containers.overlay.removeAllChildren();
+      app.renderingManager!.containers.overlay.removeChildren();
       const overlay = app.renderingManager!.containers.overlay;
 
       // Find the first car in the train
@@ -524,17 +524,15 @@ export class Train {
          const midY = (currentPos.y + nextPos.y) / 2;
 
          // Create a decoupling point (circle)
-         const decouplingPoint = new Sketch("decouplingPoint");
-         decouplingPoint.graphics.beginFill("#ff0000").drawCircle(0, 0, 6);
+         const decouplingPoint = gleisGraphics("decouplingPoint");
+         decouplingPoint.circle(0, 0, 6).fill("#ff0000");
          decouplingPoint.hitArea = circleHitArea(0, 0, 6);
          decouplingPoint.x = midX;
          decouplingPoint.y = midY;
-         // Store the cars to decouple in the shape's data
-         decouplingPoint.data = {
+         app.renderingManager!.bindGameObjToDisplayObj(decouplingPoint, {
             carToDeCoupleFrom: currentCar,
             carToDeCouple: nextCar,
-         };
-         decouplingPoint.name = "decouplingPoint";
+         });
 
          // Add to overlay container
          overlay.addChild(decouplingPoint);
@@ -571,7 +569,7 @@ export class Train {
 
    static exitDecouplingMode(): void {
       // Remove decoupling points
-      app.renderingManager!.containers.overlay.removeAllChildren();
+      app.renderingManager!.containers.overlay.removeChildren();
 
       // Reset custom action mode
       app.customMouseMode = CUSTOM_MOUSE_ACTION.NONE;
@@ -589,7 +587,7 @@ export class Train {
 
    static showCouplingPoints(train: Train): boolean {
       // Clear any existing overlay
-      app.renderingManager!.containers.overlay.removeAllChildren();
+      app.renderingManager!.containers.overlay.removeChildren();
 
       // Get the head and tail of the train
       let firstCar = train;
@@ -661,18 +659,16 @@ export class Train {
          const midY = (car1Pos.y + car2Pos.y) / 2;
 
          // Create a coupling point (circle)
-         const couplingPoint = new Sketch("couplingPoint");
-         couplingPoint.graphics.beginFill("#00ff00").drawCircle(0, 0, 6);
+         const couplingPoint = gleisGraphics("couplingPoint");
+         couplingPoint.circle(0, 0, 6).fill("#00ff00");
          couplingPoint.hitArea = circleHitArea(0, 0, 6);
          couplingPoint.x = midX;
          couplingPoint.y = midY;
 
-         // Store the cars to couple in the shape's data
-         couplingPoint.data = {
+         app.renderingManager!.bindGameObjToDisplayObj(couplingPoint, {
             car1: car1,
             car2: car2,
-         };
-         couplingPoint.name = "couplingPoint";
+         });
 
          // Add to overlay container
          app.renderingManager!.containers.overlay.addChild(couplingPoint);
@@ -696,7 +692,7 @@ export class Train {
 
    static exitCouplingMode(): void {
       // Remove coupling points
-      app.renderingManager!.containers.overlay.removeAllChildren();
+      app.renderingManager!.containers.overlay.removeChildren();
 
       // Reset custom action mode
       app.customMouseMode = CUSTOM_MOUSE_ACTION.NONE;

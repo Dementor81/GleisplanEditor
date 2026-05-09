@@ -9,7 +9,7 @@ import { Train } from "../train.ts";
 import { GenericObject } from "../generic_object.ts";
 import { STORAGE } from "../storage.ts";
 import type { Application } from "../application.ts";
-import { DisplayGroup } from "../pixiPrimitives.ts";
+import { createLayerContainer } from "../pixiUtils.ts";
 
 // ============================================================================
 // Type Definitions
@@ -146,7 +146,7 @@ export class UIManager {
     */
    #getDataURLFromTemplate(template: SignalTemplate): string {
       const app = (window as any).app;
-      const tmpStage = new DisplayGroup("signalPreview");
+      const tmpStage = createLayerContainer("signalPreview");
       tmpStage.scale.set(template.scale);
 
       SignalRenderer.drawPreview(template, tmpStage);

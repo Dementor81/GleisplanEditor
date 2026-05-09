@@ -106,13 +106,13 @@ export const STORAGE = {
       
       let settings: SavedSettings | null = null;
       if (include_settings && rm) {
-         const stage = rm.stage;
+         const viewport = rm.viewport;
          const renderer = rm.renderer;
-         if (stage && renderer) {
+         if (viewport && renderer) {
             settings = {
-               zoom: stage.scale,
-               scrollX: stage.x,
-               scrollY: stage.y,
+               zoom: viewport.scale.x,
+               scrollX: viewport.x,
+               scrollY: viewport.y,
                renderer: renderer instanceof trackRendering_textured ? "textured" : "basic",
             };
          }
@@ -188,9 +188,10 @@ export const STORAGE = {
       const loaded: LoadedData = JSON.parse(json, STORAGE.receiver);
       
       if (loaded.settings) {
-         (window as any).app.renderingManager.stage.x = loaded.settings.scrollX;
-         (window as any).app.renderingManager.stage.y = loaded.settings.scrollY;
-         (window as any).app.renderingManager.stage.scale = loaded.settings.zoom;
+         const vp = (window as any).app.renderingManager.viewport;
+         vp.x = loaded.settings.scrollX;
+         vp.y = loaded.settings.scrollY;
+         vp.scale.set(loaded.settings.zoom);
          if (loaded.settings.renderer) {
             (window as any).app.renderingManager.selectRenderer(loaded.settings.renderer === "textured");
          }

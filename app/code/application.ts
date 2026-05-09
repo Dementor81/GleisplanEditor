@@ -148,6 +148,7 @@ export class Application {
     */
    alignSignalContainerWithTrack(container: any, pos: SignalPosition): void {
       const point = pos.track.getPointFromKm(pos.km);
+      const signalModel = this.#renderingManager!.getGameObjFromDisplayObj(container) as any;
 
       let p: any;
       if (pos.above) {
@@ -156,7 +157,7 @@ export class Application {
             geometry
                .perpendicular(pos.track.unit)
                .multiply(
-                  -this.#renderingManager!.renderer.SIGNAL_DISTANCE_FROM_TRACK - container.data._template.distance_from_track
+                  -this.#renderingManager!.renderer.SIGNAL_DISTANCE_FROM_TRACK - signalModel._template.distance_from_track
                )
          );
       } else {
@@ -165,7 +166,7 @@ export class Application {
             geometry
                .perpendicular(pos.track.unit)
                .multiply(
-                  this.#renderingManager!.renderer.SIGNAL_DISTANCE_FROM_TRACK + container.data._template.distance_from_track
+                  this.#renderingManager!.renderer.SIGNAL_DISTANCE_FROM_TRACK + signalModel._template.distance_from_track
                )
          );
       }

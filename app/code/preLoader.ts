@@ -3,8 +3,8 @@
 // ES6 Module imports
 import { ArrayUtils } from './utils.ts';
 import { ui } from './ui.ts';
-import { Rectangle, type Texture } from 'pixi.js';
-import { TextureSprite, loadTexture, textureRegion } from './pixiPrimitives.ts';
+import { Rectangle, Sprite, type Texture } from 'pixi.js';
+import { loadTexture, textureRegion } from './pixiPrimitives.ts';
 
 // ============================================================================
 // Type Definitions
@@ -147,16 +147,17 @@ export class preLoader {
       if (item != null) {
          const texture = this._textures[item.src];
          if (!texture) return null;
-         return new TextureSprite(
+         const sprite = new Sprite(
             textureRegion(
                texture,
                new Rectangle(item.sourceRect.x, item.sourceRect.y, item.sourceRect.width, item.sourceRect.height)
             )
-         ).set({
-            name: texture_name,
-            y: item.pos.top,
-            x: item.pos.left,
-         });
+         );
+         sprite.eventMode = "static";
+         sprite.label = texture_name;
+         sprite.x = item.pos.left;
+         sprite.y = item.pos.top;
+         return sprite;
       } else {
          console.log(id + " nicht gefunden, nicht vom preLoader geladen");
       }

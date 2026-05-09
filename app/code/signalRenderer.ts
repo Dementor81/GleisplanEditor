@@ -4,7 +4,13 @@
 import { clone } from './tools.ts';
 import { TextElement, VisualElement } from './visualElement.ts';
 import { Application } from './application.ts';
-import { DisplayGroup, LabelText, rectHitArea } from './pixiPrimitives.ts';
+import type { Container } from 'pixi.js';
+import { Text } from 'pixi.js';
+
+/** Structural type so callers pass RenderingManager without importing it (avoids circular deps). */
+export type DomainSink = { bindGameObjToDisplayObj(display: Container, domain: unknown): void };
+import { rectHitArea } from './pixiPrimitives.ts';
+import { createLayerContainer, findChildByLabel } from './pixiUtils.ts';
 
 export class SignalRenderer {
    static #renderingState = new WeakMap<any, any>();
@@ -13,7 +19,7 @@ export class SignalRenderer {
       if (!SignalRenderer.#renderingState.has(signal) && (force || signal._changed)) {
          SignalRenderer.#renderingState.set(signal, { container });
 
-         container.removeAllChildren();
+         container.removeChildren();
 
          signal._dontCache = false;
          signal._template.elements.forEach((ve: any) => this.drawVisualElement(signal, ve));
@@ -22,12 +28,11 @@ export class SignalRenderer {
       }
    }
 
-   static createSignalContainer(signal: any) {
-      let c = new DisplayGroup("signal");
-      c.name = "signal";
-      c.data = signal;
+   static createSignalContainer(rm: DomainSink, signal: any) {
+      let c = createLayerContainer("signal");
+      rm.bindGameObjToDisplayObj(c, signal);
       c.interactiveChildren = false;
-      c.snapToPixel = true;
+      (c as any).snapToPixel = true;
       c.scale.set(signal._template.scale);
    
       signal.draw(c, true);
@@ -61,13 +66,23 @@ export class SignalRenderer {
    static drawTextElement(signal: any, ve: any): void {
       if (!ve.pos()) throw new Error("TextElement doesnt have a position");
       if (ve.isAllowed(signal) && ve.isEnabled(signal)) {
-         const formatString = (f: any) => `${f[2] ? "bold" : ""} ${f[0]}px ${f[1]}`;
-
         let txt = ve.getText(signal);
         if (txt == null) return;
         if (typeof txt == "string") txt = txt.replace("-", "\n");
-        let ar = clone(ve.format);
-        const displayObject = new LabelText(txt, formatString(ar), ve.color);
+        const format = clone(ve.format) as any[];
+
+        const applyFormatToText = (t: Text) => {
+           const fontSize = Number(format[0]);
+           t.style.fill = ve.color;
+           t.style.fontSize = fontSize;
+           t.style.fontFamily = format[1];
+           t.style.fontWeight = format[2] ? "bold" : "normal";
+           t.style.lineHeight = fontSize;
+        };
+
+        const displayObject = new Text({ text: txt });
+        displayObject.eventMode = "static";
+        applyFormatToText(displayObject);
         [displayObject.x, displayObject.y] = ve.pos();
         displayObject.anchor.x = 0.5;
 
@@ -76,9 +91,8 @@ export class SignalRenderer {
            current_bounds = displayObject.getBounds();
            max_bounds = ve.bounds();
            if (max_bounds && (current_bounds.width > max_bounds[0] || current_bounds.height > max_bounds[1])) {
-              ar[0] -= 5;
-              displayObject.font = formatString(ar);
-              displayObject.lineHeight = ar[0];
+              format[0] = Number(format[0]) - 5;
+              applyFormatToText(displayObject);
            } else break;
         } while (true);
         const state = SignalRenderer.#renderingState.get(signal);
@@ -94,7 +108,7 @@ export class SignalRenderer {
       if (textureName.includes(",", 1)) textureName.split(",").forEach((x: any) => this.addImageElement(signal, x));
       else {
          const state = SignalRenderer.#renderingState.get(signal);
-         if (!state.container.getChildByName(textureName)) {
+         if (!findChildByLabel(state.container, textureName)) {
             //check if this texture was already drawn. Some texture are the same for different signals like Zs1 and Zs8
             let bmp = Application.getInstance().preLoader!.getSprite(signal._template.json_file, textureName);
             if (bmp != null) {
@@ -117,7 +131,7 @@ export class SignalRenderer {
    }
 
    static drawPreview(template: any, container: any) {
-      container.removeAllChildren();
+      container.removeChildren();
       // Create a minimal context for preview rendering
       const previewContext = {
          _template: template,
