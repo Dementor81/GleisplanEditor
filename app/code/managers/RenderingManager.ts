@@ -427,5 +427,10 @@ export class RenderingManager {
    get containers(): any { return this.#containers; }
    get renderer(): any { return this.#renderer; }
    get grid(): any { return this.#grid; }
+
+   /** Whether the textured (detailed) track renderer is active. */
+   usesTexturedRenderer(): boolean {
+      return this.#renderer instanceof trackRendering_textured;
+   }
 }
 

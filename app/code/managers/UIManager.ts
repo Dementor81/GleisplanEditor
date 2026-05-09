@@ -10,6 +10,7 @@ import { GenericObject } from "../generic_object.ts";
 import { STORAGE } from "../storage.ts";
 import type { Application } from "../application.ts";
 import { createLayerContainer } from "../pixiUtils.ts";
+import { mountRendererChoiceCards, type RendererChoiceCardsHandle } from "../rendererChoiceCards.ts";
 
 // ============================================================================
 // Type Definitions
@@ -34,13 +35,23 @@ interface EventData {
  */
 export class UIManager {
    #activeMenu: Menu | null = null;
+   #rendererChoiceCardsHandle: RendererChoiceCardsHandle | null = null;
 
    constructor(_application: Application) {}
+
+   get rendererChoiceCardsHandle(): RendererChoiceCardsHandle | null {
+      return this.#rendererChoiceCardsHandle;
+   }
 
    /**
     * Initialize UI components
     */
    initialize(): void {
+      this.#rendererChoiceCardsHandle = mountRendererChoiceCards($("#rendererChoiceModalMount"));
+      const app = (window as any).app;
+      if (app?.renderingManager && this.#rendererChoiceCardsHandle) {
+         this.#rendererChoiceCardsHandle.syncSelection(app.renderingManager.usesTexturedRenderer());
+      }
       this.#initializeSignalMenu();
       this.#initializePreBuildScreen();
       this.#initializeInterManagerCommunication();
@@ -289,8 +300,7 @@ export class UIManager {
     * @param textured - Whether to use textured renderer
     */
    handleRendererUIUpdate(textured: boolean): void {
-      // Update UI state
-      $("#switch_renderer").prop("checked", !textured);
+      this.#rendererChoiceCardsHandle?.syncSelection(textured);
    }
 
    /**
@@ -323,21 +333,23 @@ export class UIManager {
       const btnLoadFromFile = (window as any).btnLoadFromFile;
       const loadModal = (window as any).loadModal;
       
-      if (localStorage.getItem("bahnhof_last1") == null) $(btnLoadRecent).attr("disabled", "disabled");
+      $(btnLoadRecent).prop("disabled", !STORAGE.hasRecentSave());
 
-      $(btnStartFromZero).onclick(() => {
+      $(btnStartFromZero).off("click").onclick(() => {
          this.hideStartScreen();
          app.renderingManager.drawGrid();
          app.renderingManager.renderer.reDrawEverything(true);
       });
-      $(btnLoadRecent).onclick(() => {
+      $(btnLoadRecent).off("click").onclick(() => {
          STORAGE.loadRecent();
          this.hideStartScreen();
          app.renderingManager.drawGrid();
          app.renderingManager.renderer.reDrawEverything(true);
       });
 
-      $("#btnLoad2Gleisig,#btnLoad1Gleisig").on("click", (e: JQuery.ClickEvent) => {
+      $("#btnLoad2Gleisig,#btnLoad1Gleisig")
+         .off("click")
+         .on("click", (e: JQuery.ClickEvent) => {
          const name = $(e.target).attr("data");
          if (name) {
             STORAGE.loadPrebuildbyName(name).then(() => {
@@ -348,7 +360,7 @@ export class UIManager {
             });
          }
       });
-      $(btnLoadFromFile).onclick(() => {
+      $(btnLoadFromFile).off("click").onclick(() => {
          STORAGE.restoreFromFile().then(() => {
             this.hideStartScreen();
             app.renderingManager.drawGrid();
@@ -366,6 +378,7 @@ export class UIManager {
             $(btnStartFromZero).off("click");
             $(btnLoadRecent).off("click");
             $(btnLoadFromFile).off("click");
+            $("#btnLoad2Gleisig,#btnLoad1Gleisig").off("click");
          },
          { once: true }
       );

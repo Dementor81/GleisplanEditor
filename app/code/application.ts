@@ -138,7 +138,14 @@ export class Application {
     * Start the application
     */
    start(): void {
-      this.#uiManager?.showStartScreen();
+      if (STORAGE.hasRecentSave()) {
+         STORAGE.loadRecent();
+         this.#renderingManager.drawGrid();
+         this.#renderingManager.renderer.reDrawEverything(true);
+         $("myCanvas").focus();
+      } else {
+         this.#uiManager!.showStartScreen();
+      }
    }
 
    /**

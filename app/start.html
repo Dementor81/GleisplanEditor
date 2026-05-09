@@ -28,16 +28,36 @@
       </div>
 
       <div id="toolbar" class="navbar-dark rounded-pill navbar-expand-lg">
-         <a id="navbarBrand" class="navbar-brand" href="start.html"
-            ><img src="logo.svg" alt="Logo" width="80" height="80" />Bahn Baukasten</a
-         >
-         <button
-            class="navbar-toggler"
-            type="button"
-            data-bs-toggle="collapse"
-            data-bs-target="#navbarTogglerDemo02">
-            <span class="navbar-toggler-icon"></span>
-         </button>
+         <div class="dropdown">
+            <button
+               class="btn btn-nav"
+               type="button"
+               id="btnMainMenu"
+               data-bs-toggle="dropdown"
+               aria-expanded="false"
+               aria-label="Menü"
+               title="Menü">
+               <i class="bi bi-list"></i>
+            </button>
+            <ul class="dropdown-menu dropdown-menu-dark">
+               <li>
+                  <button type="button" class="dropdown-item" id="menuNeu">
+                     <i class="bi bi-file-plus"></i><span>Neu</span>
+                  </button>
+               </li>
+               <li>
+                  <button type="button" class="dropdown-item" id="menuSpeichern">
+                     <i class="bi bi-floppy"></i><span>Speichern</span>
+                  </button>
+               </li>
+               <li>
+                  <button type="button" class="dropdown-item" id="menuModusAendern">
+                     <i class="bi bi-house-gear-fill"></i><span>Darstellung Ändern</span>
+                  </button>
+               </li>
+            </ul>
+         </div>
+         <a id="navbarBrand" class="navbar-brand" href="start.html">Bahn Baukasten</a>
          <span style="width: 100px" class="nav-spacer"></span>
          <div class="btn-group" role="group">
             <input type="radio" class="btn-check" name="btnEditMode" id="btnDrawTracks" autocomplete="off" checked />
@@ -73,29 +93,6 @@
             <i class="bi bi-arrow-clockwise"></i>
          </button>
          <span class="nav-spacer"></span>
-         <div class="dropdown">
-            <button
-               class="btn btn-secondary dropdown-toggle btn-nav"
-               type="button"
-               id="btnOptions"
-               data-bs-toggle="dropdown"
-               data-bs-auto-close="outside"
-               title="weitere Optionen">
-               <i class="bi bi-sliders"></i>
-               <span>Optionen</span>
-            </button>
-            <div class="dropdown-menu" id="DropDownOptions" style="min-width: 14rem">
-               <span class="dropdown-item-text">
-                  <div class="form-check form-switch">
-                     <input class="form-check-input" type="checkbox" role="switch" id="switch_renderer"/><label
-                        class="form-check-label"
-                        for="switch_renderer"
-                        >vereinfachte Ansicht</label
-                     >
-                  </div></span
-               >
-            </div>
-         </div>
 
          <div class="d-flex ms-auto" style="gap: 10px; padding-right: 1rem">
             
@@ -151,6 +148,30 @@
             </div>
          </div>
       </div>
+
+      <div
+         class="modal fade"
+         id="rendererChoiceModal"
+         tabindex="-1"
+         aria-labelledby="rendererChoiceModalTitle"
+         aria-hidden="true">
+         <div class="modal-dialog modal-dialog-centered modal-lg modal-renderer-choice">
+            <div class="modal-content">
+               <div class="modal-header">
+                  <h5 class="modal-title" id="rendererChoiceModalTitle">Darstellungsmodus</h5>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Schließen"></button>
+               </div>
+               <div class="modal-body">
+                  <div id="rendererChoiceModalMount"></div>
+               </div>
+               <div class="modal-footer">
+                  <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Abbrechen</button>
+                  <button type="button" class="btn btn-primary" id="btnRendererChoiceOk">OK</button>
+               </div>
+            </div>
+         </div>
+      </div>
+
       <div id="CanvasContainer">
          <canvas id="myCanvas" width="10" height="10"></canvas>
       </div>

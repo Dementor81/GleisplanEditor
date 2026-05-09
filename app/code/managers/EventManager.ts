@@ -1,7 +1,7 @@
 "use strict";
 
 // ES6 Module imports
-import { Offcanvas } from "bootstrap";
+import { Modal, Offcanvas } from "bootstrap";
 import { CONFIG, INPUT, CUSTOM_MOUSE_ACTION, MOUSE_DOWN_ACTION, COLORS, COMPUTED, MENU } from "../config.ts";
 import { STORAGE } from "../storage.ts";
 import { ui } from "../ui.ts";
@@ -175,17 +175,31 @@ export class EventManager {
       // Edit mode toggle
       $("#btnDrawTracks,#btnPlay").onclick(() => this.#app.toggleEditMode());
 
-      // Renderer switch
-      $("#switch_renderer").on("change", () => {
-         this.#app.renderingManager?.selectRenderer(!$("#switch_renderer").is(":checked"));
-         STORAGE.save();
-      });
-
       // Menu buttons
       $("#btnAddSignals").onclick(() => this.#app.uiManager?.showMenu(MENU.NEW_SIGNAL));
       $("#btnAddTrain").onclick(() => this.#app.uiManager?.showMenu(MENU.NEW_TRAIN));
       $("#btnAddObject").onclick(() => this.#app.uiManager?.showMenu(MENU.NEW_OBJECT));
       $("#btnDownload").onclick(() => STORAGE.downloadAsFile());
+      $("#menuNeu").onclick(() => this.#app.uiManager?.showStartScreen());
+      $("#menuSpeichern").onclick(() => STORAGE.downloadAsFile());
+      $("#menuModusAendern").onclick(() => {
+         Modal.getOrCreateInstance(document.getElementById("rendererChoiceModal")!).show();
+      });
+
+      const rendererModalEl = document.getElementById("rendererChoiceModal");
+      rendererModalEl?.addEventListener("show.bs.modal", () => {
+         this.#app.uiManager?.rendererChoiceCardsHandle?.syncSelection(
+            this.#app.renderingManager?.usesTexturedRenderer() ?? true
+         );
+      });
+
+      $("#btnRendererChoiceOk").onclick(() => {
+         const handle = this.#app.uiManager?.rendererChoiceCardsHandle;
+         if (!handle) return;
+         this.#app.renderingManager?.selectRenderer(handle.getSelectedTextured());
+         STORAGE.save();
+         Modal.getInstance(document.getElementById("rendererChoiceModal")!)?.hide();
+      });
 
       // Action buttons
       $("#btnClear").onclick(() => this.#app.renderingManager?.clear());

@@ -44,6 +44,74 @@ html, body {
     column-gap: 5px;
 }
 
+#btnMainMenu {
+    background-color: transparent !important;
+    border-color: transparent !important;
+    color: #e9ecef;
+}
+
+#btnMainMenu:hover {
+    background-color: rgba(255, 255, 255, 0.08) !important;
+    color: #fff;
+}
+
+#btnMainMenu.show {
+    background-color: rgba(255, 255, 255, 0.12) !important;
+    color: #fff;
+}
+
+#toolbar .dropdown-menu .dropdown-item i {
+    font-size: 1rem !important;
+}
+
+.modal-renderer-choice {
+    max-width: min(800px, calc(100vw - 2rem));
+}
+
+#rendererChoiceModal .renderer-choice-card-row {
+    --renderer-card-max: 360px;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 1.5rem;
+}
+
+#rendererChoiceModal .renderer-choice-card-col {
+    width: 100%;
+    max-width: var(--renderer-card-max);
+    flex: 0 1 auto;
+}
+
+@media (min-width: 992px) {
+    #rendererChoiceModal .renderer-choice-card-col {
+        width: var(--renderer-card-max);
+        flex: 0 0 var(--renderer-card-max);
+    }
+}
+
+.renderer-choice-card-img {
+    width: 100%;
+    height: 120px;
+    object-fit: cover;
+    object-position: center;
+}
+
+.renderer-choice-card {
+    cursor: pointer;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    border: var(--bs-card-border-width, 1px) solid var(--bs-border-color-translucent);
+}
+
+.renderer-choice-card:focus {
+    outline: none;
+    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+}
+
+.renderer-choice-card.active {
+    border-color: var(--bs-primary);
+    box-shadow: 0 0 0 0.125rem rgba(13, 110, 253, 0.35);
+}
+
 #toolbar .btn-nav {
     height: 2.4rem;   
     padding: 0px 10px 0px 10px!important;

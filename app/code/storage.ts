@@ -239,6 +239,18 @@ export const STORAGE = {
    },
 
    /**
+    * True if localStorage has a version-tagged save we can pass to loadRecent().
+    */
+   hasRecentSave(): boolean {
+      const x = localStorage.getItem(STORAGE.STORAGE_IDENT);
+      if (x == null) return false;
+      const sep = x.indexOf(";");
+      if (sep <= 0) return false;
+      const v = parseFloat(x.substring(0, sep));
+      return !Number.isNaN(v) && v >= STORAGE.MIN_STORAGE_VERSION;
+   },
+
+   /**
     * Load most recent save from localStorage
     */
    loadRecent(): void {
