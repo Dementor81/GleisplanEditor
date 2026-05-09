@@ -1,106 +1,63 @@
 Bugs:
-    ✔ Signalmenü verdeckt das Signal @done(23-11-21 13:57)
-    ✔ entfernen von Gleisen entfernt die Weiche nicht @done(25-01-01 14:12)
-    ✔ Drag'n Drop der signale, vor allem am Gleisende buggy @done(23-12-13 11:14)
-    ✔ Textured Renderer aktualisieren, geht aktuell nicht @done(24-02-03 17:35)
-    ✔ es lass sich 90° kurven zeichnen @done(24-06-01 15:18)
-    ✔ man kann Gleise im Kreis bauen @done(24-06-01 15:18)
-    ✔ Zs1, Sh 1 funktioiren nicht @started(24-02-03 17:39) @done(24-02-03 19:43) @lasted(2h4m31s)
-    ✔ Signalstellung abschalten, wenn sie nicht mehr erlaubt sind @done(24-06-01 11:04)
-    ✔ bisherige Signale auf neuen Stand bringen @done(24-06-07 19:44)
-    ✔ Vorsignalisierung KS und KS/HV @done(24-06-13 16:40)
-    ✔ bounds werden bei Strecken mit bögen falsch gesetzt @done(24-07-06 12:50)
-    ✔ lf6 lf7 signalisieren sich nicht automatisch vor @done(24-07-15 17:46)
-    ✔ lange bezeichnungen sprengen das schild, Text muss sich autom. verkleinern @done(24-12-08 15:36)
-    ✔ Züge bleiben auf gelöschten/geänderten phantom Gleisen @done(25-07-24 23:45)
     ☐ manchmal werden Signale verdoppelt
     ☐ navbar funktioniert bei kleinen Bildschirmen nicht
     ☐ züge sehr schnell über weichen bewegen, macht sie kaputt
     ☐ Bahnsteige mit Größe 0 können gebaut werden
 
 Content:
-    ✔ Ne 2 @done(24-10-05 12:13)
     ☐ Ne 3
     ☐ Ne 5
-    ☐ Ne 14
-    ✔ Zs 6 alleinstehend @done(24-11-09 17:28)
-    ✔ Sperrsignal @done(24-08-18 19:09)
+    ☐ Ne 14    
     ☐ KS Signale ohne Knick
     ☐ lf 1,2 & 3
 
+UI:
+    ☐ simple/textured mode switch über popup at the start
 
-Detailing:
-    ✔ Weichen Schaltung schöner darstellen @done(23-12-13 11:13)
-    ✔ Signalmenü schön machen @done(24-06-13 16:40)
-    ✔ settingsmenü mit häckchen als markierung @done(24-06-07 20:33)
-    ✔ Weichenstellung im Screenshot ausblenden @done(24-06-13 16:40)
-    ✔ Skalierung überarbeiten, Gleise dichter zusammen, dafür Weichen überarbeiten @started(24-05-30 08:52) @done(24-06-01 19:53) @lasted(2d11h1m49s)
-    ✔ Navbar überarbeiten @done(24-11-17 12:57)
-    ✔ "Neues Signal" Menü überarbeiten @done(24-11-17 12:57)
-    ☐ Zeichnen Leiste überarbeiten, symbole für Radierer und Löschen, eventuell mehr Farben
+
+Detailing:    
+    ☐ Zeichnen Leiste überarbeiten:
+        - symbole für Radierer und Löschen
+        - eventuell mehr Farben
+        - stile mit navbar angleichen
+        
 
 Intern:
-    ✔ swichtes Array entfernen @done(25-01-01 14:12)
-    ✔ start.js aufräumen @done(25-07-24 22:22)
-    ☐ signal.js und signaling.js sauber trennen und aufräumen
-    ☐ auf TypeScript umbauen
+   
 
 Features:
-    ✔ Signale verketten/automatische vorsignalisierung @started(23-11-21 12:15) @done(24-01-08 11:46) @lasted(6w5d23h31m36s)
-    ✔ Zs 8 @started(24-05-19 09:27) @done(24-05-19 09:51) @lasted(24m1s)
-    ✔ Zs3/Zs3v @started(24-05-19 09:51) @done(24-05-19 11:41) @lasted(1h50m13s)
-    ✔ Erstellung des Signalmenüs überarbeiten @done(24-05-30 08:51)
-    ✔ KS Signale @done(24-06-13 16:40)
-    ✔ Errror Handling mit schönem Output Boostrap toast oder so @done(24-06-01 16:12)
-    ✔ Startseite @done(24-06-12 18:29)    
-    ✔ caching zur Performancesteigerung implementieren @done(24-07-06 13:22)
-    ✔ Weichenstellung auch im Texturmodus anzeigen @done(24-06-13 16:41)
-    ✔ Prellbock im texturmodus anzeigen @done(24-07-11 20:44)
-    ✔ alleinstehdes Vorsignal @done(24-06-15 16:56)
-    ✔ Signalbezeichnung einführen @done(24-07-16 18:53)
     ☐ abgleich der erlaubten Signalstellung in eigener Funktion, nicht erlaubte signale werden abgeschaltet und nicht nur nicht gezeichnet
-    ✔ visualisieren, wo genau ein Signal am Gleis angeheftet ist (vllt mit kleiner roten Linie) @done(24-11-10 15:15)
     ☐ einzelne Signalfunktionen ativieren und deaktivieren können (zb z1, z7, zp 9)
     ☐ Rules erweitern, dass sie auch Features abfragen und aktivieren können
     ☐ Verwendung schaltet automatisch mehrere Feature um (Mastschild + Zusatzsignale)
-    ✔ Textfelder für Beschriftung von Gleisen hinzufügen @done(24-11-02 12:50)
-    ✔ Bahnsteige einzeichen @done(24-11-02 18:59)
     ☐ mehrere Gleise, ganze Bahnhöfe verschieben
     ☐ Auswahlrahmen ziehen (unklar, ob das sinnvoll ist)
     ☐ Signale kopieren, per drag&drop
     ☐ Wagen verhalten sich korrekt in Bögen
-    ✔ Züge kuppeln @done(25-06-01 09:36)
     ☐ Wenn Signale übereinander liegen, dann die Reihenfolge sicherstellen
     ☐ Bemahlungen automatisch an einem Gleis ausrichten
-    ✔ Bemahlungen Radieren können @done(25-07-24 23:47)
-    ✔ Prellbock am gleisende ein/ausblenden @done(25-07-24 23:47)
     ☐ weiteres Performance Update
 
     
 
 Big Features:
-    ✔ Gleise markieren und bemalen können @done(24-08-23 21:15)
-    ✔ vorgefertigte Gleispläne erstellen und laden @done(24-06-20 19:43)
-    ✔ Züge von Hand bewegen @done(24-07-15 16:51)
-    ✔ Rückgängig Funktion @done(24-10-05 14:39)
     ☐ Signale als korrekte DIN Signalsymbole zeigen
     ☐ HauptsignaleSignale um zusätzliche Signale (lf,zp usw) erweitern
     ☐ die Verbindung von Signalen durch linien entlang der Gelsie visualisieren
     ☐ Signale in einem eigenen Fenster vergrößern (wie beim SignalSim)
-    ✔ Weichen selbst zeichen @done(25-06-01 13:09)
     ☐ beim Stellen Weichenzunge bewegen
     ☐ Bilder hinzufügen
     ☐ Raster verdichten, so dass komplexere Anlagen möglich sind, Gleise aber immer eine bestimmte Rasterweite entfernt sind
     ☐ Strecken auch von oben nach unten bauen
 
 
-Rebuild:
-    ✔ Zeichenroutine darf nur regelkonforme Strecken zulassen @done(25-07-21 09:33)
-    ✔ Signale patzieren @done(25-06-01 09:30)
-    ✔ selektion anzeigen @done(25-06-01 13:09)
-    ☐ caching track und signale
-    ✔ hitarea für gleise @done(25-07-21 09:33)
-
+Rebuild after typeScript and PixiJS update:
+    ☐ switch drawing improvements
+        ☐ end of strokes
+        ☐ better sleepers
+    ☐ save as image
+    ☐ bad performance
+    ☐ simple mode, switch triangle broken
 
 
 
