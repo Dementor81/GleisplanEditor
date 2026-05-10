@@ -171,6 +171,13 @@ export class EventManager {
     * Initialize button events
     * @private
     */
+   #afterAdvancedPlanLoad(): void {
+      const rm = this.#app.renderingManager;
+      rm?.drawGrid();
+      rm?.renderer.reDrawEverything(true);
+      $("#myCanvas").trigger("focus");
+   }
+
    #initializeButtonEvents(): void {
       // Edit mode toggle
       $("#btnDrawTracks,#btnPlay").onclick(() => this.#app.toggleEditMode());
@@ -186,9 +193,17 @@ export class EventManager {
          Modal.getOrCreateInstance(document.getElementById("rendererChoiceModal")!).show();
       });
 
+      
+      $("#menuLoadFromFile").onclick(() => {
+         STORAGE.restoreFromFile().then(() => {
+            this.#afterAdvancedPlanLoad();
+            STORAGE.saveUndoHistory();
+         });
+      });
+
       const rendererModalEl = document.getElementById("rendererChoiceModal");
       rendererModalEl?.addEventListener("show.bs.modal", () => {
-         this.#app.uiManager?.rendererChoiceCardsHandle?.syncSelection(
+         this.#app.uiManager?.handleRendererUIUpdate(
             this.#app.renderingManager?.usesTexturedRenderer() ?? true
          );
       });

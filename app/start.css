@@ -68,7 +68,8 @@ html, body {
     max-width: min(800px, calc(100vw - 2rem));
 }
 
-#rendererChoiceModal .renderer-choice-card-row {
+#rendererChoiceModal .renderer-choice-card-row,
+#loadModal .renderer-choice-card-row {
     --renderer-card-max: 360px;
     display: flex;
     flex-wrap: wrap;
@@ -76,14 +77,16 @@ html, body {
     gap: 1.5rem;
 }
 
-#rendererChoiceModal .renderer-choice-card-col {
+#rendererChoiceModal .renderer-choice-card-col,
+#loadModal .renderer-choice-card-col {
     width: 100%;
     max-width: var(--renderer-card-max);
     flex: 0 1 auto;
 }
 
 @media (min-width: 992px) {
-    #rendererChoiceModal .renderer-choice-card-col {
+    #rendererChoiceModal .renderer-choice-card-col,
+    #loadModal .renderer-choice-card-col {
         width: var(--renderer-card-max);
         flex: 0 0 var(--renderer-card-max);
     }
@@ -110,6 +113,39 @@ html, body {
 .renderer-choice-card.active {
     border-color: var(--bs-primary);
     box-shadow: 0 0 0 0.125rem rgba(13, 110, 253, 0.35);
+}
+
+/* Cropped “zoom” previews: tune --layout-preview-zoom / focus per layout in modifiers below */
+#loadModal .start-screen-layout-preview-frame {
+    overflow: hidden;
+    border-radius: var(--bs-border-radius);
+    border: 1px solid var(--bs-border-color-translucent);
+    height: 80px;
+    --layout-preview-zoom: 1.45;
+    --layout-preview-focus-x: 50%;
+    --layout-preview-focus-y: 42%;
+}
+
+#loadModal .start-screen-layout-preview-frame--2g {
+    --layout-preview-zoom: 1.55;
+    --layout-preview-focus-x: 52%;
+    --layout-preview-focus-y: 66%;
+}
+
+#loadModal .start-screen-layout-preview-frame--1g {
+    --layout-preview-zoom: 1.5;
+    --layout-preview-focus-x: 34%;
+    --layout-preview-focus-y: 109%;
+}
+
+#loadModal .start-screen-layout-preview-img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: var(--layout-preview-focus-x) var(--layout-preview-focus-y);
+    transform: scale(var(--layout-preview-zoom));
+    transform-origin: var(--layout-preview-focus-x) var(--layout-preview-focus-y);
 }
 
 #toolbar .btn-nav {

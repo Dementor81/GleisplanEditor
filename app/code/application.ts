@@ -142,7 +142,7 @@ export class Application {
          STORAGE.loadRecent();
          this.#renderingManager.drawGrid();
          this.#renderingManager.renderer.reDrawEverything(true);
-         $("myCanvas").focus();
+         $("#myCanvas").trigger("focus");
       } else {
          this.#uiManager!.showStartScreen();
       }

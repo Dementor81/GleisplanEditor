@@ -10,7 +10,8 @@ import { GenericObject } from "../generic_object.ts";
 import { STORAGE } from "../storage.ts";
 import type { Application } from "../application.ts";
 import { createLayerContainer } from "../pixiUtils.ts";
-import { mountRendererChoiceCards, type RendererChoiceCardsHandle } from "../rendererChoiceCards.ts";
+import { mountRendererChoiceCards, type RendererChoiceCardsHandle } from "../ui/rendererChoiceCards.ts";
+import { StartScreen } from "../ui/StartScreen.ts";
 
 // ============================================================================
 // Type Definitions
@@ -36,6 +37,8 @@ interface EventData {
 export class UIManager {
    #activeMenu: Menu | null = null;
    #rendererChoiceCardsHandle: RendererChoiceCardsHandle | null = null;
+   #startScreenRendererHandle: RendererChoiceCardsHandle | null = null;
+   #startScreen = new StartScreen();
 
    constructor(_application: Application) {}
 
@@ -47,13 +50,20 @@ export class UIManager {
     * Initialize UI components
     */
    initialize(): void {
+      this.#startScreen.mount();
       this.#rendererChoiceCardsHandle = mountRendererChoiceCards($("#rendererChoiceModalMount"));
+      const $startMount = $("#startScreenRendererMount");
+      if ($startMount.length) {
+         this.#startScreenRendererHandle = mountRendererChoiceCards($startMount);
+         this.#startScreen.setRendererChoiceHandle(this.#startScreenRendererHandle);
+      }
       const app = (window as any).app;
-      if (app?.renderingManager && this.#rendererChoiceCardsHandle) {
-         this.#rendererChoiceCardsHandle.syncSelection(app.renderingManager.usesTexturedRenderer());
+      const textured = app?.renderingManager?.usesTexturedRenderer();
+      if (textured !== undefined) {
+         this.#rendererChoiceCardsHandle?.syncSelection(textured);
+         this.#startScreenRendererHandle?.syncSelection(textured);
       }
       this.#initializeSignalMenu();
-      this.#initializePreBuildScreen();
       this.#initializeInterManagerCommunication();
    }
 
@@ -116,14 +126,6 @@ export class UIManager {
             ) as any
          ),
       ]);
-   }
-
-   /**
-    * Initialize pre-build screen
-    * @private
-    */
-   #initializePreBuildScreen(): void {
-      // Pre-build screen initialization will be moved here
    }
 
    /**
@@ -301,6 +303,7 @@ export class UIManager {
     */
    handleRendererUIUpdate(textured: boolean): void {
       this.#rendererChoiceCardsHandle?.syncSelection(textured);
+      this.#startScreenRendererHandle?.syncSelection(textured);
    }
 
    /**
@@ -327,72 +330,14 @@ export class UIManager {
     * Show pre-build screen
     */
    showStartScreen(): void {
-      const app = (window as any).app;
-      const btnLoadRecent = (window as any).btnLoadRecent;
-      const btnStartFromZero = (window as any).btnStartFromZero;
-      const btnLoadFromFile = (window as any).btnLoadFromFile;
-      const loadModal = (window as any).loadModal;
-      
-      $(btnLoadRecent).prop("disabled", !STORAGE.hasRecentSave());
-
-      $(btnStartFromZero).off("click").onclick(() => {
-         this.hideStartScreen();
-         app.renderingManager.drawGrid();
-         app.renderingManager.renderer.reDrawEverything(true);
-      });
-      $(btnLoadRecent).off("click").onclick(() => {
-         STORAGE.loadRecent();
-         this.hideStartScreen();
-         app.renderingManager.drawGrid();
-         app.renderingManager.renderer.reDrawEverything(true);
-      });
-
-      $("#btnLoad2Gleisig,#btnLoad1Gleisig")
-         .off("click")
-         .on("click", (e: JQuery.ClickEvent) => {
-         const name = $(e.target).attr("data");
-         if (name) {
-            STORAGE.loadPrebuildbyName(name).then(() => {
-               this.hideStartScreen();
-               app.renderingManager.drawGrid();
-               app.renderingManager.renderer.reDrawEverything(true);
-               STORAGE.saveUndoHistory();
-            });
-         }
-      });
-      $(btnLoadFromFile).off("click").onclick(() => {
-         STORAGE.restoreFromFile().then(() => {
-            this.hideStartScreen();
-            app.renderingManager.drawGrid();
-            app.renderingManager.renderer.reDrawEverything(true);
-            STORAGE.saveUndoHistory();
-         });
-      });
-
-      const bootstrap = (window as any).bootstrap;
-      const m = bootstrap.Modal.getOrCreateInstance(loadModal);
-      m._element.addEventListener(
-         "hidden.bs.modal",
-         (x: Event) => {
-            bootstrap.Modal.getOrCreateInstance(x.target).dispose();
-            $(btnStartFromZero).off("click");
-            $(btnLoadRecent).off("click");
-            $(btnLoadFromFile).off("click");
-            $("#btnLoad2Gleisig,#btnLoad1Gleisig").off("click");
-         },
-         { once: true }
-      );
-      m.show();
+      this.#startScreen.show();
    }
 
    /**
     * Hide start screen
     */
    hideStartScreen(): void {
-      const loadModal = (window as any).loadModal;
-      const bootstrap = (window as any).bootstrap;
-      $("myCanvas").focus();
-      bootstrap.Modal.getInstance(loadModal).hide();
+      this.#startScreen.hide();
    }
 
    /**

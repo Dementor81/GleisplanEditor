@@ -1,6 +1,6 @@
 "use strict";
 
-import { ui } from "./ui.ts";
+import { ui } from "../ui.ts";
 
 export interface RendererChoiceCardsHandle {
    syncSelection(textured: boolean): void;
@@ -23,7 +23,7 @@ export function mountRendererChoiceCards($container: JQuery): RendererChoiceCard
          rendererCard(
             "textured",
             "Detaillierte Ansicht",
-            "Detailierte Darstellung der Gleise mit Schwellen und Texturen.",
+            "Diese Darstellung zeigt die Gleise mit Schwellen und Texturen.",
             PREVIEW_TEXTURED
          )
       ),
@@ -31,7 +31,7 @@ export function mountRendererChoiceCards($container: JQuery): RendererChoiceCard
          rendererCard(
             "basic",
             "Vereinfachte Ansicht",
-            "Einfache Darstellung, Optisch nicht so detailiert, dafür lassen sich komplexere Anlagen bauen.",
+            "Einfache Darstellung, optisch nicht so detailliert, dafür lassen sich komplexere Anlagen bauen.",
             PREVIEW_BASIC
          )
       ),
