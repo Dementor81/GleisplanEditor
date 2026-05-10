@@ -179,14 +179,10 @@ export class EventManager {
    }
 
    #initializeButtonEvents(): void {
-      // Edit mode toggle
-      $("#btnDrawTracks,#btnPlay").onclick(() => this.#app.toggleEditMode());
-
       // Menu buttons
       $("#btnAddSignals").onclick(() => this.#app.uiManager?.showMenu(MENU.NEW_SIGNAL));
       $("#btnAddTrain").onclick(() => this.#app.uiManager?.showMenu(MENU.NEW_TRAIN));
       $("#btnAddObject").onclick(() => this.#app.uiManager?.showMenu(MENU.NEW_OBJECT));
-      $("#btnDownload").onclick(() => STORAGE.downloadAsFile());
       $("#menuNeu").onclick(() => this.#app.uiManager?.showStartScreen());
       $("#menuSpeichern").onclick(() => STORAGE.downloadAsFile());
       $("#menuModusAendern").onclick(() => {
@@ -218,7 +214,6 @@ export class EventManager {
 
       // Action buttons
       $("#btnClear").onclick(() => this.#app.renderingManager?.clear());
-      $("#btnCenter").onclick(() => this.#app.renderingManager?.center());
       $("#btnRedraw").onclick(() => this.#app.renderingManager?.forceRedraw());
       $("#btnImage").onclick(this.#handleImageExport.bind(this));
       $("#btnDraw").onclick(this.#handleDrawToggle.bind(this));
@@ -639,21 +634,19 @@ export class EventManager {
       //wie weit wurde die maus seit mousedown bewegt
       if (ma.distance() > INPUT.MOUSE_MOVEMENT_THRESHOLD) {
          if (event.buttons == 1) {
-            if (this.#app.editMode) {
-               if (ma.container?.label == "signal") {
-                  this.#mainCanvas.style.cursor = "move";
-                  ma.action = MOUSE_DOWN_ACTION.DND_SIGNAL;
-                  const sig = this.#app.renderingManager!.getGameObjFromDisplayObj(ma.container) as any;
-                  sig._positioning.track.removeSignal(sig);
-                  this.startDragAndDropSignal();
-               } else if (ma.container?.label == "GenericObject") {
-                  this.#mainCanvas.style.cursor = "move";
-                  ma.action = MOUSE_DOWN_ACTION.MOVE_OBJECT;
-               } else if (ma.container?.label == "track" || ma.container?.label == "switch" || ma.container == null) {
-                  ma.action = MOUSE_DOWN_ACTION.BUILD_TRACK;
-                  this.addTrackAnchorPoint(this.getSnapPoint(local_point));
-                  this.#app.renderingManager?.containers.overlay.addChild((ma.lineShape = gleisGraphics()));
-               }
+            if (ma.container?.label == "signal") {
+               this.#mainCanvas.style.cursor = "move";
+               ma.action = MOUSE_DOWN_ACTION.DND_SIGNAL;
+               const sig = this.#app.renderingManager!.getGameObjFromDisplayObj(ma.container) as any;
+               sig._positioning.track.removeSignal(sig);
+               this.startDragAndDropSignal();
+            } else if (ma.container?.label == "GenericObject") {
+               this.#mainCanvas.style.cursor = "move";
+               ma.action = MOUSE_DOWN_ACTION.MOVE_OBJECT;
+            } else if (ma.container?.label == "track" || ma.container?.label == "switch" || ma.container == null) {
+               ma.action = MOUSE_DOWN_ACTION.BUILD_TRACK;
+               this.addTrackAnchorPoint(this.getSnapPoint(local_point));
+               this.#app.renderingManager?.containers.overlay.addChild((ma.lineShape = gleisGraphics()));
             }
             if (ma.container?.label == "train") {
                ma.action = MOUSE_DOWN_ACTION.MOVE_TRAIN;
@@ -863,11 +856,12 @@ export class EventManager {
          viewport.x = backup.x;
          viewport.y = backup.y;
          viewport.scale.set(backup.scale);
-         this.#app.renderingManager!.setGridVisible(this.#app.showGrid);
+         this.#app.renderingManager!.setGridVisible(true);
          this.#app.renderingManager!.containers.drawing.visible = true;
          this.#app.renderingManager!.containers.ui.visible = true;
          this.#app.renderingManager?.reDrawEverything(true);
          this.#app.renderingManager!.update();
+         this.#app.renderingManager?.notifyViewportChanged();
       }
    }
 

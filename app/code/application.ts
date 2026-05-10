@@ -54,8 +54,6 @@ export class Application {
    };
 
    // Application state
-   #editMode: boolean = true;
-   #showGrid: boolean = true;
    #customMouseMode: CustomMouseAction = CUSTOM_MOUSE_ACTION.NONE;
 
    // Managers
@@ -266,19 +264,6 @@ export class Application {
    }
 
    /**
-    * Toggle edit mode
-    * @param mode - The edit mode to set
-    */
-   toggleEditMode(mode?: boolean): void {
-      const btnDrawTracks = (window as any).btnDrawTracks;
-      this.editMode = mode != undefined ? mode : $(btnDrawTracks).is(":checked");
-      this.showGrid = this.editMode;
-      this.renderingManager?.drawGrid();
-      this.renderingManager?.update();
-      if (mode != undefined) $(btnDrawTracks).prop("checked", this.editMode);
-   }
-
-   /**
     * Undo the last action
     */
    undo(): void {
@@ -302,12 +287,6 @@ export class Application {
    get undoHistory(): string[] {
       return this.#undoHistory;
    }
-   get editMode(): boolean {
-      return this.#editMode;
-   }
-   get showGrid(): boolean {
-      return this.#showGrid;
-   }
    get customMouseMode(): CustomMouseAction {
       return this.#customMouseMode;
    }
@@ -324,12 +303,6 @@ export class Application {
    }
 
    // Setters for controlled state changes
-   set editMode(mode: boolean) {
-      this.#editMode = mode;
-   }
-   set showGrid(show: boolean) {
-      this.#showGrid = show;
-   }
    set customMouseMode(mode: CustomMouseAction) {
       this.#customMouseMode = mode;
    }

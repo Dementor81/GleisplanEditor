@@ -12,6 +12,7 @@ import type { Application } from "../application.ts";
 import { createLayerContainer } from "../pixiUtils.ts";
 import { mountRendererChoiceCards, type RendererChoiceCardsHandle } from "../ui/rendererChoiceCards.ts";
 import { StartScreen } from "../ui/StartScreen.ts";
+import { ViewportHud } from "../ui/ViewportHud.ts";
 
 // ============================================================================
 // Type Definitions
@@ -25,8 +26,6 @@ interface SignalTemplate {
 }
 
 interface EventData {
-   editMode?: boolean;
-   showGrid?: boolean;
    textured?: boolean;
 }
 
@@ -39,6 +38,7 @@ export class UIManager {
    #rendererChoiceCardsHandle: RendererChoiceCardsHandle | null = null;
    #startScreenRendererHandle: RendererChoiceCardsHandle | null = null;
    #startScreen = new StartScreen();
+   #viewportHud = new ViewportHud();
 
    constructor(_application: Application) {}
 
@@ -65,6 +65,7 @@ export class UIManager {
       }
       this.#initializeSignalMenu();
       this.#initializeInterManagerCommunication();
+      this.#viewportHud.mount();
    }
 
    /**
@@ -73,9 +74,6 @@ export class UIManager {
     */
    #initializeInterManagerCommunication(): void {
       const app = (window as any).app;
-      app.eventManager.on("editModeChanged", (data: EventData) => {
-         this.toggleEditMode(data.editMode, data.showGrid);
-      });
       app.eventManager.on("rendererChanged", (data: EventData) => {
          this.handleRendererUIUpdate(data.textured ?? false);
       });
@@ -275,26 +273,6 @@ export class UIManager {
          default:
             myCanvas.style.cursor = "auto";
       }
-   }
-
-   /**
-    * Toggle edit mode
-    * @param mode - The edit mode to set
-    * @param _showGrid - Whether to show grid (unused parameter)
-    */
-   toggleEditMode(mode?: boolean, _showGrid?: boolean): void {
-      const app = (window as any).app;
-      const btnDrawTracks = (window as any).btnDrawTracks;
-      const newMode = mode !== undefined ? mode : $(btnDrawTracks).is(":checked");
-
-      // Update UI state
-      if (mode !== undefined) $(btnDrawTracks).prop("checked", newMode);
-
-      // Emit event for other managers to handle
-      app.eventManager.emit("editModeChanged", {
-         editMode: newMode,
-         showGrid: newMode,
-      });
    }
 
    /**

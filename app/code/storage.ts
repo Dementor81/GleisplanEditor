@@ -215,6 +215,8 @@ export const STORAGE = {
          delete t.trainCoupledBackId;
       });
       Train.allTrains = Train.allTrains.filter((t: any) => t.track != null);
+
+      Application.getInstance().renderingManager?.notifyViewportChanged();
    },
 
    /**

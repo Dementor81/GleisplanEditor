@@ -14,30 +14,38 @@ html, body {
     overflow: hidden;
 }
 
-#toolbar {
+#toolbar,
+#newItemsMenubar {
     height: 3rem;
     background-color: #2f2f2f;
     display: flex;
     align-items: center;
-    padding: 0.5rem;
     gap: 0.5rem;
     position: absolute;
     top: 10px;
-    left: 10px;
-    right: 10px;
-    padding-left: 20px;
     z-index: 99;
 }
 
+#toolbar {
+    left: 10px;
+    width: 30rem;
+    padding-left: 5px;
+    padding-right: 10px;
+}
 
+#newItemsMenubar {
+    right: 1rem;
+    padding-left: 10px;
+    padding-right: 10px;
+    width: 22rem;
+}
 
-#toolbar i {
-    font-size: x-large !important;
+#newItemsMenubar .btn {
+    width: 7rem;
 }
 
 #navbarBrand{
-    font-size: xx-large !important;
-
+    font-size: 20pt !important;
 }
 
 .btn-toolbar {
@@ -48,6 +56,8 @@ html, body {
     background-color: transparent !important;
     border-color: transparent !important;
     color: #e9ecef;
+    font-size: x-large;
+    margin-top: -4px;
 }
 
 #btnMainMenu:hover {
@@ -148,14 +158,36 @@ html, body {
     transform-origin: var(--layout-preview-focus-x) var(--layout-preview-focus-y);
 }
 
-#toolbar .btn-nav {
-    height: 2.4rem;   
+#toolbar .btn-nav,
+#newItemsMenubar .btn-nav {
+    height: 2.0rem;   
     padding: 0px 10px 0px 10px!important;
 }
 
-#toolbar .btn-nav span{
+#newItemsMenubar .btn-nav {
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 0.35rem;
+}
+
+#newItemsMenubar .btn-nav img {
+    flex-shrink: 0;
+    display: block;
+}
+
+#newItemsMenubar .btn-nav .bi {
+    line-height: 1;
+}
+
+#toolbar .btn-nav span {
     vertical-align: text-bottom;
     margin-left: 10px;
+}
+
+#newItemsMenubar .btn-nav span {
+    line-height: 1;
+    margin-left: 0;
 }
 
 .nav-spacer{
@@ -181,7 +213,7 @@ html, body {
 
 #sidebar {
     /* background-color: #f9f9f9; */
-    margin: 4rem 1rem 1rem 0rem;
+    margin: 4rem 1rem 5rem 0rem;
     z-index: 0;
     top: 0;
     right: 0;
@@ -318,3 +350,6 @@ html, body {
     width: -webkit-fill-available;
 }
 
+.toolbar-shadow {
+    box-shadow: 2px 2px 5px #00000052;
+}

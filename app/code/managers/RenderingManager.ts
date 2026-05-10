@@ -36,12 +36,6 @@ interface ContainersType {
    removeAllChildren: () => void;
 }
 
-interface EventData {
-   editMode?: boolean;
-   showGrid?: boolean;
-   textured?: boolean;
-}
-
 /**
  * RenderingManager handles all rendering-related functionality
  * This class manages grid drawing, clearing, centering, and other rendering operations
@@ -69,14 +63,6 @@ export class RenderingManager {
       await this.#initializeStage();
       this.#initializeContainers();
       this.#initializeRenderer();
-      
-      // Listen for edit mode changes
-      const eventManager = this.#application.eventManager as any;
-      if (eventManager) {
-         eventManager.on('editModeChanged', (data: EventData) => {
-            this.handleEditModeChange(data.editMode ?? false, data.showGrid ?? false);
-         });
-      }
    }
    
    /**
@@ -237,6 +223,7 @@ export class RenderingManager {
             this.reDrawEverything();
             this.update();
             STORAGE.save();
+            this.notifyViewportChanged();
          }
 
          myCanvas.prevent_input = false;
@@ -254,6 +241,7 @@ export class RenderingManager {
       vp.y += deltaY;
       this.drawGrid();
       this.reDrawEverything();
+      this.notifyViewportChanged();
    }
 
    /**
@@ -267,18 +255,6 @@ export class RenderingManager {
       this.update();
    }
 
-   /**
-    * Handle edit mode change event
-    * @param editMode - The new edit mode
-    * @param showGrid - Whether to show grid
-    */
-   handleEditModeChange(editMode: boolean, showGrid: boolean): void {
-      this.#application.editMode = editMode;
-      this.#application.showGrid = showGrid;
-      this.drawGrid();
-      this.update();
-   }
-   
    /**
     * Clear all content from the application
     */
@@ -296,18 +272,60 @@ export class RenderingManager {
       this.#renderer?.reDrawEverything(true);
    }
    
-   /**
-    * Center the viewport
-    */
+   /** Zoom back to 100 %; keeps the canvas-center point fixed (same adjustment as wheel zoom around the pointer). */
+   resetZoom(): void {
+      const viewport = this.#viewport!;
+      const canvas = this.#canvas;
+      if (!canvas) {
+         viewport.scale.set(Math.min(Math.max(CONFIG.MIN_SCALE, 1), CONFIG.MAX_SCALE));
+         this.#commitViewportChange();
+         return;
+      }
+
+      const point = { x: canvas.width / 2, y: canvas.height / 2 };
+      const localPoint = viewport.toLocal(point);
+      const old_scale = viewport.scale.x;
+      const nextScale = Math.min(Math.max(CONFIG.MIN_SCALE, 1), CONFIG.MAX_SCALE);
+
+      viewport.scale.set(nextScale);
+
+      if (viewport.scale.x !== old_scale) {
+         const globalPoint = viewport.toGlobal(localPoint);
+         viewport.x -= globalPoint.x - point.x;
+         viewport.y -= globalPoint.y - point.y;
+      }
+
+      this.#commitViewportChange();
+   }
+
+   /** Pan back to origin; zoom unchanged. */
+   resetScroll(): void {
+      const vp = this.#viewport!;
+      vp.x = 0;
+      vp.y = 0;
+      this.#commitViewportChange();
+   }
+
+   /** Zoom 100 % and pan origin (same as resetZoom + resetScroll). */
    center(): void {
       const vp = this.#viewport!;
       vp.scale.set(1);
       vp.x = 0;
       vp.y = 0;
+      this.#commitViewportChange();
+   }
+
+   #commitViewportChange(): void {
       STORAGE.save();
       this.drawGrid();
       this.reDrawEverything();
       this.update();
+      this.notifyViewportChanged();
+   }
+
+   /** Notify listeners (e.g. viewport HUD) after pan/zoom changed. */
+   notifyViewportChanged(): void {
+      this.#application.eventManager?.emit("viewportChanged", { scale: this.#viewport!.scale.x });
    }
    
    /**
@@ -320,8 +338,7 @@ export class RenderingManager {
          this.#viewport!.addChildAt(this.#grid, 0);
       }
 
-      this.#grid.visible = this.#application.showGrid;
-      if (!this.#application.showGrid) return;
+      this.#grid.visible = true;
 
       if (repaint) {
          const bounds = this.#canvas!.getBoundingClientRect();
@@ -398,7 +415,7 @@ export class RenderingManager {
     * Update the grid position and scale
     */
    updateGrid(): void {
-      if (this.#grid && this.#application.showGrid) {
+      if (this.#grid) {
          const scaled_grid_size = CONFIG.GRID_SIZE * this.#viewport!.scale.x;
          this.#grid.x = Math.floor(this.#viewport!.x / scaled_grid_size) * -CONFIG.GRID_SIZE;
          this.#grid.y = Math.floor(this.#viewport!.y / scaled_grid_size) * -CONFIG.GRID_SIZE;
