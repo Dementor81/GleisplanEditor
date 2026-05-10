@@ -8,6 +8,11 @@
     src: url("font/D-DINCondensed.otf");
 }
 
+@font-face {
+    font-family: "Bebas";
+    src: url("font/BebasNeue-Regular.otf");
+}
+
 html, body {
     height: 100%;
     margin: 0;
@@ -45,7 +50,9 @@ html, body {
 }
 
 #navbarBrand{
-    font-size: 20pt !important;
+    font-size: 30pt !important;
+    font-family: "Bebas";
+    padding-top: 3px;
 }
 
 .btn-toolbar {
@@ -334,16 +341,106 @@ html, body {
     margin-left: 10px;
 }
 
-#drawingPanel {
+/* Drawing toolbar (built in DrawingPanel.ts): match #toolbar / #newItemsMenubar */
+#drawingPanel.drawing-panel.offcanvas-bottom {
+    --bs-offcanvas-height: auto;
     margin-left: auto;
     margin-right: auto;
-    margin-bottom: 20px;
-    width: 600px;
-    height: 50px;
-    padding-left: 40px;
-    padding-top: 5px;
-    padding-bottom: 5px;
-    background-color: white;
+    margin-bottom: 0rem;
+    width: auto;
+    max-width: min(30rem, calc(100vw - 2rem));
+    background-color: #2f2f2f;
+}
+
+#drawingPanel .drawing-panel-body {
+    padding: 0.35rem 0.75rem;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+#drawingPanel .btn-nav {
+    height: 2rem;
+    padding: 0 10px !important;
+}
+
+#drawingPanel .drawing-panel-tool-btn i {
+    font-size: 1rem;
+    line-height: 1;
+}
+
+#drawingPanel .drawing-panel-segment {
+    font-size: 0.8125rem;
+}
+
+/* Colour chips (same idea as `form-control-color`: filled rectangle, no text label) */
+#drawingPanel .drawing-panel-color-label {
+    padding: 0.2rem 0.35rem !important;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 2rem;
+}
+
+#drawingPanel .drawing-panel-swatch {
+    display: block;
+    width: 1.125rem;
+    height: 1.125rem;
+    border-radius: 2px;
+    border: 1px solid rgba(255, 255, 255, 0.45);
+    box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.2);
+}
+
+#drawingPanel .btn-check:checked + .drawing-panel-color-label .drawing-panel-swatch {
+    outline: 2px solid #fff;
+    outline-offset: 1px;
+}
+
+#drawingPanel .drawing-panel-width-label {
+    font-size: 0.75rem;
+    color: rgba(255, 255, 255, 0.65);
+    white-space: nowrap;
+}
+
+#drawingPanel .drawing-panel-range {
+    width: 6.5rem;
+    margin: 0;
+    height: 1.25rem;
+}
+
+#drawingPanel .drawing-panel-range:focus {
+    outline: none;
+}
+
+#drawingPanel .drawing-panel-range::-webkit-slider-runnable-track {
+    height: 0.35rem;
+    border-radius: 0.125rem;
+    background-color: rgba(255, 255, 255, 0.28);
+}
+
+#drawingPanel .drawing-panel-range::-moz-range-track {
+    height: 0.35rem;
+    border-radius: 0.125rem;
+    background-color: rgba(255, 255, 255, 0.28);
+}
+
+#drawingPanel .drawing-panel-range::-webkit-slider-thumb {
+    margin-top: -0.3rem;
+    background-color: #e9ecef;
+    border: 1px solid rgba(0, 0, 0, 0.25);
+}
+
+#drawingPanel .drawing-panel-range::-moz-range-thumb {
+    background-color: #e9ecef;
+    border: 1px solid rgba(0, 0, 0, 0.25);
+}
+
+/* Bootstrap Icons 1.11+ glyph; local bootstrap-icons.css may predate trash3 */
+.bi-trash3-fill::before {
+    content: "\f78a";
 }
 
 .webkit-fill-width {

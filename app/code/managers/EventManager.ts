@@ -1,7 +1,7 @@
 "use strict";
 
 // ES6 Module imports
-import { Modal, Offcanvas } from "bootstrap";
+import { Modal } from "bootstrap";
 import { CONFIG, INPUT, CUSTOM_MOUSE_ACTION, MOUSE_DOWN_ACTION, COLORS, COMPUTED, MENU } from "../config.ts";
 import { STORAGE } from "../storage.ts";
 import { ui } from "../ui.ts";
@@ -19,6 +19,8 @@ import { Application } from "../application.ts";
 import type { Graphics } from "pixi.js";
 import { gleisGraphics } from "../pixiPrimitives.ts";
 import { findChildByLabel } from "../pixiUtils.ts";
+import { DrawingPanel } from "../ui/DrawingPanel.ts";
+import { DRAWING_MODE_CURSORS } from "../ui/drawingCursors.ts";
 
 /**
  * EventManager handles all event-related functionality
@@ -41,6 +43,7 @@ import { findChildByLabel } from "../pixiUtils.ts";
  */
 export class EventManager {
    #app: Application;
+   #drawingPanel: DrawingPanel;
    #eventListeners: Map<string, Function[]> = new Map();
    #mainCanvas: HTMLCanvasElement = (window as any).myCanvas as HTMLCanvasElement;
 
@@ -57,9 +60,12 @@ export class EventManager {
    #boundHandleTouchStart: (event: TouchEvent) => void = () => {};
    #boundHandleTouchMove: (event: TouchEvent) => void = () => {};
    #boundHandleCanvasPointerMove: (event: PointerEvent) => void = () => {};
+   #boundSyncDrawModeCanvasCursor: () => void = () => {};
+   #boundClearCanvasCursor: () => void = () => {};
 
    constructor(application: Application) {
       this.#app = application;
+      this.#drawingPanel = new DrawingPanel();
    }
 
    /**
@@ -128,6 +134,8 @@ export class EventManager {
       this.#boundHandleTouchStart = this.#handleTouchStart.bind(this);
       this.#boundHandleTouchMove = this.#handleTouchMove.bind(this);
       this.#boundHandleCanvasPointerMove = this.#handleCanvasPointerMove.bind(this);
+      this.#boundSyncDrawModeCanvasCursor = this.#syncDrawModeCanvasCursor.bind(this);
+      this.#boundClearCanvasCursor = this.#clearCanvasCursor.bind(this);
 
       this.#initializeCanvasEvents();
       this.#initializeTouchEvents();
@@ -146,6 +154,21 @@ export class EventManager {
       c?.addEventListener("pointerdown", this.#boundHandleStageMouseDown!);
       c?.addEventListener("pointerup", this.#boundHandleStageMouseUp!);
       c?.addEventListener("pointermove", this.#boundHandleCanvasPointerMove!);
+      c?.addEventListener("pointerenter", this.#boundSyncDrawModeCanvasCursor);
+      c?.addEventListener("pointerleave", this.#boundClearCanvasCursor);
+   }
+
+   /** SVG cursors for annotate modes; preserves text cursor when placing labels. */
+   #syncDrawModeCanvasCursor(): void {
+      const m = this.#app.customMouseMode;
+      if (m === CUSTOM_MOUSE_ACTION.ERASER) this.#mainCanvas.style.cursor = DRAWING_MODE_CURSORS.eraser;
+      else if (m === CUSTOM_MOUSE_ACTION.DRAWING) this.#mainCanvas.style.cursor = DRAWING_MODE_CURSORS.brush;
+      else if (m === CUSTOM_MOUSE_ACTION.TEXT) this.#mainCanvas.style.cursor = "text";
+      else this.#mainCanvas.style.cursor = "auto";
+   }
+
+   #clearCanvasCursor(): void {
+      this.#mainCanvas.style.cursor = "auto";
    }
 
    /** Keeps pointer coords in sync with {@link RenderingManager.recordCanvasPointer}; forwards moves during an interaction. */
@@ -217,15 +240,13 @@ export class EventManager {
       $("#btnRedraw").onclick(() => this.#app.renderingManager?.forceRedraw());
       $("#btnImage").onclick(this.#handleImageExport.bind(this));
       $("#btnDraw").onclick(this.#handleDrawToggle.bind(this));
-      $("#btnDrawingClear").onclick(this.#handleDrawingClear.bind(this));
+      $(this.#drawingPanel.btnClear).onclick(this.#handleDrawingClear.bind(this));
 
-      // Eraser button for drawing annotations
-      $("#btnDrawingEraser").onclick(() => {
+      $(this.#drawingPanel.btnEraser).onclick(() => {
          const mode_active = this.#app.customMouseMode === CUSTOM_MOUSE_ACTION.ERASER;
-
-         $("#btnDrawingEraser").toggleClass("active", !mode_active);
-
+         this.#drawingPanel.setEraserActive(!mode_active);
          this.#app.customMouseMode = !mode_active ? CUSTOM_MOUSE_ACTION.ERASER : CUSTOM_MOUSE_ACTION.DRAWING;
+         this.#syncDrawModeCanvasCursor();
       });
 
       $("#btnUndo").onclick(this.#handleUndo.bind(this));
@@ -325,13 +346,13 @@ export class EventManager {
       }
 
       if (app.customMouseMode == CUSTOM_MOUSE_ACTION.DRAWING) {
-         const color = (document.querySelector('input[name="DrawingColor"]:checked') as HTMLInputElement)?.value;
-         const width = (document.querySelector('input[name="DrawingWidth"]:checked') as HTMLInputElement)?.value;
+         const color = this.#drawingPanel.getStrokeColor();
+         const width = this.#drawingPanel.getStrokeWidth();
 
          const drawShape = gleisGraphics();
          app.renderingManager?.containers.drawing.addChild((mouseAction.shape = drawShape));
          mouseAction._drawStroke = {
-            width: Number(width),
+            width,
             color,
             cap: "round" as const,
             join: "round" as const,
@@ -361,7 +382,7 @@ export class EventManager {
             : (event as MouseEvent);
       rm.recordCanvasPointer(native);
       try {
-         this.#mainCanvas.style.cursor = "auto";
+         this.#syncDrawModeCanvasCursor();
          if (ma == null) return;
 
          let local_point = Point.fromPoint(rm.viewportPointerLocal());
@@ -871,13 +892,13 @@ export class EventManager {
     */
    #handleDrawToggle(): void {
       this.#app.customMouseMode = $("#btnDraw").hasClass("active") ? CUSTOM_MOUSE_ACTION.DRAWING : CUSTOM_MOUSE_ACTION.NONE;
-      $("#btnDrawingEraser").removeClass("active");
-      const bsOffcanvas = Offcanvas.getOrCreateInstance(document.getElementById("drawingPanel")!);
+      this.#drawingPanel.setEraserActive(false);
       if (this.#app.customMouseMode === CUSTOM_MOUSE_ACTION.DRAWING) {
-         bsOffcanvas.show();
+         this.#drawingPanel.show();
       } else {
-         bsOffcanvas.hide();
+         this.#drawingPanel.hide();
       }
+      this.#syncDrawModeCanvasCursor();
    }
 
    /**
