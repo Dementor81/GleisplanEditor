@@ -5,7 +5,6 @@ import { Track } from "../track.ts";
 import { Switch } from "../switch.ts";
 import { Signal } from "../signal.ts";
 import { SignalRenderer } from "./signalRenderer.ts";
-import { Train } from "../train.ts";
 import { GenericObject } from "../generic_object.ts";
 import { geometry, Point } from "../tools.ts";
 import { NumberUtils } from "../utils.ts";
@@ -55,7 +54,6 @@ export class trackRendering_textured extends TrackRenderingBase {
    rail_offset: number = 0;
    rail_distance: number = 0;
    TRAIN_HEIGHT: number = 0;
-   TRAIN_WIDTH: number = 0;
    main_x1: number = 0;
 
    constructor() {
@@ -204,58 +202,12 @@ export class trackRendering_textured extends TrackRenderingBase {
       this.rail_distance = this.schwellenHöhe_2 - this.rail_offset; // distance between the rail and the center of the track
 
       this.TRAIN_HEIGHT = this.schwellenHöhe - this.rail_offset;
-      this.TRAIN_WIDTH = CONFIG.GRID_SIZE * 0.7;
 
       this.main_x1 = (Math.sin(Math.PI / 8) * trackRendering_textured.CURVE_RADIUS) / Math.cos(Math.PI / 8);
    }
 
-   renderAllTrains() {
-      this.app.renderingManager!.containers.trains.removeChildren();
-
-      Train.allTrains
-         .filter((train: any) => !train.trainCoupledFront)
-         .forEach((train: any) => {
-            const c = createLayerContainer("train");
-            c.interactiveChildren = true;
-
-            this.renderCar(train, c);
-
-            this.app.renderingManager!.containers.trains.addChild(c);
-         });
-   }
-
-   renderCar(car: any, container: any) {
-      const carWidth = car.length;
-      const carHeight = this.TRAIN_HEIGHT;
-      const corner = car.type == Train.CAR_TYPES.LOCOMOTIVE ? 8 : 1.5;
-      const s = gleisGraphics("train");
-      this.app.renderingManager!.bindGameObjToDisplayObj(s, car);
-      s.roundRect(0, 0, carWidth, carHeight, corner)
-         .fill(car.color)
-         .stroke({ width: 1, color: "#000", cap: "round", join: "round" });
-
-      const p = car.track.getPointFromKm(car.pos);
-
-      s.x = p.x;
-      s.y = p.y;
-      s.pivot.set(carWidth / 2, carHeight / 2);
-      s.angle = car.track.deg;
-
-      container.addChild(s);
-      if (car.number && car.type == Train.CAR_TYPES.LOCOMOTIVE) {
-         const text = new Text({
-            text: car.number,
-            style: { fill: "#000000", fontFamily: "Arial", fontSize: 10 },
-         });
-         text.eventMode = "static";
-         text.anchor.set(0.5);
-         text.x = p.x;
-         text.y = p.y;
-         container.addChild(text);
-      }
-      if (car.trainCoupledBack) {
-         this.renderCar(car.trainCoupledBack, container);
-      }
+   protected trainCarHeight(): number {
+      return this.TRAIN_HEIGHT;
    }
 
    renderAllGenericObjects() {

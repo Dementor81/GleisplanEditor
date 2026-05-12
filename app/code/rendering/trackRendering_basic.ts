@@ -6,7 +6,6 @@ import { Switch } from '../switch.ts';
 import { Signal } from '../signal.ts';
 import { SignalRenderer } from './signalRenderer.ts';
 import { GenericObject } from '../generic_object.ts';
-import { Train } from '../train.ts';
 import { geometry } from '../tools.ts';
 import { CONFIG } from '../config.ts';
 import type { Graphics } from 'pixi.js';
@@ -29,6 +28,10 @@ export class trackRendering_basic extends TrackRenderingBase {
       this.SIGNAL_DISTANCE_FROM_TRACK = 18;
    }
 
+   protected trainCarHeight(): number {
+      return CONFIG.GRID_SIZE * 0.65;
+   }
+
    reDrawEverything(_force?: boolean, _dont_optimize?: boolean) {
       
       this.app.renderingManager!.containers.removeAllChildren();
@@ -39,56 +42,6 @@ export class trackRendering_basic extends TrackRenderingBase {
       this.renderAllSignals();
       this.renderAllTrains();
       this.app.renderingManager!.update();
-   }
-
-   renderAllTrains() {
-      const rm = this.app.renderingManager!;
-      rm.containers.trains.removeChildren();
-
-      Train.allTrains
-         .filter((train: any) => !train.trainCoupledFront)
-         .forEach((train: any) => {
-            const c = createLayerContainer("train");
-            c.interactiveChildren = true;
-
-            this.renderCar(train, c);
-
-            rm.containers.trains.addChild(c);
-         });
-   }
-
-   renderCar(car: any, container: any) {
-      const carWidth = car.length;
-      const carHeight = CONFIG.GRID_SIZE * 0.65;
-      const corner = car.type == Train.CAR_TYPES.LOCOMOTIVE ? 8 : 1.5;
-      const s = gleisGraphics("train");
-      this.app.renderingManager!.bindGameObjToDisplayObj(s, car);
-      s.roundRect(0, 0, carWidth, carHeight, corner)
-         .fill(car.color)
-         .stroke({ width: 1, color: "#000", cap: "round", join: "round" });
-
-      const p = car.track.getPointFromKm(car.pos);
-
-      s.x = p.x;
-      s.y = p.y;
-      s.pivot.set(carWidth / 2, carHeight / 2);
-      s.angle = car.track.deg;
-
-      container.addChild(s);
-      if (car.number && car.type == Train.CAR_TYPES.LOCOMOTIVE) {
-         const text = new Text({
-            text: car.number,
-            style: { fill: "#000000", fontFamily: "Arial", fontSize: 10 },
-         });
-         text.eventMode = "static";
-         text.anchor.set(0.5);
-         text.x = p.x;
-         text.y = p.y;
-         container.addChild(text);
-      }
-      if (car.trainCoupledBack) {
-         this.renderCar(car.trainCoupledBack, container);
-      }
    }
 
    renderAllSignals() {

@@ -3,20 +3,28 @@
 import { Application } from "../application.ts";
 import type { Switch } from "../switch.ts";
 import { gleisGraphics, rectHitArea, TrackGraphics } from "../pixiPrimitives.ts";
+import { TrainRenderer } from "./TrainRenderer.ts";
 
 /** Shared state and public surface used outside the rendering package for both track renderers. */
 export abstract class TrackRenderingBase {
    readonly app: Application;
    SIGNAL_DISTANCE_FROM_TRACK = 0;
+   readonly #trainRenderer = new TrainRenderer();
 
    protected constructor() {
       this.app = Application.getInstance();
    }
 
    abstract reDrawEverything(force?: boolean, dont_optimize?: boolean): void;
-   abstract renderAllTrains(): void;
    abstract renderAllGenericObjects(): void;
    abstract renderSwitchUI(sw: Switch): void;
+
+   /** Car body height in layout units (basic vs textured track scale). */
+   protected abstract trainCarHeight(): number;
+
+   renderAllTrains(): void {
+      this.#trainRenderer.renderAllTrains(this.app.renderingManager!, this.trainCarHeight());
+   }
 
    /** Textured layout uses sleepers under `tracks.children[0]`; basic attaches graphics directly to `tracks`. */
    protected trackDisplayObjectsForSelection(): any[] {
