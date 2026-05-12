@@ -6,7 +6,7 @@ import { findFieldNameForObject } from './tools.ts';
 import { Track } from './track.ts';
 import { DIRECTION } from './config.ts';
 import { Application } from './application.ts';
-import { SignalRenderer } from './signalRenderer.ts';
+import { SignalRenderer } from './rendering/signalRenderer.ts';
 
 
 /**

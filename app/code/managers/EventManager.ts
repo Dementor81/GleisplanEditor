@@ -8,13 +8,13 @@ import { ui } from "../ui.ts";
 import { Point, geometry, TOOLS } from "../tools.ts";
 import { ArrayUtils, NumberUtils } from "../utils.ts";
 import { Signal } from "../signal.ts";
-import { SignalRenderer } from "../signalRenderer.ts";
+import { SignalRenderer } from "../rendering/signalRenderer.ts";
 import { Sig_UI } from "../sig_ui.ts";
 import { Train } from "../train.ts";
 import { Track } from "../track.ts";
 import { Switch } from "../switch.ts";
 import { GenericObject } from "../generic_object.ts";
-import { trackRendering_basic } from "../trackRendering_basic.ts";
+import { trackRendering_basic } from "../rendering/trackRendering_basic.ts";
 import { Application } from "../application.ts";
 import type { Graphics } from "pixi.js";
 import { gleisGraphics } from "../pixiPrimitives.ts";
@@ -843,7 +843,7 @@ export class EventManager {
 
          rm.reDrawEverything(true, true);
 
-         const b = rm.containers.main.getLocalBounds();
+         const b = rm.viewport.getLocalBounds();
          if (!(b.width > 0 && b.height > 0 && Number.isFinite(b.width + b.height))) {
             ui.showInfoToast("Nix zu sehen");
             return;
@@ -861,7 +861,7 @@ export class EventManager {
          rm.update();
 
          const img_data = await renderer.extract.base64({
-            target: rm.containers.main,
+            target: rm.viewport,
             resolution: exportResolution,
             clearColor: "#00000000",
             antialias: false,

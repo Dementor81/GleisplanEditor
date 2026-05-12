@@ -4,7 +4,7 @@
 import { MENU, CUSTOM_MOUSE_ACTION, Menu } from "../config.ts";
 import { ui } from "../ui.ts";
 import { Sig_UI } from "../sig_ui.ts";
-import { SignalRenderer } from "../signalRenderer.ts";
+import { SignalRenderer } from "../rendering/signalRenderer.ts";
 import { Train } from "../train.ts";
 import { GenericObject } from "../generic_object.ts";
 import { STORAGE } from "../storage.ts";

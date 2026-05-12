@@ -1,23 +1,24 @@
 "use strict";
 
 // ES6 Module imports
-import { Track } from "./track.ts";
-import { Switch } from "./switch.ts";
-import { Signal } from "./signal.ts";
+import { Track } from "../track.ts";
+import { Switch } from "../switch.ts";
+import { Signal } from "../signal.ts";
 import { SignalRenderer } from "./signalRenderer.ts";
-import { Train } from "./train.ts";
-import { GenericObject } from "./generic_object.ts";
-import { geometry, Point } from "./tools.ts";
-import { NumberUtils } from "./utils.ts";
-import { ui } from "./ui.ts";
-import { CONFIG } from "./config.ts";
-import { Application } from "./application.ts";
+import { Train } from "../train.ts";
+import { GenericObject } from "../generic_object.ts";
+import { geometry, Point } from "../tools.ts";
+import { NumberUtils } from "../utils.ts";
+import { ui } from "../ui.ts";
+import { CONFIG } from "../config.ts";
+import { Application } from "../application.ts";
 import { Rectangle, Sprite, Text } from "pixi.js";
 import type { Graphics } from "pixi.js";
-import { gleisGraphics, imageSize, polygonHitArea, rectHitArea, textureRegion, TrackGraphics } from "./pixiPrimitives.ts";
-import { createLayerContainer } from "./pixiUtils.ts";
+import { gleisGraphics, imageSize, polygonHitArea, textureRegion, TrackGraphics } from "../pixiPrimitives.ts";
+import { createLayerContainer } from "../pixiUtils.ts";
+import { TrackRenderingBase } from "./TrackRenderingBase.ts";
 
-export class trackRendering_textured {
+export class trackRendering_textured extends TrackRenderingBase {
    static SWITCH_UI_STROKE = 3;
    static TRACK_SCALE = 0.25;
    static signale_scale = 0.5;
@@ -36,8 +37,6 @@ export class trackRendering_textured {
    ];
    static CURVE_RADIUS: number;
 
-   app: Application;
-   SIGNAL_DISTANCE_FROM_TRACK: number;
    LOD: number;
    _lastRenderScale: number;
    _sleeperCache: Record<string, any>;
@@ -60,7 +59,7 @@ export class trackRendering_textured {
    main_x1: number = 0;
 
    constructor() {
-      this.app = Application.getInstance();
+      super();
       //cause the class is been loaded before start.js, we have to hack and calculate this constant here
       trackRendering_textured.CURVE_RADIUS = CONFIG.GRID_SIZE * 1.21;
 
@@ -789,51 +788,6 @@ export class trackRendering_textured {
       this.drawSleepersOnSwitch(sw, switchRenderingParameter, sleepersContainer);
    }
 
-   createEndpointShape(point: any, track: any, endpointType: string) {
-      const RECT_SIZE = 8;
-      const shape = new TrackGraphics("track_endpoint");
-      this.app.renderingManager!.bindGameObjToDisplayObj(shape, { track, endpoint: endpointType });
-
-      shape.hitArea = rectHitArea(point.x - RECT_SIZE / 2, point.y - RECT_SIZE / 2, RECT_SIZE, RECT_SIZE);
-
-      shape
-         .rect(point.x - RECT_SIZE / 2, point.y - RECT_SIZE / 2, RECT_SIZE, RECT_SIZE)
-         .stroke({ width: 2, color: "#ff0000", cap: "round", join: "round" });
-
-      return shape;
-   }
-
-   drawTrackEndpoints(track: any) {
-      this.app.renderingManager!.containers.selection.addChild(this.createEndpointShape(track.start, track, "start"));
-      this.app.renderingManager!.containers.selection.addChild(this.createEndpointShape(track.end, track, "end"));
-   }
-
-   updateSelection() {
-      const rmSel = this.app.renderingManager!;
-      rmSel.containers.selection.removeChildren();
-
-      if (this.app.selection.type == "Track") {
-         rmSel.containers.tracks.children[0].children.forEach((c: any) => {
-            const d = rmSel.getGameObjFromDisplayObj(c);
-            if (d != null && this.app.selection.isSelectedObject(d)) {
-               this.visualizeTrackBounds(c);
-               this.drawTrackEndpoints(d);
-            }
-         });
-      } else if (this.app.selection.type == "Signal") {
-         rmSel.containers.signals.children.forEach((c: any) => {
-            const d = rmSel.getGameObjFromDisplayObj(c);
-            if (d != null && this.app.selection.isSelectedObject(d)) this.visualizeTrackBounds(c);
-         });
-      } else if (this.app.selection.type == "GenericObject") {
-         rmSel.containers.objects.children.forEach((c: any) => {
-            const d = rmSel.getGameObjFromDisplayObj(c);
-            if (d != null && this.app.selection.isSelectedObject(d)) this.visualizeTrackBounds(c);
-         });
-      }
-      rmSel.update();
-   }
-
    drawSleepersOnSwitch(sw: any, switchRenderingParameter: any, container?: any) {
       const { mainTrack, straightBranch, curvedBranch, curvedBranch2, flipped, mirrored } = switchRenderingParameter;
 
@@ -1119,7 +1073,7 @@ export class trackRendering_textured {
       }
    }
 
-   renderSwitchUI(sw: any) {
+   renderSwitchUI(sw: Switch) {
       const arrowStroke = {
          width: trackRendering_textured.SWITCH_UI_STROKE,
          color: "#333",
@@ -1194,38 +1148,6 @@ export class trackRendering_textured {
 
       const tracks = [sw.track1, sw.track2, sw.track3, sw.track4].filter((t: any) => t);
       return tracks.some((track: any) => this.TrackVisible(track, screen_rectangle));
-   }
-
-   visualizeTrackBounds(container: any) {
-      const bounds = container.getBounds();
-      const object = this.app.renderingManager!.getGameObjFromDisplayObj(container);
-
-      if (bounds == null) throw new Error("Bounds are null");
-      const vp = this.app.renderingManager!.viewport;
-      const topLeft = vp.toLocal({ x: bounds.x, y: bounds.y });
-      const bottomRight = vp.toLocal({ x: bounds.x + bounds.width, y: bounds.y + bounds.height });
-      const localBounds = {
-         x: topLeft.x,
-         y: topLeft.y,
-         width: bottomRight.x - topLeft.x,
-         height: bottomRight.y - topLeft.y,
-      };
-
-      const padding = 5;
-      localBounds.x -= padding;
-      localBounds.y -= padding;
-      localBounds.width += padding * 2;
-      localBounds.height += padding * 2;
-
-      const boundsShape = gleisGraphics("selection");
-      if (object !== undefined) this.app.renderingManager!.bindGameObjToDisplayObj(boundsShape, object);
-      boundsShape.alpha = 0.7;
-
-      boundsShape
-         .rect(localBounds.x, localBounds.y, localBounds.width, localBounds.height)
-         .stroke({ width: 2, color: "#000000", cap: "round", join: "round" });
-
-      this.app.renderingManager!.containers.selection.addChild(boundsShape);
    }
 }
 

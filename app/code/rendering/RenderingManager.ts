@@ -8,8 +8,9 @@ import { Track } from '../track.ts';
 import { Switch } from '../switch.ts';
 import { Signal } from '../signal.ts';
 import { GenericObject } from '../generic_object.ts';
-import { trackRendering_basic } from '../trackRendering_basic.ts';
-import { trackRendering_textured } from '../trackRendering_textured.ts';
+import { trackRendering_basic } from './trackRendering_basic.ts';
+import { trackRendering_textured } from './trackRendering_textured.ts';
+import type { TrackRenderingBase } from './TrackRenderingBase.ts';
 import type { Application as GleisApplication } from '../application.ts';
 import type { Application as PixiApplication } from 'pixi.js';
 import { Container } from 'pixi.js';
@@ -23,7 +24,6 @@ type PointXY = { x: number; y: number };
 // ============================================================================
 
 interface ContainersType {
-   main: any;
    debug: any;
    tracks: any;
    objects: any;
@@ -48,7 +48,7 @@ export class RenderingManager {
    #pointerX = 0;
    #pointerY = 0;
    #containers: ContainersType | Record<string, any> = {};
-   #renderer: any = null;
+   #renderer: TrackRenderingBase | null = null;
    #grid: any = null;
    #domainByDisplay = new WeakMap<Container, unknown>();
 
@@ -88,7 +88,6 @@ export class RenderingManager {
       
       // Create all containers
       const containers: any = {};
-      containers.main = createContainer(CONTAINERS.MAIN);
       containers.debug = createContainer(CONTAINERS.DEBUG);
       containers.tracks = createContainer(CONTAINERS.TRACKS);
       containers.objects = createContainer(CONTAINERS.OBJECTS);
@@ -114,13 +113,12 @@ export class RenderingManager {
       this.#containers = containers;
       
       const vp = this.#viewport!;
-      vp.addChild(containers.main);
       vp.addChild(containers.debug);
-      containers.main.addChild(containers.tracks);
-      containers.main.addChild(containers.objects);
-      containers.main.addChild(containers.trains);
-      containers.main.addChild(containers.signals);
+      vp.addChild(containers.tracks);
+      vp.addChild(containers.objects);
+      vp.addChild(containers.trains);
       vp.addChild(containers.ui);
+      vp.addChild(containers.signals);
       vp.addChild(containers.selection);
       vp.addChild(containers.overlay);
       vp.addChild(containers.drawing);
@@ -442,7 +440,9 @@ export class RenderingManager {
       return this.#pixiApp!;
    }
    get containers(): any { return this.#containers; }
-   get renderer(): any { return this.#renderer; }
+   get renderer(): TrackRenderingBase {
+      return this.#renderer!;
+   }
    get grid(): any { return this.#grid; }
 
    /** Whether the textured (detailed) track renderer is active. */

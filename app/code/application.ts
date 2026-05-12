@@ -12,7 +12,7 @@ import { geometry } from "./tools.ts";
 import { ui } from "./ui.ts";
 import { CONFIG, CUSTOM_MOUSE_ACTION, MENU, PATHS, Menu, CustomMouseAction } from "./config.ts";
 import { EventManager } from "./managers/EventManager.ts";
-import { RenderingManager } from "./managers/RenderingManager.ts";
+import { RenderingManager } from "./rendering/RenderingManager.ts";
 import { UIManager } from "./managers/UIManager.ts";
 
 // ============================================================================

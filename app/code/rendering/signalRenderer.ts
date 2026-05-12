@@ -1,16 +1,16 @@
 "use strict";
 
 // ES6 Module imports
-import { clone } from './tools.ts';
-import { TextElement, VisualElement } from './visualElement.ts';
-import { Application } from './application.ts';
+import { clone } from '../tools.ts';
+import { TextElement, VisualElement } from '../visualElement.ts';
+import { Application } from '../application.ts';
 import type { Container } from 'pixi.js';
 import { Text } from 'pixi.js';
 
 /** Structural type so callers pass RenderingManager without importing it (avoids circular deps). */
 export type DomainSink = { bindGameObjToDisplayObj(display: Container, domain: unknown): void };
-import { rectHitArea } from './pixiPrimitives.ts';
-import { createLayerContainer, findChildByLabel } from './pixiUtils.ts';
+import { rectHitArea } from '../pixiPrimitives.ts';
+import { createLayerContainer, findChildByLabel } from '../pixiUtils.ts';
 
 export class SignalRenderer {
    static #renderingState = new WeakMap<any, any>();

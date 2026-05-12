@@ -10,7 +10,7 @@ import { ArrayUtils } from './utils.ts';
 import { ui } from './ui.ts';
 import { CONFIG } from './config.ts';
 import { Application } from './application.ts';
-import { trackRendering_textured } from './trackRendering_textured.ts';
+import { trackRendering_textured } from './rendering/trackRendering_textured.ts';
 import { getCDataValue } from './tools.ts';
 
 // ============================================================================

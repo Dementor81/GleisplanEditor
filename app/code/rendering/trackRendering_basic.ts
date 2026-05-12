@@ -1,21 +1,21 @@
 "use strict";
 
 // ES6 Module imports
-import { Track } from './track.ts';
-import { Switch } from './switch.ts';
-import { Signal } from './signal.ts';
+import { Track } from '../track.ts';
+import { Switch } from '../switch.ts';
+import { Signal } from '../signal.ts';
 import { SignalRenderer } from './signalRenderer.ts';
-import { GenericObject } from './generic_object.ts';
-import { Train } from './train.ts';
-import { geometry } from './tools.ts';
-import { Application } from './application.ts';
-import { CONFIG } from './config.ts';
+import { GenericObject } from '../generic_object.ts';
+import { Train } from '../train.ts';
+import { geometry } from '../tools.ts';
+import { CONFIG } from '../config.ts';
 import type { Graphics } from 'pixi.js';
-import { gleisGraphics, polygonHitArea, TrackGraphics } from './pixiPrimitives.ts';
+import { gleisGraphics, polygonHitArea, TrackGraphics } from '../pixiPrimitives.ts';
 import { Text } from 'pixi.js';
-import { createLayerContainer } from './pixiUtils.ts';
+import { createLayerContainer } from '../pixiUtils.ts';
+import { TrackRenderingBase } from './TrackRenderingBase.ts';
 
-export class trackRendering_basic {
+export class trackRendering_basic extends TrackRenderingBase {
    static TRACK_COLOR = "#111111";
    static SWITCH_UI_COLOR = "gray";
    static SWITCH_UI_COLOR_SELECTED = "#eee";
@@ -24,12 +24,9 @@ export class trackRendering_basic {
    static BUMPER_SIZE = 8;
    static SWITCH_SIZE = 30;
 
-   SIGNAL_DISTANCE_FROM_TRACK: number;
-   app: Application;
-
    constructor() {
+      super();
       this.SIGNAL_DISTANCE_FROM_TRACK = 18;
-      this.app = Application.getInstance();
    }
 
    reDrawEverything(_force?: boolean, _dont_optimize?: boolean) {
@@ -100,9 +97,6 @@ export class trackRendering_basic {
       Signal.allSignals.forEach((signal: any) => {
          let container = rm.containers.signals.addChild(SignalRenderer.createSignalContainer(rm, signal));
          this.app.alignSignalContainerWithTrack(container, signal._positioning);
-         if (this.app.selection.isSelectedObject(signal)) {
-            container.tint = 0xff0000;
-         }
       });
    }
 
@@ -110,29 +104,6 @@ export class trackRendering_basic {
       Track.allTracks.forEach((t) => {
          this.renderTrack(this.app.renderingManager!.containers.tracks, t);
       });
-   }
-
-   isSelected(c: any) {
-      c.tint = 0xff0000;
-   }
-
-   updateSelection() {
-      const rm = app.renderingManager!;
-      rm.containers.tracks.children.forEach((c: any) => {
-         const d = rm.getGameObjFromDisplayObj(c);
-         if (d !== undefined) {
-            if (app.selection.isSelectedObject(d)) this.isSelected(c);
-            else c.tint = 0xffffff;
-         }
-      });
-      rm.containers.signals.children.forEach(function (c: any) {
-         const d = rm.getGameObjFromDisplayObj(c);
-         if (d !== undefined) {
-            if (app.selection.isSelectedObject(d)) c.tint = 0xff0000;
-            else c.tint = 0xffffff;
-         }
-      });
-      rm.update();
    }
 
    renderAllGenericObjects() {
@@ -249,8 +220,6 @@ export class trackRendering_basic {
             .lineTo(params.bumper[1][1].x, params.bumper[1][1].y)
             .stroke(trackStroke);
       }
-      if (this.app.selection.isSelectedObject(track)) this.isSelected(shape);
-
       shape.setBounds(
          params.start.x - trackRendering_basic.HIT_TEST_DISTANCE,
          params.start.y - trackRendering_basic.HIT_TEST_DISTANCE,
