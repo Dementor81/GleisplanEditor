@@ -15,7 +15,7 @@ export abstract class TrackRenderingBase {
       this.app = Application.getInstance();
    }
 
-   abstract reDrawEverything(force?: boolean, dont_optimize?: boolean): void;
+   abstract reDrawEverything(force?: boolean, render_outside_viewport?: boolean): void;
    abstract renderAllGenericObjects(): void;
    abstract renderSwitchUI(sw: Switch): void;
 

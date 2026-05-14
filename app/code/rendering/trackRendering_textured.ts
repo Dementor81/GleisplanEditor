@@ -64,7 +64,7 @@ export class trackRendering_textured extends TrackRenderingBase {
       this.SIGNAL_DISTANCE_FROM_TRACK = 45;
 
       this.LOD = 5;
-      this._lastRenderScale = 0;
+      this._lastRenderScale = 0; //used to check if the LOD has changed since the last rendering
 
       // Cache for sleeper shapes and bitmaps
       this._sleeperCache = {};
@@ -134,9 +134,8 @@ export class trackRendering_textured extends TrackRenderingBase {
    }
 
    calcCanvasSize() {
-      const rm = this.app.renderingManager!;
-      const vp = rm.viewport;
-      const canvas = rm.canvas;
+      const vp = this.app.renderingManager!.viewport;
+      const canvas = this.app.renderingManager!.canvas;
       const width = (canvas.width + CONFIG.GRID_SIZE * 2) / vp.scale.x,
          height = (canvas.height + CONFIG.GRID_SIZE * 2) / vp.scale.y,
          x = (-vp.x - CONFIG.GRID_SIZE) / vp.scale.x,
@@ -144,20 +143,19 @@ export class trackRendering_textured extends TrackRenderingBase {
       return { left: x, top: y, right: x + width, bottom: y + height };
    }
 
-   reDrawEverything(force = false, dont_optimize = false) {
-      if (!Application.getInstance().preLoader!.loaded)
+   reDrawEverything(force = false, render_outside_viewport = false) {
+      if (!Application.getInstance().preLoader!.loaded) //on slow internet connections, the preLoader may not be loaded yet
          setTimeout(() => {
-            this.reDrawEverything(force, dont_optimize);
+            this.reDrawEverything(force, render_outside_viewport);
          }, 500);
       else {
-         if (this._rendering == undefined) {
+         if (this._rendering == undefined) { //prevent multiple rendering calls
             try {
-               this._rendering = { dont_optimize: dont_optimize };
+               this._rendering = { render_outside_viewport: render_outside_viewport };
                this._rendering.screen_rectangle = this.calcCanvasSize();
 
                if (force) {
                   this.app.renderingManager!.containers.removeAllChildren();
-
                   this.calcRenderValues();
                } else {
                   if (NumberUtils.between(this.LOD, this._lastRenderScale, this.app.renderingManager!.viewport.scale.x)) {
@@ -171,7 +169,7 @@ export class trackRendering_textured extends TrackRenderingBase {
                   this.renderAllTrains();
                   this.renderAllGenericObjects();
                   this._lastRenderScale = this.app.renderingManager!.viewport.scale.x;
-                  if (!dont_optimize) this.cleanUp();
+                  if (!render_outside_viewport) this.cleanUp();
                } catch (error) {
                   console.error("Error during rendering:", error);
                   throw error;
@@ -271,18 +269,9 @@ export class trackRendering_textured extends TrackRenderingBase {
 
    renderAllTracks(force?: boolean) {
       const containers = this.app.renderingManager!.containers;
-      if (force) {
-         const sleepers_container = createLayerContainer("global_sleepers");
-         sleepers_container.interactiveChildren = true;
-
-         const rails_container = createLayerContainer("global_rails");
-         rails_container.interactiveChildren = true;
-
-         this._rendering.sleepers_container = sleepers_container;
-         this._rendering.rails_container = rails_container;
-
-         containers.tracks.addChild(sleepers_container);
-         containers.tracks.addChild(rails_container);
+      if (force) {         
+         containers.tracks.addChild(this._rendering.sleepers_container = createLayerContainer("global_sleepers"));
+         containers.tracks.addChild(this._rendering.rails_container = createLayerContainer("global_rails"));
          containers.tracks.renderedTracks = new Set();
          containers.tracks.renderedSwitches = new Set();
       } else {
@@ -1072,7 +1061,7 @@ export class trackRendering_textured extends TrackRenderingBase {
    }
 
    TrackVisible(track: any, screen_rectangle = this._rendering.screen_rectangle) {
-      if (this._rendering?.dont_optimize) return true;
+      if (this._rendering?.render_outside_viewport) return true;
 
       const isInside = (point: any, rect: any) =>
          point.x > rect.left && point.x < rect.right && point.y > rect.top && point.y < rect.bottom;
@@ -1093,7 +1082,7 @@ export class trackRendering_textured extends TrackRenderingBase {
    }
 
    SwitchVisible(sw: any) {
-      if (this._rendering?.dont_optimize) return true;
+      if (this._rendering?.render_outside_viewport) return true;
       const screen_rectangle = this._rendering.screen_rectangle;
 
       if (this.PointVisible(sw.location)) return true;

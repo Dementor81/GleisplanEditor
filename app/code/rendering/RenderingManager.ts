@@ -154,11 +154,11 @@ export class RenderingManager {
 
    /**
     * Redraw everything
-    * @param force - Force redraw
-    * @param dont_optimize - Don't optimize rendering
+    * @param force - removes all children from the containers and recalculates the render values
+    * @param render_outside_viewport - does not check if  objects are outside the viewport, used for image export
     */
-   reDrawEverything(force: boolean = false, dont_optimize: boolean = false): void {
-      this.#renderer?.reDrawEverything(force, dont_optimize);
+   reDrawEverything(force: boolean = false, render_outside_viewport: boolean = false): void {
+      this.#renderer?.reDrawEverything(force, render_outside_viewport);
    }
 
    /**
@@ -273,12 +273,7 @@ export class RenderingManager {
    /** Zoom back to 100 %; keeps the canvas-center point fixed (same adjustment as wheel zoom around the pointer). */
    resetZoom(): void {
       const viewport = this.#viewport!;
-      const canvas = this.#canvas;
-      if (!canvas) {
-         viewport.scale.set(Math.min(Math.max(CONFIG.MIN_SCALE, 1), CONFIG.MAX_SCALE));
-         this.#commitViewportChange();
-         return;
-      }
+      const canvas = this.#canvas!;
 
       const point = { x: canvas.width / 2, y: canvas.height / 2 };
       const localPoint = viewport.toLocal(point);
@@ -317,7 +312,6 @@ export class RenderingManager {
       STORAGE.save();
       this.drawGrid();
       this.reDrawEverything();
-      this.update();
       this.notifyViewportChanged();
    }
 
@@ -409,23 +403,18 @@ export class RenderingManager {
       }
    }
    
-   /**
-    * Update the grid position and scale
-    */
-   updateGrid(): void {
-      if (this.#grid) {
-         const scaled_grid_size = CONFIG.GRID_SIZE * this.#viewport!.scale.x;
-         this.#grid.x = Math.floor(this.#viewport!.x / scaled_grid_size) * -CONFIG.GRID_SIZE;
-         this.#grid.y = Math.floor(this.#viewport!.y / scaled_grid_size) * -CONFIG.GRID_SIZE;
-      }
-   }
+
    
    /**
     * Force a complete redraw of everything
     */
    forceRedraw(): void {
+      const startTime = performance.now();
       this.drawGrid(true);
       this.#renderer?.reDrawEverything(true);
+      const endTime = performance.now();
+      console.log(`Rendering completed in ${(endTime - startTime).toFixed(2)} ms`);
+ 
    }
    
    get viewport(): Container {

@@ -32,7 +32,7 @@ export class trackRendering_basic extends TrackRenderingBase {
       return CONFIG.GRID_SIZE * 0.65;
    }
 
-   reDrawEverything(_force?: boolean, _dont_optimize?: boolean) {
+   reDrawEverything(_force?: boolean, _render_outside_viewport?: boolean) {
       
       this.app.renderingManager!.containers.removeAllChildren();
 

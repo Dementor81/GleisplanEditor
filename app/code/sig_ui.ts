@@ -19,7 +19,9 @@ export class Sig_UI {
     */
    static initSignalConfigurationMenu() {
 
-      let selectedSignal: Signal | null = Application.getInstance().selection.object as Signal | null;
+      const app = Application.getInstance();
+
+      let selectedSignal: Signal | null = app.selection.object as Signal | null;
       if (!selectedSignal) return;
 
       const conditions = selectedSignal._template.getAllVisualElementConditions();
@@ -27,14 +29,13 @@ export class Sig_UI {
       const update = function (command: any, isOn?: any) {
          selectedSignal.setSignalAspect(command, isOn);
          Sig_UI.syncSignalMenu(selectedSignal);
-         Application.getInstance().renderingManager!.reDrawEverything();
-         Application.getInstance().renderingManager!.update();
+         app.renderingManager!.reDrawEverything();
          STORAGE.save();
       };
       let signalConfigurationTab = $("#SignalConfigurationTab");
 
       $("#btnGrundstellung").on("click", Sig_UI.handleGrundstellung as any);
-      $("#btnRemoveSignal").on("click", () => Application.getInstance().deleteSelectedObject());
+      $("#btnRemoveSignal").on("click", () => app.deleteSelectedObject());
       signalConfigurationTab.empty();
       if (selectedSignal.check("HPsig"))
          signalConfigurationTab.append(
@@ -192,15 +193,15 @@ export class Sig_UI {
     * @private
     */
    static handleGrundstellung() {
-      const selection = (window as any).app.selection;
+      const app = Application.getInstance();
+      const selection = app.selection;
       if (selection.type == "Signal") {
          [].concat(selection.object).forEach((s: any) => {
             s._signalStellung = {};
             if (s._template.initialSignalStellung)
                s._template.initialSignalStellung.forEach((i: any) => s.setSignalAspect(i, null, true));
             STORAGE.save();
-            (window as any).app.renderingManager.renderer.reDrawEverything(true);
-            (window as any).app.renderingManager.update();
+            app.renderingManager!.reDrawEverything(true);
          });
       }
    }
