@@ -120,7 +120,7 @@ export class Application {
     * Initialize managers
     * @private
     */
-   async #initializeManagers(): Promise<void> {     
+   async #initializeManagers(): Promise<void> {
 
       // Initialize each manager
       await this.#renderingManager.initialize();
@@ -153,32 +153,19 @@ export class Application {
     */
    alignSignalContainerWithTrack(container: any, pos: SignalPosition): void {
       const point = pos.track.getPointFromKm(pos.km);
-      const signalModel = this.#renderingManager!.getGameObjFromDisplayObj(container) as any;
+      const perp = geometry.perpendicular(pos.track.unit);
+      const sign = pos.above ? -1 : 1;
+      const dist =
+         this.#renderingManager!.renderer.SIGNAL_DISTANCE_FROM_TRACK +
+         (pos.flipped ? container.width : 0);
 
-      let p: any;
-      if (pos.above) {
-         container.angle = 270 + pos.track.deg;
-         p = point.add(
-            geometry
-               .perpendicular(pos.track.unit)
-               .multiply(
-                  -this.#renderingManager!.renderer.SIGNAL_DISTANCE_FROM_TRACK - signalModel._template.distance_from_track
-               )
-         );
-      } else {
-         container.angle = 90 + pos.track.deg;
-         p = point.add(
-            geometry
-               .perpendicular(pos.track.unit)
-               .multiply(
-                  this.#renderingManager!.renderer.SIGNAL_DISTANCE_FROM_TRACK + signalModel._template.distance_from_track
-               )
-         );
-      }
-      if (pos.flipped) container.angle += 180;
-
-      container.x = p.x;
-      container.y = p.y;
+      container.angle =
+         90 +
+         pos.track.deg +
+         (pos.above ? 180 : 0) +
+         (pos.flipped ? 180 : 0);
+      container.x = point.x + perp.x * sign * dist;
+      container.y = point.y + perp.y * sign * dist;
    }
 
    /**

@@ -6,6 +6,7 @@ import { ArrayUtils } from './utils.ts';
 import { STORAGE } from './storage.ts';
 import { Application } from './application.ts';
 import { Signal } from './signal.ts';
+import type { SignalConfigOptionDefinition } from './signalDefinition.ts';
 
 export class Sig_UI {
    static create_SpeedDropDown(signal: any, text: string, onChange: any) {
@@ -79,6 +80,53 @@ export class Sig_UI {
 
          signalConfigurationTab.append(ui.createOptionGroup("Zusatzanzeiger", a, "checkbox", update).addClass("p-3 border-bottom"));
       }
+
+      const configOptions = selectedSignal._template.configOptions;
+      if (configOptions?.length) {
+         const applyConfigOption = (optionName: string, isOn: boolean) => {
+            const opt = selectedSignal._template.getConfigOption(optionName);
+            if (isOn) {
+               update(optionName, true);
+               if (opt?.convertTo) update(opt.convertTo, false);
+            } else {
+               update(optionName, false);
+               if (opt?.convertTo) update(opt.convertTo, true);
+            }
+         };
+
+         signalConfigurationTab.append(
+            ui.div(
+               "p-3 border-bottom",
+               configOptions.map((opt: SignalConfigOptionDefinition) =>
+                  ui.div("form-check form-switch", [
+                     $("<input/>", {
+                        class: "form-check-input",
+                        type: "checkbox",
+                        role: "switch",
+                        id: "switch_config_" + opt.name,
+                     })
+                        .attr("value", opt.name)
+                        .attr("data-config-option", "")
+                        .on("change", function () {
+                           applyConfigOption($(this).attr("value") ?? "", $(this).is(":checked"));
+                        }),
+                     $("<label/>", {
+                        class: "form-check-label",
+                        for: "switch_config_" + opt.name,
+                        text: opt.title,
+                     }),
+                  ])
+               )
+            )
+         );
+      }
+   }
+
+   static syncConfigOptionSwitches(signal: any) {
+      $("#SignalConfigurationTab input[data-config-option]").each(function () {
+         const input = $(this);
+         input.prop("checked", signal.check(input.attr("value")) ? "checked" : null);
+      });
    }
 
    static syncSignalMenu(signal: any) {
@@ -97,6 +145,8 @@ export class Sig_UI {
          input.prop("checked", v ? "checked" : null);
          if (input.attr("data-master_switch") != null) $("input", input.parent().next()).prop("disabled", !v);
       });
+
+      Sig_UI.syncConfigOptionSwitches(signal);
    }
 
    static initSignalAspectsMenu(signal: any) {

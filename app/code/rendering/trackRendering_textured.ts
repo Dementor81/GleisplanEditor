@@ -59,10 +59,7 @@ export class trackRendering_textured extends TrackRenderingBase {
    constructor() {
       super();
       //cause the class is been loaded before start.js, we have to hack and calculate this constant here
-      trackRendering_textured.CURVE_RADIUS = CONFIG.GRID_SIZE * 1.21;
-
-      this.SIGNAL_DISTANCE_FROM_TRACK = 45;
-
+      trackRendering_textured.CURVE_RADIUS = CONFIG.GRID_SIZE * 1.21;      
       this.LOD = 5;
       this._lastRenderScale = 0; //used to check if the LOD has changed since the last rendering
 
@@ -202,6 +199,8 @@ export class trackRendering_textured extends TrackRenderingBase {
       this.TRAIN_HEIGHT = this.schwellenHöhe - this.rail_offset;
 
       this.main_x1 = (Math.sin(Math.PI / 8) * trackRendering_textured.CURVE_RADIUS) / Math.cos(Math.PI / 8);
+
+      this.SIGNAL_DISTANCE_FROM_TRACK = this.schwellenHöhe / 2;
    }
 
    protected trainCarHeight(): number {

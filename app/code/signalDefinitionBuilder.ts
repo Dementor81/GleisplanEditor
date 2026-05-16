@@ -30,6 +30,7 @@ function buildElement(definition: SignalElementDefinition): any {
    if ("text" in definition) return buildTextElement(definition);
 
    const visualElement = new VisualElement(definition.image);
+   if (definition.pos) visualElement.pos(definition.pos);
    applyCondition(visualElement, "on", definition.on);
    applyCondition(visualElement, "off", definition.off);
    if (definition.blinks !== undefined) visualElement.blinks(definition.blinks);
@@ -48,10 +49,10 @@ export function buildSignalTemplate(definition: SignalTemplateDefinition): Signa
    );
 
    if (definition.scale !== undefined) template.scale = definition.scale;
-   if (definition.distanceFromTrack !== undefined) template.distance_from_track = definition.distanceFromTrack;
    if (definition.previewsize !== undefined) (template as any).previewsize = definition.previewsize;
    definition.rules?.forEach(([trigger, setting]) => template.addRule(trigger, setting));
    if (definition.menu) template.createSignalCommandMenu(definition.menu);
+   if (definition.config_options?.length) template.configOptions = [...definition.config_options];
 
    return template;
 }

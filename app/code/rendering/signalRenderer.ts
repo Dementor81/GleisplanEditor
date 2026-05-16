@@ -32,7 +32,6 @@ export class SignalRenderer {
       let c = createLayerContainer("signal");
       rm.bindGameObjToDisplayObj(c, signal);
       c.interactiveChildren = false;
-      (c as any).snapToPixel = true;
       c.scale.set(signal._template.scale);
    
       signal.draw(c, true);
@@ -41,9 +40,8 @@ export class SignalRenderer {
          // schläft fehl, wenn nichts gezeichnet wurde
          c.hitArea = rectHitArea(sig_bounds.x, sig_bounds.y, sig_bounds.width, sig_bounds.height);
    
-         c.pivot.x = sig_bounds.width / 2 + sig_bounds.x;
          c.pivot.y = sig_bounds.height + sig_bounds.y;
-      } else console.error("Wahrscheinlich fehler beim Zeichen des Signals!");
+      } else console.error("Wahrscheinlich Fehler beim Zeichen des Signals!");
    
       return c;
    }
@@ -113,6 +111,12 @@ export class SignalRenderer {
             let bmp = Application.getInstance().preLoader!.getSprite(signal._template.json_file, textureName);
             if (bmp != null) {
                state.container.addChild(bmp);
+
+               const overridePos = typeof ve !== "string" && Array.isArray(ve.pos()) ? ve.pos() : null;
+               if (overridePos) {
+                  bmp.x = overridePos[0];
+                  bmp.y = overridePos[1];
+               }
 
                if (blinks) {
                   signal._dontCache = true;

@@ -4,6 +4,7 @@
 import { VisualElement } from './visualElement.ts';
 import { ArrayUtils } from './utils.ts';
 import { Application } from './application.ts';
+import type { SignalConfigOptionDefinition } from './signalDefinition.ts';
 
 export class SignalTemplate {
    #_id: any = null;
@@ -17,6 +18,7 @@ export class SignalTemplate {
    contextMenu: any[] = [];
    elements: any[] = [];
    rules: any[] = [];
+   configOptions: SignalConfigOptionDefinition[] = [];
 
    get id() {
       return this.#_id;
@@ -49,6 +51,10 @@ export class SignalTemplate {
 
    get start() {
       return this.#_start;
+   }
+
+   getConfigOption(name: string): SignalConfigOptionDefinition | undefined {
+      return this.configOptions.find((o) => o.name === name);
    }
 
    ///creates a structed onbject tree that represents a menu from an array of strings

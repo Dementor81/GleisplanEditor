@@ -3,7 +3,6 @@
   "title": "Hv Vorsignal",
   "atlas": "hv",
   "scale": 0.15,
-  "distanceFromTrack": 4,
   "initial": ["vr=0", "VRsig"],
   "menu": ["vr=0,vr=1,vr=2", "verk=1(verk)", "zs3v"],
   "elements": [

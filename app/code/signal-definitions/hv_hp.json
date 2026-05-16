@@ -4,7 +4,6 @@
   "atlas": "hv",
   "scale": 0.15,
   "previewsize": 20,
-  "distanceFromTrack": 5,
   "initial": ["hp=0", "vr=0", "HPsig", "verw=asig", "mastschild=wrw"],
   "rules": [
     ["hp>0 && zs3>6", "hp=1"],

@@ -10,6 +10,7 @@ export type SignalElementDefinition =
 
 export interface SignalVisualElementDefinition {
    image?: string;
+   pos?: [number, number];
    on?: SignalCondition;
    off?: SignalCondition;
    blinks?: boolean;
@@ -27,6 +28,12 @@ export interface SignalTextElementDefinition {
    blinks?: boolean;
 }
 
+export interface SignalConfigOptionDefinition {
+   name: string;
+   title: string;
+   convertTo?: string;
+}
+
 export interface SignalTemplateDefinition {
    id: string;
    title: string;
@@ -35,7 +42,7 @@ export interface SignalTemplateDefinition {
    initial?: SignalCondition;
    scale?: number;
    previewsize?: number;
-   distanceFromTrack?: number;
    menu?: SignalMenuDefinition;
    rules?: Array<[string, string]>;
+   config_options?: SignalConfigOptionDefinition[];
 }

@@ -11,7 +11,6 @@
     "title": "Ne 1",
     "atlas": "basis",
     "scale": 0.15,
-    "distanceFromTrack": 5,
     "elements": [
       "ne1",
       { "text": "ne1", "format": [20, "Arial", 1], "pos": [100, 105] }
