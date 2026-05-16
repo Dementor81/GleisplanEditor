@@ -8,7 +8,8 @@
       ["hp=0,hp=1(Ks 1),hp=2(Ks 2)", "zs3"],
       "zs3v",
       "ersatz=zs1,ersatz=zs7,ersatz=zs8,ersatz=sh1,ersatz=kennlicht",
-      "zs6=1(Zs 6)"
+      "zs6=1(Zs 6)",
+      ["zs13=1(Zs 13)","zp9=1(Zp 9)"]
    ],
    "config_options": [
       {
@@ -100,6 +101,20 @@
          "children": [
             { "image": "zs6_licht", "off": "zs3>0" },
             { "image": "zs6_licht", "on": "zs3>0", "pos": [40, 500] }
+         ]
+      },
+      {
+         "on": ["zs13=1","zusatz_unten"],
+         "off":["hp=0","zs3v>0","zp9=1","zs6=1&&zs3>0"],
+         "children": [
+            { "image": "zs13", "on": "zs13=1" }
+         ]
+      },
+      {
+         "on": ["zp9=1","zusatz_unten"],
+         "off":["hp=0","zs3v>0","zs13=1","zs6=1&&zs3>0"],
+         "children": [
+            { "image": "zp9", "on": "zp9=1" }
          ]
       },
       {

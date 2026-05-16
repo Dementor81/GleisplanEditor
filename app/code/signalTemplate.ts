@@ -57,7 +57,7 @@ export class SignalTemplate {
       return this.configOptions.find((o) => o.name === name);
    }
 
-   ///creates a structed onbject tree that represents a menu from an array of strings
+   ///creates a structured object tree that represents a menu from an array of strings
    ///array: keeps the array
    ///comma sperated string e.g."hp=0,hp=1,hp=2": buttonGroup
    ///single string e.g. "verk=1(verk)": btn
