@@ -22,7 +22,6 @@ export interface SignalTextElementDefinition {
    format?: Array<string | number>;
    color?: string;
    pos: [number, number];
-   bounds?: [number, number];
    on?: SignalCondition;
    off?: SignalCondition;
    blinks?: boolean;

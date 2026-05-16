@@ -86,7 +86,6 @@ export class TextElement extends VisualElement {
    #_format: any;
    #_color: any;
    #_source: any;
-   #_width_height: any;
 
    constructor(source: any, format: any = ["25","Arial","bold"], color: any = "#eee") {
       super();
@@ -104,15 +103,6 @@ export class TextElement extends VisualElement {
       return this.#_color;
    }
 
-
-   //must be an array containing max width and height
-   bounds(width_height?: any): any {
-      if (width_height === undefined) return this.#_width_height;
-      else {         
-         this.#_width_height = width_height;
-         return this;
-      }
-   }
 
    getText(signal: any): any {
       return signal.get(this.#_source);

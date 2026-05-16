@@ -132,7 +132,7 @@
     {
       "image": "schild",
       "on": "bez",
-      "children": [{ "text": "bez", "format": [55, "condenced", 1], "color": "#333", "pos": [116, 1033], "bounds": [52, 63] }]
+      "children": [{ "text": "bez", "format": [55, "condenced", 1], "color": "#333", "pos": [116, 1033] }]
     }
   ]
 }

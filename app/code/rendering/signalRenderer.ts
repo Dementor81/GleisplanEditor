@@ -46,23 +46,23 @@ export class SignalRenderer {
       return c;
    }
 
-   static drawVisualElement(signal: any, ve: any) {
+   static drawVisualElement(signal: any, ve: any, parent:any = null) {
       if (Array.isArray(ve)) ve.forEach((e) => this.drawVisualElement(signal, e));
       else if (typeof ve == "string") {
          this.addImageElement(signal, ve);
       } else if (ve instanceof TextElement) {
-         this.drawTextElement(signal, ve);
+         this.drawTextElement(signal, ve, parent);
       } else if (ve instanceof VisualElement) {
          if (ve.isAllowed(signal) && ve.isEnabled(signal)) {
             if (ve.image) this.addImageElement(signal, ve, ve.blinks());
-            ve.childs()?.forEach((c: any) => this.drawVisualElement(signal, c));
+            ve.childs()?.forEach((c: any) => this.drawVisualElement(signal, c, ve));
          }
       } else console.log("unknown type of VisualElement: " + ve);
       return false;
    }
 
-   static drawTextElement(signal: any, ve: any): void {
-      if (!ve.pos()) throw new Error("TextElement doesnt have a position");
+   static drawTextElement(signal: any, ve: any, parent:any = null): void {
+      if (!ve.pos()) throw new Error("TextElements require a position");
       if (ve.isAllowed(signal) && ve.isEnabled(signal)) {
         let txt = ve.getText(signal);
         if (txt == null) return;
@@ -72,6 +72,7 @@ export class SignalRenderer {
         const applyFormatToText = (t: Text) => {
            const fontSize = Number(format[0]);
            t.style.fill = ve.color;
+           t.style.align = "center";
            t.style.fontSize = fontSize;
            t.style.fontFamily = format[1];
            t.style.fontWeight = format[2] ? "bold" : "normal";
@@ -84,16 +85,24 @@ export class SignalRenderer {
         [displayObject.x, displayObject.y] = ve.pos();
         displayObject.anchor.x = 0.5;
 
-        let current_bounds, max_bounds;
+        const state = SignalRenderer.#renderingState.get(signal);
+        let max_bounds;
+        if (!max_bounds && parent?.image) {
+           const parentSprite = findChildByLabel(state.container, parent.image);
+           if (parentSprite) {
+              const b = parentSprite.getLocalBounds();
+              max_bounds = [b.width, b.height];
+           }
+        }
+
+        let current_bounds;
         do {
            current_bounds = displayObject.getBounds();
-           max_bounds = ve.bounds();
            if (max_bounds && (current_bounds.width > max_bounds[0] || current_bounds.height > max_bounds[1])) {
               format[0] = Number(format[0]) - 5;
               applyFormatToText(displayObject);
            } else break;
         } while (true);
-        const state = SignalRenderer.#renderingState.get(signal);
         state.container.addChild(displayObject);
       }
    }

@@ -19,7 +19,6 @@ function buildTextElement(definition: SignalTextElementDefinition): TextElement 
    applyCondition(textElement, "on", definition.on);
    applyCondition(textElement, "off", definition.off);
    if (definition.blinks !== undefined) textElement.blinks(definition.blinks);
-   if (definition.bounds) textElement.bounds(definition.bounds);
 
    return textElement;
 }

@@ -105,7 +105,7 @@
       {
          "image": "schild",
          "on": "bez",
-         "children": [{ "text": "bez", "format": [55, "condenced", 1], "color": "#333", "pos": [85, 634] }]
+         "children": [{ "text": "bez", "format": [55, "condenced", 1], "color": "#333", "pos": [85, 626] }]
       }
    ]
 }
