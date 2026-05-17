@@ -16,6 +16,7 @@ import type { Graphics } from "pixi.js";
 import { gleisGraphics, imageSize, polygonHitArea, textureRegion, TrackGraphics } from "../pixiPrimitives.ts";
 import { createLayerContainer } from "../pixiUtils.ts";
 import { TrackRenderingBase } from "./TrackRenderingBase.ts";
+import type { LineCap, LineJoin } from "pixi.js";
 
 export class trackRendering_textured extends TrackRenderingBase {
    static SWITCH_UI_STROKE = 3;
@@ -450,9 +451,8 @@ export class trackRendering_textured extends TrackRenderingBase {
       }
       sleepers_container.hitArea = polygonHitArea(hitPoints);
 
-      
-
-      this.drawTrackSleepers(points, sleepers_container);      
+      const { skipFirst, skipLast } = this.getSwitchSleeperSkipFlags(track);
+      this.drawTrackSleepers(points, sleepers_container, skipFirst, skipLast);
       this.renderRails(track, points);
       if (track.hasBumper) this.drawBumper(track, this._rendering.rails_container);
    }
@@ -507,7 +507,7 @@ export class trackRendering_textured extends TrackRenderingBase {
             const st = {
                width: rail[0],
                color: rail[1],
-               cap: "round" as const,
+               cap: "butt" as const,
                join: "round" as const,
             };
 
@@ -539,17 +539,59 @@ export class trackRendering_textured extends TrackRenderingBase {
       return rail_shape;
    }
 
-   drawTrackSleepers(points: any[], container: any) {
-      for (const point of points) {
-         this.drawSleepers(point.track, point.start, point.straightEnd, container);
+   getSwitchSleeperSkipFlags(track: any): { skipFirst: boolean; skipLast: boolean } {
+      let skipFirst = false;
+      let skipLast = false;
+
+      const startSw = track.switchAtTheStart;
+      if (startSw instanceof Switch && (track === startSw.track3 || track === startSw.track4)) {
+         skipFirst = true;
+      }
+
+      const endSw = track.switchAtTheEnd;
+      if (endSw instanceof Switch && (track === endSw.track3 || track === endSw.track4)) {
+         skipLast = true;
+      }
+
+      return { skipFirst, skipLast };
+   }
+
+   drawTrackSleepers(points: any[], container: any, skipFirst = false, skipLast = false) {
+      for (let pi = 0; pi < points.length; pi++) {
+         const point = points[pi];
+         const isFirst = pi === 0;
+         const isLast = pi === points.length - 1;
+
+         this.drawSleepers(
+            point.track,
+            point.start,
+            point.straightEnd,
+            container,
+            isFirst && skipFirst,
+            isLast && skipLast && !point.rails.curve
+         );
 
          if (point.rails.curve) {
-            this.drawSleepersAlongCurve(point.straightEnd, point.curveEnd, point.controlPoint, container);
+            this.drawSleepersAlongCurve(
+               point.straightEnd,
+               point.curveEnd,
+               point.controlPoint,
+               container,
+               false,
+               isLast && skipLast
+            );
          }
       }
    }
 
-   drawSleepersAlongCurve(startPoint: any, endPoint: any, controlPoint: any, container: any) {
+   drawSleepersAlongCurve(
+      startPoint: any,
+      endPoint: any,
+      controlPoint: any,
+      container: any,
+      skipFirst = false,
+      skipLast = false
+   ) {
       const steps = Math.floor((geometry.distance(startPoint, endPoint) * 1.11) / this.sleeperIntervall);
       const step = 1 / steps;
       let t = 0.25 / steps,
@@ -557,6 +599,11 @@ export class trackRendering_textured extends TrackRenderingBase {
          angle;
 
       for (let i = 0; i < steps; i++) {
+         if ((skipFirst && i === 0) || (skipLast && i === steps - 1)) {
+            t += step;
+            continue;
+         }
+
          point = this.getPointOnCurve(t, startPoint, controlPoint, endPoint);
          angle = this.getDegreeOfTangentOnCurve(t, startPoint, controlPoint, endPoint);
 
@@ -565,7 +612,7 @@ export class trackRendering_textured extends TrackRenderingBase {
       }
    }
 
-   drawSleepers(track: any, startPoint: any, endPoint: any, container: any) {
+   drawSleepers(track: any, startPoint: any, endPoint: any, container: any, skipFirst = false, skipLast = false) {
       let x = startPoint.x;
       let y = startPoint.y;
 
@@ -582,7 +629,9 @@ export class trackRendering_textured extends TrackRenderingBase {
       y += track.sin * (this.schwellenGap / 2);
 
       for (let i = 0; i < amount; i++) {
-         this.drawSleeper(i, x, y, track.deg, container);
+         if (!(skipFirst && i === 0) && !(skipLast && i === amount - 1)) {
+            this.drawSleeper(i, x, y, track.deg, container);
+         }
          y += step_y;
          x += step_x;
       }
@@ -699,7 +748,8 @@ export class trackRendering_textured extends TrackRenderingBase {
       sleepersContainer.removeChildren();
 
       const points = this.calculateTrackPoints(track);
-      this.drawTrackSleepers(points, sleepersContainer);
+      const { skipFirst, skipLast } = this.getSwitchSleeperSkipFlags(track);
+      this.drawTrackSleepers(points, sleepersContainer, skipFirst, skipLast);
 
       if (track == (track.switchAtTheEnd as any)?.t1) {
          const switchSleepersContainer = this._rendering.sleepers_container.children.find(
@@ -744,7 +794,7 @@ export class trackRendering_textured extends TrackRenderingBase {
 
       const back2front = NumberUtils.is(sw.type, Switch.SWITCH_TYPE.FROM_RIGHT, Switch.SWITCH_TYPE.FROM_LEFT);
 
-      if (curvedBranch2 == null) {
+      if (curvedBranch2 == null) { // three way switch
          const cp = geometry.getIntersectionPointX(
             mainTrack.sleepers.outer,
             mainTrack.unit,
@@ -849,7 +899,6 @@ export class trackRendering_textured extends TrackRenderingBase {
          let track = sw.tracks[index];
          let unit = sw.track_directions[index];
          if (!unit) {
-            console.warn("Switch track_directions not calculated, calculating on the fly.");
             sw.calculateParameters();
             unit = sw.track_directions[index];
          }
@@ -921,8 +970,8 @@ export class trackRendering_textured extends TrackRenderingBase {
          const st = {
             width: rail[0],
             color: rail[1],
-            cap: "round" as const,
-            join: "round" as const,
+            cap: "butt" as LineCap,
+            join: "miter" as LineJoin,
          };
 
          g.moveTo(mainTrack.rails.outer.x, mainTrack.rails.outer.y).quadraticCurveTo(
@@ -966,7 +1015,7 @@ export class trackRendering_textured extends TrackRenderingBase {
          startTrack: any,
          endTrack: any,
          railSide: "inner" | "outer",
-         st: { width: number; color: string; cap: "round"; join: "round" }
+         st: { width: number; color: string; cap: LineCap; join: LineJoin }
       ) => {
          const startPoint = startTrack.rails[railSide];
          const endPoint = endTrack.rails[railSide];
@@ -986,8 +1035,8 @@ export class trackRendering_textured extends TrackRenderingBase {
          const st = {
             width: rail[0],
             color: rail[1],
-            cap: "round" as const,
-            join: "round" as const,
+            cap: "butt" as LineCap,
+            join: "round" as LineJoin,
          };
 
          drawRail(g, straightBranch, curvedBranch2, "outer", st);
@@ -1017,8 +1066,8 @@ export class trackRendering_textured extends TrackRenderingBase {
       const arrowStroke = {
          width: trackRendering_textured.SWITCH_UI_STROKE,
          color: "#333",
-         cap: "round" as const,
-         join: "round" as const,
+         cap: "round" as LineCap,
+         join: "miter" as LineJoin,
       };
 
       const drawArrow = (g: Graphics, length: number, size: number) => {
