@@ -493,7 +493,6 @@ export class Track {
    #_switches: (Switch | Track | null)[] = [null, null];
    #_id: number = 0;
 
-   // Vector calculations (moved from TrackNode)
    #_vector: { x: number; y: number } | null = null;
    #_rad: number | null = null;
    #_deg: number | null = null;

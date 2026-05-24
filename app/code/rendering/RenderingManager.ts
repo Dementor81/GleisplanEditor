@@ -113,7 +113,6 @@ export class RenderingManager {
       this.#containers = containers;
       
       const vp = this.#viewport!;
-      vp.addChild(containers.debug);
       vp.addChild(containers.tracks);
       vp.addChild(containers.objects);
       vp.addChild(containers.trains);
@@ -122,6 +121,7 @@ export class RenderingManager {
       vp.addChild(containers.selection);
       vp.addChild(containers.overlay);
       vp.addChild(containers.drawing);
+      vp.addChild(containers.debug);
    }
    
    /**

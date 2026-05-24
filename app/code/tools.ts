@@ -417,6 +417,91 @@ export const geometry = {
    dotProduct(v1: IPoint, v2: IPoint): number {
       return v1.x * v2.x + v1.y * v2.y;
    },
+
+      /**
+    * Get the Y coordinate of a bezier curve at a given X coordinate.
+    * @param x - The X coordinate to get the Y coordinate for.
+    * @param p0 - The start point of the curve.
+    * @param p1 - The first control point of the curve.
+    * @param p2 - The end point of the curve.
+    * @returns The Y coordinate of the curve at the given X coordinate. returns null if the X coordinate is out of the curve.
+    */
+   getBezierYAtX(x: number, p0: Point, p1: Point, p2: Point): number | null {
+         const A = p0.x - 2 * p1.x + p2.x;
+         const B = 2 * (p1.x - p0.x);
+         const C = p0.x - x;
+   
+         if (Math.abs(A) < 0.0001) {
+            const t = -C / B;
+            if (t >= 0 && t <= 1) return (1 - t) * p0.y + t * p2.y;
+            return null;
+         }
+   
+         const discriminant = B * B - 4 * A * C;
+         if (discriminant < 0) return null; // No intersection
+   
+         const sqrtD = Math.sqrt(discriminant);
+         const t1 = (-B + sqrtD) / (2 * A);
+         const t2 = (-B - sqrtD) / (2 * A);
+   
+         const t = (t1 >= 0 && t1 <= 1) ? t1 : ((t2 >= 0 && t2 <= 1) ? t2 : null);
+         if (t === null) return null; // Track has ended or hasn't started yet
+   
+         return (1 - t) * (1 - t) * p0.y + 2 * (1 - t) * t * p1.y + t * t * p2.y;
+      },
+   
+      /**
+       * Get the Y coordinate of a linear line at a given X position.
+       * @param x - The X coordinate to get the Y coordinate for.
+       * @param p0 - The start point of the line.
+       * @param p1 - The end point of the line.
+       * @returns The Y coordinate of the line at the given X coordinate. returns null if the X coordinate is out of the line.
+       */
+      getLinearYAtX(x: number, p0: Point, p1: Point): number | null {
+   
+         const minX = Math.min(p0.x, p1.x);
+         const maxX = Math.max(p0.x, p1.x);
+   
+         if (x < minX || x > maxX) return null;
+         if (Math.abs(p1.x - p0.x) < 0.0001) return null;
+         const t = (x - p0.x) / (p1.x - p0.x);
+         return p0.y + t * (p1.y - p0.y);
+      },
+
+      /**
+       * Get a point on a cubic bezier curve at a given t value.
+       * @param t - The t value to get the point for, between 0 and 1.
+       * @param p0 - The start point of the curve.
+       * @param cp - The control point of the curve.
+       * @param p1 - The end point of the curve.
+       * @returns The point on the curve at the given t value.
+       */
+      getPointOnCurve(t: number, p0: any, cp: any, p1: any) {
+         const oneMinusT = 1 - t;
+         const tSquared = t * t;
+         const oneMinusTSquared = oneMinusT * oneMinusT;
+         const twoTimesT = 2 * oneMinusT * t;
+   
+         return new Point(
+            oneMinusTSquared * p0.x + twoTimesT * cp.x + tSquared * p1.x,
+            oneMinusTSquared * p0.y + twoTimesT * cp.y + tSquared * p1.y
+         );
+      },
+   
+      /**
+       * Get the degree of the tangent of a cubic bezier curve at a given t value.
+       * @param t - The t value to get the tangent for, between 0 and 1.
+       * @param p0 - The start point of the curve.
+       * @param cp - The control point of the curve.
+       * @param p1 - The end point of the curve.
+       * @returns The degree of the tangent at the given t value.
+       */
+      getDegreeOfTangentOnCurve(t: number, p0: any, cp: any, p1: any) {
+         const mt = 1 - t;
+         const dx = 2 * (mt * (cp.x - p0.x) + t * (p1.x - cp.x));
+         const dy = 2 * (mt * (cp.y - p0.y) + t * (p1.y - cp.y));
+         return Math.atan2(dy, dx) * (180 / Math.PI);
+      }
 };
 
 // ============================================================================

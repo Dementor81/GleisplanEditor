@@ -22,7 +22,7 @@ export const CONFIG = {
     GRID_STROKE_STYLE: 0.25,
     
     // Zoom and scaling
-    MAX_SCALE: 8,
+    MAX_SCALE: 20,
     MIN_SCALE: 0.2,
     
     // History and undo

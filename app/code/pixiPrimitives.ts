@@ -37,6 +37,18 @@ export class TrackGraphics extends Graphics {
    setBounds(x: number, y: number, width: number, height: number): void {
       this.editorBounds = new Rectangle(x, y, width, height);
    }
+
+   line2Point(p: PointLike): this {
+      return super.lineTo(p.x, p.y);
+   }
+
+   move2Point(p: PointLike): this {
+      return super.moveTo(p.x, p.y);
+   }
+
+   quadraticCurve2Point(cp: PointLike, p: PointLike): this {
+      return super.quadraticCurveTo(cp.x, cp.y, p.x, p.y);
+   }
 }
 
 /** Bootstrap Pixi Application + pan/zoom root container (children attach here, not to app.stage). */

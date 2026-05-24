@@ -56,12 +56,27 @@ async function initializeApplication() {
    }
 }                       
 
-function drawPoint(point: any, _displayObject: any, label: string = "", color: string = "#000", size: number = 0.5) {
+function drawPoint(
+   point: any,
+   _displayObject: any,
+   label: string = "",
+   color: string = "#000",
+   size: number = 0.5,
+   referencePoint: any = null
+) {
+   let worldPoint = point;
+   if (referencePoint ) {
+     worldPoint = {
+         x: point.x + referencePoint.x,
+         y: point.y + referencePoint.y,
+      };
+   }
+
    const s = gleisGraphics();
    const st = { width: 1, color, cap: "round" as const, join: "round" as const };
    s.circle(0, 0, size).fill(color).stroke(st);
-   s.x = point.x;
-   s.y = point.y;
+   s.x = worldPoint.x;
+   s.y = worldPoint.y;
 
    (window as any).app.renderingManager.containers.debug.addChild(s);
 
@@ -78,6 +93,7 @@ function drawPoint(point: any, _displayObject: any, label: string = "", color: s
       text.eventMode = "static";
       text.x = s.x;
       text.y = s.y - 5;
+      text.resolution = 8;
       (window as any).app.renderingManager.containers.debug.addChild(text);
    }
 }
