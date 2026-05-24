@@ -49,7 +49,7 @@ Big Features:
 
 
 Rebuild after typeScript and PixiJS update:
-    ☐ switch drawing improvements
+    ✔ switch drawing improvements @done(26-05-24 13:28)
         ☐ end of strokes
         ☐ better sleepers
     ✔ save as image @done(26-05-09 19:00)

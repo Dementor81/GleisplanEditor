@@ -1053,15 +1053,32 @@ export class trackRendering_textured extends TrackRenderingBase {
             frog,
             curves,
             wingRail,
-            switchRail: new Point(maintrack.rails.upper.x + 4, maintrack.rails.upper.y + 2),
+            switchRail: new Point(maintrack.rails.upper.x - 5, maintrack.rails.upper.y + 2.5),
+            switchRailEnd: new Point(maintrack.rails.upper.x + 30, maintrack.rails.upper.y + 1.5),
          },
       };
+   }
+
+   /** Filled taper from tip to a full-width anchor — one layer of the 3-layer rail stack. */
+   private static drawTaperedRailEnd(
+      g: TrackGraphics,
+      tip: Point,
+      wideAnchor: Point,
+      width: number,
+      color: string,
+   ) {
+      const along = geometry.sub(wideAnchor, tip);
+      if (geometry.length(along) === 0) return;
+
+      const half = width / 2;
+      const n = geometry.perpendicular(geometry.unit(along)).multiply(half);
+      g.fillPoly([tip, wideAnchor.add(n), wideAnchor.sub(n)], color);
    }
 
    renderThreeWaySwitch(g: TrackGraphics, switchRenderingValues: any) {
       const world = this.transformSwitchParameterToWorld(switchRenderingValues);
       const { maintrack, straightBranch, curvedBranch } = world.branches;
-      const { frog, curves, wingRail, switchRail } = world.points;
+      const { frog, curves, wingRail, switchRail, switchRailEnd } = world.points;
       const st = {
          width: 0,
          color: "",
@@ -1073,9 +1090,9 @@ export class trackRendering_textured extends TrackRenderingBase {
          st.color = rail[1];
 
          // lower straight stock rail
-         g.move2Point(maintrack.rails.lower).line2Point(straightBranch.rails.lower)
+         g.lineFromTo(maintrack.rails.lower, straightBranch.rails.lower)
             // rail to and from frog
-            .move2Point(straightBranch.rails.upper).line2Point(frog).line2Point(curvedBranch.rails.lower)
+            .lineFromTo(straightBranch.rails.upper, frog).line2Point(curvedBranch.rails.lower)
             // upper curved stock rail
             .move2Point(maintrack.rails.upper).quadraticCurve2Point(
                curves.upperRail,
@@ -1085,9 +1102,12 @@ export class trackRendering_textured extends TrackRenderingBase {
             .move2Point(maintrack.rails.lower).quadraticCurve2Point(
                curves.lowerRail,
                wingRail.lower
-            ).line2Point(wingRail.lowerEnd)
+            ).line2Point(wingRail.lowerEnd)            
             // upper  switch rail with wing rail
-            .move2Point(switchRail).line2Point(wingRail.upper).line2Point(wingRail.upperEnd).stroke(st);
+            .lineFromTo(switchRailEnd, wingRail.upper).line2Point(wingRail.upperEnd)
+            .stroke(st);
+
+         trackRendering_textured.drawTaperedRailEnd(g, switchRail, switchRailEnd, rail[0], rail[1]);
       }
    }
 
@@ -1107,9 +1127,9 @@ export class trackRendering_textured extends TrackRenderingBase {
          st.color = rail[1];
 
          // lower straight stock rail
-         g.move2Point(maintrack.rails.lower).line2Point(straightBranch.rails.lower)
+         g.lineFromTo(maintrack.rails.lower, straightBranch.rails.lower)
             // rail to and from frog
-            .move2Point(straightBranch.rails.upper).line2Point(frog).line2Point(curvedBranch.rails.lower)
+            .lineFromTo(straightBranch.rails.upper, frog).line2Point(curvedBranch.rails.lower)
             // upper curved stock rail
             .move2Point(maintrack.rails.upper).quadraticCurve2Point(
                curves.upperRail,
@@ -1126,14 +1146,12 @@ export class trackRendering_textured extends TrackRenderingBase {
                wingRail.lower
             )
             .line2Point(wingRail.lowerEnd)
-            // upper  switch rail with wing rail
-            .move2Point(switchRail).line2Point(wingRail.upper).line2Point(wingRail.upperEnd)
-            .move2Point(curvedBranch.rails.upper).line2Point(curvedBranch2.rails.upper)
-            .move2Point(wingRail.lowerEnd).line2Point(wingRail.lower).line2Point(curvedBranch2.rails.lower)
-            .move2Point(curvedBranch2.rails.upper).quadraticCurve2Point(curves.upperRail, straightBranch.rails.upper)
+            // upper switch rail with wing rail (body only; tip drawn as filled taper)
+            .lineFromTo(maintrack.rails.upper, wingRail.upper).line2Point(wingRail.upperEnd)
+            .lineFromTo(curvedBranch.rails.upper, curvedBranch2.rails.upper)
+            .lineFromTo(wingRail.lowerEnd, wingRail.lower).line2Point(curvedBranch2.rails.lower)
+            .move2Point(curvedBranch2.rails.upper).quadraticCurve2Point(curves.upperRail, wingRail.upper)
             .stroke(st);
-
-
 
       }
    }

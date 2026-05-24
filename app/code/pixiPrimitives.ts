@@ -42,12 +42,25 @@ export class TrackGraphics extends Graphics {
       return super.lineTo(p.x, p.y);
    }
 
+   lineFromTo(p1: PointLike, p2: PointLike): this {
+      return super.moveTo(p1.x, p1.y).lineTo(p2.x, p2.y);
+   }
+
    move2Point(p: PointLike): this {
       return super.moveTo(p.x, p.y);
    }
 
    quadraticCurve2Point(cp: PointLike, p: PointLike): this {
       return super.quadraticCurveTo(cp.x, cp.y, p.x, p.y);
+   }
+
+   fillPoly(points: PointLike[], color: string): this {
+      if (points.length < 3) return this;
+      this.moveTo(points[0].x, points[0].y);
+      for (let i = 1; i < points.length; i++) {
+         this.lineTo(points[i].x, points[i].y);
+      }
+      return this.closePath().fill(color);
    }
 }
 
