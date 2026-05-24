@@ -258,6 +258,7 @@ export class RenderingManager {
     */
    clear(): void {
       this.#application.selectObject(null as any, null as any);
+      STORAGE.saveUndoHistory();
       // Stop any moving trains first
       Train.stopAllTrains();
 

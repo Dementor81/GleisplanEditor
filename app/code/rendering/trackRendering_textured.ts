@@ -1114,7 +1114,7 @@ export class trackRendering_textured extends TrackRenderingBase {
    renderFourWaySwitch(g: TrackGraphics, switchRenderingValues: any) {
       const world = this.transformSwitchParameterToWorld(switchRenderingValues);
       const { maintrack, straightBranch, curvedBranch, curvedBranch2 } = world.branches;
-      const { frog, curves, wingRail, switchRail } = world.points;
+      const { frog, curves, wingRail } = world.points;
       const st = {
          width: 0,
          color: "",
