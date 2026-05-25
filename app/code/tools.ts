@@ -173,6 +173,24 @@ export const geometry = {
    slope(p1: IPoint, p2: IPoint): number {
       return (p1.y - p2.y) / (p1.x - p2.x);
    },
+
+   /**
+    * Converts radians to degrees.
+    * @param rad Value in radians.
+    * @returns Value in degrees.
+    */
+   radToDeg(rad: number): number {
+      return rad * (180 / Math.PI);
+   },
+
+   /**
+    * Converts degrees to radians.
+    * @param deg Value in degrees.
+    * @returns Value in radians.
+    */
+   degToRad(deg: number): number {
+      return deg * (Math.PI / 180);
+   },
    
    getIntersectionPoint(line1: ILine, line2: ILine): Point | null {
       const denominator =
@@ -355,25 +373,29 @@ export const geometry = {
    },
 
    calculateAngle(reference: IPoint, point1: IPoint, point2: IPoint): number {
-      // Calculate vectors
       const v1 = { x: point1.x - reference.x, y: point1.y - reference.y };
       const v2 = { x: point2.x - reference.x, y: point2.y - reference.y };
+      return this.angleBetweenRad(v1, v2) * (180 / Math.PI);
+   },
 
-      // Dot product
-      const dotProduct = v1.x * v2.x + v1.y * v2.y;
+   /** Acute angle between two vectors, in radians (0 to π). */
+   angleBetweenRad(v1: IPoint, v2: IPoint): number {
+      const mag1 = this.length(v1);
+      const mag2 = this.length(v2);
+      if (mag1 === 0 || mag2 === 0) return 0;
+      const cos = Math.max(-1, Math.min(1, this.dotProduct(v1, v2) / (mag1 * mag2)));
+      return Math.acos(cos);
+   },
 
-      // Magnitudes
-      const magnitudeV1 = Math.sqrt(v1.x ** 2 + v1.y ** 2);
-      const magnitudeV2 = Math.sqrt(v2.x ** 2 + v2.y ** 2);
-
-      // Cosine of the angle
-      const cosTheta = dotProduct / (magnitudeV1 * magnitudeV2);
-
-      // Angle in radians
-      const theta = Math.acos(cosTheta);
-
-      // Convert to degrees
-      return theta * (180 / Math.PI);
+   /** Scale a length for a shallower divergence angle, keeping lateral separation at referenceAngle. */
+   lengthScaledForAngle(
+      baseLength: number,
+      angleRad: number,
+      referenceAngleRad: number = Math.PI / 4,
+      minAngleRad: number = Math.PI / 16
+   ): number {
+      const clamped = Math.max(angleRad, minAngleRad);
+      return baseLength * Math.sin(referenceAngleRad) / Math.sin(clamped);
    },
 
    /**
@@ -581,6 +603,10 @@ export class Point implements IPoint {
 
    equals(p: IPoint): boolean {
       return p.x == this.x && p.y == this.y;
+   }
+
+   mirror(): Point {
+      return new Point(-this.x, -this.y);
    }
 }
 

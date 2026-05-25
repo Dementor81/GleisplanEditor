@@ -53,7 +53,7 @@ export class trackRendering_textured extends TrackRenderingBase {
 
    constructor() {
       super();
-      this.LOD = 5;
+      this.LOD = 2;
       this._lastRenderScale = 0; //used to check if the LOD has changed since the last rendering
       this._bitmapCache = new Array(trackRendering_textured.SCHWELLEN_VARIANTEN);
    }
@@ -261,17 +261,6 @@ export class trackRendering_textured extends TrackRenderingBase {
          this._rendering.rails_container = containers.tracks.children[1];
       }
 
-      for (const t of Track.allTracks) {
-         if (this.TrackVisible(t)) {
-            if (force || !containers.tracks.renderedTracks.has(t)) {
-               this.renderTrack(t);
-               containers.tracks.renderedTracks.add(t);
-            } else if (this._rendering.lodChanged) {
-               this.updateTrack(t);
-            }
-         }
-      }
-
       for (const sw of Switch.allSwitches) {
          if (this.SwitchVisible(sw)) {
             if (force || !containers.tracks.renderedSwitches.has(sw)) {
@@ -279,6 +268,17 @@ export class trackRendering_textured extends TrackRenderingBase {
                containers.tracks.renderedSwitches.add(sw);
             } else if (this._rendering.lodChanged) {
                this.updateSwitch(sw);
+            }
+         }
+      }
+
+      for (const t of Track.allTracks) {
+         if (this.TrackVisible(t)) {
+            if (force || !containers.tracks.renderedTracks.has(t)) {
+               this.renderTrack(t);
+               containers.tracks.renderedTracks.add(t);
+            } else if (this._rendering.lodChanged) {
+               this.updateTrack(t);
             }
          }
       }
@@ -292,7 +292,10 @@ export class trackRendering_textured extends TrackRenderingBase {
       let endPoint = track.end;
 
       if (startConnection) {
-         const size = startConnection instanceof Switch ? startConnection.size : CONFIG.GRID_SIZE;
+         const size =
+            startConnection instanceof Switch
+               ? this.getBranchSize(startConnection, track)
+               : CONFIG.GRID_SIZE;
          startPoint = startPoint.add(geometry.multiply(track.unit, size));
       } else {
          startPoint = startPoint.sub(geometry.multiply(track.unit, CONFIG.GRID_SIZE));
@@ -304,7 +307,10 @@ export class trackRendering_textured extends TrackRenderingBase {
       let nextUnit: any = null;
 
       if (endConnection) {
-         const size = endConnection instanceof Switch ? endConnection.size : CONFIG.GRID_SIZE;
+         const size =
+            endConnection instanceof Switch
+               ? this.getBranchSize(endConnection, track)
+               : CONFIG.GRID_SIZE;
          straightEndPoint = endPoint.sub(geometry.multiply(track.unit, size));
 
          if (endConnection instanceof Track) {
@@ -433,8 +439,7 @@ export class trackRendering_textured extends TrackRenderingBase {
       }
       sleepers_container.hitArea = polygonHitArea(hitPoints);
 
-      const { skipFirst, skipLast } = this.getSwitchSleeperSkipFlags(track);
-      this.drawTrackSleepers(points, sleepers_container, skipFirst, skipLast);
+      this.drawTrackSleepers(points, sleepers_container);
       this.renderRails(track, points);
       if (track.hasBumper) this.drawBumper(track, this._rendering.rails_container);
    }
@@ -519,36 +524,15 @@ export class trackRendering_textured extends TrackRenderingBase {
       rail_shape.setBounds(bounds.x, bounds.y, bounds.width, bounds.height);
    }
 
-   getSwitchSleeperSkipFlags(track: any): { skipFirst: boolean; skipLast: boolean } {
-      let skipFirst = false;
-      let skipLast = false;
-
-      const startSw = track.switchAtTheStart;
-      if (startSw instanceof Switch && (track === startSw.track2 || track === startSw.track3 || track === startSw.track4)) {
-         skipFirst = true;
-      }
-
-      const endSw = track.switchAtTheEnd;
-      if (endSw instanceof Switch && (track === endSw.track2 || track === endSw.track3 || track === endSw.track4)) {
-         skipLast = true;
-      }
-
-      return { skipFirst, skipLast };
-   }
-
-   drawTrackSleepers(points: any[], container: any, skipFirst = false, skipLast = false) {
+   drawTrackSleepers(points: any[], container: any) {
       for (let pi = 0; pi < points.length; pi++) {
          const point = points[pi];
-         const isFirst = pi === 0;
-         const isLast = pi === points.length - 1;
 
          this.drawSleepersAlongStraight(
             point.track,
             point.start,
             point.straightEnd,
             container,
-            isFirst && skipFirst,
-            isLast && skipLast && !point.rails.curve
          );
 
          if (point.rails.curve) {
@@ -557,8 +541,6 @@ export class trackRendering_textured extends TrackRenderingBase {
                point.curveEnd,
                point.controlPoint,
                container,
-               false,
-               isLast && skipLast
             );
          }
       }
@@ -592,7 +574,7 @@ export class trackRendering_textured extends TrackRenderingBase {
       }
    }
 
-   drawSleepersAlongStraight(track: any, startPoint: any, endPoint: any, container: any, skipFirst = false, skipLast = false) {
+   drawSleepersAlongStraight(track: any, startPoint: any, endPoint: any, container: any) {
       let x = startPoint.x;
       let y = startPoint.y;
 
@@ -609,9 +591,7 @@ export class trackRendering_textured extends TrackRenderingBase {
       y += track.sin * (this.schwellenGap / 2) + track.sin * (this.schwellenBreite / 2)
 
       for (let i = 0; i < amount; i++) {
-         if (!(skipFirst && i === 0) && !(skipLast && i === amount - 1)) {
-            this.drawSleeper(i, x, y, track.deg, container);
-         }
+         this.drawSleeper(i, x, y, track.deg, container);
          y += step_y;
          x += step_x;
       }
@@ -699,8 +679,7 @@ export class trackRendering_textured extends TrackRenderingBase {
       sleepersContainer.removeChildren();
 
       const points = this.calculateTrackPoints(track);
-      const { skipFirst, skipLast } = this.getSwitchSleeperSkipFlags(track);
-      this.drawTrackSleepers(points, sleepersContainer, skipFirst, skipLast);
+      this.drawTrackSleepers(points, sleepersContainer);
 
       if (track == (track.switchAtTheEnd as any)?.t1) {
          const switchSleepersContainer = this._rendering.sleepers_container.children.find(
@@ -798,7 +777,7 @@ export class trackRendering_textured extends TrackRenderingBase {
             const color = this.getSwitchDebugPointColor(path);
             {
                const worldPoint = localFrame ? this.toWorldPoint(value, localFrame) : value;
-               points.circle(worldPoint.x, worldPoint.y, 1.5).fill(color).stroke({ width: 0.5, color: "#000" });
+               points.circle(worldPoint.x, worldPoint.y, 0.5).fill(color).stroke({ width: 0.1, color: "#000" });
             }
             const labelPoint = localFrame ? this.toWorldPoint(value, localFrame) : value;
             const label = new Text({
@@ -807,7 +786,7 @@ export class trackRendering_textured extends TrackRenderingBase {
                textureStyle: { scaleMode: "nearest" },
             });
             label.eventMode = "none";
-            label.resolution = 8;
+            label.resolution = this.app.renderingManager!.scale;
             label.x = labelPoint.x + 3;
             label.y = labelPoint.y - 4;
             layer.addChild(label);
@@ -833,6 +812,7 @@ export class trackRendering_textured extends TrackRenderingBase {
       return "#000000";
    }
 
+   /** Get the parameters to transform switch parameters to the world coordinate system. */
    getSwitchLocalFrame(sw: Switch) {
       let spine = sw.track1!.unit;
       if (spine.x < 0 || (spine.x === 0 && spine.y < 0)) {
@@ -924,7 +904,7 @@ export class trackRendering_textured extends TrackRenderingBase {
 
    getSleepersRenderingValues(sw: Switch, switchRenderingValues: any): { position: Point, length: number }[] {
       const { maintrack, straightBranch, curvedBranch, curvedBranch2 } = switchRenderingValues.branches;
-
+      const branchSize = switchRenderingValues.branchSize;
       const switchLengthStraight = geometry.distance(maintrack.sleepers.upper, straightBranch.sleepers.upper);
       const amountOfSleepers = Math.floor(switchLengthStraight / this.sleeperIntervall);
       const remainingSpace = switchLengthStraight % this.sleeperIntervall;
@@ -952,7 +932,7 @@ export class trackRendering_textured extends TrackRenderingBase {
 
       let x = maintrack.sleepers.upper.x + (this.schwellenBreite + this.schwellenGap) / 2;
       const sleepers: { position: Point, length: number }[] = [];
-      while (x < sw.size + 20) {
+      while (x < branchSize) {
          const y_upper = geometry.getBezierYAtX(x, maintrack.sleepers.upper, sleeperCurveControlPoints.upper!, curvedBranch.sleepers.upper)
             ?? geometry.getLinearYAtX(x, curvedBranch.sleepers.upper, curvedBranch.sleepers.lower);
          const y_lower = sw.type === Switch.SWITCH_TYPE.DKW && sleeperCurveControlPoints.lower
@@ -987,20 +967,41 @@ export class trackRendering_textured extends TrackRenderingBase {
       };
    }
 
+   getBranchSize(sw: Switch, track: Track | null = null): number {
+      if (track === sw.track1 && sw.type !== Switch.SWITCH_TYPE.DKW) return CONFIG.GRID_SIZE;
+      let size = CONFIG.GRID_SIZE;
+      let distance = 0;
+      let iteration = 0;
+      while (distance < this.schwellenHöhe && iteration < 100) {
+         size += 5;
+         iteration++;
+         distance = geometry.distance(sw.location.add(geometry.multiply(sw.track2!.unit, size)), sw.location.add(geometry.multiply(sw.track3!.unit, size)));
+      }
+      return size;
+   }
+
    private getSwitchRenderingValues(sw: Switch) {
       const localFrame = this.getSwitchLocalFrame(sw);
       const spineUnit = new V2(new Point(1, 0));
-
-      const maintrack = this.getSwitchBranchRenderingValues(spineUnit, new Point(-sw.size, 0));
-      const straightBranch = this.getSwitchBranchRenderingValues(spineUnit, new Point(sw.size, 0));
+      const branchSize = this.getBranchSize(sw);
+      const maintrack = this.getSwitchBranchRenderingValues(spineUnit, new Point(sw.type !== Switch.SWITCH_TYPE.DKW ? -CONFIG.GRID_SIZE : -branchSize, 0));
+      const straightBranch = this.getSwitchBranchRenderingValues(spineUnit, new Point(branchSize, 0));
 
       const curvedUnit = this.toLocalVector(sw.tracks[2]!.unit, localFrame);
-      const curvedBranch = this.getSwitchBranchRenderingValues(curvedUnit, curvedUnit.multiply(sw.size), this.sleeperIntervall);
+      const curvedBranch = this.getSwitchBranchRenderingValues(
+         curvedUnit,
+         curvedUnit.multiply(branchSize),
+         0
+      );
 
       let curvedBranch2 = null;
       if (sw.track4) {
          const unit = this.toLocalVector(sw.track4.unit, localFrame);
-         curvedBranch2 = this.getSwitchBranchRenderingValues(unit, unit.multiply(-sw.size), -this.sleeperIntervall);
+         curvedBranch2 = this.getSwitchBranchRenderingValues(
+            unit,
+            unit.multiply(-branchSize),
+            0
+         );
       }
 
       const branches = { maintrack, straightBranch, curvedBranch, curvedBranch2 };
@@ -1036,30 +1037,50 @@ export class trackRendering_textured extends TrackRenderingBase {
          )!;
       }
 
-      const wingRailUpper = frog.add(new Point(-trackRendering_textured.SWITCH_WING_RAIL_THICKNESS, 0));
+      console.log(sw.track3!.slope);
+
+      const wingRailUpper = frog.add(new Point(-trackRendering_textured.SWITCH_WING_RAIL_THICKNESS * (2 - Math.abs(sw.track3!.slope)), 0)); //adjusted for slope of track3, since shallower tracks need more space for the frog
       const wingRail = {
          upper: wingRailUpper,
          upperEnd: wingRailUpper.add(geometry.multiply(curvedBranch.unit, trackRendering_textured.SWITCH_WING_RAIL_LENGTH)),
-         lower: frog.sub(geometry.multiply(curvedBranch.unit, trackRendering_textured.SWITCH_WING_RAIL_THICKNESS)),
-         lowerEnd: frog
-            .sub(geometry.multiply(curvedBranch.unit, trackRendering_textured.SWITCH_WING_RAIL_THICKNESS))
-            .add(geometry.multiply(straightBranch.unit, trackRendering_textured.SWITCH_WING_RAIL_LENGTH)),
+         lower: frog.sub(geometry.multiply(curvedBranch.unit, trackRendering_textured.SWITCH_WING_RAIL_THICKNESS * (2 - Math.abs(sw.track3!.slope)))),
+         lowerEnd: new Point(0, 0),
       };
+      wingRail.lowerEnd = wingRail.lower.add(geometry.multiply(straightBranch.unit, trackRendering_textured.SWITCH_WING_RAIL_LENGTH));
+
+      let frog2: Point|null = null;
+      let wingRail2: { upper: Point; upperEnd: Point; lower: Point; lowerEnd: Point }|null = null;
+      if (sw.type === Switch.SWITCH_TYPE.DKW) {
+         frog2 = frog.mirror();
+         wingRail2 = {
+            upper: wingRail.upper.mirror(),
+            upperEnd: wingRail.upperEnd.mirror(),
+            lower: wingRail.lower.mirror(),
+            lowerEnd: wingRail.lowerEnd.mirror(),
+         };
+      }
+
+      const points = {
+         frog,
+         frog2,
+         curves,
+         wingRail,
+         wingRail2,
+         switchRail: new Point(maintrack.rails.upper.x - 5, maintrack.rails.upper.y + 2.5),
+         switchRailEnd: new Point(maintrack.rails.upper.x + 30, maintrack.rails.upper.y + 1.5),
+      };
+
+
 
       return {
          localFrame,
          branches,
-         points: {
-            frog,
-            curves,
-            wingRail,
-            switchRail: new Point(maintrack.rails.upper.x - 5, maintrack.rails.upper.y + 2.5),
-            switchRailEnd: new Point(maintrack.rails.upper.x + 30, maintrack.rails.upper.y + 1.5),
-         },
+         branchSize,
+         points: points,
       };
    }
 
-   /** Filled taper from tip to a full-width anchor — one layer of the 3-layer rail stack. */
+   /** Draw a pointed rail end at the tip of a rail, used for the switch rail. */
    private static drawTaperedRailEnd(
       g: TrackGraphics,
       tip: Point,
@@ -1102,7 +1123,7 @@ export class trackRendering_textured extends TrackRenderingBase {
             .move2Point(maintrack.rails.lower).quadraticCurve2Point(
                curves.lowerRail,
                wingRail.lower
-            ).line2Point(wingRail.lowerEnd)            
+            ).line2Point(wingRail.lowerEnd)
             // upper  switch rail with wing rail
             .lineFromTo(switchRailEnd, wingRail.upper).line2Point(wingRail.upperEnd)
             .stroke(st);
@@ -1114,7 +1135,7 @@ export class trackRendering_textured extends TrackRenderingBase {
    renderFourWaySwitch(g: TrackGraphics, switchRenderingValues: any) {
       const world = this.transformSwitchParameterToWorld(switchRenderingValues);
       const { maintrack, straightBranch, curvedBranch, curvedBranch2 } = world.branches;
-      const { frog, curves, wingRail } = world.points;
+      const { frog, frog2, curves, wingRail, wingRail2 } = world.points;
       const st = {
          width: 0,
          color: "",
@@ -1127,7 +1148,7 @@ export class trackRendering_textured extends TrackRenderingBase {
          st.color = rail[1];
 
          // lower straight stock rail
-         g.lineFromTo(maintrack.rails.lower, straightBranch.rails.lower)
+         g.lineFromTo(wingRail2.upperEnd, wingRail2.upper).line2Point(straightBranch.rails.lower)
             // rail to and from frog
             .lineFromTo(straightBranch.rails.upper, frog).line2Point(curvedBranch.rails.lower)
             // upper curved stock rail
@@ -1141,16 +1162,16 @@ export class trackRendering_textured extends TrackRenderingBase {
                straightBranch.rails.lower
             )
             // lower curved switch rail with wing rail
-            .move2Point(maintrack.rails.lower).quadraticCurve2Point(
+            .move2Point(wingRail2.upper).quadraticCurve2Point(
                curves.lowerRail,
                wingRail.lower
-            )
-            .line2Point(wingRail.lowerEnd)
-            // upper switch rail with wing rail (body only; tip drawn as filled taper)
+            ).line2Point(wingRail.lowerEnd)
+            // upper switch rail with wing rail 
             .lineFromTo(maintrack.rails.upper, wingRail.upper).line2Point(wingRail.upperEnd)
-            .lineFromTo(curvedBranch.rails.upper, curvedBranch2.rails.upper)
+            .lineFromTo(curvedBranch.rails.upper,wingRail2.lower).line2Point(wingRail2.lowerEnd)
             .lineFromTo(wingRail.lowerEnd, wingRail.lower).line2Point(curvedBranch2.rails.lower)
-            .move2Point(curvedBranch2.rails.upper).quadraticCurve2Point(curves.upperRail, wingRail.upper)
+            .lineFromTo(maintrack.rails.lower,frog2).line2Point(curvedBranch2.rails.upper)
+            .move2Point(wingRail2.lower).quadraticCurve2Point(curves.upperRail, wingRail.upper)
             .stroke(st);
 
       }

@@ -52,6 +52,12 @@ export class RenderingManager {
    #grid: any = null;
    #domainByDisplay = new WeakMap<Container, unknown>();
 
+
+
+   public get scale(): number {
+      return this.#viewport!.scale.x;
+   }
+
    constructor(application: GleisApplication) {
       this.#application = application;
    }

@@ -24,6 +24,8 @@ export class Switch {
       CROSSING: 10,
    };
 
+   static REFERENCE_ANGLE = Math.PI / 4;
+
    static getAngleBetweenTracks(track1: Track, track2: Track): number | null {
       let intersection: Point | null = null;
       if (track1.start.equals(track2.start) || track1.start.equals(track2.end)) {
@@ -94,7 +96,7 @@ export class Switch {
     * @returns {boolean} - Returns true if the switch is valid, otherwise false.
     */
    static isValidSwitch(location: Point, tracks: Track[]): boolean {
-      if(!location) return false;
+      if (!location) return false;
       if (!NumberUtils.between(tracks.length, 3, 4)) {
          console.log(`too many nodes ${tracks.length}`);
          return false;
@@ -146,8 +148,6 @@ export class Switch {
 
       // Calculate direction vectors for each track branch
       sw.calculateParameters();
-
-      //TODO calculate connection points and shorten the tracks
 
       sw.branch = sw.track2;
       sw.from = sw.track1;
@@ -257,6 +257,7 @@ export class Switch {
    branch: Track | null;
    from: Track | null;
    track_directions: (V2 | null)[];
+   angle_in_rad: number;
 
    constructor(location: Point) {
       this.id = Switch._getID();
@@ -269,6 +270,7 @@ export class Switch {
 
       this.branch = null;
       this.from = null;
+      this.angle_in_rad = 0;
 
       // Direction information for rendering - stores the direction vector for each track
       this.track_directions = new Array(4);
@@ -311,16 +313,20 @@ export class Switch {
          track ? (track.end.equals(this.location) ? V2.fromV2(track.unit).invert() : V2.fromV2(track.unit)) : null
       );
 
+      const angle = Switch.findAngle(
+         this.location,
+         this.track3!.end.equals(this.location) ? this.track3!.start : this.track3!.end,
+         this.track1!.rad
+      );
+      this.angle_in_rad = geometry.degToRad(angle);
+
       if (this.track4) this.type = Switch.SWITCH_TYPE.DKW;
       else {
-         const angle = Switch.findAngle(
-            this.location,
-            this.track3!.end.equals(this.location) ? this.track3!.start : this.track3!.end,
-            this.track1!.rad
-         );
          this.type = Math.ceil((angle % 360) / 90);
       }
    }
+
+
 
    /**
     * Replaces all references to an old track with a new track within this switch.
@@ -339,10 +345,6 @@ export class Switch {
       // After updating track references, it's crucial to recalculate the directions
       // for rendering and other logic.
       this.calculateParameters();
-   }
-
-   getBranchEndPoint(branch: number, size: number = this.size): Point {
-      return this.location.add(this.track_directions[branch]!.multiply(size));
    }
 
    stringify(): any {
