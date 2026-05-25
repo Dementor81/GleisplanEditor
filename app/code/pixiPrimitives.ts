@@ -19,8 +19,8 @@ export function attachGleisGraphicsMeta(displayObject: Graphics | Container, lab
 }
 
 /** Plain `Graphics` with label/eventMode (no editor bounds). */
-export function gleisGraphics(label?: string): Graphics {
-   const g = new Graphics();
+export function gleisGraphics(label?: string): TrackGraphics {
+   const g = new TrackGraphics();
    attachGleisGraphicsMeta(g, label);
    return g;
 }
@@ -61,6 +61,117 @@ export class TrackGraphics extends Graphics {
          this.lineTo(points[i].x, points[i].y);
       }
       return this.closePath().fill(color);
+   }
+
+   /** Dashed segment along a straight line (axis-aligned paths use a fast path). */
+   dashedLine(
+      x1: number,
+      y1: number,
+      x2: number,
+      y2: number,
+      dashLength = 5,
+      spaceLength = 5,
+   ): this {
+      const dx = x2 - x1;
+      const dy = y2 - y1;
+      if (dx === 0) {
+         return this.#dashedLineAxis(y1, y2, x1, true, dashLength, spaceLength);
+      }
+      if (dy === 0) {
+         return this.#dashedLineAxis(x1, x2, y1, false, dashLength, spaceLength);
+      }
+
+      const len = Math.hypot(dx, dy);
+      if (len <= 0) return this;
+
+      const ux = dx / len;
+      const uy = dy / len;
+      const dashX = ux * dashLength;
+      const dashY = uy * dashLength;
+      const spaceX = ux * spaceLength;
+      const spaceY = uy * spaceLength;
+
+      this.moveTo(x1, y1);
+      let px = x1;
+      let py = y1;
+      let remaining = len;
+      while (remaining > 0) {
+         if (remaining <= dashLength) {
+            this.lineTo(x2, y2);
+            break;
+         }
+         px += dashX;
+         py += dashY;
+         this.lineTo(px, py);
+         remaining -= dashLength;
+         if (remaining <= 0) break;
+         px += spaceX;
+         py += spaceY;
+         this.moveTo(px, py);
+         remaining -= spaceLength;
+      }
+      return this;
+   }
+
+   /** Dashed outline of an axis-aligned rectangle (same origin/size convention as `setBounds`). */
+   dashedRect(
+      x: number,
+      y: number,
+      width: number,
+      height: number,
+      dashLength = 5,
+      spaceLength = 5,
+   ): this {
+      if (width === 0 || height === 0) return this;
+      const right = x + width;
+      const bottom = y + height;
+      return this
+         .dashedLine(x, y, right, y, dashLength, spaceLength)
+         .dashedLine(right, y, right, bottom, dashLength, spaceLength)
+         .dashedLine(right, bottom, x, bottom, dashLength, spaceLength)
+         .dashedLine(x, bottom, x, y, dashLength, spaceLength);
+   }
+
+   #dashedLineAxis(
+      start: number,
+      end: number,
+      fixed: number,
+      vertical: boolean,
+      dashLength: number,
+      spaceLength: number,
+   ): this {
+      const len = Math.abs(end - start);
+      if (len <= 0) return this;
+
+      const sign = end >= start ? 1 : -1;
+      const dashStep = sign * dashLength;
+      const spaceStep = sign * spaceLength;
+
+      if (vertical) {
+         this.moveTo(fixed, start);
+      } else {
+         this.moveTo(start, fixed);
+      }
+
+      let pos = start;
+      let remaining = len;
+      while (remaining > 0) {
+         if (remaining <= dashLength) {
+            if (vertical) this.lineTo(fixed, end);
+            else this.lineTo(end, fixed);
+            break;
+         }
+         pos += dashStep;
+         if (vertical) this.lineTo(fixed, pos);
+         else this.lineTo(pos, fixed);
+         remaining -= dashLength;
+         if (remaining <= 0) break;
+         pos += spaceStep;
+         if (vertical) this.moveTo(fixed, pos);
+         else this.moveTo(pos, fixed);
+         remaining -= spaceLength;
+      }
+      return this;
    }
 }
 

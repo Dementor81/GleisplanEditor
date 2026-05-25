@@ -8,8 +8,8 @@ import { Track } from '../track.ts';
 import { Switch } from '../switch.ts';
 import { Signal } from '../signal.ts';
 import { GenericObject } from '../generic_object.ts';
-import { trackRendering_basic } from './trackRendering_basic.ts';
-import { trackRendering_textured } from './trackRendering_textured.ts';
+import { BasicRendering } from './BasicRendering.ts';
+import { AdvancedRendering } from './advanced/AdvancedRendering.ts';
 import type { TrackRenderingBase } from './TrackRenderingBase.ts';
 import type { Application as GleisApplication } from '../application.ts';
 import type { Application as PixiApplication } from 'pixi.js';
@@ -49,7 +49,7 @@ export class RenderingManager {
    #pointerY = 0;
    #containers: ContainersType | Record<string, any> = {};
    #renderer: TrackRenderingBase | null = null;
-   #grid: any = null;
+   #grid: TrackGraphics | null = null;
    #domainByDisplay = new WeakMap<Container, unknown>();
 
 
@@ -61,7 +61,7 @@ export class RenderingManager {
    constructor(application: GleisApplication) {
       this.#application = application;
    }
-   
+
    /**
     * Initialize the rendering manager
     */
@@ -70,7 +70,7 @@ export class RenderingManager {
       this.#initializeContainers();
       this.#initializeRenderer();
    }
-   
+
    /**
     * Initialize the PixiJS scene
     * @private
@@ -84,14 +84,14 @@ export class RenderingManager {
       this.#pixiApp = app;
       this.#viewport = viewport;
    }
-   
+
    /**
     * Initialize all containers
     * @private
     */
    #initializeContainers(): void {
       const createContainer = (name: string) => createLayerContainer(name);
-      
+
       // Create all containers
       const containers: any = {};
       containers.debug = createContainer(CONTAINERS.DEBUG);
@@ -115,9 +115,9 @@ export class RenderingManager {
          containers.overlay.removeChildren();
          containers.drawing.removeChildren();
       };
-      
+
       this.#containers = containers;
-      
+
       const vp = this.#viewport!;
       vp.addChild(containers.tracks);
       vp.addChild(containers.objects);
@@ -129,7 +129,7 @@ export class RenderingManager {
       vp.addChild(containers.drawing);
       vp.addChild(containers.debug);
    }
-   
+
    /**
     * Initialize the renderer
     * @private
@@ -141,20 +141,18 @@ export class RenderingManager {
 
    /**
     * Select renderer - central point for renderer management
-    * @param textured - Whether to use textured renderer
+    * @param advanced - Whether to use the advanced renderer
     */
-   selectRenderer(textured: boolean): void {
-      // Update the renderer
-      this.#renderer = textured ? 
-         new trackRendering_textured() : 
-         new trackRendering_basic();
-      
-      // Emit event for other managers to handle
+   selectRenderer(advanced: boolean): void {
+      this.#renderer = advanced ?
+         new AdvancedRendering() :
+         new BasicRendering();
+
       const eventManager = this.#application.eventManager as any;
       if (eventManager) {
-         eventManager.emit('rendererChanged', { textured });
+         eventManager.emit('rendererChanged', { advanced });
       }
-      
+
       this.reDrawEverything(true);
    }
 
@@ -204,7 +202,7 @@ export class RenderingManager {
     */
    zoom(deltaY: number): void {
       const myCanvas = (window as any).myCanvas as any;
-      
+
       if (!myCanvas.prevent_input) {
          myCanvas.prevent_input = true;
 
@@ -250,9 +248,9 @@ export class RenderingManager {
 
    /**
     * Handle renderer change event
-    * @param _textured - Whether to use textured renderer (unused)
+    * @param _advanced - Whether to use the advanced renderer (unused)
     */
-   handleRendererChange(_textured: boolean): void {
+   handleRendererChange(_advanced: boolean): void {
       // The renderer is already set by the RenderingManager
       // Just redraw everything with the new renderer
       this.#renderer?.reDrawEverything(true);
@@ -276,7 +274,7 @@ export class RenderingManager {
 
       this.#renderer?.reDrawEverything(true);
    }
-   
+
    /** Zoom back to 100 %; keeps the canvas-center point fixed (same adjustment as wheel zoom around the pointer). */
    resetZoom(): void {
       const viewport = this.#viewport!;
@@ -326,7 +324,7 @@ export class RenderingManager {
    notifyViewportChanged(): void {
       this.#application.eventManager?.emit("viewportChanged", { scale: this.#viewport!.scale.x });
    }
-   
+
    /**
     * Draw the grid
     * @param repaint - Whether to repaint the grid
@@ -362,12 +360,12 @@ export class RenderingManager {
          this.#grid.clear();
 
          for (let x = -padding; x <= size.width + padding; x += CONFIG.GRID_SIZE) {
-            this.#grid.moveTo(x, -padding).lineTo(x, size.height + padding).stroke(gridStroke);
+            this.#grid.dashedLine(x, -padding, x, size.height + padding);
          }
-
          for (let y = -padding; y <= size.height + padding; y += CONFIG.GRID_SIZE) {
-            this.#grid.moveTo(-padding, y).lineTo(size.width + padding, y).stroke(gridStroke);
+            this.#grid.dashedLine(-padding, y, size.width + padding, y);
          }
+         this.#grid.stroke(gridStroke);
       }
 
       // Align grid to nearest grid line to prevent floating point artifacts
@@ -375,17 +373,17 @@ export class RenderingManager {
       this.#grid.x = Math.floor(this.#viewport!.x / scaled_grid_size) * -CONFIG.GRID_SIZE;
       this.#grid.y = Math.floor(this.#viewport!.y / scaled_grid_size) * -CONFIG.GRID_SIZE;
    }
-   
+
    /**
     * Handle window resize
     */
    onResizeWindow(): void {
       const myCanvas = (window as any).myCanvas;
       const CanvasContainer = (window as any).CanvasContainer;
-      
+
       const height = $(CanvasContainer).height();
       const width = $(CanvasContainer).width();
-      
+
       if (height === undefined || width === undefined) return;
 
       const canvasHeight = height;
@@ -395,11 +393,11 @@ export class RenderingManager {
       myCanvas.style.width = `${canvasWidth}px`;
       myCanvas.style.height = `${canvasHeight}px`;
       this.#pixiApp?.renderer.resize(canvasWidth, canvasHeight);
-      
+
       this.drawGrid();
       this.update();
    }
-   
+
    /**
     * Set grid visibility
     * @param visible - Whether the grid should be visible
@@ -409,9 +407,9 @@ export class RenderingManager {
          this.#grid.visible = visible;
       }
    }
-   
 
-   
+
+
    /**
     * Force a complete redraw of everything
     */
@@ -421,9 +419,9 @@ export class RenderingManager {
       this.#renderer?.reDrawEverything(true);
       const endTime = performance.now();
       console.log(`Rendering completed in ${(endTime - startTime).toFixed(2)} ms`);
- 
+
    }
-   
+
    get viewport(): Container {
       return this.#viewport!;
    }
@@ -441,9 +439,9 @@ export class RenderingManager {
    }
    get grid(): any { return this.#grid; }
 
-   /** Whether the textured (detailed) track renderer is active. */
-   usesTexturedRenderer(): boolean {
-      return this.#renderer instanceof trackRendering_textured;
+   /** Whether the advanced (detailed) renderer is active. */
+   usesAdvancedRenderer(): boolean {
+      return this.#renderer instanceof AdvancedRendering;
    }
 }
 

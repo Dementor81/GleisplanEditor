@@ -3,13 +3,13 @@
 import { ui } from "../ui.ts";
 
 export interface RendererChoiceCardsHandle {
-   syncSelection(textured: boolean): void;
-   getSelectedTextured(): boolean;
+   syncSelection(advanced: boolean): void;
+   getSelectedAdvanced(): boolean;
 }
 
 const cardSelector = ".renderer-choice-card";
 
-const PREVIEW_TEXTURED = "assets/static_images/complex_preview.png";
+const PREVIEW_ADVANCED = "assets/static_images/complex_preview.png";
 const PREVIEW_BASIC = "assets/static_images/simple_preview.png";
 
 /**
@@ -21,10 +21,10 @@ export function mountRendererChoiceCards($container: JQuery): RendererChoiceCard
    const row = ui.div("renderer-choice-card-row").append([
       $("<div>", { class: "renderer-choice-card-col" }).append(
          rendererCard(
-            "textured",
+            "advanced",
             "Detaillierte Ansicht",
             "Diese Darstellung zeigt die Gleise mit Schwellen und Texturen.",
-            PREVIEW_TEXTURED
+            PREVIEW_ADVANCED
          )
       ),
       $("<div>", { class: "renderer-choice-card-col" }).append(
@@ -41,14 +41,14 @@ export function mountRendererChoiceCards($container: JQuery): RendererChoiceCard
 
    const $cards = $container.find(cardSelector);
 
-   function applyActive(textured: boolean): void {
+   function applyActive(advanced: boolean): void {
       $cards.removeClass("active");
-      $cards.filter(`[data-renderer="${textured ? "textured" : "basic"}"]`).addClass("active");
+      $cards.filter(`[data-renderer="${advanced ? "advanced" : "basic"}"]`).addClass("active");
    }
 
    function activateFromElement(el: HTMLElement): void {
       const mode = el.getAttribute("data-renderer");
-      applyActive(mode === "textured");
+      applyActive(mode === "advanced");
    }
 
    $cards.on("click", function (this: HTMLElement) {
@@ -56,17 +56,17 @@ export function mountRendererChoiceCards($container: JQuery): RendererChoiceCard
    });
 
    return {
-      syncSelection(textured: boolean): void {
-         applyActive(textured);
+      syncSelection(advanced: boolean): void {
+         applyActive(advanced);
       },
-      getSelectedTextured(): boolean {
+      getSelectedAdvanced(): boolean {
          const $active = $container.find(`${cardSelector}.active`);
-         return ($active.attr("data-renderer") ?? "textured") === "textured";
+         return ($active.attr("data-renderer") ?? "advanced") === "advanced";
       },
    };
 }
 
-function rendererCard(mode: "textured" | "basic", title: string, text: string, imageSrc: string): JQuery {
+function rendererCard(mode: "advanced" | "basic", title: string, text: string, imageSrc: string): JQuery {
    return ui
       .div("card renderer-choice-card h-100 overflow-hidden")
       .attr({

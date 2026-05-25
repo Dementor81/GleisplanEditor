@@ -120,12 +120,12 @@ export class StartScreen {
       const loadModal = document.getElementById("loadModal");
       if (!loadModal || !app || !bootstrap) return;
 
-      this.#rendererChoiceHandle?.syncSelection(app.renderingManager.usesTexturedRenderer());
+      this.#rendererChoiceHandle?.syncSelection(app.renderingManager.usesAdvancedRenderer());
 
       const btnStart = $("#btnStartWelcome");
       btnStart.off("click").on("click", () => {
-         const textured = this.#rendererChoiceHandle?.getSelectedTextured() ?? true;
-         app.renderingManager.selectRenderer(textured);
+         const advanced = this.#rendererChoiceHandle?.getSelectedAdvanced() ?? true;
+         app.renderingManager.selectRenderer(advanced);
          STORAGE.save();
 
          const layout = $("#startScreenLayoutTab .list-group-item.active").attr("data-layout");

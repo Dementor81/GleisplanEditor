@@ -14,7 +14,7 @@ import { Train } from "../train.ts";
 import { Track } from "../track.ts";
 import { Switch } from "../switch.ts";
 import { GenericObject } from "../generic_object.ts";
-import { trackRendering_basic } from "../rendering/trackRendering_basic.ts";
+import { BasicRendering } from "../rendering/BasicRendering.ts";
 import { Application } from "../application.ts";
 import type { Graphics } from "pixi.js";
 import { gleisGraphics } from "../pixiPrimitives.ts";
@@ -34,11 +34,11 @@ import { DRAWING_MODE_CURSORS } from "../ui/drawingCursors.ts";
  * ```javascript
  * // Register a listener
  * eventManager.on('rendererChanged', (data) => {
- *    console.log('Renderer changed to:', data.textured);
+ *    console.log('Renderer changed to:', data.advanced);
  * });
  *
  * // Emit an event
- * eventManager.emit('rendererChanged', { textured: true });
+ * eventManager.emit('rendererChanged', { advanced: true });
  * ```
  */
 export class EventManager {
@@ -223,14 +223,14 @@ export class EventManager {
       const rendererModalEl = document.getElementById("rendererChoiceModal");
       rendererModalEl?.addEventListener("show.bs.modal", () => {
          this.#app.uiManager?.handleRendererUIUpdate(
-            this.#app.renderingManager?.usesTexturedRenderer() ?? true
+            this.#app.renderingManager?.usesAdvancedRenderer() ?? true
          );
       });
 
       $("#btnRendererChoiceOk").onclick(() => {
          const handle = this.#app.uiManager?.rendererChoiceCardsHandle;
          if (!handle) return;
-         this.#app.renderingManager?.selectRenderer(handle.getSelectedTextured());
+         this.#app.renderingManager?.selectRenderer(handle.getSelectedAdvanced());
          STORAGE.save();
          Modal.getInstance(document.getElementById("rendererChoiceModal")!)?.hide();
       });
@@ -732,7 +732,7 @@ export class EventManager {
       shape.clear();
 
       const blueprintStroke = {
-         width: trackRendering_basic.STROKE,
+         width: BasicRendering.STROKE,
          color: COLORS.DRAWING_BLUEPRINT,
          cap: "round" as const,
          join: "round" as const,
@@ -750,7 +750,7 @@ export class EventManager {
          .moveTo(last.x, last.y)
          .lineTo(p.x, p.y)
          .stroke({
-            width: trackRendering_basic.STROKE,
+            width: BasicRendering.STROKE,
             color: invalid ? COLORS.DRAWING_INVALID : COLORS.DRAWING_ACTIVE,
             cap: "round",
             join: "round",

@@ -10,7 +10,7 @@ import { ArrayUtils } from './utils.ts';
 import { ui } from './ui.ts';
 import { CONFIG } from './config.ts';
 import { Application } from './application.ts';
-import { trackRendering_textured } from './rendering/trackRendering_textured.ts';
+import { AdvancedRendering } from './rendering/advanced/AdvancedRendering.ts';
 import { getCDataValue } from './tools.ts';
 
 // ============================================================================
@@ -29,7 +29,7 @@ interface SavedSettings {
    zoom: number;
    scrollX: number;
    scrollY: number;
-   renderer: "textured" | "basic";
+   renderer: "advanced" | "basic";
 }
 
 interface LoadedData {
@@ -113,7 +113,7 @@ export const STORAGE = {
                zoom: viewport.scale.x,
                scrollX: viewport.x,
                scrollY: viewport.y,
-               renderer: renderer instanceof trackRendering_textured ? "textured" : "basic",
+               renderer: renderer instanceof AdvancedRendering ? "advanced" : "basic",
             };
          }
       }
@@ -193,7 +193,9 @@ export const STORAGE = {
          vp.y = loaded.settings.scrollY;
          vp.scale.set(loaded.settings.zoom);
          if (loaded.settings.renderer) {
-            (window as any).app.renderingManager.selectRenderer(loaded.settings.renderer === "textured");
+            (window as any).app.renderingManager.selectRenderer(
+               loaded.settings.renderer === "advanced" || loaded.settings.renderer === "textured"
+            );
          }
       }
       

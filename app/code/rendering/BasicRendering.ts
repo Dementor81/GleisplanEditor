@@ -14,7 +14,7 @@ import { Text } from 'pixi.js';
 import { createLayerContainer } from '../pixiUtils.ts';
 import { TrackRenderingBase } from './TrackRenderingBase.ts';
 
-export class trackRendering_basic extends TrackRenderingBase {
+export class BasicRendering extends TrackRenderingBase {
    static TRACK_COLOR = "#111111";
    static SWITCH_UI_COLOR = "gray";
    static SWITCH_UI_COLOR_SELECTED = "#eee";
@@ -116,22 +116,22 @@ export class trackRendering_basic extends TrackRenderingBase {
 
       if (!track.switchAtTheStart && track.hasBumper) {
          //prellbock beim start
-         const B1 = track.start.add(perpendicular.multiply(-trackRendering_basic.BUMPER_SIZE));
-         const B2 = track.start.add(perpendicular.multiply(trackRendering_basic.BUMPER_SIZE));
+         const B1 = track.start.add(perpendicular.multiply(-BasicRendering.BUMPER_SIZE));
+         const B2 = track.start.add(perpendicular.multiply(BasicRendering.BUMPER_SIZE));
          bumper_start = [B1, B2];
       }
 
       if (!track.switchAtTheEnd && track.hasBumper) {
          //prellbock beim ende
-         const B1 = track.end.add(perpendicular.multiply(-trackRendering_basic.BUMPER_SIZE));
-         const B2 = track.end.add(perpendicular.multiply(trackRendering_basic.BUMPER_SIZE));
+         const B1 = track.end.add(perpendicular.multiply(-BasicRendering.BUMPER_SIZE));
+         const B2 = track.end.add(perpendicular.multiply(BasicRendering.BUMPER_SIZE));
          bumper_end = [B1, B2];
       }
 
-      const p1 = track.start.add(perpendicular.multiply(-trackRendering_basic.HIT_TEST_DISTANCE));
-      const p2 = track.start.add(perpendicular.multiply(trackRendering_basic.HIT_TEST_DISTANCE));
-      const p3 = track.end.add(perpendicular.multiply(trackRendering_basic.HIT_TEST_DISTANCE));
-      const p4 = track.end.add(perpendicular.multiply(-trackRendering_basic.HIT_TEST_DISTANCE));
+      const p1 = track.start.add(perpendicular.multiply(-BasicRendering.HIT_TEST_DISTANCE));
+      const p2 = track.start.add(perpendicular.multiply(BasicRendering.HIT_TEST_DISTANCE));
+      const p3 = track.end.add(perpendicular.multiply(BasicRendering.HIT_TEST_DISTANCE));
+      const p4 = track.end.add(perpendicular.multiply(-BasicRendering.HIT_TEST_DISTANCE));
       return {
          hit_area: [p1, p2, p3, p4],
          bumper: [bumper_start, bumper_end],
@@ -150,8 +150,8 @@ export class trackRendering_basic extends TrackRenderingBase {
       container.addChild(shape);
 
       const trackStroke = {
-         width: trackRendering_basic.STROKE,
-         color: trackRendering_basic.TRACK_COLOR,
+         width: BasicRendering.STROKE,
+         color: BasicRendering.TRACK_COLOR,
          cap: "round" as const,
          join: "round" as const,
       };
@@ -188,15 +188,15 @@ export class trackRendering_basic extends TrackRenderingBase {
 
          let p1: any, p2: any;
 
-         p1 = sw.location.add(sw.track_directions[1]!.multiply(trackRendering_basic.SWITCH_SIZE));
-         p2 = sw.location.add(sw.track_directions[2]!.multiply(trackRendering_basic.SWITCH_SIZE));
+         p1 = sw.location.add(sw.track_directions[1]!.multiply(BasicRendering.SWITCH_SIZE));
+         p2 = sw.location.add(sw.track_directions[2]!.multiply(BasicRendering.SWITCH_SIZE));
          if (p1 && p2) {
             switch_shape.fillPoly([sw.location, p1, p2], "black");
          }
 
          if (sw.type == Switch.SWITCH_TYPE.DKW) {
-            p1 = sw.location.add(sw.track_directions[0]!.multiply(trackRendering_basic.SWITCH_SIZE));
-            p2 = sw.location.add(sw.track_directions[3]!.multiply(trackRendering_basic.SWITCH_SIZE));
+            p1 = sw.location.add(sw.track_directions[0]!.multiply(BasicRendering.SWITCH_SIZE));
+            p2 = sw.location.add(sw.track_directions[3]!.multiply(BasicRendering.SWITCH_SIZE));
             if (p1 && p2) {
                switch_shape.fillPoly([sw.location, p1, p2], "black");
             }
@@ -226,7 +226,7 @@ export class trackRendering_basic extends TrackRenderingBase {
       container.addChild(ui_shape);
 
       const uiStroke = {
-         width: trackRendering_basic.STROKE / 2,
+         width: BasicRendering.STROKE / 2,
          cap: "round" as const,
          join: "round" as const,
       };
@@ -242,8 +242,8 @@ export class trackRendering_basic extends TrackRenderingBase {
             draw_line(
                i,
                t === sw.from || t === sw.branch
-                  ? trackRendering_basic.SWITCH_UI_COLOR_SELECTED
-                  : trackRendering_basic.SWITCH_UI_COLOR
+                  ? BasicRendering.SWITCH_UI_COLOR_SELECTED
+                  : BasicRendering.SWITCH_UI_COLOR
             );
       });
    }

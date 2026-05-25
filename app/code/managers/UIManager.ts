@@ -26,7 +26,7 @@ interface SignalTemplate {
 }
 
 interface EventData {
-   textured?: boolean;
+   advanced?: boolean;
 }
 
 /**
@@ -58,10 +58,10 @@ export class UIManager {
          this.#startScreen.setRendererChoiceHandle(this.#startScreenRendererHandle);
       }
       const app = (window as any).app;
-      const textured = app?.renderingManager?.usesTexturedRenderer();
-      if (textured !== undefined) {
-         this.#rendererChoiceCardsHandle?.syncSelection(textured);
-         this.#startScreenRendererHandle?.syncSelection(textured);
+      const advanced = app?.renderingManager?.usesAdvancedRenderer();
+      if (advanced !== undefined) {
+         this.#rendererChoiceCardsHandle?.syncSelection(advanced);
+         this.#startScreenRendererHandle?.syncSelection(advanced);
       }
       this.#initializeSignalMenu();
       this.#initializeInterManagerCommunication();
@@ -75,7 +75,7 @@ export class UIManager {
    #initializeInterManagerCommunication(): void {
       const app = (window as any).app;
       app.eventManager.on("rendererChanged", (data: EventData) => {
-         this.handleRendererUIUpdate(data.textured ?? false);
+         this.handleRendererUIUpdate(data.advanced ?? false);
       });
    }
 
@@ -277,11 +277,11 @@ export class UIManager {
 
    /**
     * Handle renderer UI update (called by Application)
-    * @param textured - Whether to use textured renderer
+    * @param advanced - Whether to use the advanced renderer
     */
-   handleRendererUIUpdate(textured: boolean): void {
-      this.#rendererChoiceCardsHandle?.syncSelection(textured);
-      this.#startScreenRendererHandle?.syncSelection(textured);
+   handleRendererUIUpdate(advanced: boolean): void {
+      this.#rendererChoiceCardsHandle?.syncSelection(advanced);
+      this.#startScreenRendererHandle?.syncSelection(advanced);
    }
 
    /**

@@ -19,14 +19,14 @@ export abstract class TrackRenderingBase {
    abstract renderAllGenericObjects(): void;
    abstract renderSwitchUI(sw: Switch): void;
 
-   /** Car body height in layout units (basic vs textured track scale). */
+   /** Car body height in layout units (basic vs advanced scale). */
    protected abstract trainCarHeight(): number;
 
    renderAllTrains(): void {
       this.#trainRenderer.renderAllTrains(this.app.renderingManager!, this.trainCarHeight());
    }
 
-   /** Textured layout uses sleepers under `tracks.children[0]`; basic attaches graphics directly to `tracks`. */
+   /** Advanced layout uses sleepers under `tracks.children[0]`; basic attaches graphics directly to `tracks`. */
    protected trackDisplayObjectsForSelection(): any[] {
       const tracks = this.app.renderingManager!.containers.tracks as any;
       if (tracks.renderedTracks instanceof Set && tracks.children[0]) {
@@ -107,8 +107,8 @@ export abstract class TrackRenderingBase {
       boundsShape.alpha = 0.7;
 
       boundsShape
-         .rect(localBounds.x, localBounds.y, localBounds.width, localBounds.height)
-         .stroke({ width: 2, color: "#000000", cap: "round", join: "round" });
+         .dashedRect(localBounds.x, localBounds.y, localBounds.width, localBounds.height)
+         .stroke({ width: 1, color: "#000000", cap: "round", join: "round" });
 
       this.app.renderingManager!.containers.selection.addChild(boundsShape);
    }
