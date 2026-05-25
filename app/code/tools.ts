@@ -92,9 +92,9 @@ export function uuidv4(): string {
 
 export function getCDataValue(element: Element): string | null {
    const cdataNode = Array.from(element.childNodes)
-     .find(node => node.nodeType === Node.CDATA_SECTION_NODE);
+      .find(node => node.nodeType === Node.CDATA_SECTION_NODE);
    return cdataNode?.nodeValue ?? null;
- }
+}
 
 export function isPointInsideBox(point: IPoint, box: IBox, rotationAngle: number): boolean {
    const { topLeft, topRight, bottomLeft } = box;
@@ -112,64 +112,21 @@ export function isPointInsideBox(point: IPoint, box: IBox, rotationAngle: number
    return isInsideX && isInsideY;
 }
 
-export function rotatePointAroundPivot(angle: number, pivot: IPoint, point: IPoint): IPoint {
-   const cos = Math.cos(angle);
-   const sin = Math.sin(angle);
-   const dx = point.x - pivot.x;
-   const dy = point.y - pivot.y;
-   const x = dx * cos - dy * sin + pivot.x;
-   const y = dy * cos + dx * sin + pivot.y;
-   return { x, y };
-}
-
-// ============================================================================
-// TOOLS Object
-// ============================================================================
-
-export const TOOLS = {
-   /**
-    * Finds the nearest point on a line segment to a given point
-    */
-   nearestPointOnLine(start: IPoint, end: IPoint, point: IPoint): Point {
-      const lineDeltaX = end.x - start.x;
-      const lineDeltaY = end.y - start.y;
-      
-      // Handle degenerate case where start and end are the same point
-      if (lineDeltaX === 0 && lineDeltaY === 0) {
-         return new Point(start.x, start.y);
-      }
-
-      // Find the closest point on the line to the point
-      // We can avoid the sqrt in lineLength by using squared values
-      const lengthSquared = lineDeltaX * lineDeltaX + lineDeltaY * lineDeltaY;
-      let u = ((point.x - start.x) * lineDeltaX + (point.y - start.y) * lineDeltaY) / lengthSquared;
-
-      // Clamp u to the range [0, 1]
-      u = Math.max(0, Math.min(1, u));
-
-      // Calculate the closest point on the line segment
-      return new Point(
-         start.x + u * lineDeltaX,
-         start.y + u * lineDeltaY
-      );
-   },
-};
-
 // ============================================================================
 // Geometry Object
 // ============================================================================
 
 export const geometry = {
    PRECISION: 3,
-   
+
    distance(p1: IPoint, p2: IPoint): number {
       return NumberUtils.round(Math.sqrt(Math.pow(p1.x - p2.x, 2) + Math.pow(p1.y - p2.y, 2)), this.PRECISION);
    },
-   
+
    length(v: IPoint): number {
       return NumberUtils.round(Math.sqrt(Math.pow(v.x, 2) + Math.pow(v.y, 2)), this.PRECISION);
    },
-   
+
    slope(p1: IPoint, p2: IPoint): number {
       return (p1.y - p2.y) / (p1.x - p2.x);
    },
@@ -191,7 +148,7 @@ export const geometry = {
    degToRad(deg: number): number {
       return deg * (Math.PI / 180);
    },
-   
+
    getIntersectionPoint(line1: ILine, line2: ILine): Point | null {
       const denominator =
          (line2.end.y - line2.start.y) * (line1.end.x - line1.start.x) -
@@ -252,7 +209,7 @@ export const geometry = {
       // Check if the point is on the line (within the segment boundaries)
       return tX >= 0 && tX <= 1 && tY >= 0 && tY <= 1;
    },
-   
+
    areSegmentsOverlapping2D(p1: IPoint, p2: IPoint, p3: IPoint, p4: IPoint): boolean {
       if (p1.x === p3.x && p1.y === p3.y && p2.x === p4.x && p2.y === p4.y) return true;
 
@@ -274,7 +231,7 @@ export const geometry = {
 
       return overlapX && overlapY;
    },
-   
+
    /**
     * Returns true if 2 line segments intersect each other
     */
@@ -285,8 +242,8 @@ export const geometry = {
       };
 
       const onSegment = (p: IPoint, q: IPoint, r: IPoint): boolean => {
-         return q.x <= Math.max(p.x, r.x) && q.x >= Math.min(p.x, r.x) && 
-                q.y <= Math.max(p.y, r.y) && q.y >= Math.min(p.y, r.y);
+         return q.x <= Math.max(p.x, r.x) && q.x >= Math.min(p.x, r.x) &&
+            q.y <= Math.max(p.y, r.y) && q.y >= Math.min(p.y, r.y);
       };
 
       const o1 = orientation(p1, q1, p2);
@@ -305,7 +262,31 @@ export const geometry = {
 
       return false; // No intersection
    },
-   
+
+   nearestPointOnLine(start: IPoint, end: IPoint, point: IPoint): Point {
+      const lineDeltaX = end.x - start.x;
+      const lineDeltaY = end.y - start.y;
+
+      // Handle degenerate case where start and end are the same point
+      if (lineDeltaX === 0 && lineDeltaY === 0) {
+         return new Point(start.x, start.y);
+      }
+
+      // Find the closest point on the line to the point
+      // We can avoid the sqrt in lineLength by using squared values
+      const lengthSquared = lineDeltaX * lineDeltaX + lineDeltaY * lineDeltaY;
+      let u = ((point.x - start.x) * lineDeltaX + (point.y - start.y) * lineDeltaY) / lengthSquared;
+
+      // Clamp u to the range [0, 1]
+      u = Math.max(0, Math.min(1, u));
+
+      // Calculate the closest point on the line segment
+      return new Point(
+         start.x + u * lineDeltaX,
+         start.y + u * lineDeltaY
+      );
+   },
+
    pointOnArc(radius: number, rad: number, centerpoint?: IPoint): IPoint {
       return {
          x: radius * Math.cos(rad) + (centerpoint?.x ?? 0),
@@ -319,26 +300,26 @@ export const geometry = {
    pointToSegmentDistance(point: IPoint, start: IPoint, end: IPoint): number {
       const dx = end.x - start.x;
       const dy = end.y - start.y;
-      
+
       // Handle degenerate case where start and end are the same point
       if (dx === 0 && dy === 0) {
-          return Math.hypot(point.x - start.x, point.y - start.y);
+         return Math.hypot(point.x - start.x, point.y - start.y);
       }
-      
+
       // Compute the projection of the point onto the line defined by start and end
       const t = ((point.x - start.x) * dx + (point.y - start.y) * dy) / (dx * dx + dy * dy);
-      
+
       // Clamp t to the range [0,1] to restrict to the segment
       const tClamped = Math.max(0, Math.min(1, t));
-      
+
       // Find the closest point on the segment
       const closestX = start.x + tClamped * dx;
       const closestY = start.y + tClamped * dy;
-      
+
       // Return the Euclidean distance
       return Math.hypot(point.x - closestX, point.y - closestY);
    },
-   
+
    /**
     * Calculates a point which is perpendicular to the given vector
     */
@@ -387,17 +368,6 @@ export const geometry = {
       return Math.acos(cos);
    },
 
-   /** Scale a length for a shallower divergence angle, keeping lateral separation at referenceAngle. */
-   lengthScaledForAngle(
-      baseLength: number,
-      angleRad: number,
-      referenceAngleRad: number = Math.PI / 4,
-      minAngleRad: number = Math.PI / 16
-   ): number {
-      const clamped = Math.max(angleRad, minAngleRad);
-      return baseLength * Math.sin(referenceAngleRad) / Math.sin(clamped);
-   },
-
    /**
     * Returns the midpoint between two points
     */
@@ -409,121 +379,100 @@ export const geometry = {
    },
 
    /**
-    * Returns the angle bisector of two normalized vectors
-    */
-   angleBisector(v1: IPoint, v2: IPoint): Point {
-      // Add the two vectors to get the bisector
-      const bisector = this.add(v1, v2);
-      // Normalize the bisector
-      return this.unit(bisector) as Point;
-   },
-
-   /**
-    * Returns a point along the angle bisector of two unit vectors at a given distance
-    */
-   pointAlongBisector(v1: IPoint, v2: IPoint, distance: number): IPoint {
-      // Get the angle bisector vector
-      const bisector = this.angleBisector(v1, v2);
-      
-      // Scale the bisector by the desired distance
-      return this.multiply(bisector, distance);
-   },
-
-   /**
     * Inverts a given vector by negating both x and y components
     */
    invert(v: IPoint): Point {
       return new Point(-v.x, -v.y);
    },
-   
+
    dotProduct(v1: IPoint, v2: IPoint): number {
       return v1.x * v2.x + v1.y * v2.y;
    },
 
-      /**
-    * Get the Y coordinate of a bezier curve at a given X coordinate.
-    * @param x - The X coordinate to get the Y coordinate for.
-    * @param p0 - The start point of the curve.
-    * @param p1 - The first control point of the curve.
-    * @param p2 - The end point of the curve.
-    * @returns The Y coordinate of the curve at the given X coordinate. returns null if the X coordinate is out of the curve.
-    */
+   /**
+ * Get the Y coordinate of a bezier curve at a given X coordinate.
+ * @param x - The X coordinate to get the Y coordinate for.
+ * @param p0 - The start point of the curve.
+ * @param p1 - The first control point of the curve.
+ * @param p2 - The end point of the curve.
+ * @returns The Y coordinate of the curve at the given X coordinate. returns null if the X coordinate is out of the curve.
+ */
    getBezierYAtX(x: number, p0: Point, p1: Point, p2: Point): number | null {
-         const A = p0.x - 2 * p1.x + p2.x;
-         const B = 2 * (p1.x - p0.x);
-         const C = p0.x - x;
-   
-         if (Math.abs(A) < 0.0001) {
-            const t = -C / B;
-            if (t >= 0 && t <= 1) return (1 - t) * p0.y + t * p2.y;
-            return null;
-         }
-   
-         const discriminant = B * B - 4 * A * C;
-         if (discriminant < 0) return null; // No intersection
-   
-         const sqrtD = Math.sqrt(discriminant);
-         const t1 = (-B + sqrtD) / (2 * A);
-         const t2 = (-B - sqrtD) / (2 * A);
-   
-         const t = (t1 >= 0 && t1 <= 1) ? t1 : ((t2 >= 0 && t2 <= 1) ? t2 : null);
-         if (t === null) return null; // Track has ended or hasn't started yet
-   
-         return (1 - t) * (1 - t) * p0.y + 2 * (1 - t) * t * p1.y + t * t * p2.y;
-      },
-   
-      /**
-       * Get the Y coordinate of a linear line at a given X position.
-       * @param x - The X coordinate to get the Y coordinate for.
-       * @param p0 - The start point of the line.
-       * @param p1 - The end point of the line.
-       * @returns The Y coordinate of the line at the given X coordinate. returns null if the X coordinate is out of the line.
-       */
-      getLinearYAtX(x: number, p0: Point, p1: Point): number | null {
-   
-         const minX = Math.min(p0.x, p1.x);
-         const maxX = Math.max(p0.x, p1.x);
-   
-         if (x < minX || x > maxX) return null;
-         if (Math.abs(p1.x - p0.x) < 0.0001) return null;
-         const t = (x - p0.x) / (p1.x - p0.x);
-         return p0.y + t * (p1.y - p0.y);
-      },
+      const A = p0.x - 2 * p1.x + p2.x;
+      const B = 2 * (p1.x - p0.x);
+      const C = p0.x - x;
 
-      /**
-       * Get a point on a cubic bezier curve at a given t value.
-       * @param t - The t value to get the point for, between 0 and 1.
-       * @param p0 - The start point of the curve.
-       * @param cp - The control point of the curve.
-       * @param p1 - The end point of the curve.
-       * @returns The point on the curve at the given t value.
-       */
-      getPointOnCurve(t: number, p0: any, cp: any, p1: any) {
-         const oneMinusT = 1 - t;
-         const tSquared = t * t;
-         const oneMinusTSquared = oneMinusT * oneMinusT;
-         const twoTimesT = 2 * oneMinusT * t;
-   
-         return new Point(
-            oneMinusTSquared * p0.x + twoTimesT * cp.x + tSquared * p1.x,
-            oneMinusTSquared * p0.y + twoTimesT * cp.y + tSquared * p1.y
-         );
-      },
-   
-      /**
-       * Get the degree of the tangent of a cubic bezier curve at a given t value.
-       * @param t - The t value to get the tangent for, between 0 and 1.
-       * @param p0 - The start point of the curve.
-       * @param cp - The control point of the curve.
-       * @param p1 - The end point of the curve.
-       * @returns The degree of the tangent at the given t value.
-       */
-      getDegreeOfTangentOnCurve(t: number, p0: any, cp: any, p1: any) {
-         const mt = 1 - t;
-         const dx = 2 * (mt * (cp.x - p0.x) + t * (p1.x - cp.x));
-         const dy = 2 * (mt * (cp.y - p0.y) + t * (p1.y - cp.y));
-         return Math.atan2(dy, dx) * (180 / Math.PI);
+      if (Math.abs(A) < 0.0001) {
+         const t = -C / B;
+         if (t >= 0 && t <= 1) return (1 - t) * p0.y + t * p2.y;
+         return null;
       }
+
+      const discriminant = B * B - 4 * A * C;
+      if (discriminant < 0) return null; // No intersection
+
+      const sqrtD = Math.sqrt(discriminant);
+      const t1 = (-B + sqrtD) / (2 * A);
+      const t2 = (-B - sqrtD) / (2 * A);
+
+      const t = (t1 >= 0 && t1 <= 1) ? t1 : ((t2 >= 0 && t2 <= 1) ? t2 : null);
+      if (t === null) return null; // Track has ended or hasn't started yet
+
+      return (1 - t) * (1 - t) * p0.y + 2 * (1 - t) * t * p1.y + t * t * p2.y;
+   },
+
+   /**
+    * Get the Y coordinate of a linear line at a given X position.
+    * @param x - The X coordinate to get the Y coordinate for.
+    * @param p0 - The start point of the line.
+    * @param p1 - The end point of the line.
+    * @returns The Y coordinate of the line at the given X coordinate. returns null if the X coordinate is out of the line.
+    */
+   getLinearYAtX(x: number, p0: Point, p1: Point): number | null {
+
+      const minX = Math.min(p0.x, p1.x);
+      const maxX = Math.max(p0.x, p1.x);
+
+      if (x < minX || x > maxX) return null;
+      if (Math.abs(p1.x - p0.x) < 0.0001) return null;
+      const t = (x - p0.x) / (p1.x - p0.x);
+      return p0.y + t * (p1.y - p0.y);
+   },
+
+   /**
+    * Get a point on a cubic bezier curve at a given t value.
+    * @param t - The t value to get the point for, between 0 and 1.
+    * @param p0 - The start point of the curve.
+    * @param cp - The control point of the curve.
+    * @param p1 - The end point of the curve.
+    * @returns The point on the curve at the given t value.
+    */
+   getPointOnCurve(t: number, p0: any, cp: any, p1: any) {
+      const oneMinusT = 1 - t;
+      const tSquared = t * t;
+      const oneMinusTSquared = oneMinusT * oneMinusT;
+      const twoTimesT = 2 * oneMinusT * t;
+
+      return new Point(
+         oneMinusTSquared * p0.x + twoTimesT * cp.x + tSquared * p1.x,
+         oneMinusTSquared * p0.y + twoTimesT * cp.y + tSquared * p1.y
+      );
+   },
+
+   /**
+    * Get the degree of the tangent of a cubic bezier curve at a given t value.
+    * @param t - The t value to get the tangent for, between 0 and 1.
+    * @param p0 - The start point of the curve.
+    * @param cp - The control point of the curve.
+    * @param p1 - The end point of the curve.
+    * @returns The degree of the tangent at the given t value.
+    */
+   getDegreeOfTangentOnCurve(t: number, p0: any, cp: any, p1: any) {
+      const mt = 1 - t;
+      const dx = 2 * (mt * (cp.x - p0.x) + t * (p1.x - cp.x));
+      const dy = 2 * (mt * (cp.y - p0.y) + t * (p1.y - cp.y));
+      return Math.atan2(dy, dx) * (180 / Math.PI);
+   }
 };
 
 // ============================================================================
@@ -570,11 +519,11 @@ export class V2 implements IPoint {
    unit(): V2 {
       return new V2(geometry.unit(this));
    }
-   
+
    invert(): V2 {
       return new V2(geometry.invert(this));
    }
-   
+
    dot(v: IPoint): number {
       return geometry.dotProduct(this, v);
    }

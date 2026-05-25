@@ -50,32 +50,7 @@ export class Switch {
       }
       const angle = geometry.calculateAngle(intersection, v1_p, v2_p);
       return angle;
-   }
-
-   /* static getAngleBetweenTracks(track1, track2) {
-      // Find the intersection point (shared endpoint)
-      let intersection = null;
-      if (track1.start.equals(track2.start) || track1.start.equals(track2.end)) {
-         intersection = track1.start;
-      } else if (track1.end.equals(track2.start) || track1.end.equals(track2.end)) {
-         intersection = track1.end;
-      } else {
-         // No intersection found
-         return null;
-      }
-
-      // Find the other endpoint of track2 (not the intersection)
-      let otherPoint;
-      if (track2.start.equals(intersection)) {
-         otherPoint = track2.end;
-      } else {
-         otherPoint = track2.start;
-      }
-
-      // Use findAngle to get the angle between the tracks
-      // Pass in the intersection as sw, the other point as c, and track1.rad as the reference angle
-      return Switch.findAngle(intersection, otherPoint, track1.rad);
-   } */
+   }   
 
    //sw=switch location
    //rad= angle of track_1 in rad
@@ -257,7 +232,8 @@ export class Switch {
    branch: Track | null;
    from: Track | null;
    track_directions: (V2 | null)[];
-   angle_in_rad: number;
+   angle: number;
+   slope: number;
 
    constructor(location: Point) {
       this.id = Switch._getID();
@@ -270,8 +246,8 @@ export class Switch {
 
       this.branch = null;
       this.from = null;
-      this.angle_in_rad = 0;
-
+      this.angle = 0;
+      this.slope = 0;
       // Direction information for rendering - stores the direction vector for each track
       this.track_directions = new Array(4);
    }
@@ -318,7 +294,11 @@ export class Switch {
          this.track3!.end.equals(this.location) ? this.track3!.start : this.track3!.end,
          this.track1!.rad
       );
-      this.angle_in_rad = geometry.degToRad(angle);
+      
+      this.slope = this.track3!.slope - this.track2!.slope;
+      console.log(this.id, this.slope);
+      this.angle = geometry.degToRad(Switch.getAngleBetweenTracks(this.track2!, this.track3!)!);
+
 
       if (this.track4) this.type = Switch.SWITCH_TYPE.DKW;
       else {

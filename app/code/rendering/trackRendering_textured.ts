@@ -24,6 +24,7 @@ export class trackRendering_textured extends TrackRenderingBase {
    static SCHWELLEN_VARIANTEN = 24;
    static SWITCH_WING_RAIL_LENGTH = 10;
    static SWITCH_WING_RAIL_THICKNESS = 3.5;
+   static SWITCH_WING_RAIL_SLOPE_FACTOR = 1.5;
    static RAILS: [number, string][] = [
       [3.2, "#222"],
       [2.8, "#999"],
@@ -984,7 +985,7 @@ export class trackRendering_textured extends TrackRenderingBase {
       const localFrame = this.getSwitchLocalFrame(sw);
       const spineUnit = new V2(new Point(1, 0));
       const branchSize = this.getBranchSize(sw);
-      const maintrack = this.getSwitchBranchRenderingValues(spineUnit, new Point(sw.type !== Switch.SWITCH_TYPE.DKW ? -CONFIG.GRID_SIZE : -branchSize, 0));
+      const maintrack = this.getSwitchBranchRenderingValues(spineUnit, new Point(sw.type !== Switch.SWITCH_TYPE.DKW ? -CONFIG.GRID_SIZE : -branchSize, 0)); //maintrackbranchSize is fixed except for DKW
       const straightBranch = this.getSwitchBranchRenderingValues(spineUnit, new Point(branchSize, 0));
 
       const curvedUnit = this.toLocalVector(sw.tracks[2]!.unit, localFrame);
@@ -1037,19 +1038,17 @@ export class trackRendering_textured extends TrackRenderingBase {
          )!;
       }
 
-      console.log(sw.track3!.slope);
-
-      const wingRailUpper = frog.add(new Point(-trackRendering_textured.SWITCH_WING_RAIL_THICKNESS * (2 - Math.abs(sw.track3!.slope)), 0)); //adjusted for slope of track3, since shallower tracks need more space for the frog
+      const wingRailUpper = frog.add(new Point(-trackRendering_textured.SWITCH_WING_RAIL_THICKNESS * (1 + trackRendering_textured.SWITCH_WING_RAIL_SLOPE_FACTOR - Math.abs(sw.slope) * trackRendering_textured.SWITCH_WING_RAIL_SLOPE_FACTOR), 0)); //adjusted for slope, since shallower tracks need more space for the frog
       const wingRail = {
          upper: wingRailUpper,
          upperEnd: wingRailUpper.add(geometry.multiply(curvedBranch.unit, trackRendering_textured.SWITCH_WING_RAIL_LENGTH)),
-         lower: frog.sub(geometry.multiply(curvedBranch.unit, trackRendering_textured.SWITCH_WING_RAIL_THICKNESS * (2 - Math.abs(sw.track3!.slope)))),
+         lower: frog.sub(geometry.multiply(curvedBranch.unit, trackRendering_textured.SWITCH_WING_RAIL_THICKNESS * (1 + trackRendering_textured.SWITCH_WING_RAIL_SLOPE_FACTOR - Math.abs(sw.slope) * trackRendering_textured.SWITCH_WING_RAIL_SLOPE_FACTOR))),
          lowerEnd: new Point(0, 0),
       };
       wingRail.lowerEnd = wingRail.lower.add(geometry.multiply(straightBranch.unit, trackRendering_textured.SWITCH_WING_RAIL_LENGTH));
 
-      let frog2: Point|null = null;
-      let wingRail2: { upper: Point; upperEnd: Point; lower: Point; lowerEnd: Point }|null = null;
+      let frog2: Point | null = null;
+      let wingRail2: { upper: Point; upperEnd: Point; lower: Point; lowerEnd: Point } | null = null;
       if (sw.type === Switch.SWITCH_TYPE.DKW) {
          frog2 = frog.mirror();
          wingRail2 = {
@@ -1168,9 +1167,9 @@ export class trackRendering_textured extends TrackRenderingBase {
             ).line2Point(wingRail.lowerEnd)
             // upper switch rail with wing rail 
             .lineFromTo(maintrack.rails.upper, wingRail.upper).line2Point(wingRail.upperEnd)
-            .lineFromTo(curvedBranch.rails.upper,wingRail2.lower).line2Point(wingRail2.lowerEnd)
+            .lineFromTo(curvedBranch.rails.upper, wingRail2.lower).line2Point(wingRail2.lowerEnd)
             .lineFromTo(wingRail.lowerEnd, wingRail.lower).line2Point(curvedBranch2.rails.lower)
-            .lineFromTo(maintrack.rails.lower,frog2).line2Point(curvedBranch2.rails.upper)
+            .lineFromTo(maintrack.rails.lower, frog2).line2Point(curvedBranch2.rails.upper)
             .move2Point(wingRail2.lower).quadraticCurve2Point(curves.upperRail, wingRail.upper)
             .stroke(st);
 

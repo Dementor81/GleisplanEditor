@@ -5,7 +5,7 @@ import { Modal } from "bootstrap";
 import { CONFIG, INPUT, CUSTOM_MOUSE_ACTION, MOUSE_DOWN_ACTION, COLORS, COMPUTED, MENU } from "../config.ts";
 import { STORAGE } from "../storage.ts";
 import { ui } from "../ui.ts";
-import { Point, geometry, TOOLS } from "../tools.ts";
+import { Point, geometry } from "../tools.ts";
 import { ArrayUtils, NumberUtils } from "../utils.ts";
 import { Signal } from "../signal.ts";
 import { SignalRenderer } from "../rendering/signalRenderer.ts";
@@ -632,7 +632,7 @@ export class EventManager {
          if (NumberUtils.between(testPoint.x, track.start.x, track.end.x)) {
             const distance = geometry.pointToSegmentDistance(testPoint, track.start, track.end);
             if (distance <= COMPUTED.GRID_SIZE_2) {
-               const point = TOOLS.nearestPointOnLine(track.start, track.end, testPoint);
+               const point = geometry.nearestPointOnLine(track.start, track.end, testPoint);
 
                return {
                   track: track,
