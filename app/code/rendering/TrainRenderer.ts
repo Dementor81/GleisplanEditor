@@ -3,7 +3,7 @@
 import { Train } from "../train.ts";
 import { gleisGraphics } from "../pixiPrimitives.ts";
 import { Text } from "pixi.js";
-import { createLayerContainer } from "../pixiUtils.ts";
+import { attachElementPointerDown, createLayerContainer } from "../pixiUtils.ts";
 import type { RenderingManager } from "./RenderingManager.ts";
 
 export class TrainRenderer {
@@ -25,6 +25,7 @@ export class TrainRenderer {
       const corner = car.type == Train.CAR_TYPES.LOCOMOTIVE ? 8 : 1.5;
       const s = gleisGraphics("train");
       rm.bindGameObjToDisplayObj(s, car);
+      attachElementPointerDown(s);
       s.roundRect(0, 0, carWidth, carHeight, corner)
          .fill(car.color)
          .stroke({ width: 1, color: "#000", cap: "round", join: "round" });

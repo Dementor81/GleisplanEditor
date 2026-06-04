@@ -9,10 +9,11 @@ import { GenericObject } from '../generic_object.ts';
 import { geometry } from '../tools.ts';
 import { CONFIG } from '../config.ts';
 import type { Graphics } from 'pixi.js';
-import { gleisGraphics, polygonHitArea, TrackGraphics } from '../pixiPrimitives.ts';
+import { gleisGraphics, polygonHitArea, rectHitArea, TrackGraphics } from '../pixiPrimitives.ts';
 import { Text } from 'pixi.js';
-import { createLayerContainer } from '../pixiUtils.ts';
+import { attachElementPointerDown, createLayerContainer } from '../pixiUtils.ts';
 import { TrackRenderingBase } from './TrackRenderingBase.ts';
+import { GenericObjectInteraction } from '../interactions/GenericObjectInteraction.ts';
 
 export class BasicRendering extends TrackRenderingBase {
    static TRACK_COLOR = "#111111";
@@ -64,7 +65,7 @@ export class BasicRendering extends TrackRenderingBase {
       GenericObject.all_objects.forEach((o: any) => {
          const c = createLayerContainer("GenericObject");
          this.app.renderingManager!.bindGameObjToDisplayObj(c, o);
-         c.interactiveChildren = false;
+         GenericObjectInteraction.attach(c, o);
          c.x = o.pos().x;
          c.y = o.pos().y;
 
@@ -82,10 +83,7 @@ export class BasicRendering extends TrackRenderingBase {
          style: { fill: "#000000", fontFamily: "Arial", fontSize: 20 },
       });
       text.eventMode = "static";
-      const height = text.height;
-      const width = text.width;
-
-      text.hitArea = polygonHitArea([{ x: 0, y: 0 }, { x: width, y: 0 }, { x: width, y: -height }, { x: 0, y: -height }]);
+      text.hitArea = rectHitArea(0, 0, text.width, text.height);
 
       container.addChild(text);
    }
@@ -146,6 +144,7 @@ export class BasicRendering extends TrackRenderingBase {
       this.app.renderingManager!.bindGameObjToDisplayObj(shape, track);
 
       shape.hitArea = polygonHitArea(params.hit_area);
+      attachElementPointerDown(shape);
 
       container.addChild(shape);
 
@@ -184,6 +183,7 @@ export class BasicRendering extends TrackRenderingBase {
          }
          let switch_shape = new TrackGraphics("switch");
          this.app.renderingManager!.bindGameObjToDisplayObj(switch_shape, sw);
+         attachElementPointerDown(switch_shape);
          this.app.renderingManager!.containers.tracks.addChild(switch_shape);
 
          let p1: any, p2: any;
@@ -219,6 +219,7 @@ export class BasicRendering extends TrackRenderingBase {
          container = createLayerContainer("switch");
          rm.bindGameObjToDisplayObj(container, sw);
          container.interactiveChildren = false;
+         attachElementPointerDown(container);
          rm.containers.ui.addChild(container);
       }
 

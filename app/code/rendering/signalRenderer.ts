@@ -11,6 +11,7 @@ import { Text } from 'pixi.js';
 export type DomainSink = { bindGameObjToDisplayObj(display: Container, domain: unknown): void };
 import { rectHitArea } from '../pixiPrimitives.ts';
 import { createLayerContainer, findChildByLabel } from '../pixiUtils.ts';
+import { SignalInteraction } from '../interactions/SignalInteraction.ts';
 
 export class SignalRenderer {
    static #renderingState = new WeakMap<any, any>();
@@ -28,7 +29,7 @@ export class SignalRenderer {
       }
    }
 
-   static createSignalContainer(rm: DomainSink, signal: any) {
+   static createSignalContainer(rm: DomainSink, signal: any, attachPointer = true) {
       let c = createLayerContainer("signal");
       rm.bindGameObjToDisplayObj(c, signal);
       c.interactiveChildren = false;
@@ -42,7 +43,9 @@ export class SignalRenderer {
    
          c.pivot.y = sig_bounds.height + sig_bounds.y;
       } else console.error("Wahrscheinlich Fehler beim Zeichen des Signals!");
-   
+
+      if (attachPointer) SignalInteraction.attach(c, signal);
+
       return c;
    }
 

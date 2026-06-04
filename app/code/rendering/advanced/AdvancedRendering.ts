@@ -78,6 +78,10 @@ export class AdvancedRendering extends TrackRenderingBase {
       return this.genericElements.renderAllGenericObjects();
    }
 
+   renderAllSignals() {
+      return this.core.renderAllSignals();
+   }
+
    renderSwitchUI(sw: Switch) {
       return this.switchRendering.renderSwitchUI(sw);
    }

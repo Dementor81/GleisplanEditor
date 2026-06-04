@@ -9,6 +9,7 @@ import { Point } from "./tools.ts";
 import { CUSTOM_MOUSE_ACTION } from "./config.ts";
 import { COLORS } from "./config.ts";
 import { gleisGraphics, circleHitArea } from "./pixiPrimitives.ts";
+import { attachElementPointerDownForMode } from "./pixiUtils.ts";
 
 export class Train {
    static allTrains: Train[] = [];
@@ -533,6 +534,7 @@ export class Train {
             carToDeCoupleFrom: currentCar,
             carToDeCouple: nextCar,
          });
+         attachElementPointerDownForMode(decouplingPoint, CUSTOM_MOUSE_ACTION.TRAIN_DECOUPLE);
 
          // Add to overlay container
          overlay.addChild(decouplingPoint);
@@ -669,6 +671,7 @@ export class Train {
             car1: car1,
             car2: car2,
          });
+         attachElementPointerDownForMode(couplingPoint, CUSTOM_MOUSE_ACTION.TRAIN_COUPLE);
 
          // Add to overlay container
          app.renderingManager!.containers.overlay.addChild(couplingPoint);

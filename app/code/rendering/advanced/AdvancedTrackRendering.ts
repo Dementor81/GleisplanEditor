@@ -2,7 +2,7 @@
 
 import { Text } from "pixi.js";
 import { gleisGraphics, polygonHitArea, TrackGraphics } from "../../pixiPrimitives.ts";
-import { createLayerContainer } from "../../pixiUtils.ts";
+import { attachElementPointerDown, createLayerContainer } from "../../pixiUtils.ts";
 import { DEBUG_VISUALIZE_TRACK_PARAMS, RAILS } from "./constants.ts";
 import type { AdvancedRendering } from "./AdvancedRendering.ts";
 
@@ -18,14 +18,16 @@ export class AdvancedTrackRendering {
       sleepers_container.interactiveChildren = false;
       r._rendering.sleepers_container.addChild(sleepers_container);
 
-      const hitPoints: any[] = [];
+      // Trace a non-self-intersecting outline: outer edge forward, inner edge backward.
+      // curve.outer.start == straight.outer.end and curve.inner.start == straight.inner.end
+      // (set in AdvancedTrackCalculations.parallelOffsetLines), so we skip those duplicates.
       const straight = centerLine.sleeperOutline.straight;
-      hitPoints.push(straight.outer.start, straight.outer.end, straight.inner.end, straight.inner.start);
-      if (centerLine.sleeperOutline.curve) {
-         const curve = centerLine.sleeperOutline.curve;
-         hitPoints.push(curve.inner.start, curve.inner.end, curve.outer.end, curve.outer.start);
-      }
+      const curve = centerLine.sleeperOutline.curve;
+      const hitPoints: any[] = [straight.outer.start, straight.outer.end];
+      if (curve) hitPoints.push(curve.outer.end, curve.inner.end);
+      hitPoints.push(straight.inner.end, straight.inner.start);
       sleepers_container.hitArea = polygonHitArea(hitPoints);
+      attachElementPointerDown(sleepers_container);
 
       r.sleeperRendering.drawTrackSleepers(centerLine, sleepers_container);
       this.renderRails(track, centerLine);
@@ -86,6 +88,7 @@ export class AdvancedTrackRendering {
    renderRails(track: any, centerLine: any) {
       const r = this.renderer;
       const rail_shape = new TrackGraphics("track");
+      rail_shape.eventMode = "none";
       r.app.renderingManager!.bindGameObjToDisplayObj(rail_shape, track);
       r._rendering.rails_container.addChild(rail_shape);
 

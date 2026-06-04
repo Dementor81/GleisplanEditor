@@ -2,8 +2,9 @@
 
 import { GenericObject } from "../../generic_object.ts";
 import { Text } from "pixi.js";
-import { polygonHitArea, TrackGraphics } from "../../pixiPrimitives.ts";
+import { rectHitArea, TrackGraphics } from "../../pixiPrimitives.ts";
 import { createLayerContainer } from "../../pixiUtils.ts";
+import { GenericObjectInteraction } from "../../interactions/GenericObjectInteraction.ts";
 import type { AdvancedRendering } from "./AdvancedRendering.ts";
 
 export class AdvancedGenericElements {
@@ -15,7 +16,7 @@ export class AdvancedGenericElements {
       GenericObject.all_objects.forEach((o: any) => {
          const c = createLayerContainer("GenericObject");
          r.app.renderingManager!.bindGameObjToDisplayObj(c, o);
-         c.interactiveChildren = false;
+         GenericObjectInteraction.attach(c, o);
          c.x = o.pos().x;
          c.y = o.pos().y;
 
@@ -33,10 +34,7 @@ export class AdvancedGenericElements {
          style: { fill: "#000000", fontFamily: "Arial", fontSize: 24 },
       });
       text.eventMode = "static";
-      const height = text.height;
-      const width = text.width;
-
-      text.hitArea = polygonHitArea([{ x: 0, y: 0 }, { x: width, y: 0 }, { x: width, y: -height }, { x: 0, y: -height }]);
+      text.hitArea = rectHitArea(0, 0, text.width, text.height);
 
       container.addChild(text);
    }

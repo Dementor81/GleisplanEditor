@@ -7,20 +7,20 @@ import { STORAGE } from "../storage.ts";
 import { ui } from "../ui.ts";
 import { Point, geometry } from "../tools.ts";
 import { ArrayUtils, NumberUtils } from "../utils.ts";
-import { Signal } from "../signal.ts";
-import { SignalRenderer } from "../rendering/signalRenderer.ts";
 import { Sig_UI } from "../sig_ui.ts";
 import { Train } from "../train.ts";
 import { Track } from "../track.ts";
 import { Switch } from "../switch.ts";
-import { GenericObject } from "../generic_object.ts";
 import { BasicRendering } from "../rendering/BasicRendering.ts";
 import { Application } from "../application.ts";
-import type { Graphics } from "pixi.js";
+import type { FederatedPointerEvent, Graphics } from "pixi.js";
 import { gleisGraphics } from "../pixiPrimitives.ts";
-import { findChildByLabel } from "../pixiUtils.ts";
 import { DrawingPanel } from "../ui/DrawingPanel.ts";
 import { DRAWING_MODE_CURSORS } from "../ui/drawingCursors.ts";
+import type { PointerInteraction } from "../interactions/PointerInteraction.ts";
+import { PlatformPlaceInteraction } from "../interactions/PlatformPlaceInteraction.ts";
+import { SignalTemplateInteraction } from "../interactions/SignalTemplateInteraction.ts";
+import { TextPlaceInteraction } from "../interactions/TextPlaceInteraction.ts";
 
 /**
  * EventManager handles all event-related functionality
@@ -49,11 +49,12 @@ export class EventManager {
 
    #previousTouch: Touch | null = null;
    #mouseAction: any = null;
+   #activeInteraction: PointerInteraction | null = null;
 
    // Store bound function references for proper event listener removal
-   #boundHandleStageMouseDown: (event: any) => void = () => {};
-   #boundHandleStageMouseUp: (event: any) => void = () => {};
-   #boundHandleMouseMove: (event: any) => void = () => {};
+   #boundHandleStagePointerDown: (event: FederatedPointerEvent) => void = () => {};
+   #boundHandleStagePointerUp: (event: FederatedPointerEvent) => void = () => {};
+   #boundHandleStageGlobalPointerMove: (event: FederatedPointerEvent) => void = () => {};
    #boundHandleWheelEvent: (event: WheelEvent) => void = () => {};
    #boundHandleKeyDown: (event: KeyboardEvent) => void = () => {};
    #boundHandleWindowResize: () => void = () => {};
@@ -76,13 +77,8 @@ export class EventManager {
       const rm = this.#app.renderingManager;
       if (!rm) return;
 
-      this.#mouseAction = {
-         action: MOUSE_DOWN_ACTION.DND_SIGNAL,
-         template: template,
-      } as any;
-
-      const local = rm.viewportPointerLocal();
-      this.startDragAndDropSignal(local.x, local.y);
+      const start = Point.fromPoint(rm.viewportPointerLocal());
+      this.startInteraction(new SignalTemplateInteraction(template, start));
 
       document.addEventListener(
          "mouseup",
@@ -125,9 +121,9 @@ export class EventManager {
    initialize(): void {
       
       // Create bound function references for proper event listener removal
-      this.#boundHandleStageMouseDown = this.handleStageMouseDown.bind(this);
-      this.#boundHandleStageMouseUp = this.handleStageMouseUp.bind(this);
-      this.#boundHandleMouseMove = this.handleMouseMove.bind(this);
+      this.#boundHandleStagePointerDown = this.handleStageMouseDown.bind(this);
+      this.#boundHandleStagePointerUp = this.handleStageMouseUp.bind(this);
+      this.#boundHandleStageGlobalPointerMove = this.handleMouseMove.bind(this);
       this.#boundHandleWheelEvent = this.#handleWheelEvent.bind(this);
       this.#boundHandleKeyDown = this.#handleKeyDown.bind(this);
       this.#boundHandleWindowResize = this.#handleWindowResize.bind(this);
@@ -151,11 +147,18 @@ export class EventManager {
    #initializeCanvasEvents(): void {
       const c = this.#mainCanvas;
       c?.addEventListener("wheel", this.#boundHandleWheelEvent!, { passive: false });
-      c?.addEventListener("pointerdown", this.#boundHandleStageMouseDown!);
-      c?.addEventListener("pointerup", this.#boundHandleStageMouseUp!);
       c?.addEventListener("pointermove", this.#boundHandleCanvasPointerMove!);
       c?.addEventListener("pointerenter", this.#boundSyncDrawModeCanvasCursor);
       c?.addEventListener("pointerleave", this.#boundClearCanvasCursor);
+
+      const rm = this.#app.renderingManager!;
+      const stage = rm.pixiApp.stage;
+      stage.eventMode = "static";
+      stage.hitArea = rm.pixiApp.renderer.screen;
+      stage.on("pointerdown", this.#boundHandleStagePointerDown);
+      stage.on("globalpointermove", this.#boundHandleStageGlobalPointerMove);
+      stage.on("pointerup", this.#boundHandleStagePointerUp);
+      stage.on("pointerupoutside", this.#boundHandleStagePointerUp);
    }
 
    /** SVG cursors for annotate modes; preserves text cursor when placing labels. */
@@ -171,10 +174,9 @@ export class EventManager {
       this.#mainCanvas.style.cursor = "auto";
    }
 
-   /** Keeps pointer coords in sync with {@link RenderingManager.recordCanvasPointer}; forwards moves during an interaction. */
+   /** Keeps pointer coords in sync with {@link RenderingManager.recordCanvasPointer} for wheel-zoom around cursor. */
    #handleCanvasPointerMove(event: PointerEvent): void {
       this.#app.renderingManager?.recordCanvasPointer(event);
-      if (this.#mouseAction) this.handleMouseMove(event);
    }
 
    /**
@@ -313,17 +315,45 @@ export class EventManager {
    }
 
    /**
-    * Handle stage mouse down event
-    * @param {Event} event - The mouse down event
+    * Stage-level pointerdown. Fires only for "empty space" (elements stop propagation in their own
+    * pointerdown handlers); container is therefore always null here.
     */
-   handleStageMouseDown(event: PointerEvent): void {
+   handleStageMouseDown(event: FederatedPointerEvent): void {
       const rm = this.#app.renderingManager!;
-      rm.recordCanvasPointer(event);
+      rm.recordCanvasPointer(event.nativeEvent as MouseEvent);
+      const start = Point.fromPoint(rm.viewportPointerLocal());
+      const mode = this.#app.customMouseMode;
 
-      let hittest = this.getHitTest();
+      if (mode === CUSTOM_MOUSE_ACTION.TEXT) {
+         this.startInteraction(new TextPlaceInteraction());
+         return;
+      }
+      if (mode === CUSTOM_MOUSE_ACTION.PLATTFORM) {
+         this.startInteraction(new PlatformPlaceInteraction(start));
+         return;
+      }
+
+      this.#beginInteraction(null);
+   }
+
+   /** Entry point used by per-element pointerdown handlers; container is the already-hit Pixi node. */
+   beginInteractionFromElement(container: any, event: FederatedPointerEvent): void {
+      const rm = this.#app.renderingManager!;
+      rm.recordCanvasPointer(event.nativeEvent as MouseEvent);
+      this.#beginInteraction(container);
+   }
+
+   /** Register a self-contained interaction; the stage forwards subsequent move/up to it until release. */
+   startInteraction(interaction: PointerInteraction): void {
+      this.#activeInteraction = interaction;
+   }
+
+   /** Shared mouseAction setup; container may be null for empty-space interactions. */
+   #beginInteraction(hittest: any): void {
+      const rm = this.#app.renderingManager!;
       const app = this.#app;
       const startLocal = rm.viewportPointerLocal();
-      let mouseAction = {
+      const mouseAction = {
          action: app.customMouseMode != CUSTOM_MOUSE_ACTION.NONE ? MOUSE_DOWN_ACTION.CUSTOM : MOUSE_DOWN_ACTION.NONE,
          container: hittest,
          startPoint: startLocal,
@@ -335,7 +365,6 @@ export class EventManager {
          },
       } as any;
 
-      // Check if we clicked on a track endpoint
       if (mouseAction.container?.label === "track_endpoint") {
          const ep = rm.getGameObjFromDisplayObj(mouseAction.container) as { track: any; endpoint: string } | undefined;
          if (ep) {
@@ -373,38 +402,35 @@ export class EventManager {
     * Handle stage mouse up event
     * @param {Event} event - The mouse up event
     */
-   handleStageMouseUp(event: PointerEvent | MouseEvent | { nativeEvent: MouseEvent }): void {
+   handleStageMouseUp(event: FederatedPointerEvent | MouseEvent | { nativeEvent: MouseEvent }): void {
       let ma = this.#mouseAction;
       const rm = this.#app.renderingManager!;
       const native =
          "nativeEvent" in event && event.nativeEvent
             ? event.nativeEvent
             : (event as MouseEvent);
-      rm.recordCanvasPointer(native);
+      rm.recordCanvasPointer(native as MouseEvent);
+
+      if (this.#activeInteraction) {
+         const local = Point.fromPoint(rm.viewportPointerLocal());
+         this.#activeInteraction.onUp(local, event as FederatedPointerEvent);
+         this.#activeInteraction = null;
+         this.#syncDrawModeCanvasCursor();
+         rm.update();
+         return;
+      }
+
       try {
          this.#syncDrawModeCanvasCursor();
          if (ma == null) return;
 
          let local_point = Point.fromPoint(rm.viewportPointerLocal());
 
-         const ev = native;
+         const ev = native as MouseEvent;
          // DOM pointer events use button===0; legacy mouse events used which===1
-         const primaryClick = ev.button === 0 || ev.which === 1;
+         const primaryClick = ev.button === 0 || (ev as any).which === 1;
          if (primaryClick) {
-            if (ma.action === MOUSE_DOWN_ACTION.DND_SIGNAL) {
-               this.#app.renderingManager?.containers.overlay.removeChild(ma.container);
-
-               if (ma.hit_track) {
-                  this.#app.renderingManager?.containers.signals.addChild(ma.container);
-                  const signal = rm.getGameObjFromDisplayObj(ma.container);
-                  ma.hit_track.track.AddSignal(signal, ma.hit_track.km, ma.hit_track.above, ma.hit_track.flipped);
-               } else {
-                  Signal.removeSignal(rm.getGameObjFromDisplayObj(ma.container));
-               }
-               this.#app.renderingManager?.renderer.reDrawEverything(true);
-               STORAGE.save();
-               STORAGE.saveUndoHistory();
-            } else if (ma.action === MOUSE_DOWN_ACTION.BUILD_TRACK) {
+            if (ma.action === MOUSE_DOWN_ACTION.BUILD_TRACK) {
                if (ma.nodes.length > 0) {
                   Track.checkNodesAndCreateTracks(ma.nodes);
                   Track.createRailNetwork();
@@ -428,33 +454,11 @@ export class EventManager {
                   this.#app.renderingManager?.renderer.renderAllTrains();
                   STORAGE.save();
                }
-            } else if (NumberUtils.is(ma.action, MOUSE_DOWN_ACTION.MOVE_TRAIN, MOUSE_DOWN_ACTION.MOVE_OBJECT)) {
+            } else if (ma.action === MOUSE_DOWN_ACTION.MOVE_TRAIN) {
                STORAGE.save();
                STORAGE.saveUndoHistory();
             } else if (ma.action === MOUSE_DOWN_ACTION.CUSTOM) {
-               if (this.#app.customMouseMode == CUSTOM_MOUSE_ACTION.TEXT) {
-                  const o = new GenericObject(GenericObject.OBJECT_TYPE.text);
-                  o.pos(local_point);
-                  o.content("Text");
-                  GenericObject.all_objects.push(o);
-                  this.#app.selectObject(o);
-                  this.#app.renderingManager?.renderer.renderAllGenericObjects();
-                  this.#app.customMouseMode = CUSTOM_MOUSE_ACTION.NONE;
-                  STORAGE.saveUndoHistory();
-                  STORAGE.save();
-               } else if (this.#app.customMouseMode == CUSTOM_MOUSE_ACTION.PLATTFORM) {
-                  this.#app.renderingManager?.containers.overlay.removeChildren();
-                  const o = new GenericObject(GenericObject.OBJECT_TYPE.plattform);
-                  o.content("Bahnsteig");
-                  o.pos(ma.startPoint);
-                  o.size(local_point.x - ma.startPoint.x, local_point.y - ma.startPoint.y);
-                  GenericObject.all_objects.push(o);
-                  this.#app.renderingManager?.renderer.renderAllGenericObjects();
-                  this.#app.selectObject(o);
-                  this.#app.customMouseMode = CUSTOM_MOUSE_ACTION.NONE;
-                  STORAGE.saveUndoHistory();
-                  STORAGE.save();
-               } else if (this.#app.customMouseMode === CUSTOM_MOUSE_ACTION.TRAIN_DECOUPLE) {
+               if (this.#app.customMouseMode === CUSTOM_MOUSE_ACTION.TRAIN_DECOUPLE) {
                   if (ma.container?.label == "decouplingPoint") {
                      Train.handleDecouplingClick(rm.getGameObjFromDisplayObj(ma.container));
                   } else {
@@ -468,24 +472,14 @@ export class EventManager {
                   }
                }
             } else if (ma.action === MOUSE_DOWN_ACTION.NONE && ma.distance() < INPUT.MOUSE_MOVEMENT_THRESHOLD) {
-               if (ma.container?.label == "signal") {
-                  this.#app.selectObject(rm.getGameObjFromDisplayObj(ma.container), event);
-               } else if (
-                  ma.container?.label == "couplingPoint" &&
-                  this.#app.customMouseMode === CUSTOM_MOUSE_ACTION.TRAIN_COUPLE
-               ) {
-                  // Handle coupling at this point
-                  Train.handleCouplingClick(rm.getGameObjFromDisplayObj(ma.container));
-               } else if (ma.container?.label == "train") {
-                  this.#app.selectObject(rm.getGameObjFromDisplayObj(ma.container), event);
-               } else if (ma.container?.label == "track") {
-                  this.#app.selectObject(rm.getGameObjFromDisplayObj(ma.container), event);
-               } else if (ma.container?.label == "GenericObject") {
-                  this.#app.selectObject(rm.getGameObjFromDisplayObj(ma.container), event);
-               } else if (ma.container?.label == "switch") {
+               // Tap (no drag). Signals, GenericObjects, and tool placements use *Interaction instead.
+               const label = ma.container?.label;
+               if (label === "switch") {
                   const sw = rm.getGameObjFromDisplayObj(ma.container) as Switch;
                   Switch.switch_A_Switch(sw, local_point.x);
                   this.#app.renderingManager?.renderer.renderSwitchUI(sw);
+               } else if (ma.container) {
+                  this.#app.selectObject(rm.getGameObjFromDisplayObj(ma.container), event);
                } else {
                   this.#app.selectObject();
                }
@@ -507,8 +501,17 @@ export class EventManager {
     * Handle mouse move event
     * @param {Event} event - The mouse move event
     */
-   handleMouseMove(event: PointerEvent): void {
+   handleMouseMove(event: FederatedPointerEvent): void {
       if (!event.isPrimary) return;
+
+      if (this.#activeInteraction) {
+         if (event.buttons === 0) return this.handleStageMouseUp(event);
+         const local = Point.fromPoint(this.#app.renderingManager!.viewportPointerLocal());
+         this.#activeInteraction.onMove(local, event);
+         this.#app.renderingManager?.update();
+         return;
+      }
+
       if (this.#mouseAction == null) {
          return;
       }
@@ -537,33 +540,7 @@ export class EventManager {
                drawingContainer.removeChild(hit);
                this.#app.renderingManager?.update();
             }
-         } else if (this.#app.customMouseMode == CUSTOM_MOUSE_ACTION.PLATTFORM) {
-            this.#app.renderingManager?.containers.overlay.removeChildren();
-            const plat = gleisGraphics();
-            plat
-               .rect(
-                  this.#mouseAction.startPoint.x,
-                  this.#mouseAction.startPoint.y,
-                  local_point.x - this.#mouseAction.startPoint.x,
-                  local_point.y - this.#mouseAction.startPoint.y
-               )
-               .stroke({ width: 1, color: COLORS.DRAWING_PLATTFORM, cap: "round", join: "round" });
-            this.#app.renderingManager?.containers.overlay.addChild((this.#mouseAction.shape = plat));
-            this.#app.renderingManager?.update();
          }
-      } else if (this.#mouseAction.action === MOUSE_DOWN_ACTION.MOVE_OBJECT) {
-         const o = rm.getGameObjFromDisplayObj(this.#mouseAction.container) as GenericObject;
-         o.pos(local_point);
-         if (this.#mouseAction.offset) {
-            local_point.x -= this.#mouseAction.offset.x;
-            local_point.y -= this.#mouseAction.offset.y;
-         }
-         this.#mouseAction.container.x = local_point.x;
-         this.#mouseAction.container.y = local_point.y;
-         this.#app.renderingManager?.renderer.updateSelection();
-      } else if (this.#mouseAction.action === MOUSE_DOWN_ACTION.DND_SIGNAL) {
-         this.dragnDropSignal(local_point, event.altKey);
-         this.#app.renderingManager?.renderer.updateSelection();
       } else if (this.#mouseAction.action === MOUSE_DOWN_ACTION.BUILD_TRACK) {
          const grid_snap_point = this.getSnapPoint(local_point);
          let valid = Track.isValidTrackNodePoint(grid_snap_point, this.#mouseAction.nodes);
@@ -611,15 +588,9 @@ export class EventManager {
       this.#app.renderingManager?.update();
    }
 
-   /**
-    * Get hit test result
-    * @param {*} container - Container to test against
-    * @returns {*} The hit object
-    */
-   getHitTest(container?: any): any {
-      const rm = this.#app.renderingManager!;
-      const root = container ?? rm.viewport;
-      return rm.hitTest(root);
+   /** Narrow hit-test against a specific container subtree (e.g. tracks for train placement, drawing for the eraser). */
+   getHitTest(container: any): any {
+      return this.#app.renderingManager!.hitTest(container);
    }
 
    /**
@@ -650,21 +621,12 @@ export class EventManager {
     * @param {Event} event - The mouse event
     * @param {Point} local_point - Local point coordinates
     */
-   determineMouseAction(event: PointerEvent, local_point: Point): void {
+   determineMouseAction(event: FederatedPointerEvent, local_point: Point): void {
       let ma = this.#mouseAction;
       //wie weit wurde die maus seit mousedown bewegt
       if (ma.distance() > INPUT.MOUSE_MOVEMENT_THRESHOLD) {
          if (event.buttons == 1) {
-            if (ma.container?.label == "signal") {
-               this.#mainCanvas.style.cursor = "move";
-               ma.action = MOUSE_DOWN_ACTION.DND_SIGNAL;
-               const sig = this.#app.renderingManager!.getGameObjFromDisplayObj(ma.container) as any;
-               sig._positioning.track.removeSignal(sig);
-               this.startDragAndDropSignal();
-            } else if (ma.container?.label == "GenericObject") {
-               this.#mainCanvas.style.cursor = "move";
-               ma.action = MOUSE_DOWN_ACTION.MOVE_OBJECT;
-            } else if (ma.container?.label == "track" || ma.container?.label == "switch" || ma.container == null) {
+            if (ma.container?.label == "track" || ma.container?.label == "switch" || ma.container == null) {
                ma.action = MOUSE_DOWN_ACTION.BUILD_TRACK;
                this.addTrackAnchorPoint(this.getSnapPoint(local_point));
                this.#app.renderingManager?.containers.overlay.addChild((ma.lineShape = gleisGraphics()));
@@ -675,51 +637,6 @@ export class EventManager {
          } else if (event.buttons == 2) {
             ma.action = MOUSE_DOWN_ACTION.SCROLL;
          }
-      }
-   }
-
-   /**
-    * Drag and drop signal
-    * @param {Point} local_point - Local point coordinates
-    * @param {boolean} flipped - Whether signal is flipped
-    */
-   dragnDropSignal(local_point: Point, flipped: boolean): void {
-      let ma = this.#mouseAction;
-
-      let hitInformation = this.getHitInfoForSignalPositioning(local_point);
-      if (hitInformation) {
-         hitInformation.flipped = flipped;
-         ma.hit_track = hitInformation;
-         //console.log(hitInformation);
-         this.#app.alignSignalContainerWithTrack(ma.container, hitInformation);
-      } else {
-         ma.hit_track = null;
-         ma.container.angle = 0;
-         if (ma.offset) {
-            local_point.x -= ma.offset.x;
-            local_point.y -= ma.offset.y;
-         }
-         ma.container.x = local_point.x;
-         ma.container.y = local_point.y;
-      }
-      this.draw_SignalPositionLine();
-   }
-
-   /**
-    * Draw signal position line
-    */
-   draw_SignalPositionLine(): void {
-      let shape = findChildByLabel(this.#app.renderingManager!.containers.overlay, "SignalPositionLine") as Graphics | null;
-      if (shape) this.#app.renderingManager?.containers.overlay.removeChild(shape);
-
-      if (this.#mouseAction.hit_track) {
-         const point = this.#mouseAction.hit_track.point;
-         shape = gleisGraphics("SignalPositionLine");
-         shape
-            .moveTo(this.#mouseAction.container.x, this.#mouseAction.container.y)
-            .lineTo(point.x, point.y)
-            .stroke({ width: 1, color: COLORS.SIGNAL_POSITION_LINE, cap: "round", join: "round" });
-         this.#app.renderingManager?.containers.overlay.addChild(shape);
       }
    }
 
@@ -779,26 +696,6 @@ export class EventManager {
          Math.round(local_point.x / CONFIG.GRID_SIZE) * CONFIG.GRID_SIZE,
          Math.round(local_point.y / CONFIG.GRID_SIZE) * CONFIG.GRID_SIZE
       );
-   }
-
-   /**
-    * Start drag and drop signal
-    * @param {number} mouseX - Mouse X coordinate
-    * @param {number} mouseY - Mouse Y coordinate
-    */
-   startDragAndDropSignal(mouseX?: number, mouseY?: number): void {
-      if (this.#mouseAction.container) {
-         this.#mouseAction.container.parent.removeChild(this.#mouseAction.container);
-      } else {
-         let signal = new Signal(this.#mouseAction.template);
-         const rmDnD = this.#app.renderingManager!;
-         this.#mouseAction.container = SignalRenderer.createSignalContainer(rmDnD, signal);
-         this.#mouseAction.container.x = mouseX;
-         this.#mouseAction.container.y = mouseY;
-      }
-
-      this.#app.renderingManager?.containers.overlay.addChild(this.#mouseAction.container);
-      this.#app.renderingManager?.update();
    }
 
    /**
@@ -995,14 +892,6 @@ export class EventManager {
    }
 
    /**
-    * Get bound mouse move handler for external use
-    * @returns {Function} The bound mouse move handler
-    */
-   get boundMouseMoveHandler(): ((event: any) => void) | null {
-      return this.#boundHandleMouseMove;
-   }
-
-   /**
     * Clean up all event listeners
     */
    cleanup(): void {
@@ -1012,11 +901,16 @@ export class EventManager {
       // Remove canvas event listeners
       const c = this.#mainCanvas;
       c?.removeEventListener("wheel", this.#boundHandleWheelEvent!);
-      c?.removeEventListener("pointerdown", this.#boundHandleStageMouseDown!);
-      c?.removeEventListener("pointerup", this.#boundHandleStageMouseUp!);
       c?.removeEventListener("pointermove", this.#boundHandleCanvasPointerMove!);
       c?.removeEventListener("touchstart", this.#boundHandleTouchStart!);
       c?.removeEventListener("touchmove", this.#boundHandleTouchMove!);
+
+      // Remove stage federated event listeners
+      const stage = this.#app.renderingManager?.pixiApp?.stage;
+      stage?.off("pointerdown", this.#boundHandleStagePointerDown);
+      stage?.off("globalpointermove", this.#boundHandleStageGlobalPointerMove);
+      stage?.off("pointerup", this.#boundHandleStagePointerUp);
+      stage?.off("pointerupoutside", this.#boundHandleStagePointerUp);
 
       // Remove document event listeners
       document.removeEventListener("keydown", this.#boundHandleKeyDown!);

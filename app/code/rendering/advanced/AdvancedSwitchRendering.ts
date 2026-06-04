@@ -6,7 +6,7 @@ import { Text } from "pixi.js";
 import type { Graphics } from "pixi.js";
 import type { LineCap, LineJoin } from "pixi.js";
 import { gleisGraphics, TrackGraphics } from "../../pixiPrimitives.ts";
-import { createLayerContainer } from "../../pixiUtils.ts";
+import { attachElementPointerDown, createLayerContainer } from "../../pixiUtils.ts";
 import { DEBUG_VISUALIZE_SWITCH_PARAMS, RAILS, SWITCH_UI_STROKE } from "./constants.ts";
 import type { AdvancedRendering } from "./AdvancedRendering.ts";
 
@@ -35,6 +35,7 @@ export class AdvancedSwitchRendering {
 
       const shape = new TrackGraphics("switch");
       r.app.renderingManager!.bindGameObjToDisplayObj(shape, sw);
+      attachElementPointerDown(shape);
       r._rendering.rails_container.addChild(shape);
 
       if (switchRenderingValues.branches.curvedBranch2 == null) {
@@ -208,6 +209,7 @@ export class AdvancedSwitchRendering {
          container = createLayerContainer("switch");
          rmUi.bindGameObjToDisplayObj(container, sw);
          container.interactiveChildren = false;
+         attachElementPointerDown(container);
          rmUi.containers.ui.addChild(container);
       }
 

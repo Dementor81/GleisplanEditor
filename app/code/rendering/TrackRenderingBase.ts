@@ -3,6 +3,7 @@
 import { Application } from "../application.ts";
 import type { Switch } from "../switch.ts";
 import { gleisGraphics, rectHitArea, TrackGraphics } from "../pixiPrimitives.ts";
+import { attachElementPointerDown } from "../pixiUtils.ts";
 import { TrainRenderer } from "./TrainRenderer.ts";
 
 /** Shared state and public surface used outside the rendering package for both track renderers. */
@@ -17,6 +18,7 @@ export abstract class TrackRenderingBase {
 
    abstract reDrawEverything(force?: boolean, render_outside_viewport?: boolean): void;
    abstract renderAllGenericObjects(): void;
+   abstract renderAllSignals(): void;
    abstract renderSwitchUI(sw: Switch): void;
 
    /** Car body height in layout units (basic vs advanced scale). */
@@ -67,6 +69,7 @@ export abstract class TrackRenderingBase {
       this.app.renderingManager!.bindGameObjToDisplayObj(shape, { track, endpoint: endpointType });
 
       shape.hitArea = rectHitArea(point.x - RECT_SIZE / 2, point.y - RECT_SIZE / 2, RECT_SIZE, RECT_SIZE);
+      attachElementPointerDown(shape);
 
       shape
          .rect(point.x - RECT_SIZE / 2, point.y - RECT_SIZE / 2, RECT_SIZE, RECT_SIZE)
