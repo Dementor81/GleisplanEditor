@@ -3,152 +3,117 @@
 import { Track } from "../../track.ts";
 import { Switch } from "../../switch.ts";
 import { geometry } from "../../tools.ts";
+import type { V2 } from "../../tools.ts";
 import { CONFIG } from "../../config.ts";
-import { RAILS } from "./constants.ts";
-import { AdvancedRendererCore } from "./AdvancedRendererCore.ts";
+import {
+   RAILS,
+   TRACK_CURVE_ANGLE_FACTOR,
+   TRACK_CURVE_MIN_SIZE,
+   TRACK_CURVE_MIN_STRAIGHT,
+} from "./constants.ts";
+import type { AdvancedRendering } from "./AdvancedRendering.ts";
 
-export abstract class AdvancedTrackCalculations extends AdvancedRendererCore {
+export class AdvancedTrackCalculations {
+   constructor(readonly renderer: AdvancedRendering) {}
+
+   /**
+    * Angle-aware ideal curve length at a Track-Track joint.
+    * 0 turn (straight continuation) -> TRACK_CURVE_MIN_SIZE; 90° kink -> + TRACK_CURVE_ANGLE_FACTOR.
+    */
+   private getJointCurveBaseSize(thisUnit: V2, nextUnit: V2): number {
+      const turn = geometry.angleBetweenRad(thisUnit, nextUnit);
+      return TRACK_CURVE_MIN_SIZE + TRACK_CURVE_ANGLE_FACTOR * Math.sin(turn / 2);
+   }
+
+   /** Final tangent length reserved on `track`'s `side`, clamped so both ends fit within track.length. */
+   private getTrackEndOffset(track: Track, side: "start" | "end"): number {
+      const conn = side === "start" ? track.switchAtTheStart : track.switchAtTheEnd;
+      if (!conn) return -CONFIG.GRID_SIZE;
+      if (conn instanceof Switch) return this.renderer.switchCalculations.getBranchSize(conn, track);
+
+      const ideal = this.getJointCurveBaseSize(track.unit, conn.unit);
+
+      const otherConn = side === "start" ? track.switchAtTheEnd : track.switchAtTheStart;
+      const otherIdeal = !otherConn
+         ? CONFIG.GRID_SIZE
+         : otherConn instanceof Switch
+            ? this.renderer.switchCalculations.getBranchSize(otherConn, track)
+            : this.getJointCurveBaseSize(track.unit, otherConn.unit);
+
+      const available = track.length - TRACK_CURVE_MIN_STRAIGHT;
+      if (ideal + otherIdeal <= available) return ideal;
+      return ideal * (available / (ideal + otherIdeal));
+   }
+
    calculateTrackPoints(track: any) {
-      const startConnection = track.switchAtTheStart;
       const endConnection = track.switchAtTheEnd;
 
-      let startPoint = track.start;
-      let endPoint = track.end;
+      const startOffset = this.getTrackEndOffset(track, "start");
+      const startPoint = track.start.add(geometry.multiply(track.unit, startOffset));
 
-      if (startConnection) {
-         const size =
-            startConnection instanceof Switch
-               ? this.getBranchSize(startConnection, track)
-               : CONFIG.GRID_SIZE;
-         startPoint = startPoint.add(geometry.multiply(track.unit, size));
-      } else {
-         startPoint = startPoint.sub(geometry.multiply(track.unit, CONFIG.GRID_SIZE));
-      }
-
-      let straightEndPoint = endPoint;
+      let straightEndPoint = track.end;
       let curveEnd: any = null;
       let controlPoint: any = null;
       let nextUnit: any = null;
 
       if (endConnection) {
-         const size =
-            endConnection instanceof Switch
-               ? this.getBranchSize(endConnection, track)
-               : CONFIG.GRID_SIZE;
-         straightEndPoint = endPoint.sub(geometry.multiply(track.unit, size));
+         const endOffset = this.getTrackEndOffset(track, "end");
+         straightEndPoint = track.end.sub(geometry.multiply(track.unit, endOffset));
 
          if (endConnection instanceof Track) {
-            const nextTrack = endConnection;
-            nextUnit = nextTrack.unit;
-            curveEnd = nextTrack.start.add(geometry.multiply(nextUnit, CONFIG.GRID_SIZE));
+            nextUnit = endConnection.unit;
+            const nextStartOffset = this.getTrackEndOffset(endConnection, "start");
+            curveEnd = endConnection.start.add(geometry.multiply(nextUnit, nextStartOffset));
             controlPoint = geometry.getIntersectionPointX(straightEndPoint, track.unit, curveEnd, nextUnit);
          }
       } else {
-         straightEndPoint = endPoint.add(geometry.multiply(track.unit, CONFIG.GRID_SIZE));
+         straightEndPoint = track.end.add(geometry.multiply(track.unit, CONFIG.GRID_SIZE));
       }
 
       const centerLine: any = {
-         track: track,
+         track,
          start: startPoint,
          straightEnd: straightEndPoint,
-         end: endPoint,
          unit: track.unit,
-         curveEnd: curveEnd,
-         controlPoint: controlPoint,
-         nextUnit: nextUnit,
+         curveEnd,
+         controlPoint,
+         nextUnit,
       };
 
-      this.calculateRailPositions(centerLine);
-      this.calculateSleeperOutline(centerLine);
+      centerLine.rails = this.parallelOffsetLines(centerLine, this.renderer.rail_distance);
+      centerLine.sleeperOutline = this.parallelOffsetLines(centerLine, this.renderer.schwellenHöhe_2);
 
-      return [centerLine];
+      return centerLine;
    }
 
-   calculateSleeperOutline(centerLine: any) {
-      const sleeperOffset = this.schwellenHöhe_2;
-      const sleeperOffsetVector = geometry.perpendicular(centerLine.unit.multiply(sleeperOffset));
-
-      centerLine.sleeperOutline = {
+   /** Lines parallel to the centerLine (straight + optional curve), offset perpendicular by `offset`. */
+   private parallelOffsetLines(centerLine: any, offset: number) {
+      const offsetVec = geometry.perpendicular(centerLine.unit.multiply(offset));
+      const result: any = {
          straight: {
-            inner: {
-               start: centerLine.start.add(sleeperOffsetVector),
-               end: centerLine.straightEnd.add(sleeperOffsetVector),
-            },
-            outer: {
-               start: centerLine.start.sub(sleeperOffsetVector),
-               end: centerLine.straightEnd.sub(sleeperOffsetVector),
-            },
+            inner: { start: centerLine.start.add(offsetVec), end: centerLine.straightEnd.add(offsetVec) },
+            outer: { start: centerLine.start.sub(offsetVec), end: centerLine.straightEnd.sub(offsetVec) },
          },
       };
 
       if (centerLine.controlPoint) {
-         const nextSleeperOffsetVector = geometry.perpendicular(centerLine.nextUnit.multiply(sleeperOffset));
+         const nextOffsetVec = geometry.perpendicular(centerLine.nextUnit.multiply(offset));
+         const innerStart = result.straight.inner.end;
+         const outerStart = result.straight.outer.end;
+         const innerEnd = centerLine.curveEnd.add(nextOffsetVec);
+         const outerEnd = centerLine.curveEnd.sub(nextOffsetVec);
 
-         const curveOuterEnd = centerLine.curveEnd.sub(nextSleeperOffsetVector);
-         const curveInnerEnd = centerLine.curveEnd.add(nextSleeperOffsetVector);
-
-         const curveOuterStart = centerLine.sleeperOutline.straight.outer.end;
-         const curveInnerStart = centerLine.sleeperOutline.straight.inner.end;
-
-         const cpOuter = geometry.getIntersectionPointX(curveOuterStart, centerLine.unit, curveOuterEnd, centerLine.nextUnit);
-         const cpInner = geometry.getIntersectionPointX(curveInnerStart, centerLine.unit, curveInnerEnd, centerLine.nextUnit);
-
-         centerLine.sleeperOutline.curve = {
-            outer: { start: curveOuterStart, end: curveOuterEnd, cp: cpOuter },
-            inner: { start: curveInnerStart, end: curveInnerEnd, cp: cpInner },
+         result.curve = {
+            inner: { start: innerStart, end: innerEnd, cp: geometry.getIntersectionPointX(innerStart, centerLine.unit, innerEnd, centerLine.nextUnit) },
+            outer: { start: outerStart, end: outerEnd, cp: geometry.getIntersectionPointX(outerStart, centerLine.unit, outerEnd, centerLine.nextUnit) },
          };
       }
+
+      return result;
    }
 
-   calculateRailPositions(centerLine: any) {
-      const railOffsetVector = geometry.perpendicular(centerLine.unit.multiply(this.rail_distance));
-
-      centerLine.rails = {
-         straight: {
-            inner: {
-               start: centerLine.start.add(railOffsetVector),
-               end: centerLine.straightEnd.add(railOffsetVector),
-            },
-            outer: {
-               start: centerLine.start.sub(railOffsetVector),
-               end: centerLine.straightEnd.sub(railOffsetVector),
-            },
-         },
-      };
-
-      if (centerLine.controlPoint) {
-         const nextRailOffsetVector = geometry.perpendicular(centerLine.nextUnit.multiply(this.rail_distance));
-
-         const curveInnerEnd = centerLine.curveEnd.add(nextRailOffsetVector);
-         const curveOuterEnd = centerLine.curveEnd.sub(nextRailOffsetVector);
-
-         const curveInnerStart = centerLine.rails.straight.inner.end;
-         const curveOuterStart = centerLine.rails.straight.outer.end;
-
-         const cpInner = geometry.getIntersectionPointX(curveInnerStart, centerLine.unit, curveInnerEnd, centerLine.nextUnit);
-         const cpOuter = geometry.getIntersectionPointX(curveOuterStart, centerLine.unit, curveOuterEnd, centerLine.nextUnit);
-
-         centerLine.rails.curve = {
-            inner: {
-               start: curveInnerStart,
-               end: curveInnerEnd,
-               cp: cpInner,
-            },
-            outer: {
-               start: curveOuterStart,
-               end: curveOuterEnd,
-               cp: cpOuter,
-            },
-         };
-      }
-   }
-
-   calculateRailBounds(points: any[]) {
-      let minX = Infinity,
-         minY = Infinity,
-         maxX = -Infinity,
-         maxY = -Infinity;
-
+   calculateRailBounds(centerLine: any) {
+      let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
       const updateBounds = (point: any) => {
          minX = Math.min(minX, point.x);
          minY = Math.min(minY, point.y);
@@ -156,20 +121,18 @@ export abstract class AdvancedTrackCalculations extends AdvancedRendererCore {
          maxY = Math.max(maxY, point.y);
       };
 
-      for (const point of points) {
-         const { inner, outer } = point.rails.straight;
-         updateBounds(inner.start);
-         updateBounds(inner.end);
-         updateBounds(outer.start);
-         updateBounds(outer.end);
+      const { inner, outer } = centerLine.rails.straight;
+      updateBounds(inner.start);
+      updateBounds(inner.end);
+      updateBounds(outer.start);
+      updateBounds(outer.end);
 
-         if (point.rails.curve) {
-            const curve = point.rails.curve;
-            updateBounds(curve.inner.start);
-            updateBounds(curve.inner.end);
-            updateBounds(curve.outer.start);
-            updateBounds(curve.outer.end);
-         }
+      if (centerLine.rails.curve) {
+         const curve = centerLine.rails.curve;
+         updateBounds(curve.inner.start);
+         updateBounds(curve.inner.end);
+         updateBounds(curve.outer.start);
+         updateBounds(curve.outer.end);
       }
 
       const padding = RAILS[0][0] * 0.5;
@@ -180,6 +143,4 @@ export abstract class AdvancedTrackCalculations extends AdvancedRendererCore {
          height: maxY - minY + padding * 2,
       };
    }
-
-   protected abstract getBranchSize(sw: Switch, track: Track | null): number;
 }

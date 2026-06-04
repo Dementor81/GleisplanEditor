@@ -4,14 +4,17 @@ import { GenericObject } from "../../generic_object.ts";
 import { Text } from "pixi.js";
 import { polygonHitArea, TrackGraphics } from "../../pixiPrimitives.ts";
 import { createLayerContainer } from "../../pixiUtils.ts";
-import { AdvancedSwitchCalculations } from "./AdvancedSwitchCalculations.ts";
+import type { AdvancedRendering } from "./AdvancedRendering.ts";
 
-export abstract class AdvancedGenericElements extends AdvancedSwitchCalculations {
+export class AdvancedGenericElements {
+   constructor(readonly renderer: AdvancedRendering) {}
+
    renderAllGenericObjects() {
-      this.app.renderingManager!.containers.objects.removeChildren();
+      const r = this.renderer;
+      r.app.renderingManager!.containers.objects.removeChildren();
       GenericObject.all_objects.forEach((o: any) => {
          const c = createLayerContainer("GenericObject");
-         this.app.renderingManager!.bindGameObjToDisplayObj(c, o);
+         r.app.renderingManager!.bindGameObjToDisplayObj(c, o);
          c.interactiveChildren = false;
          c.x = o.pos().x;
          c.y = o.pos().y;
@@ -20,7 +23,7 @@ export abstract class AdvancedGenericElements extends AdvancedSwitchCalculations
          else if (o.type() === GenericObject.OBJECT_TYPE.plattform) this.renderPlattformObject(o, c);
          else throw new Error("Unknown Object");
 
-         this.app.renderingManager!.containers.objects.addChild(c);
+         r.app.renderingManager!.containers.objects.addChild(c);
       });
    }
 

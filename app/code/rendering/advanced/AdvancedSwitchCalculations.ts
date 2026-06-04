@@ -9,9 +9,11 @@ import {
    SWITCH_WING_RAIL_SLOPE_FACTOR,
    SWITCH_WING_RAIL_THICKNESS,
 } from "./constants.ts";
-import { AdvancedTrackCalculations } from "./AdvancedTrackCalculations.ts";
+import type { AdvancedRendering } from "./AdvancedRendering.ts";
 
-export abstract class AdvancedSwitchCalculations extends AdvancedTrackCalculations {
+export class AdvancedSwitchCalculations {
+   constructor(readonly renderer: AdvancedRendering) {}
+
    getSwitchLocalFrame(sw: Switch) {
       let spine = sw.track1!.unit;
       if (spine.x < 0 || (spine.x === 0 && spine.y < 0)) {
@@ -99,15 +101,16 @@ export abstract class AdvancedSwitchCalculations extends AdvancedTrackCalculatio
    }
 
    getSleepersRenderingValues(sw: Switch, switchRenderingValues: any): { position: Point, length: number }[] {
+      const r = this.renderer;
       const { maintrack, straightBranch, curvedBranch, curvedBranch2 } = switchRenderingValues.branches;
       const branchSize = switchRenderingValues.branchSize;
       const switchLengthStraight = geometry.distance(maintrack.sleepers.upper, straightBranch.sleepers.upper);
-      const amountOfSleepers = Math.floor(switchLengthStraight / this.sleeperIntervall);
-      const remainingSpace = switchLengthStraight % this.sleeperIntervall;
+      const amountOfSleepers = Math.floor(switchLengthStraight / r.sleeperIntervall);
+      const remainingSpace = switchLengthStraight % r.sleeperIntervall;
       const sleepersIntervall =
          amountOfSleepers > 0
-            ? this.sleeperIntervall + remainingSpace / amountOfSleepers
-            : this.sleeperIntervall;
+            ? r.sleeperIntervall + remainingSpace / amountOfSleepers
+            : r.sleeperIntervall;
 
       const sleeperCurveControlPoints = {
          upper: geometry.getIntersectionPointX(
@@ -126,7 +129,7 @@ export abstract class AdvancedSwitchCalculations extends AdvancedTrackCalculatio
             : null,
       };
 
-      let x = maintrack.sleepers.upper.x + (this.schwellenBreite + this.schwellenGap) / 2;
+      let x = maintrack.sleepers.upper.x + (r.schwellenBreite + r.schwellenGap) / 2;
       const sleepers: { position: Point, length: number }[] = [];
       while (x < branchSize) {
          const y_upper = geometry.getBezierYAtX(x, maintrack.sleepers.upper, sleeperCurveControlPoints.upper!, curvedBranch.sleepers.upper)
@@ -134,7 +137,7 @@ export abstract class AdvancedSwitchCalculations extends AdvancedTrackCalculatio
          const y_lower = sw.type === Switch.SWITCH_TYPE.DKW && sleeperCurveControlPoints.lower
             ? (geometry.getBezierYAtX(x, curvedBranch2.sleepers.lower, sleeperCurveControlPoints.lower, straightBranch.sleepers.lower)
                ?? geometry.getLinearYAtX(x, curvedBranch2.sleepers.lower, curvedBranch2.sleepers.upper))
-            : this.schwellenHöhe_2;
+            : r.schwellenHöhe_2;
          if (y_upper !== null && y_lower != null) {
             sleepers.push({ position: new Point(x, (y_upper + y_lower) / 2), length: Math.abs(y_upper) + Math.abs(y_lower) });
          }
@@ -143,11 +146,11 @@ export abstract class AdvancedSwitchCalculations extends AdvancedTrackCalculatio
       return sleepers;
    }
 
-   protected getSwitchBranchRenderingValues(unit: V2, anchor: Point | V2, sleeperOverscan = 0) {
+   getSwitchBranchRenderingValues(unit: V2, anchor: Point | V2) {
+      const r = this.renderer;
       const perpendicular = geometry.perpendicular(unit);
-      const railOffset = perpendicular.multiply(this.rail_distance);
-      const sleeperOffset = perpendicular.multiply(this.schwellenHöhe_2);
-      const sleeperAnchor = anchor.add(unit.multiply(sleeperOverscan));
+      const railOffset = perpendicular.multiply(r.rail_distance);
+      const sleeperOffset = perpendicular.multiply(r.schwellenHöhe_2);
 
       return {
          unit,
@@ -156,18 +159,19 @@ export abstract class AdvancedSwitchCalculations extends AdvancedTrackCalculatio
             lower: anchor.add(railOffset),
          },
          sleepers: {
-            upper: sleeperAnchor.sub(sleeperOffset),
-            lower: sleeperAnchor.add(sleeperOffset),
+            upper: anchor.sub(sleeperOffset),
+            lower: anchor.add(sleeperOffset),
          },
       };
    }
 
    getBranchSize(sw: Switch, track: Track | null = null): number {
+      const r = this.renderer;
       if (track === sw.track1 && sw.type !== Switch.SWITCH_TYPE.DKW) return CONFIG.GRID_SIZE;
       let size = CONFIG.GRID_SIZE;
       let distance = 0;
       let iteration = 0;
-      while (distance < this.schwellenHöhe && iteration < 100) {
+      while (distance < r.schwellenHöhe && iteration < 100) {
          size += 5;
          iteration++;
          distance = geometry.distance(sw.location.add(geometry.multiply(sw.track2!.unit, size)), sw.location.add(geometry.multiply(sw.track3!.unit, size)));
@@ -175,7 +179,7 @@ export abstract class AdvancedSwitchCalculations extends AdvancedTrackCalculatio
       return size;
    }
 
-   protected getSwitchRenderingValues(sw: Switch) {
+   getSwitchRenderingValues(sw: Switch) {
       const localFrame = this.getSwitchLocalFrame(sw);
       const spineUnit = new V2(new Point(1, 0));
       const branchSize = this.getBranchSize(sw);
@@ -183,20 +187,12 @@ export abstract class AdvancedSwitchCalculations extends AdvancedTrackCalculatio
       const straightBranch = this.getSwitchBranchRenderingValues(spineUnit, new Point(branchSize, 0));
 
       const curvedUnit = this.toLocalVector(sw.tracks[2]!.unit, localFrame);
-      const curvedBranch = this.getSwitchBranchRenderingValues(
-         curvedUnit,
-         curvedUnit.multiply(branchSize),
-         0
-      );
+      const curvedBranch = this.getSwitchBranchRenderingValues(curvedUnit, curvedUnit.multiply(branchSize));
 
       let curvedBranch2 = null;
       if (sw.track4) {
          const unit = this.toLocalVector(sw.track4.unit, localFrame);
-         curvedBranch2 = this.getSwitchBranchRenderingValues(
-            unit,
-            unit.multiply(-branchSize),
-            0
-         );
+         curvedBranch2 = this.getSwitchBranchRenderingValues(unit, unit.multiply(-branchSize));
       }
 
       const branches = { maintrack, straightBranch, curvedBranch, curvedBranch2 };

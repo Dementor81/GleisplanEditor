@@ -1,216 +1,88 @@
 "use strict";
 
-import { Switch } from "../../switch.ts";
-import { geometry, Point } from "../../tools.ts";
-import { Text } from "pixi.js";
-import type { Graphics } from "pixi.js";
-import type { LineCap, LineJoin } from "pixi.js";
-import { gleisGraphics, TrackGraphics } from "../../pixiPrimitives.ts";
-import { createLayerContainer } from "../../pixiUtils.ts";
-import { DEBUG_VISUALIZE_SWITCH_PARAMS, RAILS, SWITCH_UI_STROKE } from "./constants.ts";
+import type { Switch } from "../../switch.ts";
+import { TrackRenderingBase } from "../TrackRenderingBase.ts";
+import { SCHWELLEN_VARIANTEN, TRACK_SCALE } from "./constants.ts";
+import { AdvancedRendererCore } from "./AdvancedRendererCore.ts";
+import { AdvancedTrackCalculations } from "./AdvancedTrackCalculations.ts";
+import { AdvancedSwitchCalculations } from "./AdvancedSwitchCalculations.ts";
+import { AdvancedGenericElements } from "./AdvancedGenericElements.ts";
+import { AdvancedTrackRendering } from "./AdvancedTrackRendering.ts";
 import { AdvancedSleeperRendering } from "./AdvancedSleeperRendering.ts";
+import { AdvancedSwitchRendering } from "./AdvancedSwitchRendering.ts";
 
-/** Draw a pointed rail end at the tip of a rail, used for the switch rail. */
-function drawTaperedRailEnd(
-   g: TrackGraphics,
-   tip: Point,
-   wideAnchor: Point,
-   width: number,
-   color: string,
-) {
-   const along = geometry.sub(wideAnchor, tip);
-   if (geometry.length(along) === 0) return;
+export class AdvancedRendering extends TrackRenderingBase {
+   readonly core: AdvancedRendererCore;
+   readonly trackCalculations: AdvancedTrackCalculations;
+   readonly switchCalculations: AdvancedSwitchCalculations;
+   readonly genericElements: AdvancedGenericElements;
+   readonly trackRendering: AdvancedTrackRendering;
+   readonly sleeperRendering: AdvancedSleeperRendering;
+   readonly switchRendering: AdvancedSwitchRendering;
 
-   const half = width / 2;
-   const n = geometry.perpendicular(geometry.unit(along)).multiply(half);
-   g.fillPoly([tip, wideAnchor.add(n), wideAnchor.sub(n)], color);
-}
+   LOD: number;
+   _lastRenderScale: number;
+   _bitmapCache: any[];
+   _idleCallback: any;
+   _rendering: any;
 
-export class AdvancedRendering extends AdvancedSleeperRendering {
-   renderSwitch(sw: any) {
-      const switchRenderingValues = this.getSwitchRenderingValues(sw);
+   schwellenImg: any;
+   bumperImg: any;
+   sleepersImgWidth: number = 0;
+   schwellenHöhe: number = 0;
+   schwellenHöhe_2: number = 0;
+   schwellenBreite: number = 0;
+   schwellenGap: number = 0;
+   sleeperIntervall: number = 0;
+   rail_offset: number = 0;
+   rail_distance: number = 0;
+   TRAIN_HEIGHT: number = 0;
 
-      const shape = new TrackGraphics("switch");
-      this.app.renderingManager!.bindGameObjToDisplayObj(shape, sw);
-      this._rendering.rails_container.addChild(shape);
+   constructor() {
+      super();
+      this.LOD = 2;
+      this._lastRenderScale = 0;
+      this._bitmapCache = new Array(SCHWELLEN_VARIANTEN);
 
-      if (switchRenderingValues.branches.curvedBranch2 == null) {
-         this.renderThreeWaySwitch(shape, switchRenderingValues);
-      } else {
-         this.renderFourWaySwitch(shape, switchRenderingValues);
-      }
-
-      this.drawSleepersOnSwitch(sw, switchRenderingValues);
-
-      if (DEBUG_VISUALIZE_SWITCH_PARAMS) {
-         this.debugVisualizeSwitchRenderingParameter(sw, switchRenderingValues);
-      }
-
-      this.renderSwitchUI(sw);
+      this.core = new AdvancedRendererCore(this);
+      this.trackCalculations = new AdvancedTrackCalculations(this);
+      this.switchCalculations = new AdvancedSwitchCalculations(this);
+      this.genericElements = new AdvancedGenericElements(this);
+      this.trackRendering = new AdvancedTrackRendering(this);
+      this.sleeperRendering = new AdvancedSleeperRendering(this);
+      this.switchRendering = new AdvancedSwitchRendering(this);
    }
 
-   updateSwitch(sw: any) {
-      const rmSw = this.app.renderingManager!;
-      const sleepersContainer = this._rendering.sleepers_container.children.find((c: any) => rmSw.getGameObjFromDisplayObj(c) === sw);
-      if (!sleepersContainer) return;
+   calcRenderValues() {
+      this.schwellenImg = this.app.preLoader!.getImage("schwellen");
+      this.bumperImg = this.app.preLoader!.getImage("bumper");
+      this.sleepersImgWidth = this.schwellenImg.width / SCHWELLEN_VARIANTEN;
+      this.schwellenHöhe = this.schwellenImg.height * TRACK_SCALE;
+      this.schwellenHöhe_2 = this.schwellenHöhe / 2;
+      this.schwellenBreite = this.sleepersImgWidth * TRACK_SCALE;
+      this.schwellenGap = this.schwellenBreite * 1.1;
+      this.sleeperIntervall = this.schwellenBreite + this.schwellenGap;
+      this.rail_offset = this.schwellenHöhe / 4.7;
+      this.rail_distance = this.schwellenHöhe_2 - this.rail_offset;
 
-      const switchRenderingValues = this.getSwitchRenderingValues(sw);
+      this.TRAIN_HEIGHT = this.schwellenHöhe - this.rail_offset;
 
-      this.drawSleepersOnSwitch(sw, switchRenderingValues, sleepersContainer);
+      this.SIGNAL_DISTANCE_FROM_TRACK = this.schwellenHöhe / 2;
    }
 
-   debugVisualizeSwitchRenderingParameter(sw: any, switchRenderingValues: any) {
-      const debugContainer = this.app.renderingManager!.containers.debug;
-
-      const layer = createLayerContainer("switch_params_debug");
-      this.app.renderingManager!.bindGameObjToDisplayObj(layer, sw);
-      const localFrame = switchRenderingValues.localFrame;
-
-      const points = gleisGraphics("switch_params_debug");
-      const visit = (value: any, path: string) => {
-         if (value == null || typeof value !== "object") return;
-
-         if (typeof value.x === "number" && typeof value.y === "number") {
-            const color = this.getSwitchDebugPointColor(path);
-            {
-               const worldPoint = localFrame ? this.toWorldPoint(value, localFrame) : value;
-               points.circle(worldPoint.x, worldPoint.y, 0.5).fill(color).stroke({ width: 0.1, color: "#000" });
-            }
-            const labelPoint = localFrame ? this.toWorldPoint(value, localFrame) : value;
-            const label = new Text({
-               text: path,
-               style: { fill: color, fontFamily: "Arial", fontSize: 3 },
-               textureStyle: { scaleMode: "nearest" },
-            });
-            label.eventMode = "none";
-            label.resolution = this.app.renderingManager!.scale;
-            label.x = labelPoint.x + 3;
-            label.y = labelPoint.y - 4;
-            layer.addChild(label);
-            return;
-         }
-
-         for (const key of Object.keys(value)) {
-            if (key === "localFrame") continue;
-            const childPath = path ? `${path}.${key}` : key;
-            visit(value[key], childPath);
-         }
-      };
-
-      visit(switchRenderingValues, "");
-      layer.addChild(points);
-      debugContainer.addChild(layer);
+   reDrawEverything(force = false, render_outside_viewport = false) {
+      return this.core.reDrawEverything(force, render_outside_viewport);
    }
 
-   getSwitchDebugPointColor(path: string): string {
-      if (path.includes(".rails")) return "#00cc44";
-      if (path.includes(".sleepers")) return "#33ccff";
-      if (path.includes(".unit")) return "#3388ff";
-      return "#000000";
-   }
-
-   renderThreeWaySwitch(g: TrackGraphics, switchRenderingValues: any) {
-      const world = this.transformSwitchParameterToWorld(switchRenderingValues);
-      const { maintrack, straightBranch, curvedBranch } = world.branches;
-      const { frog, curves, wingRail, switchRail, switchRailEnd } = world.points;
-      const st = {
-         width: 0,
-         color: "",
-         cap: "butt" as LineCap,
-         join: "miter" as LineJoin,
-      };
-      for (const rail of RAILS) {
-         st.width = rail[0];
-         st.color = rail[1];
-
-         g.lineFromTo(maintrack.rails.lower, straightBranch.rails.lower)
-            .lineFromTo(straightBranch.rails.upper, frog).line2Point(curvedBranch.rails.lower)
-            .move2Point(maintrack.rails.upper).quadraticCurve2Point(
-               curves.upperRail,
-               curvedBranch.rails.upper
-            )
-            .move2Point(maintrack.rails.lower).quadraticCurve2Point(
-               curves.lowerRail,
-               wingRail.lower
-            ).line2Point(wingRail.lowerEnd)
-            .lineFromTo(switchRailEnd, wingRail.upper).line2Point(wingRail.upperEnd)
-            .stroke(st);
-
-         drawTaperedRailEnd(g, switchRail, switchRailEnd, rail[0], rail[1]);
-      }
-   }
-
-   renderFourWaySwitch(g: TrackGraphics, switchRenderingValues: any) {
-      const world = this.transformSwitchParameterToWorld(switchRenderingValues);
-      const { maintrack, straightBranch, curvedBranch, curvedBranch2 } = world.branches;
-      const { frog, frog2, curves, wingRail, wingRail2 } = world.points;
-      const st = {
-         width: 0,
-         color: "",
-         cap: "butt" as LineCap,
-         join: "miter" as LineJoin,
-      };
-
-      for (const rail of RAILS) {
-         st.width = rail[0];
-         st.color = rail[1];
-
-         g.lineFromTo(wingRail2.upperEnd, wingRail2.upper).line2Point(straightBranch.rails.lower)
-            .lineFromTo(straightBranch.rails.upper, frog).line2Point(curvedBranch.rails.lower)
-            .move2Point(maintrack.rails.upper).quadraticCurve2Point(
-               curves.upperRail,
-               curvedBranch.rails.upper
-            )
-            .move2Point(curvedBranch2.rails.lower).quadraticCurve2Point(
-               curves.lowerRail2,
-               straightBranch.rails.lower
-            )
-            .move2Point(wingRail2.upper).quadraticCurve2Point(
-               curves.lowerRail,
-               wingRail.lower
-            ).line2Point(wingRail.lowerEnd)
-            .lineFromTo(maintrack.rails.upper, wingRail.upper).line2Point(wingRail.upperEnd)
-            .lineFromTo(curvedBranch.rails.upper, wingRail2.lower).line2Point(wingRail2.lowerEnd)
-            .lineFromTo(wingRail.lowerEnd, wingRail.lower).line2Point(curvedBranch2.rails.lower)
-            .lineFromTo(maintrack.rails.lower, frog2).line2Point(curvedBranch2.rails.upper)
-            .move2Point(wingRail2.lower).quadraticCurve2Point(curves.upperRail, wingRail.upper)
-            .stroke(st);
-      }
+   renderAllGenericObjects() {
+      return this.genericElements.renderAllGenericObjects();
    }
 
    renderSwitchUI(sw: Switch) {
-      const arrowStroke = {
-         width: SWITCH_UI_STROKE,
-         color: "#333",
-         cap: "round" as LineCap,
-         join: "miter" as LineJoin,
-      };
+      return this.switchRendering.renderSwitchUI(sw);
+   }
 
-      const drawArrow = (g: Graphics, length: number, size: number) => {
-         g.moveTo(0, 0).lineTo(length, 0).stroke(arrowStroke);
-         g.moveTo(length - size, -size / 2).lineTo(length, 0).lineTo(length - size, size / 2).stroke(arrowStroke);
-      };
-
-      const rmUi = this.app.renderingManager!;
-      let container = rmUi.containers.ui.children.find((c: any) => rmUi.getGameObjFromDisplayObj(c) === sw);
-
-      if (container) {
-         container.removeChildren();
-      } else {
-         container = createLayerContainer("switch");
-         rmUi.bindGameObjToDisplayObj(container, sw);
-         container.interactiveChildren = false;
-         rmUi.containers.ui.addChild(container);
-      }
-
-      [sw.from, sw.branch].forEach((t: any) => {
-         const arrow = gleisGraphics();
-         container.addChild(arrow);
-
-         drawArrow(arrow, 20, 5);
-         arrow.x = sw.location.x;
-         arrow.y = sw.location.y;
-         arrow.angle = Switch.findAngle(sw.location, t.end.equals(sw.location) ? t.start : t.end);
-      });
+   protected trainCarHeight(): number {
+      return this.TRAIN_HEIGHT;
    }
 }
