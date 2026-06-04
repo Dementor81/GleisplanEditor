@@ -13,6 +13,7 @@ import { createLayerContainer } from "../pixiUtils.ts";
 import { mountRendererChoiceCards, type RendererChoiceCardsHandle } from "../ui/rendererChoiceCards.ts";
 import { StartScreen } from "../ui/StartScreen.ts";
 import { ViewportHud } from "../ui/ViewportHud.ts";
+import { NewObjectMenu } from "../ui/NewObjectMenu.ts";
 
 // ============================================================================
 // Type Definitions
@@ -39,6 +40,7 @@ export class UIManager {
    #startScreenRendererHandle: RendererChoiceCardsHandle | null = null;
    #startScreen = new StartScreen();
    #viewportHud = new ViewportHud();
+   #newObjectMenu = new NewObjectMenu();
 
    constructor(_application: Application) {}
 
@@ -66,6 +68,7 @@ export class UIManager {
       this.#initializeSignalMenu();
       this.#initializeInterManagerCommunication();
       this.#viewportHud.mount();
+      this.#newObjectMenu.mount();
    }
 
    /**
@@ -209,7 +212,7 @@ export class UIManager {
             break;
          case MENU.NEW_OBJECT:
             div_id = "newObjectMenu";
-            this.#initializeNewObjectMenu();
+            this.#newObjectMenu.activate();
             break;
          case MENU.EDIT_OBJECT:
             div_id = "editObjectMenu";
@@ -240,22 +243,6 @@ export class UIManager {
       const app = (window as any).app;
       $("#newTrain").off("mousedown").on("mousedown", (_e: JQuery.MouseDownEvent) => {
          app.eventManager.startTrainPlacementDrag();
-      });
-   }
-
-   /**
-    * Initialize new object menu
-    * @private
-    */
-   #initializeNewObjectMenu(): void {
-      const app = (window as any).app;
-      $("#btnAddText").onclick(() => {
-         app.customMouseMode = $("#btnAddText").hasClass("active") ? CUSTOM_MOUSE_ACTION.TEXT : CUSTOM_MOUSE_ACTION.NONE;
-         this.activateCustomMouseMode();
-      });
-      $("#btnAddPlatform").onclick(() => {
-         app.customMouseMode = $("#btnAddPlatform").hasClass("active") ? CUSTOM_MOUSE_ACTION.PLATTFORM : CUSTOM_MOUSE_ACTION.NONE;
-         this.activateCustomMouseMode();
       });
    }
 
