@@ -9,7 +9,9 @@ import { Point } from "./tools.ts";
 import { CUSTOM_MOUSE_ACTION } from "./config.ts";
 import { COLORS } from "./config.ts";
 import { gleisGraphics, circleHitArea } from "./pixiPrimitives.ts";
-import { attachElementPointerDownForMode } from "./pixiUtils.ts";
+import { CouplingPointInteraction } from "./interactions/CouplingPointInteraction.ts";
+import { DecouplingPointInteraction } from "./interactions/DecouplingPointInteraction.ts";
+import { Application } from "./application.ts";
 
 export class Train {
    static allTrains: Train[] = [];
@@ -102,6 +104,7 @@ export class Train {
    }
 
    static initEditTrainMenu(train: Train): void {
+      const app = Application.getInstance();
       $("#colorInputTrain")
          .off()
          .val(train.color)
@@ -260,12 +263,14 @@ export class Train {
          currentCar = nextCar;
       }
 
+      const app = Application.getInstance();
       app.renderingManager!.renderer.renderAllTrains();
       app.renderingManager!.update();
       STORAGE.save();
    }
 
    static moveTrain(train: Train, movementX: number): void {
+      const app = Application.getInstance();
       // Find the head of the train (first car with no front coupling)
       let firstCar = train;
       while (firstCar.trainCoupledFront != null) {
@@ -325,6 +330,7 @@ export class Train {
    }
 
    static movementPossible(train: Train, movementX: number): boolean {
+      const app = Application.getInstance();
       const currentTrack = train.track!;
 
       // Calculate new position using the node's unit vector
@@ -498,6 +504,7 @@ export class Train {
    }
 
    static showDecouplingPoints(train: Train): boolean {
+      const app = Application.getInstance();
       // Clear any existing overlay
       app.renderingManager!.containers.overlay.removeChildren();
       const overlay = app.renderingManager!.containers.overlay;
@@ -534,7 +541,7 @@ export class Train {
             carToDeCoupleFrom: currentCar,
             carToDeCouple: nextCar,
          });
-         attachElementPointerDownForMode(decouplingPoint, CUSTOM_MOUSE_ACTION.TRAIN_DECOUPLE);
+         DecouplingPointInteraction.attach(decouplingPoint);
 
          // Add to overlay container
          overlay.addChild(decouplingPoint);
@@ -556,6 +563,7 @@ export class Train {
    }
 
    static handleDecouplingClick(data: any): void {
+      const app = Application.getInstance();
       if (!data) throw new Error("No train provided");
       // Decouple at this point
       data.carToDeCoupleFrom.uncouple();
@@ -570,6 +578,7 @@ export class Train {
    }
 
    static exitDecouplingMode(): void {
+      const app = Application.getInstance();
       // Remove decoupling points
       app.renderingManager!.containers.overlay.removeChildren();
 
@@ -588,6 +597,7 @@ export class Train {
    }
 
    static showCouplingPoints(train: Train): boolean {
+      const app = Application.getInstance();
       // Clear any existing overlay
       app.renderingManager!.containers.overlay.removeChildren();
 
@@ -671,7 +681,7 @@ export class Train {
             car1: car1,
             car2: car2,
          });
-         attachElementPointerDownForMode(couplingPoint, CUSTOM_MOUSE_ACTION.TRAIN_COUPLE);
+         CouplingPointInteraction.attach(couplingPoint);
 
          // Add to overlay container
          app.renderingManager!.containers.overlay.addChild(couplingPoint);
@@ -679,6 +689,7 @@ export class Train {
    }
 
    static handleCouplingClick(data: any): void {
+      const app = Application.getInstance();
       if (!data) throw new Error("No train data provided");
 
       // Determine which cars to couple
@@ -694,6 +705,7 @@ export class Train {
    }
 
    static exitCouplingMode(): void {
+      const app = Application.getInstance();
       // Remove coupling points
       app.renderingManager!.containers.overlay.removeChildren();
 
@@ -778,6 +790,7 @@ export class Train {
 
       // Update the display if any trains moved
       if (needsUpdate) {
+         const app = Application.getInstance();
          app.renderingManager!.renderer.renderAllTrains();
          app.renderingManager!.update();
       }

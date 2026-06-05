@@ -84,6 +84,13 @@ export class Track {
       return true;
    }
 
+   static snapToGrid(local: Point): Point {
+      return new Point(
+         Math.round(local.x / CONFIG.GRID_SIZE) * CONFIG.GRID_SIZE,
+         Math.round(local.y / CONFIG.GRID_SIZE) * CONFIG.GRID_SIZE
+      );
+   }  
+
    
    static findTrackByPoint(p: Point): Track | undefined {
       return Track.allTracks.find((track) => {

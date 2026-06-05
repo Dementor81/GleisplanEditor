@@ -2,7 +2,8 @@
 
 import { Text } from "pixi.js";
 import { gleisGraphics, polygonHitArea, TrackGraphics } from "../../pixiPrimitives.ts";
-import { attachElementPointerDown, createLayerContainer } from "../../pixiUtils.ts";
+import { TrackBuildInteraction } from "../../interactions/TrackBuildInteraction.ts";
+import { createLayerContainer } from "../../pixiUtils.ts";
 import { DEBUG_VISUALIZE_TRACK_PARAMS, RAILS } from "./constants.ts";
 import type { AdvancedRendering } from "./AdvancedRendering.ts";
 
@@ -27,7 +28,7 @@ export class AdvancedTrackRendering {
       if (curve) hitPoints.push(curve.outer.end, curve.inner.end);
       hitPoints.push(straight.inner.end, straight.inner.start);
       sleepers_container.hitArea = polygonHitArea(hitPoints);
-      attachElementPointerDown(sleepers_container);
+      TrackBuildInteraction.attach(sleepers_container, track);
 
       r.sleeperRendering.drawTrackSleepers(centerLine, sleepers_container);
       this.renderRails(track, centerLine);

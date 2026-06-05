@@ -3,7 +3,7 @@
 import { Application } from "../application.ts";
 import type { Switch } from "../switch.ts";
 import { gleisGraphics, rectHitArea, TrackGraphics } from "../pixiPrimitives.ts";
-import { attachElementPointerDown } from "../pixiUtils.ts";
+import { TrackEndpointInteraction } from "../interactions/TrackEndpointInteraction.ts";
 import { TrainRenderer } from "./TrainRenderer.ts";
 
 /** Shared state and public surface used outside the rendering package for both track renderers. */
@@ -69,7 +69,7 @@ export abstract class TrackRenderingBase {
       this.app.renderingManager!.bindGameObjToDisplayObj(shape, { track, endpoint: endpointType });
 
       shape.hitArea = rectHitArea(point.x - RECT_SIZE / 2, point.y - RECT_SIZE / 2, RECT_SIZE, RECT_SIZE);
-      attachElementPointerDown(shape);
+      TrackEndpointInteraction.attach(shape, track, endpointType as "start" | "end");
 
       shape
          .rect(point.x - RECT_SIZE / 2, point.y - RECT_SIZE / 2, RECT_SIZE, RECT_SIZE)

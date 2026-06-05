@@ -64,36 +64,6 @@ export const DIRECTION = {
 } as const;
 
 /**
- * Mouse down action types
- */
-export enum MouseDownAction {
-    NONE = 0,
-    SCROLL = 1,
-    BUILD_TRACK = 2,
-    MOVE_ITEM = 3,
-    DND_SIGNAL = 4,
-    ADD_TRAIN = 5,
-    MOVE_TRAIN = 6,
-    MOVE_OBJECT = 7,
-    DND_TRACK = 8,
-    CUSTOM = 9,
-}
-
-// Backward compatibility
-export const MOUSE_DOWN_ACTION = {
-    NONE: MouseDownAction.NONE,
-    SCROLL: MouseDownAction.SCROLL,
-    BUILD_TRACK: MouseDownAction.BUILD_TRACK,
-    MOVE_ITEM: MouseDownAction.MOVE_ITEM,
-    DND_SIGNAL: MouseDownAction.DND_SIGNAL,
-    ADD_TRAIN: MouseDownAction.ADD_TRAIN,
-    MOVE_TRAIN: MouseDownAction.MOVE_TRAIN,
-    MOVE_OBJECT: MouseDownAction.MOVE_OBJECT,
-    DND_TRACK: MouseDownAction.DND_TRACK,
-    CUSTOM: MouseDownAction.CUSTOM,
-} as const;
-
-/**
  * Custom mouse action types
  */
 export enum CustomMouseAction {
@@ -217,7 +187,6 @@ export default {
     CONFIG,
     COMPUTED,
     DIRECTION,
-    MOUSE_DOWN_ACTION,
     CUSTOM_MOUSE_ACTION,
     MENU,
     COLORS,
@@ -227,7 +196,6 @@ export default {
     
     // Export enums too
     Direction,
-    MouseDownAction,
     CustomMouseAction,
     Menu,
 } as const; 

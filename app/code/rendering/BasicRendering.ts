@@ -11,9 +11,11 @@ import { CONFIG } from '../config.ts';
 import type { Graphics } from 'pixi.js';
 import { gleisGraphics, polygonHitArea, rectHitArea, TrackGraphics } from '../pixiPrimitives.ts';
 import { Text } from 'pixi.js';
-import { attachElementPointerDown, createLayerContainer } from '../pixiUtils.ts';
+import { TrackBuildInteraction } from '../interactions/TrackBuildInteraction.ts';
+import { createLayerContainer } from '../pixiUtils.ts';
 import { TrackRenderingBase } from './TrackRenderingBase.ts';
 import { GenericObjectInteraction } from '../interactions/GenericObjectInteraction.ts';
+import { SwitchInteraction } from '../interactions/SwitchInteraction.ts';
 
 export class BasicRendering extends TrackRenderingBase {
    static TRACK_COLOR = "#111111";
@@ -144,7 +146,7 @@ export class BasicRendering extends TrackRenderingBase {
       this.app.renderingManager!.bindGameObjToDisplayObj(shape, track);
 
       shape.hitArea = polygonHitArea(params.hit_area);
-      attachElementPointerDown(shape);
+      TrackBuildInteraction.attach(shape, track);
 
       container.addChild(shape);
 
@@ -182,8 +184,8 @@ export class BasicRendering extends TrackRenderingBase {
             throw new Error("switch is falty");
          }
          let switch_shape = new TrackGraphics("switch");
+         switch_shape.eventMode = "none";
          this.app.renderingManager!.bindGameObjToDisplayObj(switch_shape, sw);
-         attachElementPointerDown(switch_shape);
          this.app.renderingManager!.containers.tracks.addChild(switch_shape);
 
          let p1: any, p2: any;
@@ -218,8 +220,8 @@ export class BasicRendering extends TrackRenderingBase {
          // Create a new container if none exists
          container = createLayerContainer("switch");
          rm.bindGameObjToDisplayObj(container, sw);
-         container.interactiveChildren = false;
-         attachElementPointerDown(container);
+         container.interactiveChildren = true;
+         SwitchInteraction.attach(container, sw);
          rm.containers.ui.addChild(container);
       }
 
