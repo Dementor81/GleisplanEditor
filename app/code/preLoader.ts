@@ -127,6 +127,12 @@ export class preLoader {
       });
    }
 
+   getSpritePos(json_file: string, texture_name: string): { x: number; y: number } | null {
+      const item = this._spriteItems[json_file + texture_name];
+      if (item == null) return null;
+      return { x: item.pos.left, y: item.pos.top };
+   }
+
    /**
     * Get a sprite from a loaded sprite sheet
     * @param json_file - Name of the sprite sheet JSON file

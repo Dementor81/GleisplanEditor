@@ -29,10 +29,13 @@ function buildElement(definition: SignalElementDefinition): any {
    if ("text" in definition) return buildTextElement(definition);
 
    const visualElement = new VisualElement(definition.image);
+   if (definition.label) visualElement.label(definition.label);
    if (definition.pos) visualElement.pos(definition.pos);
    applyCondition(visualElement, "on", definition.on);
    applyCondition(visualElement, "off", definition.off);
    if (definition.blinks !== undefined) visualElement.blinks(definition.blinks);
+   if (definition.blendMode) visualElement.blendMode(definition.blendMode);
+   if (definition.rotation) visualElement.rotation(definition.rotation);
    if (definition.children) visualElement.childs(definition.children.map(buildElement));
 
    return visualElement;

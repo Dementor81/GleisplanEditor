@@ -8,7 +8,6 @@ import { SignalRenderer } from './signalRenderer.ts';
 import { GenericObject } from '../generic_object.ts';
 import { geometry } from '../tools.ts';
 import { CONFIG } from '../config.ts';
-import type { Graphics } from 'pixi.js';
 import { gleisGraphics, polygonHitArea, rectHitArea, TrackGraphics } from '../pixiPrimitives.ts';
 import { Text } from 'pixi.js';
 import { TrackBuildInteraction } from '../interactions/TrackBuildInteraction.ts';

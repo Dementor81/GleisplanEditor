@@ -8,12 +8,25 @@ export type SignalElementDefinition =
    | SignalTextElementDefinition
    | SignalElementDefinition[];
 
+export interface SignalRotationDefinition {
+   element?: string | string[];
+   angle: number;
+   pivot?: [number, number];
+}
+
+export type SignalRotationConfig = SignalRotationDefinition | SignalRotationDefinition[];
+
+export type SignalBlendMode = "multiply";
+
 export interface SignalVisualElementDefinition {
+   label?: string;
    image?: string;
    pos?: [number, number];
    on?: SignalCondition;
    off?: SignalCondition;
    blinks?: boolean;
+   blendMode?: SignalBlendMode;
+   rotation?: SignalRotationConfig;
    children?: SignalElementDefinition[];
 }
 

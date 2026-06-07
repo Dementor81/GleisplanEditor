@@ -1,0 +1,29 @@
+[ 
+{"signal":"mast","sourceRect":{"x":2,"y":2,"width":76,"height":851},"pos":
+        {"left":0,"top":0}
+    },
+
+{"signal":"flügel_unten","sourceRect":{"x":2,"y":857,"width":52,"height":191},"pos":
+        {"left":14,"top":99}
+    },
+
+{"signal":"flügel_oben","sourceRect":{"x":2,"y":1052,"width":223,"height":60},"pos":
+        {"left":3,"top":25}
+    },
+
+{"signal":"lichtscheibe_rahmen","sourceRect":{"x":58,"y":857,"width":43,"height":52},"pos":
+        {"left":55,"top":68}
+    },
+
+{"signal":"lichtscheibe_hintergrund","sourceRect":{"x":58,"y":913,"width":42,"height":51},"pos":
+        {"left":55,"top":69}
+    },
+
+{"signal":"lichtscheibe_farbfilter","sourceRect":{"x":58,"y":968,"width":38,"height":47},"pos":
+        {"left":57,"top":71}
+    },
+
+{"signal":"lichtscheibe_licht","sourceRect":{"x":58,"y":1019,"width":25,"height":24},"pos":
+        {"left":70,"top":71}
+    }
+]

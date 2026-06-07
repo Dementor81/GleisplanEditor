@@ -14,6 +14,9 @@ export class VisualElement {
    #_on: any = [];
    #_off: any = null;
    #_childs: any = null;
+   #_rotation: any = null;
+   #_blendMode: any = null;
+   #_label: any = null;
 
    constructor(image?: any) {
       this.#_image = image;
@@ -59,6 +62,30 @@ export class VisualElement {
       if (pos === undefined) return this.#_pos;
       else {
          this.#_pos = pos;
+         return this;
+      }
+   }
+
+   rotation(rotation?: any): any {
+      if (rotation === undefined) return this.#_rotation;
+      else {
+         this.#_rotation = rotation;
+         return this;
+      }
+   }
+
+   blendMode(blendMode?: any): any {
+      if (blendMode === undefined) return this.#_blendMode;
+      else {
+         this.#_blendMode = blendMode;
+         return this;
+      }
+   }
+
+   label(label?: any): any {
+      if (label === undefined) return this.#_label;
+      else {
+         this.#_label = label;
          return this;
       }
    }

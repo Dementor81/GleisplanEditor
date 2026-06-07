@@ -5,16 +5,49 @@ import { clone } from '../tools.ts';
 import { TextElement, VisualElement } from '../visualElement.ts';
 import { Application } from '../application.ts';
 import type { Container } from 'pixi.js';
-import { Text } from 'pixi.js';
+import { Graphics, Text } from 'pixi.js';
+
+/** Set true to draw rotation pivot markers on rotated signal elements. */
+export const DEBUG_VISUALIZE_SIGNAL_PIVOTS = true;
 
 /** Structural type so callers pass RenderingManager without importing it (avoids circular deps). */
 export type DomainSink = { bindGameObjToDisplayObj(display: Container, domain: unknown): void };
 import { rectHitArea } from '../pixiPrimitives.ts';
 import { createLayerContainer, findChildByLabel } from '../pixiUtils.ts';
 import { SignalInteraction } from '../interactions/SignalInteraction.ts';
+import { Signal } from '../signal.ts';
+import type { SignalRotationConfig, SignalRotationDefinition } from '../signalDefinition.ts';
+
+type DrawParent = { container: Container; originX: number; originY: number; ve?: VisualElement } | VisualElement | null;
+
+type RenderingState = {
+   container: Container;
+};
 
 export class SignalRenderer {
-   static #renderingState = new WeakMap<any, any>();
+   static #renderingState = new WeakMap<any, RenderingState>();
+
+   static #applyRotations(signal: any, rotation: SignalRotationConfig | undefined, defaultElement?: string) {
+      if (!rotation) return;
+      const rotations = Array.isArray(rotation) ? rotation : [rotation];
+      rotations.forEach((r) => SignalRenderer.applyRotation(signal, r, defaultElement));
+   }
+
+   static #groupContext(parent: DrawParent) {
+      return parent && "container" in parent ? parent : null;
+   }
+
+   static #drawPivotMarker(target: Container, pivotX: number, pivotY: number, elementName: string) {
+      const marker = new Graphics();
+      marker.eventMode = "none";
+      marker.label = `pivot_debug:${elementName}`;
+      const size = 5;
+      marker.circle(0, 0, size).fill({ color: 0xff00ff, alpha: 0.35 }).stroke({ width: 1, color: 0xff00ff });
+      marker.moveTo(-size - 2, 0).lineTo(size + 2, 0).moveTo(0, -size - 2).lineTo(0, size + 2).stroke({ width: 1, color: 0xff00ff });
+      marker.x = pivotX;
+      marker.y = pivotY;
+      target.addChild(marker);
+   }
 
    static draw(signal: any, container: any, force: boolean = false) {
       if (!SignalRenderer.#renderingState.has(signal) && (force || signal._changed)) {
@@ -49,22 +82,52 @@ export class SignalRenderer {
       return c;
    }
 
-   static drawVisualElement(signal: any, ve: any, parent:any = null) {
-      if (Array.isArray(ve)) ve.forEach((e) => this.drawVisualElement(signal, e));
+   static drawVisualElement(signal: any, ve: any, parent: DrawParent = null) {
+      const groupContext = SignalRenderer.#groupContext(parent);
+
+      if (Array.isArray(ve)) ve.forEach((e) => this.drawVisualElement(signal, e, parent));
       else if (typeof ve == "string") {
-         this.addImageElement(signal, ve);
+         this.addImageElement(
+            signal,
+            ve,
+            false,
+            undefined,
+            groupContext?.container,
+            groupContext ? { x: groupContext.originX, y: groupContext.originY } : undefined
+         );
       } else if (ve instanceof TextElement) {
          this.drawTextElement(signal, ve, parent);
       } else if (ve instanceof VisualElement) {
          if (ve.isAllowed(signal) && ve.isEnabled(signal)) {
-            if (ve.image) this.addImageElement(signal, ve, ve.blinks());
-            ve.childs()?.forEach((c: any) => this.drawVisualElement(signal, c, ve));
+            const label = ve.label();
+            if (label) {
+               const state = SignalRenderer.#renderingState.get(signal)!;
+               const originPos = Array.isArray(ve.pos()) && ve.pos().length
+                  ? { x: ve.pos()[0], y: ve.pos()[1] }
+                  : Application.getInstance().preLoader!.getSpritePos(signal._template.json_file, ve.image) ?? { x: 0, y: 0 };
+
+               const group = createLayerContainer(label);
+               group.x = originPos.x;
+               group.y = originPos.y;
+               state.container.addChild(group);
+
+               const childContext = { container: group, originX: originPos.x, originY: originPos.y, ve };
+
+               if (ve.image) this.addImageElement(signal, ve, ve.blinks(), undefined, group, originPos);
+               ve.childs()?.forEach((c: any) => this.drawVisualElement(signal, c, childContext));
+               SignalRenderer.#applyRotations(signal, ve.rotation(), label);
+            } else {
+               const origin = groupContext ? { x: groupContext.originX, y: groupContext.originY } : undefined;
+               if (ve.image) this.addImageElement(signal, ve, ve.blinks(), undefined, groupContext?.container, origin);
+               ve.childs()?.forEach((c: any) => this.drawVisualElement(signal, c, parent ?? ve));
+               SignalRenderer.#applyRotations(signal, ve.rotation());
+            }
          }
       } else console.log("unknown type of VisualElement: " + ve);
       return false;
    }
 
-   static drawTextElement(signal: any, ve: any, parent:any = null): void {
+   static drawTextElement(signal: any, ve: any, parent: DrawParent = null): void {
       if (!ve.pos()) throw new Error("TextElements require a position");
       if (ve.isAllowed(signal) && ve.isEnabled(signal)) {
         let txt = ve.getText(signal);
@@ -88,10 +151,13 @@ export class SignalRenderer {
         [displayObject.x, displayObject.y] = ve.pos();
         displayObject.anchor.x = 0.5;
 
-        const state = SignalRenderer.#renderingState.get(signal);
+        const state = SignalRenderer.#renderingState.get(signal)!;
+        const groupContext = SignalRenderer.#groupContext(parent);
+        const veParent = groupContext?.ve ?? (parent instanceof VisualElement ? parent : null);
         let max_bounds;
-        if (!max_bounds && parent?.image) {
-           const parentSprite = findChildByLabel(state.container, parent.image);
+        if (!max_bounds && veParent?.image) {
+           const lookupContainer = groupContext?.container ?? state.container;
+           const parentSprite = findChildByLabel(lookupContainer, veParent.image);
            if (parentSprite) {
               const b = parentSprite.getLocalBounds();
               max_bounds = [b.width, b.height];
@@ -106,29 +172,47 @@ export class SignalRenderer {
               applyFormatToText(displayObject);
            } else break;
         } while (true);
-        state.container.addChild(displayObject);
+        (groupContext?.container ?? state.container).addChild(displayObject);
       }
    }
 
-   static addImageElement(signal: any, ve: any, blinks: boolean = false) {
+   static addImageElement(
+      signal: any,
+      ve: any,
+      blinks: boolean = false,
+      blendMode?: string,
+      targetContainer?: Container,
+      origin?: { x: number; y: number }
+   ) {
       const textureName = typeof ve == "string" ? ve : ve.image;
 
       if (textureName == null || textureName == "") return;
 
-      if (textureName.includes(",", 1)) textureName.split(",").forEach((x: any) => this.addImageElement(signal, x));
-      else {
-         const state = SignalRenderer.#renderingState.get(signal);
-         if (!findChildByLabel(state.container, textureName)) {
+      const configuredBlendMode = blendMode ?? (typeof ve !== "string" ? ve.blendMode?.() : undefined);
+
+      if (textureName.includes(",", 1)) {
+         textureName.split(",").forEach((x: string) =>
+            this.addImageElement(signal, x.trim(), blinks, configuredBlendMode, targetContainer, origin)
+         );
+      } else {
+         const state = SignalRenderer.#renderingState.get(signal)!;
+         const container = targetContainer ?? state.container;
+         if (!findChildByLabel(container, textureName)) {
             //check if this texture was already drawn. Some texture are the same for different signals like Zs1 and Zs8
             let bmp = Application.getInstance().preLoader!.getSprite(signal._template.json_file, textureName);
             if (bmp != null) {
-               state.container.addChild(bmp);
+               container.addChild(bmp);
 
                const overridePos = typeof ve !== "string" && Array.isArray(ve.pos()) ? ve.pos() : null;
                if (overridePos) {
-                  bmp.x = overridePos[0];
-                  bmp.y = overridePos[1];
+                  bmp.x = overridePos[0] - (origin?.x ?? 0);
+                  bmp.y = overridePos[1] - (origin?.y ?? 0);
+               } else if (origin) {
+                  bmp.x -= origin.x;
+                  bmp.y -= origin.y;
                }
+
+               if (configuredBlendMode) bmp.blendMode = configuredBlendMode;
 
                if (blinks) {
                   signal._dontCache = true;
@@ -146,23 +230,55 @@ export class SignalRenderer {
       }
    }
 
+   static applyRotation(signal: any, rotation: SignalRotationDefinition, defaultElement?: string) {
+      const state = SignalRenderer.#renderingState.get(signal)!;
+      const target = rotation.element ?? defaultElement;
+      if (!target) {
+         console.warn("Rotation has no element and no defaultElement");
+         return;
+      }
+
+      const elements = (Array.isArray(target) ? target : [target]).flatMap((entry) =>
+         entry.split(",").map((name) => name.trim()).filter(Boolean)
+      );
+
+      for (const elementName of elements) {
+         const sprite = findChildByLabel(state.container, elementName) as any;
+         if (!sprite) {
+            console.warn(`Rotation target "${elementName}" not found`);
+            continue;
+         }
+
+         if (rotation.pivot) {
+            const [pivotX, pivotY] = rotation.pivot;
+            sprite.x += pivotX - sprite.pivot.x;
+            sprite.y += pivotY - sprite.pivot.y;
+            sprite.pivot.set(pivotX, pivotY);
+            if (DEBUG_VISUALIZE_SIGNAL_PIVOTS) SignalRenderer.#drawPivotMarker(sprite, pivotX, pivotY, elementName);
+         }
+
+         sprite.rotation = (rotation.angle * Math.PI) / 180;
+      }
+   }
+
    static drawPreview(template: any, container: any) {
       container.removeChildren();
-      // Create a minimal context for preview rendering
-      const previewContext = {
+
+      const previewContext: any = {
          _template: template,
          _signalStellung: {},
-         check: () => true, // For preview, always show all elements
-         get: () => null
+         get(stellung: string) {
+            const value = this._signalStellung[stellung];
+            return value != undefined ? value : null;
+         },
+         check(stellung: any) {
+            return Signal.prototype.check.call(this, stellung);
+         },
       };
-      
+
       SignalRenderer.#renderingState.set(previewContext, { container });
-      // Use existing drawVisualElement but with our preview context
-      template.elements.forEach((ve: any) => 
-         this.drawVisualElement(previewContext, ve)
-      );
+      template.elements.forEach((ve: any) => this.drawVisualElement(previewContext, ve));
       SignalRenderer.#renderingState.delete(previewContext);
    }
 }
-
 

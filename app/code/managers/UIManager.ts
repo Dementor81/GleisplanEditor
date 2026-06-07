@@ -96,6 +96,7 @@ export class UIManager {
             this.#createNewItemButtons(
                app.signalTemplates.hv_hp,
                app.signalTemplates.ks,
+               app.signalTemplates.form_hp,
                app.signalTemplates.ls,
                app.signalTemplates.zusatzSignal
             ) as any,

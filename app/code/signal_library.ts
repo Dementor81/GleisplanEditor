@@ -7,6 +7,7 @@ import hvVrDefinition from './signal-definitions/hv_vr.json';
 import ksDefinition from './signal-definitions/ks.json';
 import ksVrDefinition from './signal-definitions/ks_vr.json';
 import lsDefinition from './signal-definitions/ls.json';
+import formHpDefinition from './signal-definitions/form_hp.json';
 import simpleSignDefinitions from './signal-definitions/simple-signs.json';
 
 export const CONDITIONS = (function () {
@@ -139,4 +140,6 @@ export function initSignals(signalTemplatesRef: Record<string, any>) {
       }
       return false;
    };
+
+   registerSignalTemplate(signalTemplates, "form_hp", formHpDefinition as SignalTemplateDefinition);
 }
