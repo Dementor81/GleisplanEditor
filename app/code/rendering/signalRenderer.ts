@@ -10,6 +10,9 @@ import { Graphics, Text } from 'pixi.js';
 /** Set true to draw rotation pivot markers on rotated signal elements. */
 export const DEBUG_VISUALIZE_SIGNAL_PIVOTS = false;
 
+const DEFAULT_ROTATION_DURATION_MS = 400;
+const ROTATION_ANGLE_EPSILON = 1e-4;
+
 /** Structural type so callers pass RenderingManager without importing it (avoids circular deps). */
 export type DomainSink = { bindGameObjToDisplayObj(display: Container, domain: unknown): void };
 import { rectHitArea } from '../pixiPrimitives.ts';
@@ -22,10 +25,61 @@ type DrawParent = { container: Container; originX: number; originY: number; ve?:
 
 type RenderingState = {
    container: Container;
+   previousRotations?: Map<string, number>;
+   animateRotation?: boolean;
 };
 
 export class SignalRenderer {
    static #renderingState = new WeakMap<any, RenderingState>();
+   static #activeRotationAnimations = new WeakMap<any, Set<() => void>>();
+
+   static #captureRotations(container: Container): Map<string, number> {
+      const rotations = new Map<string, number>();
+      const walk = (node: Container) => {
+         for (const child of node.children) {
+            if (child.label) rotations.set(child.label, child.rotation);
+            if (child.children.length > 0) walk(child);
+         }
+      };
+      walk(container);
+      return rotations;
+   }
+
+   static #cancelRotationAnimations(signal: any) {
+      const cancelSet = SignalRenderer.#activeRotationAnimations.get(signal);
+      if (!cancelSet) return;
+      cancelSet.forEach((cancel) => cancel());
+      cancelSet.clear();
+   }
+
+   static #animateRotation(signal: any, sprite: Container, fromRad: number, toRad: number, durationMs: number) {
+      const ticker = Application.getInstance().renderingManager?.pixiApp?.ticker;
+      if (!ticker || durationMs <= 0) {
+         sprite.rotation = toRad;
+         return;
+      }
+
+      sprite.rotation = fromRad;
+      let elapsed = 0;
+      const remove = () => {
+         ticker.remove(tick);
+         SignalRenderer.#activeRotationAnimations.get(signal)?.delete(remove);
+      };
+      const tick = (t: { deltaMS: number }) => {
+         elapsed += t.deltaMS;
+         const progress = Math.min(1, elapsed / durationMs);
+         sprite.rotation = fromRad + (toRad - fromRad) * progress;
+         if (progress >= 1) remove();
+      };
+
+      let set = SignalRenderer.#activeRotationAnimations.get(signal);
+      if (!set) {
+         set = new Set();
+         SignalRenderer.#activeRotationAnimations.set(signal, set);
+      }
+      set.add(remove);
+      ticker.add(tick);
+   }
 
    static #applyRotations(signal: any, rotation: SignalRotationConfig | undefined, defaultElement?: string) {
       if (!rotation) return;
@@ -51,13 +105,18 @@ export class SignalRenderer {
 
    static draw(signal: any, container: any, force: boolean = false) {
       if (!SignalRenderer.#renderingState.has(signal) && (force || signal._changed)) {
-         SignalRenderer.#renderingState.set(signal, { container });
+         SignalRenderer.#cancelRotationAnimations(signal);
+         const previousRotations = SignalRenderer.#captureRotations(container);
+         const animateRotation = !!signal._rotationAspectChanged;
+
+         SignalRenderer.#renderingState.set(signal, { container, previousRotations, animateRotation });
 
          container.removeChildren();
 
          signal._dontCache = false;
          signal._template.elements.forEach((ve: any) => this.drawVisualElement(signal, ve));
          signal._changed = false;
+         signal._rotationAspectChanged = false;
          SignalRenderer.#renderingState.delete(signal);
       }
    }
@@ -259,7 +318,19 @@ export class SignalRenderer {
             if (DEBUG_VISUALIZE_SIGNAL_PIVOTS) SignalRenderer.#drawPivotMarker(sprite, pivotX, pivotY, elementName);
          }
 
-         sprite.rotation = (rotation.angle * Math.PI) / 180;
+         const targetRad = (rotation.angle * Math.PI) / 180;
+         const fromRad = state.previousRotations?.get(elementName);
+         const durationMs = rotation.duration ?? DEFAULT_ROTATION_DURATION_MS;
+
+         if (
+            state.animateRotation
+            && fromRad !== undefined
+            && Math.abs(fromRad - targetRad) > ROTATION_ANGLE_EPSILON
+         ) {
+            SignalRenderer.#animateRotation(signal, sprite, fromRad, targetRad, durationMs);
+         } else {
+            sprite.rotation = targetRad;
+         }
       }
    }
 

@@ -146,6 +146,7 @@ export class AdvancedRendererCore {
       }
 
       for (const sw of Switch.allSwitches) {
+         if (!Switch.isCompleteForRendering(sw)) continue;
          if (this.SwitchVisible(sw)) {
             if (force || !containers.tracks.renderedSwitches.has(sw)) {
                r.switchRendering.renderSwitch(sw);

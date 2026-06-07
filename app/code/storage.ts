@@ -159,7 +159,8 @@ export const STORAGE = {
          }
          s.branch = s.branch_id ? Track.allTracks.find((t) => t.id === s.branch_id) ?? null : null;
          s.from = s.from_id ? Track.allTracks.find((t) => t.id === s.from_id) ?? null : null;
-         s.calculateParameters();
+         if (Switch.hasMinimumTracks(s)) s.calculateParameters();
+         else console.warn(`Switch ${s.id} has incomplete track references after load`);
          delete s.tracks_id;
          delete s.branch_id;
          delete s.from_id;

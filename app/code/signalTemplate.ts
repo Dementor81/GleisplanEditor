@@ -138,6 +138,39 @@ export class SignalTemplate {
       return results;
    }
 
+   #_rotationAspectKeys: Set<string> | null = null;
+
+   /** Setting keys (e.g. hp) that appear in `on` conditions of elements with rotation. */
+   getRotationAspectKeys(): Set<string> {
+      if (this.#_rotationAspectKeys) return this.#_rotationAspectKeys;
+
+      const keys = new Set<string>();
+      const stack = [...this.elements];
+      while (stack.length > 0) {
+         const ve = stack.pop();
+         if (Array.isArray(ve)) {
+            stack.push(...ve);
+            continue;
+         }
+         if (typeof ve !== "object" || !(ve instanceof VisualElement)) continue;
+
+         if (ve.rotation()) {
+            [].concat(ve.on()).forEach((c: any) => {
+               if (!c) return;
+               c.split("&&").forEach((part: string) => {
+                  const trimmed = part.replace("!", "").trim();
+                  const key = trimmed.split("=")[0]?.trim();
+                  if (key) keys.add(key);
+               });
+            });
+         }
+         if (ve.childs()) stack.push(...ve.childs());
+      }
+
+      this.#_rotationAspectKeys = keys;
+      return keys;
+   }
+
    ///returns an array with all conditions. Used by UI to determent if a Feauture should be displayed
    getAllVisualElementConditions() {
       const stack = [...this.elements];

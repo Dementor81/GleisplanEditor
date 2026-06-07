@@ -178,9 +178,9 @@ export class BasicRendering extends TrackRenderingBase {
 
    renderAllSwitches() {
       Switch.allSwitches.forEach((sw) => {
-         if (!sw.track1 || !sw.track2 || !sw.track3 || (sw.type == Switch.SWITCH_TYPE.DKW && !sw.track4)) {
-            console.log(sw);
-            throw new Error("switch is falty");
+         if (!Switch.isCompleteForRendering(sw)) {
+            console.warn(`Skipping faulty switch ${sw.id}`);
+            return;
          }
          let switch_shape = new TrackGraphics("switch");
          switch_shape.eventMode = "none";

@@ -12,6 +12,7 @@ export interface SignalRotationDefinition {
    element?: string | string[];
    angle: number;
    pivot?: [number, number];
+   duration?: number;
 }
 
 export type SignalRotationConfig = SignalRotationDefinition | SignalRotationDefinition[];

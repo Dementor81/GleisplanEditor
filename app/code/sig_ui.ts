@@ -246,6 +246,7 @@ export class Sig_UI {
          [].concat(selection.object).forEach((s: any) => {
             s._signalStellung = {};
             s._changed = true;
+            s._rotationAspectChanged = false;
             app.eventManager?.emit("signalAspectChanged", { signal: s });
             if (s._template.initialSignalStellung)
                s._template.initialSignalStellung.forEach((i: any) => s.setSignalAspect(i, null, true));

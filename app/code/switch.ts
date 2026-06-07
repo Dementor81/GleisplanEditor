@@ -26,6 +26,19 @@ export class Switch {
 
    static REFERENCE_ANGLE = Math.PI / 4;
 
+   static hasMinimumTracks(sw: Switch): boolean {
+      return !!(sw.track1 && sw.track2 && sw.track3);
+   }
+
+   static isCompleteForRendering(sw: Switch): boolean {
+      return !!(
+         sw.track1 &&
+         sw.track2 &&
+         sw.track3 &&
+         (sw.type !== Switch.SWITCH_TYPE.DKW || sw.track4)
+      );
+   }
+
    static getAngleBetweenTracks(track1: Track, track2: Track): number | null {
       let intersection: Point | null = null;
       if (track1.start.equals(track2.start) || track1.start.equals(track2.end)) {
@@ -282,6 +295,8 @@ export class Switch {
     * This eliminates the need for runtime direction calculations during rendering
     */
    calculateParameters(): void {
+      if (!Switch.hasMinimumTracks(this)) return;
+
       // For each track, determine if it connects to the switch at its start or end
       // and use the appropriate direction (unit vector or its opposite)
 
