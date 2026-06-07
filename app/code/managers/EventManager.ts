@@ -542,8 +542,6 @@ export class EventManager {
                   $("#signalEditMenuHeader input").hide();
                   Sig_UI.syncSignalMenu(this.#app.selection.object);
                   STORAGE.save();
-                  this.#app.renderingManager?.renderer.reDrawEverything(true);
-                  this.#app.renderingManager?.update();
                }
             }
          )

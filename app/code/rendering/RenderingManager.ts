@@ -16,6 +16,7 @@ import type { Application as PixiApplication } from 'pixi.js';
 import { Container } from 'pixi.js';
 import { createPixiApplicationWithViewport, hitTestFromViewportLocal, TrackGraphics } from '../pixiPrimitives.ts';
 import { createLayerContainer } from '../pixiUtils.ts';
+import { SignalRenderer } from './signalRenderer.ts';
 
 type PointXY = { x: number; y: number };
 
@@ -52,8 +53,6 @@ export class RenderingManager {
    #grid: TrackGraphics | null = null;
    #domainByDisplay = new WeakMap<Container, unknown>();
 
-
-
    public get scale(): number {
       return this.#viewport!.scale.x;
    }
@@ -69,6 +68,9 @@ export class RenderingManager {
       await this.#initializeStage();
       this.#initializeContainers();
       this.#initializeRenderer();
+      this.#application.eventManager?.on("signalAspectChanged", ({ signal }: { signal: Signal }) => {
+         this.redrawSignal(signal);
+      });
    }
 
    /**
@@ -170,6 +172,18 @@ export class RenderingManager {
     */
    update(): void {
       if (this.#pixiApp) this.#pixiApp.renderer.render(this.#pixiApp.stage);
+   }
+
+   redrawSignal(signal: Signal): void {
+      //TODO: that quiet performance heavy, so we need to optimize it later
+      const container = (this.#containers as ContainersType).signals.children.find(
+         (c: Container) => this.getGameObjFromDisplayObj(c) === signal
+      );
+      if (container) {
+         signal.draw(container);
+         SignalRenderer.applyContainerBounds(container);
+      }
+      this.update();
    }
 
    recordCanvasPointer(event: MouseEvent): void {

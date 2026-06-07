@@ -101,6 +101,7 @@ export class Signal {
          else this._signalStellung[setting] = value;
 
          this._changed = true;
+         Application.getInstance().eventManager?.emit("signalAspectChanged", { signal: this });
       }
 
       if (this._positioning.track && this._changed && chain) {

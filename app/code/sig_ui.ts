@@ -30,7 +30,6 @@ export class Sig_UI {
       const update = function (command: any, isOn?: any) {
          selectedSignal.setSignalAspect(command, isOn);
          Sig_UI.syncSignalMenu(selectedSignal);
-         app.renderingManager!.reDrawEverything();
          STORAGE.save();
       };
       let signalConfigurationTab = $("#SignalConfigurationTab");
@@ -155,8 +154,6 @@ export class Sig_UI {
 
          const updateFunc = function (this: any, command: any, active: boolean) {
             signal.setSignalAspect(command, !active);
-            Application.getInstance().renderingManager!.reDrawEverything();
-            Application.getInstance().renderingManager!.update();
             Sig_UI.checkSignalAspectMenu(signal, signal._template.signalMenu, ul);
             STORAGE.save();
          };
@@ -248,10 +245,11 @@ export class Sig_UI {
       if (selection.type == "Signal") {
          [].concat(selection.object).forEach((s: any) => {
             s._signalStellung = {};
+            s._changed = true;
+            app.eventManager?.emit("signalAspectChanged", { signal: s });
             if (s._template.initialSignalStellung)
                s._template.initialSignalStellung.forEach((i: any) => s.setSignalAspect(i, null, true));
             STORAGE.save();
-            app.renderingManager!.reDrawEverything(true);
          });
       }
    }

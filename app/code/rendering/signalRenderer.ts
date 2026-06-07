@@ -8,7 +8,7 @@ import type { Container } from 'pixi.js';
 import { Graphics, Text } from 'pixi.js';
 
 /** Set true to draw rotation pivot markers on rotated signal elements. */
-export const DEBUG_VISUALIZE_SIGNAL_PIVOTS = true;
+export const DEBUG_VISUALIZE_SIGNAL_PIVOTS = false;
 
 /** Structural type so callers pass RenderingManager without importing it (avoids circular deps). */
 export type DomainSink = { bindGameObjToDisplayObj(display: Container, domain: unknown): void };
@@ -62,20 +62,22 @@ export class SignalRenderer {
       }
    }
 
+   static applyContainerBounds(container: Container): void {
+      const sig_bounds = container.getLocalBounds();
+      if (sig_bounds) {
+         container.hitArea = rectHitArea(sig_bounds.x, sig_bounds.y, sig_bounds.width, sig_bounds.height);
+         container.pivot.y = sig_bounds.height + sig_bounds.y;
+      } else console.error("Wahrscheinlich Fehler beim Zeichen des Signals!");
+   }
+
    static createSignalContainer(rm: DomainSink, signal: any, attachPointer = true) {
       let c = createLayerContainer("signal");
       rm.bindGameObjToDisplayObj(c, signal);
       c.interactiveChildren = false;
       c.scale.set(signal._template.scale);
-   
+
       signal.draw(c, true);
-      let sig_bounds = c.getLocalBounds();
-      if (sig_bounds) {
-         // schläft fehl, wenn nichts gezeichnet wurde
-         c.hitArea = rectHitArea(sig_bounds.x, sig_bounds.y, sig_bounds.width, sig_bounds.height);
-   
-         c.pivot.y = sig_bounds.height + sig_bounds.y;
-      } else console.error("Wahrscheinlich Fehler beim Zeichen des Signals!");
+      SignalRenderer.applyContainerBounds(c);
 
       if (attachPointer) SignalInteraction.attach(c, signal);
 
