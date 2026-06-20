@@ -2,36 +2,150 @@
    "id": "form_hp",
    "title": "Form Hauptsignal",
    "atlas": "formsignal",
-   "scale": 0.20,
+   "scale": 0.2,
    "previewsize": 20,
-   "initial": ["hp=0"],
+   "initial": [
+      "hp=0",
+      "HPsig"
+   ],
    "menu": [
-      ["hp=0,hp=1,hp=2", "zs3"],
-      ["vr=0,vr=1,vr=2", "verk=1(verk)", "zs3v"],
+      [
+         "hp=0,hp=1,hp=2",
+         "zs3"
+      ],
+      [
+         "vr=0,vr=1,vr=2",
+         "verk=1(verk)",
+         "zs3v"
+      ],
       "ersatz=zs1,ersatz=zs7,ersatz=zs8,ersatz=sh1,ersatz=kennlicht",
       "zs6=1(Zs 6)"
    ],
-   "elements": [
-      "mast,flügel_oben","lichtscheibe_hintergrund","lichtscheibe_licht",
+   "config_menu": [
+      "3_begriffig=1(Dreibegriffig)"
+   ],
+   "elements": [     
+      {
+         "image": "hp2_assembly,lichtscheibe_hintergrund_unten,lichtscheibe_licht_unten",
+         "on": "3_begriffig=1"
+      },
+      "mast,flügel_oben",
+      "lichtscheibe_hintergrund",
+      "lichtscheibe_licht",
       {
          "label": "lichtscheibe",
          "image": "lichtscheibe_rahmen",
-         "children": [                        
-            { "image": "lichtscheibe_farbfilter", "blendMode": "multiply" }
+         "children": [
+            {
+               "image": "lichtscheibe_farbfilter",
+               "blendMode": "multiply"
+            }
+         ]
+      },
+      {
+         "image": "flügel_unten",
+         "on": "3_begriffig=1"
+      },
+      {
+         "on": "3_begriffig=1",
+         "label": "lichtscheibe_unten",
+         "image": "lichtscheibe_rahmen_unten",
+         "children": [
+            {
+               "image": "lichtscheibe_farbfilter_unten",
+               "blendMode": "multiply"
+            }
          ]
       },
       {
          "on": "hp=0",
          "rotation": [
-            { "element": "flügel_oben", "angle": 0, "pivot": [36.5, 25.5] },
-            { "element": ["lichtscheibe","lichtscheibe_hintergrund"], "angle": 0, "pivot": [3, 15] }
+            {
+               "element": "flügel_oben",
+               "angle": 0,
+               "pivot": [
+                  36.5,
+                  25.5
+               ]
+            },
+            {
+               "element": [
+                  "lichtscheibe",
+                  "lichtscheibe_hintergrund"
+               ],
+               "angle": 0,
+               "pivot": [
+                  3,
+                  15
+               ]
+            },
+            {
+               "element": "flügel_unten",
+               "angle": 0,
+               "pivot": [
+                  25.5,
+                  154
+               ]
+            },
+            {
+               "element": [
+                  "lichtscheibe_unten",
+                  "lichtscheibe_hintergrund_unten"
+               ],
+               "angle": 0,
+               "pivot": [
+                  3,
+                  15
+               ]
+            }
          ]
       },
       {
-         "on": "hp=1",
+         "on": "hp=2",
          "rotation": [
-            { "element": "flügel_oben", "angle": -42, "pivot": [36.5, 25.5] },
-            { "element": ["lichtscheibe","lichtscheibe_hintergrund"], "angle": -62, "pivot": [3, 15] }
+            {
+               "element": "flügel_unten",
+               "angle": 42,
+               "pivot": [
+                  25.5,
+                  154
+               ]
+            },
+            {
+               "element": [
+                  "lichtscheibe_unten",
+                  "lichtscheibe_hintergrund_unten"
+               ],
+               "angle": -62,
+               "pivot": [
+                  3,
+                  15
+               ]
+            }
+         ]
+      },
+      {
+         "on": "hp=1||hp=2",
+         "rotation": [
+            {
+               "element": "flügel_oben",
+               "angle": -42,
+               "pivot": [
+                  36.5,
+                  25.5
+               ]
+            },
+            {
+               "element": [
+                  "lichtscheibe",
+                  "lichtscheibe_hintergrund"
+               ],
+               "angle": -62,
+               "pivot": [
+                  3,
+                  15
+               ]
+            }
          ]
       }
    ]

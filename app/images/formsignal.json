@@ -1,5 +1,5 @@
 [ 
-{"signal":"mast","sourceRect":{"x":2,"y":2,"width":76,"height":851},"pos":
+{"signal":"mast","sourceRect":{"x":2,"y":2,"width":74,"height":851},"pos":
         {"left":0,"top":0}
     },
 
@@ -7,23 +7,43 @@
         {"left":14,"top":99}
     },
 
-{"signal":"flügel_oben","sourceRect":{"x":2,"y":1052,"width":223,"height":60},"pos":
+{"signal":"hp2_assembly","sourceRect":{"x":2,"y":1052,"width":37,"height":82},"pos":
+        {"left":39,"top":278}
+    },
+
+{"signal":"flügel_oben","sourceRect":{"x":2,"y":1138,"width":223,"height":60},"pos":
         {"left":3,"top":25}
     },
 
-{"signal":"lichtscheibe_rahmen","sourceRect":{"x":58,"y":857,"width":43,"height":52},"pos":
+{"signal":"lichtscheibe_rahmen","sourceRect":{"x":43,"y":1052,"width":43,"height":52},"pos":
         {"left":55,"top":68}
     },
 
-{"signal":"lichtscheibe_hintergrund","sourceRect":{"x":58,"y":913,"width":42,"height":51},"pos":
+{"signal":"lichtscheibe_licht_unten","sourceRect":{"x":43,"y":1108,"width":25,"height":25},"pos":
+        {"left":69,"top":276}
+    },
+
+{"signal":"lichtscheibe_farbfilter_unten","sourceRect":{"x":72,"y":1108,"width":25,"height":24},"pos":
+        {"left":55,"top":296}
+    },
+
+{"signal":"lichtscheibe_licht","sourceRect":{"x":101,"y":1108,"width":25,"height":24},"pos":
+        {"left":70,"top":71}
+    },
+
+{"signal":"lichtscheibe_hintergrund","sourceRect":{"x":58,"y":857,"width":42,"height":51},"pos":
         {"left":55,"top":69}
     },
 
-{"signal":"lichtscheibe_farbfilter","sourceRect":{"x":58,"y":968,"width":38,"height":47},"pos":
-        {"left":57,"top":71}
+{"signal":"lichtscheibe_rahmen_unten","sourceRect":{"x":58,"y":912,"width":46,"height":50},"pos":
+        {"left":52,"top":272}
     },
 
-{"signal":"lichtscheibe_licht","sourceRect":{"x":58,"y":1019,"width":25,"height":24},"pos":
-        {"left":70,"top":71}
+{"signal":"lichtscheibe_hintergrund_unten","sourceRect":{"x":104,"y":966,"width":44,"height":50},"pos":
+        {"left":53,"top":272}
+    },
+
+{"signal":"lichtscheibe_farbfilter","sourceRect":{"x":58,"y":966,"width":38,"height":47},"pos":
+        {"left":57,"top":71}
     }
 ]
