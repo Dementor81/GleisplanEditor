@@ -31,7 +31,9 @@
     "webpack-dev-server": "^5.2.2"
   },
   "dependencies": {
+    "@codemirror/lang-json": "^6.0.2",
     "bootstrap": "^5.3.8",
+    "codemirror": "^6.0.2",
     "pixi.js": "^8.18.1"
   }
 }

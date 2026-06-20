@@ -100,6 +100,14 @@ export class Application {
    }
 
    /**
+    * Lightweight initialization for standalone signal pages (e.g. the signal configuration page).
+    * Sets up the preloader and signal templates only — no canvas, managers or editor UI.
+    */
+   async initializeForSignalPreview(): Promise<void> {
+      await this.#initializePreLoader();
+   }
+
+   /**
     * Initialize the preloader and signal templates
     * @private
     */

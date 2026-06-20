@@ -2,7 +2,7 @@
 
 // ES6 Module imports
 import { VisualElement } from './visualElement.ts';
-import { ArrayUtils } from './utils.ts';
+import { ArrayUtils, ConditionUtils } from './utils.ts';
 import { Application } from './application.ts';
 import type { SignalConfigOptionDefinition } from './signalDefinition.ts';
 
@@ -13,6 +13,7 @@ export class SignalTemplate {
    #_json_file: any = null;
    #_scale: number = 0.5;
    #_signalMenu: any = null;
+   #_configMenu: any = null;
    #_distance_from_track: number = 0;
 
    contextMenu: any[] = [];
@@ -49,6 +50,10 @@ export class SignalTemplate {
       return this.#_signalMenu;
    }
 
+   get configMenu() {
+      return this.#_configMenu;
+   }
+
    get start() {
       return this.#_start;
    }
@@ -63,7 +68,15 @@ export class SignalTemplate {
    ///single string e.g. "verk=1(verk)": btn
    ///single string without '=' e.g. zs3v: dropdown
    createSignalCommandMenu(menu_string_array: any) {
-      let menu_items = menu_string_array.map(
+      this.#_signalMenu = this.#parseCommandMenu(menu_string_array);
+   }
+
+   createConfigMenu(menu_string_array: any) {
+      this.#_configMenu = this.#parseCommandMenu(menu_string_array);
+   }
+
+   #parseCommandMenu(menu_string_array: any) {
+      return menu_string_array.map(
          function (this: any, item: any) {
             if (!Array.isArray(item)) item = [item];
             return item.map(
@@ -103,7 +116,6 @@ export class SignalTemplate {
             );
          }.bind(this)
       );
-      this.#_signalMenu = menu_items;
    }
 
    constructor(id: any, title: any, json_file: string, startElements: any, initialSignalStellung: any) {
@@ -125,7 +137,7 @@ export class SignalTemplate {
       function iterateItems(this: any, ve: any): boolean {
          if (Array.isArray(ve)) return ve.some((item: any) => iterateItems.call(this, item));
          else if (ve instanceof VisualElement) {
-            if (ve.childs()?.some((item: any) => iterateItems.call(this, item)) || [].concat(ve.on()).some((c) => c === condition)) {
+            if (ve.childs()?.some((item: any) => iterateItems.call(this, item)) || [].concat(ve.on()).some((c: any) => c.includes(condition))) {
                results.push(ve);
                return true;
             }
@@ -157,8 +169,7 @@ export class SignalTemplate {
          if (ve.rotation()) {
             [].concat(ve.on()).forEach((c: any) => {
                if (!c) return;
-               c.split("&&").forEach((part: string) => {
-                  const trimmed = part.replace("!", "").trim();
+               ConditionUtils.splitParts(c).forEach((trimmed: string) => {
                   const key = trimmed.split("=")[0]?.trim();
                   if (key) keys.add(key);
                });
@@ -171,6 +182,38 @@ export class SignalTemplate {
       return keys;
    }
 
+   #_flipAspectKeys: Set<string> | null = null;
+
+   /** Setting keys (e.g. vr) that appear in `on` conditions of elements with flip. */
+   getFlipAspectKeys(): Set<string> {
+      if (this.#_flipAspectKeys) return this.#_flipAspectKeys;
+
+      const keys = new Set<string>();
+      const stack = [...this.elements];
+      while (stack.length > 0) {
+         const ve = stack.pop();
+         if (Array.isArray(ve)) {
+            stack.push(...ve);
+            continue;
+         }
+         if (typeof ve !== "object" || !(ve instanceof VisualElement)) continue;
+
+         if (ve.flip()) {
+            [].concat(ve.on()).forEach((c: any) => {
+               if (!c) return;
+               ConditionUtils.splitParts(c).forEach((trimmed: string) => {
+                  const key = trimmed.split("=")[0]?.trim();
+                  if (key) keys.add(key);
+               });
+            });
+         }
+         if (ve.childs()) stack.push(...ve.childs());
+      }
+
+      this.#_flipAspectKeys = keys;
+      return keys;
+   }
+
    ///returns an array with all conditions. Used by UI to determent if a Feauture should be displayed
    getAllVisualElementConditions() {
       const stack = [...this.elements];
@@ -180,7 +223,7 @@ export class SignalTemplate {
          ve = stack.pop();
          if (typeof ve == "object") {
             [].concat(ve.on()).forEach((c: any) => {
-               if (c) c.split("&&").forEach((c: any) => ArrayUtils.pushUnique(conditions, c.replace("!", "")));
+               if (c) ConditionUtils.splitParts(c).forEach((part: string) => ArrayUtils.pushUnique(conditions, part));
             });
 
             if (ve.childs()) stack.push(...ve.childs());

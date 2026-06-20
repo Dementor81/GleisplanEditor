@@ -36,6 +36,7 @@ function buildElement(definition: SignalElementDefinition): any {
    if (definition.blinks !== undefined) visualElement.blinks(definition.blinks);
    if (definition.blendMode) visualElement.blendMode(definition.blendMode);
    if (definition.rotation) visualElement.rotation(definition.rotation);
+   if (definition.flip) visualElement.flip(definition.flip);
    if (definition.children) visualElement.childs(definition.children.map(buildElement));
 
    return visualElement;
@@ -54,6 +55,7 @@ export function buildSignalTemplate(definition: SignalTemplateDefinition): Signa
    if (definition.previewsize !== undefined) (template as any).previewsize = definition.previewsize;
    definition.rules?.forEach(([trigger, setting]) => template.addRule(trigger, setting));
    if (definition.menu) template.createSignalCommandMenu(definition.menu);
+   if (definition.config_menu) template.createConfigMenu(definition.config_menu);
    if (definition.config_options?.length) template.configOptions = [...definition.config_options];
 
    return template;

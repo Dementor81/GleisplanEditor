@@ -8,7 +8,28 @@ import ksDefinition from './signal-definitions/ks.json';
 import ksVrDefinition from './signal-definitions/ks_vr.json';
 import lsDefinition from './signal-definitions/ls.json';
 import formHpDefinition from './signal-definitions/form_hp.json';
+import formVrDefinition from './signal-definitions/form_vr.json';
 import simpleSignDefinitions from './signal-definitions/simple-signs.json';
+
+/**
+ * All signal configuration definitions keyed exactly like the runtime template registry.
+ * Single source of truth shared by the editor (initSignals) and the signal configuration page.
+ */
+export const signalDefinitions: Record<string, SignalTemplateDefinition> = (() => {
+   const defs: Record<string, SignalTemplateDefinition> = {
+      hv_hp: hvHpDefinition as SignalTemplateDefinition,
+      hv_vr: hvVrDefinition as SignalTemplateDefinition,
+      ks: ksDefinition as SignalTemplateDefinition,
+      ks_vr: ksVrDefinition as SignalTemplateDefinition,
+      ls: lsDefinition as SignalTemplateDefinition,
+      form_hp: formHpDefinition as SignalTemplateDefinition,
+      form_vr: formVrDefinition as SignalTemplateDefinition,
+   };
+   (simpleSignDefinitions as SignalTemplateDefinition[]).forEach((definition) => {
+      defs[definition.id === "zusatz" ? "zusatzSignal" : definition.id] = definition;
+   });
+   return defs;
+})();
 
 export const CONDITIONS = (function () {
    const BKsig = "verw=bksig",
@@ -72,13 +93,13 @@ export function initSignals(signalTemplatesRef: Record<string, any>) {
       return stop_propagation;
    };
 
-   const hvHp = registerSignalTemplate(signalTemplates, "hv_hp", hvHpDefinition as SignalTemplateDefinition);
+   const hvHp = registerSignalTemplate(signalTemplates, "hv_hp", signalDefinitions.hv_hp);
    (hvHp as any).checkSignalDependency = checkSignalDependencyFunction4HV;
 
-   const hvVr = registerSignalTemplate(signalTemplates, "hv_vr", hvVrDefinition as SignalTemplateDefinition);
+   const hvVr = registerSignalTemplate(signalTemplates, "hv_vr", signalDefinitions.hv_vr);
    (hvVr as any).checkSignalDependency = checkSignalDependencyFunction4HV;
 
-   const ks = registerSignalTemplate(signalTemplates, "ks", ksDefinition as SignalTemplateDefinition);
+   const ks = registerSignalTemplate(signalTemplates, "ks", signalDefinitions.ks);
 
    //signal: ist das signal, dessen Stellung wir gerade setzen
    //hp: ist das signal, dessen Stellung wir vorsignalisieren wollen
@@ -123,14 +144,14 @@ export function initSignals(signalTemplatesRef: Record<string, any>) {
       return stop_propagation;
    };
 
-   const ksVr = registerSignalTemplate(signalTemplates, "ks_vr", ksVrDefinition as SignalTemplateDefinition);
+   const ksVr = registerSignalTemplate(signalTemplates, "ks_vr", signalDefinitions.ks_vr);
    (ksVr as any).checkSignalDependency = (ks as any).checkSignalDependency;
 
-   registerSignalTemplate(signalTemplates, "ls", lsDefinition as SignalTemplateDefinition);
+   registerSignalTemplate(signalTemplates, "ls", signalDefinitions.ls);
 
    (simpleSignDefinitions as SignalTemplateDefinition[]).forEach((definition) => {
       const key = definition.id === "zusatz" ? "zusatzSignal" : definition.id;
-      registerSignalTemplate(signalTemplates, key, definition);
+      registerSignalTemplate(signalTemplates, key, signalDefinitions[key]);
    });
 
    (signalTemplates.lf7 as any).checkSignalDependency = (signalTemplates.lf6 as any).checkSignalDependency = function (signal: any, hp: any) {
@@ -141,5 +162,6 @@ export function initSignals(signalTemplatesRef: Record<string, any>) {
       return false;
    };
 
-   registerSignalTemplate(signalTemplates, "form_hp", formHpDefinition as SignalTemplateDefinition);
+   registerSignalTemplate(signalTemplates, "form_hp", signalDefinitions.form_hp);
+   registerSignalTemplate(signalTemplates, "form_vr", signalDefinitions.form_vr);
 }

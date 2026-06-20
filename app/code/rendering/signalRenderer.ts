@@ -8,10 +8,11 @@ import type { Container } from 'pixi.js';
 import { Graphics, Text } from 'pixi.js';
 
 /** Set true to draw rotation pivot markers on rotated signal elements. */
-export const DEBUG_VISUALIZE_SIGNAL_PIVOTS = false;
+export const DEBUG_VISUALIZE_SIGNAL_PIVOTS = true;
 
 const DEFAULT_ROTATION_DURATION_MS = 400;
 const ROTATION_ANGLE_EPSILON = 1e-4;
+const FLIP_SCALE_EPSILON = 1e-4;
 
 /** Structural type so callers pass RenderingManager without importing it (avoids circular deps). */
 export type DomainSink = { bindGameObjToDisplayObj(display: Container, domain: unknown): void };
@@ -19,19 +20,21 @@ import { rectHitArea } from '../pixiPrimitives.ts';
 import { createLayerContainer, findChildByLabel } from '../pixiUtils.ts';
 import { SignalInteraction } from '../interactions/SignalInteraction.ts';
 import { Signal } from '../signal.ts';
-import type { SignalRotationConfig, SignalRotationDefinition } from '../signalDefinition.ts';
+import type { SignalFlipConfig, SignalFlipDefinition, SignalRotationConfig, SignalRotationDefinition } from '../signalDefinition.ts';
 
 type DrawParent = { container: Container; originX: number; originY: number; ve?: VisualElement } | VisualElement | null;
 
 type RenderingState = {
    container: Container;
    previousRotations?: Map<string, number>;
+   previousScaleYs?: Map<string, number>;
    animateRotation?: boolean;
+   animateFlip?: boolean;
 };
 
 export class SignalRenderer {
    static #renderingState = new WeakMap<any, RenderingState>();
-   static #activeRotationAnimations = new WeakMap<any, Set<() => void>>();
+   static #activeTransformAnimations = new WeakMap<any, Set<() => void>>();
 
    static #captureRotations(container: Container): Map<string, number> {
       const rotations = new Map<string, number>();
@@ -45,11 +48,40 @@ export class SignalRenderer {
       return rotations;
    }
 
-   static #cancelRotationAnimations(signal: any) {
-      const cancelSet = SignalRenderer.#activeRotationAnimations.get(signal);
+   static #captureScaleYs(container: Container): Map<string, number> {
+      const scaleYs = new Map<string, number>();
+      const walk = (node: Container) => {
+         for (const child of node.children) {
+            if (child.label) scaleYs.set(child.label, child.scale.y);
+            if (child.children.length > 0) walk(child);
+         }
+      };
+      walk(container);
+      return scaleYs;
+   }
+
+   static #cancelTransformAnimations(signal: any) {
+      const cancelSet = SignalRenderer.#activeTransformAnimations.get(signal);
       if (!cancelSet) return;
       cancelSet.forEach((cancel) => cancel());
       cancelSet.clear();
+   }
+
+   static #registerTransformAnimation(signal: any, remove: () => void) {
+      let set = SignalRenderer.#activeTransformAnimations.get(signal);
+      if (!set) {
+         set = new Set();
+         SignalRenderer.#activeTransformAnimations.set(signal, set);
+      }
+      set.add(remove);
+   }
+
+   static #applyPivot(sprite: Container, pivot: [number, number], elementName: string) {
+      const [pivotX, pivotY] = pivot;
+      sprite.x += pivotX - sprite.pivot.x;
+      sprite.y += pivotY - sprite.pivot.y;
+      sprite.pivot.set(pivotX, pivotY);
+      if (DEBUG_VISUALIZE_SIGNAL_PIVOTS) SignalRenderer.#drawPivotMarker(sprite, pivotX, pivotY, elementName);
    }
 
    static #animateRotation(signal: any, sprite: Container, fromRad: number, toRad: number, durationMs: number) {
@@ -63,7 +95,7 @@ export class SignalRenderer {
       let elapsed = 0;
       const remove = () => {
          ticker.remove(tick);
-         SignalRenderer.#activeRotationAnimations.get(signal)?.delete(remove);
+         SignalRenderer.#activeTransformAnimations.get(signal)?.delete(remove);
       };
       const tick = (t: { deltaMS: number }) => {
          elapsed += t.deltaMS;
@@ -72,19 +104,54 @@ export class SignalRenderer {
          if (progress >= 1) remove();
       };
 
-      let set = SignalRenderer.#activeRotationAnimations.get(signal);
-      if (!set) {
-         set = new Set();
-         SignalRenderer.#activeRotationAnimations.set(signal, set);
-      }
-      set.add(remove);
+      SignalRenderer.#registerTransformAnimation(signal, remove);
       ticker.add(tick);
+   }
+
+   static #animateFlipScaleY(signal: any, sprite: Container, fromScaleY: number, toScaleY: number, durationMs: number) {
+      const ticker = Application.getInstance().renderingManager?.pixiApp?.ticker;
+      if (!ticker || durationMs <= 0) {
+         sprite.scale.y = toScaleY;
+         return;
+      }
+
+      sprite.scale.x = 1;
+      sprite.scale.y = fromScaleY;
+      let elapsed = 0;
+      const remove = () => {
+         ticker.remove(tick);
+         SignalRenderer.#activeTransformAnimations.get(signal)?.delete(remove);
+      };
+      const tick = (t: { deltaMS: number }) => {
+         elapsed += t.deltaMS;
+         const progress = Math.min(1, elapsed / durationMs);
+         sprite.scale.y = fromScaleY + (toScaleY - fromScaleY) * progress;
+         if (progress >= 1) {
+            sprite.scale.y = toScaleY;
+            remove();
+         }
+      };
+
+      SignalRenderer.#registerTransformAnimation(signal, remove);
+      ticker.add(tick);
+   }
+
+   static #resolveElementNames(target: string | string[]): string[] {
+      return (Array.isArray(target) ? target : [target]).flatMap((entry) =>
+         entry.split(",").map((name) => name.trim()).filter(Boolean)
+      );
    }
 
    static #applyRotations(signal: any, rotation: SignalRotationConfig | undefined, defaultElement?: string) {
       if (!rotation) return;
       const rotations = Array.isArray(rotation) ? rotation : [rotation];
       rotations.forEach((r) => SignalRenderer.applyRotation(signal, r, defaultElement));
+   }
+
+   static #applyFlips(signal: any, flip: SignalFlipConfig | undefined, defaultElement?: string) {
+      if (!flip) return;
+      const flips = Array.isArray(flip) ? flip : [flip];
+      flips.forEach((f) => SignalRenderer.applyFlip(signal, f, defaultElement));
    }
 
    static #groupContext(parent: DrawParent) {
@@ -105,11 +172,13 @@ export class SignalRenderer {
 
    static draw(signal: any, container: any, force: boolean = false) {
       if (!SignalRenderer.#renderingState.has(signal) && (force || signal._changed)) {
-         SignalRenderer.#cancelRotationAnimations(signal);
+         SignalRenderer.#cancelTransformAnimations(signal);
          const previousRotations = SignalRenderer.#captureRotations(container);
+         const previousScaleYs = SignalRenderer.#captureScaleYs(container);
          const animateRotation = !!signal._rotationAspectChanged;
+         const animateFlip = !!signal._flipAspectChanged;
 
-         SignalRenderer.#renderingState.set(signal, { container, previousRotations, animateRotation });
+         SignalRenderer.#renderingState.set(signal, { container, previousRotations, previousScaleYs, animateRotation, animateFlip });
 
          container.removeChildren();
 
@@ -117,6 +186,7 @@ export class SignalRenderer {
          signal._template.elements.forEach((ve: any) => this.drawVisualElement(signal, ve));
          signal._changed = false;
          signal._rotationAspectChanged = false;
+         signal._flipAspectChanged = false;
          SignalRenderer.#renderingState.delete(signal);
       }
    }
@@ -177,11 +247,13 @@ export class SignalRenderer {
                if (ve.image) this.addImageElement(signal, ve, ve.blinks(), undefined, group, originPos);
                ve.childs()?.forEach((c: any) => this.drawVisualElement(signal, c, childContext));
                SignalRenderer.#applyRotations(signal, ve.rotation(), label);
+               SignalRenderer.#applyFlips(signal, ve.flip(), label);
             } else {
                const origin = groupContext ? { x: groupContext.originX, y: groupContext.originY } : undefined;
                if (ve.image) this.addImageElement(signal, ve, ve.blinks(), undefined, groupContext?.container, origin);
                ve.childs()?.forEach((c: any) => this.drawVisualElement(signal, c, parent ?? ve));
                SignalRenderer.#applyRotations(signal, ve.rotation());
+               SignalRenderer.#applyFlips(signal, ve.flip());
             }
          }
       } else console.log("unknown type of VisualElement: " + ve);
@@ -299,9 +371,7 @@ export class SignalRenderer {
          return;
       }
 
-      const elements = (Array.isArray(target) ? target : [target]).flatMap((entry) =>
-         entry.split(",").map((name) => name.trim()).filter(Boolean)
-      );
+      const elements = SignalRenderer.#resolveElementNames(target);
 
       for (const elementName of elements) {
          const sprite = findChildByLabel(state.container, elementName) as any;
@@ -310,13 +380,7 @@ export class SignalRenderer {
             continue;
          }
 
-         if (rotation.pivot) {
-            const [pivotX, pivotY] = rotation.pivot;
-            sprite.x += pivotX - sprite.pivot.x;
-            sprite.y += pivotY - sprite.pivot.y;
-            sprite.pivot.set(pivotX, pivotY);
-            if (DEBUG_VISUALIZE_SIGNAL_PIVOTS) SignalRenderer.#drawPivotMarker(sprite, pivotX, pivotY, elementName);
-         }
+         if (rotation.pivot) SignalRenderer.#applyPivot(sprite, rotation.pivot, elementName);
 
          const targetRad = (rotation.angle * Math.PI) / 180;
          const fromRad = state.previousRotations?.get(elementName);
@@ -330,6 +394,42 @@ export class SignalRenderer {
             SignalRenderer.#animateRotation(signal, sprite, fromRad, targetRad, durationMs);
          } else {
             sprite.rotation = targetRad;
+         }
+      }
+   }
+
+   static applyFlip(signal: any, flip: SignalFlipDefinition, defaultElement?: string) {
+      const state = SignalRenderer.#renderingState.get(signal)!;
+      const target = flip.element ?? defaultElement;
+      if (!target) {
+         console.warn("Flip has no element and no defaultElement");
+         return;
+      }
+
+      const elements = SignalRenderer.#resolveElementNames(target);
+
+      for (const elementName of elements) {
+         const sprite = findChildByLabel(state.container, elementName) as any;
+         if (!sprite) {
+            console.warn(`Flip target "${elementName}" not found`);
+            continue;
+         }
+
+         if (flip.pivot) SignalRenderer.#applyPivot(sprite, flip.pivot, elementName);
+
+         sprite.scale.x = 1;
+         const targetScaleY = flip.scaleY;
+         const startScaleY = state.previousScaleYs?.get(elementName);
+         const durationMs = flip.duration ?? DEFAULT_ROTATION_DURATION_MS;
+
+         if (
+            state.animateFlip
+            && startScaleY !== undefined
+            && Math.abs(startScaleY - targetScaleY) > FLIP_SCALE_EPSILON
+         ) {
+            SignalRenderer.#animateFlipScaleY(signal, sprite, startScaleY, targetScaleY, durationMs);
+         } else {
+            sprite.scale.y = targetScaleY;
          }
       }
    }

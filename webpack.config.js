@@ -7,9 +7,12 @@ module.exports = (env, argv) => {
   const isProduction = argv.mode === 'production';
   
   return {
-    entry: './app/code/start.ts',
+    entry: {
+      main: './app/code/start.ts',
+      signalConfig: './app/code/signalConfig.ts',
+    },
     output: {
-      filename: isProduction ? 'bundle.[contenthash].js' : 'bundle.js',
+      filename: isProduction ? '[name].[contenthash].js' : '[name].bundle.js',
       path: path.resolve(__dirname, 'app', 'dist'),
       clean: true, // Clean dist folder before each build
     },
@@ -69,6 +72,14 @@ module.exports = (env, argv) => {
       new HtmlWebpackPlugin({
         template: 'app/start.html',
         filename: 'start.html',
+        chunks: ['main'],
+        inject: 'head',
+        scriptLoading: 'blocking'
+      }),
+      new HtmlWebpackPlugin({
+        template: 'app/signal-config.html',
+        filename: 'signal-config.html',
+        chunks: ['signalConfig'],
         inject: 'head',
         scriptLoading: 'blocking'
       }),
@@ -78,7 +89,7 @@ module.exports = (env, argv) => {
             from: 'app',
             to: '',
             globOptions: {
-              ignore: ['code/**', 'dist/**', '**/code/**', '**/dist/**', 'start.html', '**/start.html'],
+              ignore: ['code/**', 'dist/**', '**/code/**', '**/dist/**', 'start.html', '**/start.html', 'signal-config.html', '**/signal-config.html'],
             },
           },
         ],

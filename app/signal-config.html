@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="de">
+   <head>
+      <meta charset="utf-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+      <link rel="shortcut icon" type="image/ico" href="favicon.ico" />
+      <title>Signal konfigurieren</title>
+      <link rel="stylesheet" href="dev/bootstrap-5.3.8/bootstrap-icons.min.css" />
+      <script src="dev/jquery-3.7.1.min.js"></script>
+      <style>
+         html,
+         body {
+            height: 100%;
+            margin: 0;
+            overflow: hidden;
+         }
+         #scTopbar {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.5rem 0.75rem;
+            border-bottom: 1px solid var(--bs-border-color, #dee2e6);
+            background: #f8f9fa;
+         }
+         #scTopbar .sc-title {
+            font-weight: 600;
+            margin-right: auto;
+         }
+         #scLayout {
+            display: flex;
+            height: calc(100vh - 53px);
+            min-height: 0;
+         }
+         .sc-pane {
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+            min-height: 0;
+            border-right: 1px solid var(--bs-border-color, #dee2e6);
+         }
+         .sc-pane:last-child {
+            border-right: none;
+         }
+         #scLeft {
+            flex: 0 0 26%;
+         }
+         #scCenter {
+            flex: 1 1 auto;
+         }
+         #scRight {
+            flex: 0 0 360px;
+            overflow-y: auto;
+         }
+         .sc-pane-header {
+            padding: 0.4rem 0.75rem;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+            color: #6c757d;
+            background: #f1f3f5;
+            border-bottom: 1px solid var(--bs-border-color, #dee2e6);
+         }
+         #atlasImageWrap {
+            flex: 0 0 auto;
+            max-height: 38%;
+            overflow: auto;
+            background: #e9ecef;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0.5rem;
+         }
+         #atlasImage {
+            max-width: 100%;
+            image-rendering: pixelated;
+         }
+         .sc-editor {
+            flex: 1 1 auto;
+            min-height: 0;
+            overflow: auto;
+         }
+         .cm-editor {
+            height: 100%;
+         }
+         #previewCanvasWrap {
+            flex: 0 0 auto;
+            height: 480px;
+            background: #ced4da;
+            position: relative;
+         }
+         #previewCanvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            cursor: grab;
+            touch-action: none;
+         }
+         #previewCanvas:active {
+            cursor: grabbing;
+         }
+         #previewCoords {
+            position: absolute;
+            right: 6px;
+            bottom: 6px;
+            font: 11px/1.4 ui-monospace, SFMono-Regular, Menlo, monospace;
+            background: rgba(0, 0, 0, 0.55);
+            color: #fff;
+            padding: 1px 6px;
+            border-radius: 3px;
+            pointer-events: none;
+            user-select: none;
+            white-space: nowrap;
+         }
+         #signalEditMenu {
+            padding: 0.75rem;
+         }
+         .sidebar_menu_header {
+            margin-bottom: 0.75rem;
+         }
+         #scError {
+            color: var(--bs-danger, #dc3545);
+            font-size: 0.85rem;
+            display: none;
+         }
+      </style>
+   </head>
+
+   <body>
+      <div class="visually-hidden">
+         <p style="font-family: DOT">dummy to load font face</p>
+         <p style="font-family: condenced">dummy to load font face</p>
+      </div>
+
+      <div id="scTopbar">
+         <span class="sc-title"><i class="bi bi-stoplights"></i> Signal konfigurieren</span>
+         <label for="templateSelect" class="form-label mb-0 small">Konfiguration</label>
+         <select id="templateSelect" class="form-select form-select-sm" style="width: auto"></select>
+         <button id="btnRender" type="button" class="btn btn-sm btn-primary">
+            <i class="bi bi-play-fill"></i> Signal rendern
+         </button>
+      </div>
+
+      <div id="scLayout">
+         <div id="scLeft" class="sc-pane">
+            <div class="sc-pane-header">Signal-Atlas</div>
+            <div id="atlasImageWrap"><img id="atlasImage" alt="Signal-Atlas" /></div>
+            <div class="sc-pane-header">Atlas-JSON</div>
+            <div id="atlasEditor" class="sc-editor"></div>
+         </div>
+
+         <div id="scCenter" class="sc-pane">
+            <div class="sc-pane-header">Konfiguration</div>
+            <div id="configEditor" class="sc-editor"></div>
+         </div>
+
+         <div id="scRight" class="sc-pane">
+            <div class="sc-pane-header">Vorschau</div>
+            <div id="previewCanvasWrap">
+               <canvas id="previewCanvas"></canvas>
+               <div id="previewCoords"></div>
+            </div>
+
+            <div id="signalEditMenu">
+               <div id="signalEditMenuHeader" class="sidebar_menu_header">
+                  <h5 class="card-title">–</h5>
+                  <p class="card-text"><span>–</span></p>
+               </div>
+               <div class="btn-group webkit-fill-width mb-3" role="group">
+                  <button id="btnGrundstellung" type="button" class="btn btn-sm btn-outline-primary">
+                     <i class="bi bi-0-square"></i> Grundstellung
+                  </button>
+               </div>
+
+               <ul class="nav nav-tabs nav-fill" role="tablist">
+                  <li class="nav-item">
+                     <a class="nav-link active" data-bs-toggle="tab" data-bs-target="#signalAspectTab" type="button" role="tab">Signalstellung</a>
+                  </li>
+                  <li class="nav-item">
+                     <a class="nav-link" data-bs-toggle="tab" data-bs-target="#SignalConfigurationTab" type="button" role="tab">Konfiguration</a>
+                  </li>
+               </ul>
+               <div class="tab-content">
+                  <div class="tab-pane active" id="signalAspectTab" role="tabpanel"></div>
+                  <div class="tab-pane" id="SignalConfigurationTab" role="tabpanel"></div>
+               </div>
+            </div>
+         </div>
+      </div>
+
+      <div class="toast-container position-fixed bottom-0 start-50 translate-middle-x p-3" id="scToastContainer"></div>
+   </body>
+</html>

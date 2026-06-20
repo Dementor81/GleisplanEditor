@@ -157,3 +157,14 @@ export const ArrayUtils = {
 
 } as const;
 
+/** Split compound signal conditions (&& / ||) into atomic clauses. */
+export const ConditionUtils = {
+   splitParts(condition: string): string[] {
+      return condition.split("&&").flatMap((part) => part.split("||").map((c) => c.replace("!", "").trim()));
+   },
+
+   includesPart(condition: string, part: string): boolean {
+      return this.splitParts(condition).includes(part);
+   },
+} as const;
+

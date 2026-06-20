@@ -15,6 +15,7 @@ export class VisualElement {
    #_off: any = null;
    #_childs: any = null;
    #_rotation: any = null;
+   #_flip: any = null;
    #_blendMode: any = null;
    #_label: any = null;
 
@@ -70,6 +71,14 @@ export class VisualElement {
       if (rotation === undefined) return this.#_rotation;
       else {
          this.#_rotation = rotation;
+         return this;
+      }
+   }
+
+   flip(flip?: any): any {
+      if (flip === undefined) return this.#_flip;
+      else {
+         this.#_flip = flip;
          return this;
       }
    }

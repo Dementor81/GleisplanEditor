@@ -447,6 +447,14 @@ export class RenderingManager {
    get pixiApp(): PixiApplication {
       return this.#pixiApp!;
    }
+
+   /**
+    * Attach an externally created Pixi application (used by standalone preview pages that render
+    * signals without the full editor stage). Enables shared ticker animations via SignalRenderer.
+    */
+   attachExternalPixiApp(app: PixiApplication): void {
+      this.#pixiApp = app;
+   }
    get containers(): any { return this.#containers; }
    get renderer(): TrackRenderingBase {
       return this.#renderer!;

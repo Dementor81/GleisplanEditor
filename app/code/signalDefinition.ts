@@ -17,6 +17,15 @@ export interface SignalRotationDefinition {
 
 export type SignalRotationConfig = SignalRotationDefinition | SignalRotationDefinition[];
 
+export interface SignalFlipDefinition {
+   element?: string | string[];
+   scaleY: 0 | 1;
+   pivot?: [number, number];
+   duration?: number;
+}
+
+export type SignalFlipConfig = SignalFlipDefinition | SignalFlipDefinition[];
+
 export type SignalBlendMode = "multiply";
 
 export interface SignalVisualElementDefinition {
@@ -28,6 +37,7 @@ export interface SignalVisualElementDefinition {
    blinks?: boolean;
    blendMode?: SignalBlendMode;
    rotation?: SignalRotationConfig;
+   flip?: SignalFlipConfig;
    children?: SignalElementDefinition[];
 }
 
@@ -56,6 +66,7 @@ export interface SignalTemplateDefinition {
    scale?: number;
    previewsize?: number;
    menu?: SignalMenuDefinition;
+   config_menu?: SignalMenuDefinition;
    rules?: Array<[string, string]>;
    config_options?: SignalConfigOptionDefinition[];
 }

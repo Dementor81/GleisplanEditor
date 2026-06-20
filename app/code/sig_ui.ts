@@ -2,7 +2,7 @@
 
 // ES6 Module imports
 import { ui } from './ui.ts';
-import { ArrayUtils } from './utils.ts';
+import { ArrayUtils, ConditionUtils } from './utils.ts';
 import { STORAGE } from './storage.ts';
 import { Application } from './application.ts';
 import { Signal } from './signal.ts';
@@ -119,6 +119,15 @@ export class Sig_UI {
             )
          );
       }
+
+      const configMenu = selectedSignal._template.configMenu;
+      if (configMenu?.length) {
+         const toggleUpdate = (command: any, active: boolean) => update(command, !active);
+         const menu = ui.div("d-flex flex-column bd-highlight mb-3");
+         menu.append(configMenu.map((data: any) => Sig_UI.createSignalAspectsMenuItems(selectedSignal, data, { bind: () => toggleUpdate })));
+         Sig_UI.checkSignalAspectMenu(selectedSignal, configMenu, menu);
+         signalConfigurationTab.append(menu);
+      }
    }
 
    static syncConfigOptionSwitches(signal: any) {
@@ -146,6 +155,9 @@ export class Sig_UI {
       });
 
       Sig_UI.syncConfigOptionSwitches(signal);
+
+      if (signal._template.configMenu?.length)
+         Sig_UI.checkSignalAspectMenu(signal, signal._template.configMenu, $("#SignalConfigurationTab"));
    }
 
    static initSignalAspectsMenu(signal: any) {
@@ -186,8 +198,10 @@ export class Sig_UI {
                            if (on.includes(mi.command)) {
                               on = [...on];
                               ArrayUtils.remove(on, mi.command);
+                           } else if (on.every((c: any) => ConditionUtils.includesPart(c, mi.command))) {
+                              return true;
                            }
-                        } else if (on == mi.command) return true;
+                        } else if (on == mi.command || ConditionUtils.includesPart(on, mi.command)) return true;
 
                         return signal.check(on);
                      })
@@ -247,6 +261,7 @@ export class Sig_UI {
             s._signalStellung = {};
             s._changed = true;
             s._rotationAspectChanged = false;
+            s._flipAspectChanged = false;
             app.eventManager?.emit("signalAspectChanged", { signal: s });
             if (s._template.initialSignalStellung)
                s._template.initialSignalStellung.forEach((i: any) => s.setSignalAspect(i, null, true));

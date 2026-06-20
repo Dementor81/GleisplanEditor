@@ -105,7 +105,7 @@ export class UIManager {
          ui.createAccordionItem(
             "Vorsignale",
             accordionId,
-            this.#createNewItemButtons(app.signalTemplates.hv_vr, app.signalTemplates.ks_vr) as any
+            this.#createNewItemButtons(app.signalTemplates.hv_vr, app.signalTemplates.ks_vr, app.signalTemplates.form_vr) as any
          ),
          ui.createAccordionItem(
             "Lf-Signale",

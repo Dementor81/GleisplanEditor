@@ -38,6 +38,7 @@ export class Signal {
    _changed: boolean = false;
    _dontCache: boolean = false;
    _rotationAspectChanged: boolean = false;
+   _flipAspectChanged: boolean = false;
 
    
 
@@ -103,6 +104,7 @@ export class Signal {
 
          this._changed = true;
          if (this._template.getRotationAspectKeys().has(setting)) this._rotationAspectChanged = true;
+         if (this._template.getFlipAspectKeys().has(setting)) this._flipAspectChanged = true;
          Application.getInstance().eventManager?.emit("signalAspectChanged", { signal: this });
       }
 
