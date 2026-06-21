@@ -1,5 +1,5 @@
 Bugs:
-    ☐ navbar funktioniert bei kleinen Bildschirmen nicht
+    ✔ navbar funktioniert bei kleinen Bildschirmen nicht @done(26-06-21 19:50)
     ☐ züge sehr schnell über weichen bewegen, macht sie kaputt
     ☐ Bahnsteige mit Größe 0 können gebaut werden
 

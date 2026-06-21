@@ -434,6 +434,12 @@ export class SignalRenderer {
       }
    }
 
+   static #applyInitialSignalStellung(stellung: Record<string, unknown>, command: string) {
+      const [setting, raw] = command.split("=");
+      const value = raw === undefined ? true : isNaN(Number(raw)) ? raw : Number(raw);
+      stellung[setting] = value;
+   }
+
    static drawPreview(template: any, container: any) {
       container.removeChildren();
 
@@ -448,6 +454,10 @@ export class SignalRenderer {
             return Signal.prototype.check.call(this, stellung);
          },
       };
+
+      template.initialSignalStellung?.forEach((command: string) =>
+         SignalRenderer.#applyInitialSignalStellung(previewContext._signalStellung, command)
+      );
 
       SignalRenderer.#renderingState.set(previewContext, { container });
       template.elements.forEach((ve: any) => this.drawVisualElement(previewContext, ve));

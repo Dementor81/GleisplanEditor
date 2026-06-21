@@ -1,7 +1,7 @@
 "use strict";
 
 // ES6 Module imports
-import { Modal } from "bootstrap";
+import { Collapse, Modal } from "bootstrap";
 import { COMPUTED, CUSTOM_MOUSE_ACTION, MENU } from "../config.ts";
 import { STORAGE } from "../storage.ts";
 import { ui } from "../ui.ts";
@@ -191,11 +191,27 @@ export class EventManager {
       $("#myCanvas").trigger("focus");
    }
 
+   #collapseNewItemsMenubarOnMobile(): void {
+      if (window.matchMedia("(min-width: 992px)").matches) return;
+      const el = document.getElementById("newItemsMenubarCollapse");
+      if (!el?.classList.contains("show")) return;
+      Collapse.getOrCreateInstance(el).hide();
+   }
+
    #initializeButtonEvents(): void {
       // Menu buttons
-      $("#btnAddSignals").onclick(() => this.#app.uiManager?.showMenu(MENU.NEW_SIGNAL));
-      $("#btnAddTrain").onclick(() => this.#app.uiManager?.showMenu(MENU.NEW_TRAIN));
-      $("#btnAddObject").onclick(() => this.#app.uiManager?.showMenu(MENU.NEW_OBJECT));
+      $("#btnAddSignals").onclick(() => {
+         this.#collapseNewItemsMenubarOnMobile();
+         this.#app.uiManager?.showMenu(MENU.NEW_SIGNAL);
+      });
+      $("#btnAddTrain").onclick(() => {
+         this.#collapseNewItemsMenubarOnMobile();
+         this.#app.uiManager?.showMenu(MENU.NEW_TRAIN);
+      });
+      $("#btnAddObject").onclick(() => {
+         this.#collapseNewItemsMenubarOnMobile();
+         this.#app.uiManager?.showMenu(MENU.NEW_OBJECT);
+      });
       $("#menuNeu").onclick(() => this.#app.uiManager?.showStartScreen());
       $("#menuSpeichern").onclick(() => STORAGE.downloadAsFile());
       $("#menuModusAendern").onclick(() => {
