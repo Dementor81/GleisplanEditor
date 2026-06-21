@@ -3,32 +3,107 @@
   "title": "Hv Vorsignal",
   "atlas": "hv",
   "scale": 0.125,
-  "initial": ["vr=0", "VRsig"],
-  "menu": ["vr=0,vr=1,vr=2", "verk=1(verk)", "zs3v"],
+  "initial": [
+    "vr=0",
+    "VRsig"
+  ],
+  "menu": [
+    "vr=0,vr=1,vr=2",
+    "verk=1(verk)",
+    "advanceSpeed"
+  ],
+  "dependency": {
+    "when": ["partner.HPsig", "self.VRsig"],
+    "unless": ["self.HPsig&&self.hp=0", "self.vr=-1"],
+    "subscribe": {
+      "vr": { "route": { "stop": 0, "caution": 1, "clear": 2 } }
+    },
+    "overrides": [
+      ["partner.currentSpeed<=60&&partner.currentSpeed>0", { "vr": 2, "when": "self.vr>0" }]
+    ],
+    "stopUnless": "vr_op=wdh"
+  },
   "elements": [
     "mast,vr_schirm,vr_lichtp",
-    { "image": "ne2", "off": "vr_op=wdh" },
-    { "image": "vr_zusatz_schirm,vr_zusatz_lichtp", "on": "vr_op=verk||vr_op=wdh" },
-    { "image": "vr_zusatz_licht", "on": ["vr_op=verk", "verk=1"] },
-    { "image": "vr_zusatz_licht", "on": "vr_op=wdh" },
+    {
+      "image": "ne2",
+      "off": "vr_op=wdh"
+    },
+    {
+      "image": "vr_zusatz_schirm,vr_zusatz_lichtp",
+      "on": "vr_op=verk||vr_op=wdh"
+    },
+    {
+      "image": "vr_zusatz_licht",
+      "on": [
+        "vr_op=verk",
+        "verk=1"
+      ]
+    },
+    {
+      "image": "vr_zusatz_licht",
+      "on": "vr_op=wdh"
+    },
     {
       "children": [
-        { "image": "vr_gelb_oben,vr_gelb_unten", "on": "vr=0" },
-        { "image": "vr_grün_oben,vr_grün_unten", "on": "vr=1" },
-        { "image": "vr_gelb_unten,vr_grün_oben", "on": "vr=2" }
+        {
+          "image": "vr_gelb_oben,vr_gelb_unten",
+          "on": "vr=0"
+        },
+        {
+          "image": "vr_grün_oben,vr_grün_unten",
+          "on": "vr=1"
+        },
+        {
+          "image": "vr_gelb_unten,vr_grün_oben",
+          "on": "vr=2"
+        }
       ]
     },
     "vr_schuten",
-    { "image": "vr_zusatz_schute", "on": "vr_op=verk" },
     {
-      "on": "zs3v>0",
-      "off": "zusatz_unten",
-      "children": ["zs3v", { "text": "zs3v", "format": [80, "Arial", 1], "color": "#ffde36", "pos": [115, 890] }]
+      "image": "vr_zusatz_schute",
+      "on": "vr_op=verk"
+    },
+    {
+      "on": "advanceSpeed>0",
+      "off": "zusatz_unten||advanceSpeed=4",
+      "children": [
+        "zs3v",
+        {
+          "text": "advanceSpeed",
+          "format": [
+            80,
+            "Arial",
+            1
+          ],
+          "color": "#ffde36",
+          "pos": [
+            115,
+            890
+          ]
+        }
+      ]
     },
     {
       "image": "zs3v_licht",
       "on": "zusatz_unten",
-      "children": [{ "text": "zs3v", "format": [60, "DOT"], "color": "#ffde36", "pos": [120, 885], "on": "zs3v>0" }]
+      "children": [
+        {
+          "text": "advanceSpeed",
+          "format": [
+            60,
+            "DOT"
+          ],
+          "color": "#ffde36",
+          "pos": [
+            120,
+            885
+          ],
+          "on": "advanceSpeed>0&&vr>0",
+          "off": "advanceSpeed=4"
+        }
+      ]
     }
   ]
 }

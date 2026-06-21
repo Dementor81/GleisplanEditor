@@ -86,7 +86,7 @@ export class Signal {
 
    /**
     * Sets the signal aspect. Supports two ways of seeting the aspect, you could either set the aspect by a 
-    * command like "hp=1" or you could set the aspect by a command "zs3" and the override Value 20.
+    * command like "hp=1" or you could set the aspect by a command "currentSpeed" and the override Value 20.
     * @param command {any} - The command to set the signal aspect
     * @param overideValue {any} - The value to override the signal aspect
     * @param chain {boolean} - Whether to chain the signal aspect
@@ -169,6 +169,38 @@ export class Signal {
       return ret;
    }
 
+   static _resolveConditionOperand(signal: Signal, token: string) {
+      const trimmed = token.trim();
+      const aspect = signal.get(trimmed);
+      if (aspect != null) return aspect;
+      if (/^-?\d+$/.test(trimmed)) return Number(trimmed);
+      return trimmed;
+   }
+
+   static _compareConditionValues(left: unknown, right: unknown, operator: string) {
+      const leftValue = left === null || left === undefined ? "null" : left;
+      const rightValue = right === null || right === undefined ? "null" : right;
+
+      if (operator === "=") return leftValue == rightValue;
+      if (operator === "!=") return leftValue != rightValue;
+
+      const ln = Number(leftValue);
+      const rn = Number(rightValue);
+      if (Number.isNaN(ln) || Number.isNaN(rn)) return false;
+
+      switch (operator) {
+         case "<":
+            return ln < rn;
+         case "<=":
+            return ln <= rn;
+         case ">=":
+            return ln >= rn;
+         case ">":
+            return ln > rn;
+      }
+      return false;
+   }
+
    check(stellung: any) {
       if (stellung == null) return true;
 
@@ -184,17 +216,9 @@ export class Signal {
             return equation.operands.some(this.check, this);
       }
 
-      let data = this.get(equation.operands[0].trim());
-      if (data === null) data = "null";
-      if (equation.operator == "=") return data == equation.operands[1].trim();
-      else {
-         const right = Number.parseInt(equation.operands[1].trim());
-         if (equation.operator == "<") return data < right;
-         else if (equation.operator == "<=") return data <= right;
-         else if (equation.operator == ">=") return data >= right;
-         else if (equation.operator == ">") return data > right;
-         else if (equation.operator == "!=") return data != right;
-      }
+      const left = Signal._resolveConditionOperand(this, equation.operands[0]);
+      const right = Signal._resolveConditionOperand(this, equation.operands[1]);
+      return Signal._compareConditionValues(left, right, equation.operator);
    }
 
    draw(c: any, force: boolean = false) {
@@ -268,10 +292,37 @@ export class Signal {
    }
 
    static FromObject(o: any) {
-      let s = new Signal(Application.getInstance().signalTemplates[o._template]);      
-      s._signalStellung = o._signalStellung;
+      const templateKey = o._template;
+      const s = new Signal(Application.getInstance().signalTemplates[templateKey]);
+      s._signalStellung = Signal.migrateSignalStellung(templateKey, o._signalStellung);
       s._positioning = o._positioning;
       return s;
+   }
+
+   static migrateSignalStellung(templateKey: string, stellung: Record<string, unknown>) {
+      if (!stellung) return stellung;
+
+      const migrated = { ...stellung };
+      const busCurrent = new Set(["hv_hp", "hv_vr", "form_hp", "form_vr", "ks", "ks_vr", "lf7"]);
+      const busAdvance = new Set(["hv_hp", "hv_vr", "form_hp", "form_vr", "ks", "ks_vr", "lf6"]);
+      const localTemplates = new Set(["zs3", "zusatzSignal", "zusatz"]);
+
+      if (migrated.zs3 !== undefined) {
+         if (localTemplates.has(templateKey)) migrated.localSpeed = migrated.zs3;
+         else if (busCurrent.has(templateKey)) migrated.currentSpeed = migrated.zs3;
+         delete migrated.zs3;
+      }
+      if (migrated.zs3v !== undefined) {
+         if (busAdvance.has(templateKey)) migrated.advanceSpeed = migrated.zs3v;
+         delete migrated.zs3v;
+      }
+      if (migrated.geschw !== undefined) {
+         if (localTemplates.has(templateKey)) migrated.localSpeed = migrated.geschw;
+         else if (templateKey === "lf7") migrated.currentSpeed = migrated.geschw;
+         else if (templateKey === "lf6") migrated.advanceSpeed = migrated.geschw;
+         delete migrated.geschw;
+      }
+      return migrated;
    }
 }
 

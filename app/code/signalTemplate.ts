@@ -66,7 +66,7 @@ export class SignalTemplate {
    ///array: keeps the array
    ///comma sperated string e.g."hp=0,hp=1,hp=2": buttonGroup
    ///single string e.g. "verk=1(verk)": btn
-   ///single string without '=' e.g. zs3v: dropdown
+   ///single string without '=' e.g. advanceSpeed: dropdown
    createSignalCommandMenu(menu_string_array: any) {
       this.#_signalMenu = this.#parseCommandMenu(menu_string_array);
    }

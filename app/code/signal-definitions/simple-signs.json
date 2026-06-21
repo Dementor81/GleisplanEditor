@@ -13,7 +13,18 @@
     "scale": 0.15,
     "elements": [
       "ne1",
-      { "text": "ne1", "format": [20, "Arial", 1], "pos": [100, 105] }
+      {
+        "text": "ne1",
+        "format": [
+          20,
+          "Arial",
+          1
+        ],
+        "pos": [
+          100,
+          105
+        ]
+      }
     ]
   },
   {
@@ -28,11 +39,31 @@
     "title": "Lf 6",
     "atlas": "basis",
     "scale": 0.12,
-    "initial": ["slave", "geschw=9"],
-    "menu": ["geschw()"],
+    "initial": [
+      "slave",
+      "advanceSpeed=9"
+    ],
+    "menu": [
+      "advanceSpeed()"
+    ],
+    "dependency": {
+      "when": ["partner.master", "self.slave"]
+    },
     "elements": [
       "lf6",
-      { "text": "geschw", "format": [110, "Arial", 1], "color": "#333", "pos": [98, 8] }
+      {
+        "text": "advanceSpeed",
+        "format": [
+          110,
+          "Arial",
+          1
+        ],
+        "color": "#333",
+        "pos": [
+          98,
+          8
+        ]
+      }
     ]
   },
   {
@@ -41,11 +72,33 @@
     "atlas": "basis",
     "scale": 0.15,
     "previewsize": 30,
-    "initial": ["master", "geschw=9"],
-    "menu": ["geschw()"],
+    "initial": [
+      "master",
+      "currentSpeed=9"
+    ],
+    "menu": [
+      "currentSpeed()"
+    ],
+    "dependency": {
+      "publish": {
+        "currentSpeed": "currentSpeed"
+      }
+    },
     "elements": [
       "lf7",
-      { "text": "geschw", "format": [130, "Arial", 1], "color": "#333", "pos": [55, 20] }
+      {
+        "text": "currentSpeed",
+        "format": [
+          130,
+          "Arial",
+          1
+        ],
+        "color": "#333",
+        "pos": [
+          55,
+          20
+        ]
+      }
     ]
   },
   {
@@ -53,11 +106,24 @@
     "title": "Zs 3 (alleinst.)",
     "atlas": "basis",
     "scale": 0.15,
-    "initial": "geschw=9",
-    "menu": ["geschw()"],
+    "initial": "localSpeed=9",
+    "menu": [
+      "localSpeed()"
+    ],
     "elements": [
       "zs3",
-      { "text": "geschw", "format": [120, "Arial", 1], "pos": [90, 60] }
+      {
+        "text": "localSpeed",
+        "format": [
+          120,
+          "Arial",
+          1
+        ],
+        "pos": [
+          90,
+          60
+        ]
+      }
     ]
   },
   {
@@ -79,7 +145,10 @@
     "atlas": "basis",
     "scale": 0.2,
     "previewsize": 30,
-    "elements": ["zs6_blech_mast", "zs6_blech"]
+    "elements": [
+      "zs6_blech_mast",
+      "zs6_blech"
+    ]
   },
   {
     "id": "zusatz",
@@ -88,11 +157,31 @@
     "scale": 0.15,
     "previewsize": 30,
     "initial": "zs6=1",
-    "menu": [["zs6=1(Zs 6)"], "zs3()"],
+    "menu": [
+      [
+        "zs6=1(Zs 6)"
+      ],
+      "localSpeed()"
+    ],
     "elements": [
       "zusatzanzeiger",
-      { "image": "zs6_licht", "on": "zs6=1" },
-      { "text": "zs3", "format": [85, "DOT"], "pos": [70, 40], "off": "zs6=1", "on": "zs3>0" }
+      {
+        "image": "zs6_licht",
+        "on": "zs6=1"
+      },
+      {
+        "text": "localSpeed",
+        "format": [
+          85,
+          "DOT"
+        ],
+        "pos": [
+          70,
+          40
+        ],
+        "off": "zs6=1",
+        "on": "localSpeed>0"
+      }
     ]
   }
 ]

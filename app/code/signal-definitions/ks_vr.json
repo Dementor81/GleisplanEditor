@@ -3,8 +3,16 @@
    "title": "Ks Vorsignal",
    "atlas": "ks",
    "scale": 0.13,
-   "initial": ["VRsig", "hp=2", "mast"],
-   "menu": ["hp=1(Ks 1),hp=2(Ks 2)", "zs3v", "ersatz=kennlicht"],
+   "initial": [
+      "VRsig",
+      "hp=2",
+      "mast"
+   ],
+   "menu": [
+      "hp=1(Ks 1),hp=2(Ks 2)",
+      "advanceSpeed",
+      "ersatz=kennlicht"
+   ],
    "config_options": [
       {
          "name": "mast",
@@ -17,45 +25,119 @@
          "convertTo": "mast"
       }
    ],
+   "dependency": {
+      "when": ["partner.HPsig", "self.VRsig"],
+      "unless": ["self.HPsig&&self.hp=0", "self.hp=-1"],
+      "subscribe": {
+         "hp": { "route": { "stop": 2, "caution": 1, "clear": 1 } }
+      },
+      "stopUnless": "vr_op=wdh"
+   },
    "elements": [
-      { "image": "mast", "on": "mast", "off": "mast2" },
-      { "image": "mast2", "on": "mast2", "off": "mast" },
+      {
+         "image": "mast",
+         "on": "mast",
+         "off": "mast2"
+      },
+      {
+         "image": "mast2",
+         "on": "mast2",
+         "off": "mast"
+      },
       "schirm_vr",
-      { "image": "ks2_vr", "on": "hp=2" },
+      {
+         "image": "ks2_vr",
+         "on": "hp=2"
+      },
       {
          "on": "hp=1",
          "children": [
-            { "image": "ks1_vr", "on": "zs3v>0", "blinks": true },
-            { "image": "ks1_vr", "off": "zs3v>0" }
+            {
+               "image": "ks1_vr",
+               "on": "advanceSpeed>0",
+               "blinks": true
+            },
+            {
+               "image": "ks1_vr",
+               "off": "advanceSpeed>0"
+            }
          ]
       },
       {
          "on": "vr_op=wdh",
          "image": "vr_wdh_optik",
-         "children": [{ "image": "vr_wdh_licht", "off": "hp=1&&zs3v<=0" }]
+         "children": [
+            {
+               "image": "vr_wdh_licht",
+               "off": "hp=1&&advanceSpeed<=0"
+            }
+         ]
       },
       {
          "off": "vr_op=wdh",
          "children": [
-            { "image": "ne2", "on": "mast" },
-            { "image": "ne2", "on": "mast2", "pos": [30, 1000] }
+            {
+               "image": "ne2",
+               "on": "mast"
+            },
+            {
+               "image": "ne2",
+               "on": "mast2",
+               "pos": [
+                  30,
+                  1000
+               ]
+            }
          ]
       },
       {
          "on": "vr_op=verk",
          "image": "vr_verk_optik",
-         "children": [{ "image": "vr_verk_licht", "off": "hp=1&&zs3v<=0" }]
+         "children": [
+            {
+               "image": "vr_verk_licht",
+               "off": "hp=1&&advanceSpeed<=0"
+            }
+         ]
       },
       {
-         "on": "zs3v>0",
+         "on": "advanceSpeed>0",
          "off": "zusatz_unten",
-         "children": ["zs3v", { "text": "zs3v", "format": [80, "Arial", 1], "color": "#ffde36", "pos": [85, 490] }]
+         "children": [
+            "zs3v",
+            {
+               "text": "advanceSpeed",
+               "format": [
+                  80,
+                  "Arial",
+                  1
+               ],
+               "color": "#ffde36",
+               "pos": [
+                  85,
+                  490
+               ]
+            }
+         ]
       },
       {
          "image": "zs3v_licht",
          "on": "zusatz_unten",
          "children": [
-            { "text": "zs3v", "format": [85, "DOT"], "color": "#ffde36", "on": "zs3v>0", "off": "hp<=0", "pos": [90, 520] }
+            {
+               "text": "advanceSpeed",
+               "format": [
+                  85,
+                  "DOT"
+               ],
+               "color": "#ffde36",
+               "on": "advanceSpeed>0",
+               "off": "hp<=0",
+               "pos": [
+                  90,
+                  520
+               ]
+            }
          ]
       }
    ]

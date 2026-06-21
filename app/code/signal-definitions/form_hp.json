@@ -11,12 +11,12 @@
    "menu": [
       [
          "hp=0,hp=1,hp=2",
-         "zs3"
+         "currentSpeed"
       ],
       [
          "vr=0,vr=1,vr=2",
          "verk=1(verk)",
-         "zs3v"
+         "advanceSpeed"
       ],
       "ersatz=zs1,ersatz=zs7,ersatz=zs8,ersatz=sh1,ersatz=kennlicht",
       "zs6=1(Zs 6)"
@@ -24,7 +24,29 @@
    "config_menu": [
       "3_begriffig=1(Dreibegriffig)"
    ],
-   "elements": [     
+   "dependency": {
+      "publish": {
+         "route": [
+            ["hp<=0", "stop"],
+            ["hp=1", "caution"],
+            ["hp>=2", "clear"]
+         ],
+         "currentSpeed": [
+            ["hp=2&&currentSpeed<=0", 4],
+            ["else", "currentSpeed"]
+         ]
+      },
+      "when": ["partner.HPsig", "self.VRsig"],
+      "unless": ["self.HPsig&&self.hp=0", "self.vr=-1"],
+      "subscribe": {
+         "vr": { "route": { "stop": 0, "caution": 1, "clear": 2 } }
+      },
+      "overrides": [
+         ["partner.currentSpeed=4", { "advanceSpeed": 0, "vr": 2, "when": "self.vr>0" }]
+      ],
+      "stopUnless": "vr_op=wdh"
+   },
+   "elements": [
       {
          "image": "hp2_assembly,lichtscheibe_hintergrund_unten,lichtscheibe_licht_unten",
          "on": "3_begriffig=1"

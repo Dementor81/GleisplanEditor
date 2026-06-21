@@ -1,6 +1,7 @@
-import { SignalTemplateDefinition, SignalCondition, SignalElementDefinition, SignalTextElementDefinition } from './signalDefinition.ts';
+import { SignalTemplateDefinition, SignalCondition, SignalElementDefinition, SignalTextElementDefinition, dependencyHasHandler } from './signalDefinition.ts';
 import { SignalTemplate } from './signalTemplate.ts';
 import { TextElement, VisualElement } from './visualElement.ts';
+import { makeCheckSignalDependency } from './signalDependency.ts';
 
 function applyCondition(element: VisualElement, method: "on" | "off", condition?: SignalCondition) {
    if (condition === undefined) return;
@@ -57,6 +58,12 @@ export function buildSignalTemplate(definition: SignalTemplateDefinition): Signa
    if (definition.menu) template.createSignalCommandMenu(definition.menu);
    if (definition.config_menu) template.createConfigMenu(definition.config_menu);
    if (definition.config_options?.length) template.configOptions = [...definition.config_options];
+   if (definition.dependency) {
+      (template as any).dependency = definition.dependency;
+      if (dependencyHasHandler(definition.dependency)) {
+         (template as any).checkSignalDependency = makeCheckSignalDependency(definition.dependency);
+      }
+   }
 
    return template;
 }

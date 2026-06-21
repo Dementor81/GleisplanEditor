@@ -57,6 +57,27 @@ export interface SignalConfigOptionDefinition {
    convertTo?: string;
 }
 
+export type PublishRule = [condition: string, value: string | number];
+
+export interface SignalDependencyDefinition {
+   when?: string[];
+   unless?: string[];
+   publish?: {
+      route?: PublishRule[];
+      currentSpeed?: PublishRule[] | 'currentSpeed';
+   };
+   subscribe?: {
+      vr?: { route: Record<string, number> };
+      hp?: { route: Record<string, number> };
+   };
+   overrides?: Array<[string, Record<string, string | number>]>;
+   stopUnless?: string;
+}
+
+export function dependencyHasHandler(dependency: SignalDependencyDefinition): boolean {
+   return !!(dependency.when?.length || dependency.unless?.length || dependency.subscribe || dependency.overrides?.length || dependency.stopUnless);
+}
+
 export interface SignalTemplateDefinition {
    id: string;
    title: string;
@@ -69,4 +90,5 @@ export interface SignalTemplateDefinition {
    config_menu?: SignalMenuDefinition;
    rules?: Array<[string, string]>;
    config_options?: SignalConfigOptionDefinition[];
+   dependency?: SignalDependencyDefinition;
 }
