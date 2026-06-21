@@ -40,92 +40,95 @@
     "atlas": "basis",
     "scale": 0.12,
     "initial": [
-      "slave",
-      "advanceSpeed=9"
+       "slave",
+       "advanceSpeed=9"
     ],
     "menu": [
-      "advanceSpeed()"
+       "advanceSpeed()"
     ],
     "dependency": {
-      "when": ["partner.master", "self.slave"]
+       "when": [
+          "partner.master",
+          "self.slave"
+       ]
     },
     "elements": [
-      "lf6",
-      {
-        "text": "advanceSpeed",
-        "format": [
-          110,
-          "Arial",
-          1
-        ],
-        "color": "#333",
-        "pos": [
-          98,
-          8
-        ]
-      }
+       "lf6",
+       {
+          "text": "advanceSpeed",
+          "format": [
+             110,
+             "Arial",
+             1
+          ],
+          "color": "#333",
+          "pos": [
+             98,
+             0
+          ]
+       }
     ]
-  },
-  {
-    "id": "lf7",
-    "title": "Lf 7",
-    "atlas": "basis",
-    "scale": 0.15,
-    "previewsize": 30,
-    "initial": [
-      "master",
-      "currentSpeed=9"
-    ],
-    "menu": [
-      "currentSpeed()"
-    ],
-    "dependency": {
-      "publish": {
+ },
+ {
+  "id": "lf7",
+  "title": "Lf 7",
+  "atlas": "basis",
+  "scale": 0.15,
+  "previewsize": 30,
+  "initial": [
+     "master",
+     "currentSpeed=9"
+  ],
+  "menu": [
+     "currentSpeed()"
+  ],
+  "dependency": {
+     "publish": {
         "currentSpeed": "currentSpeed"
-      }
-    },
-    "elements": [
-      "lf7",
-      {
+     }
+  },
+  "elements": [
+     "lf7",
+     {
         "text": "currentSpeed",
         "format": [
-          130,
-          "Arial",
-          1
+           130,
+           "Arial",
+           1
         ],
         "color": "#333",
         "pos": [
-          55,
-          20
+           55,
+           0
         ]
-      }
-    ]
-  },
-  {
-    "id": "zs3",
-    "title": "Zs 3 (alleinst.)",
-    "atlas": "basis",
-    "scale": 0.15,
-    "initial": "localSpeed=9",
-    "menu": [
-      "localSpeed()"
-    ],
-    "elements": [
-      "zs3",
-      {
+     }
+  ]
+},
+{
+  "id": "zs3",
+  "title": "Zs 3 (alleinst.)",
+  "atlas": "basis",
+  "scale": 0.15,
+  "initial": "localSpeed=9",
+  "menu": [
+     "localSpeed()"
+  ],
+  "elements": [
+     "zs3",
+     {
         "text": "localSpeed",
         "format": [
-          120,
-          "Arial",
-          1
+           120,
+           "Arial",
+           1
         ],
         "pos": [
-          90,
-          60
+           94,
+           40
         ]
-      }
-    ]
-  },
+     }
+  ]
+},
   {
     "id": "zs10",
     "title": "Zs 10",

@@ -3,6 +3,7 @@
    "title": "Ks Hauptsignal",
    "atlas": "ks",
    "scale": 0.12,
+   "previewsize": 20,
    "initial": [
       "HPsig",
       "verw=asig",

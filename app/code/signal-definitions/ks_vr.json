@@ -3,6 +3,7 @@
    "title": "Ks Vorsignal",
    "atlas": "ks",
    "scale": 0.13,
+   "previewsize": 20,
    "initial": [
       "VRsig",
       "hp=2",

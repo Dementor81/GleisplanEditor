@@ -3,6 +3,7 @@
   "title": "Hv Vorsignal",
   "atlas": "hv",
   "scale": 0.125,
+  "previewsize": 20,
   "initial": [
     "vr=0",
     "VRsig"
