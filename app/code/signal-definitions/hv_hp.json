@@ -34,8 +34,17 @@
       "ersatz=zs1,ersatz=zs7,ersatz=zs8,ersatz=sh1,ersatz=kennlicht",
       "zs6=1(Zs 6)"
    ],
-   "config_menu": [
-      "mastschild=wrw(W-R-W),mastschild=wgwgw(W-G-W-G-W)"
+   "config_options": [
+      {
+         "name": "mastschild=wrw",
+         "title": "W-R-W",
+         "convertTo": "mastschild=wgwgw"
+      },
+      {
+         "name": "mastschild=wgwgw",
+         "title": "W-G-W-G-W",
+         "convertTo": "mastschild=wrw"
+      }
    ],
    "dependency": {
       "publish": {

@@ -58,18 +58,6 @@ export class Sig_UI {
          update
       );
       if (vorsignalSwitch) signalConfigurationTab.append(vorsignalSwitch.addClass("p-3 border-bottom"));
-      if (conditions.includes("mastschild=wrw") && conditions.includes("mastschild=wgwgw"))
-         signalConfigurationTab.append(
-            ui.createOptionGroup(
-               "Mastschild",
-               [
-                  ["W-R-W", "mastschild=wrw"],
-                  ["W-G-W-G-W", "mastschild=wgwgw"],
-               ],
-               "radio",
-               update
-            ).addClass("p-3 border-bottom")
-         );
       if (conditions.includes("zusatz_unten") || conditions.includes("zusatz_oben")) {
          const a: any[] = [
             ["unten", "zusatz_unten"],
@@ -86,7 +74,11 @@ export class Sig_UI {
             const opt = selectedSignal._template.getConfigOption(optionName);
             if (isOn) {
                update(optionName, true);
-               if (opt?.convertTo) update(opt.convertTo, false);
+               if (opt?.convertTo) {
+                  const optionKey = optionName.split("=")[0];
+                  const convertKey = opt.convertTo.split("=")[0];
+                  if (optionKey !== convertKey) update(opt.convertTo, false);
+               }
             } else {
                update(optionName, false);
                if (opt?.convertTo) update(opt.convertTo, true);
@@ -119,15 +111,6 @@ export class Sig_UI {
             )
          );
       }
-
-      const configMenu = selectedSignal._template.configMenu;
-      if (configMenu?.length) {
-         const toggleUpdate = (command: any, active: boolean) => update(command, !active);
-         const menu = ui.div("d-flex flex-column bd-highlight mb-3");
-         menu.append(configMenu.map((data: any) => Sig_UI.createSignalAspectsMenuItems(selectedSignal, data, { bind: () => toggleUpdate })));
-         Sig_UI.checkSignalAspectMenu(selectedSignal, configMenu, menu);
-         signalConfigurationTab.append(menu);
-      }
    }
 
    static syncConfigOptionSwitches(signal: any) {
@@ -155,9 +138,6 @@ export class Sig_UI {
       });
 
       Sig_UI.syncConfigOptionSwitches(signal);
-
-      if (signal._template.configMenu?.length)
-         Sig_UI.checkSignalAspectMenu(signal, signal._template.configMenu, $("#SignalConfigurationTab"));
    }
 
    static initSignalAspectsMenu(signal: any) {

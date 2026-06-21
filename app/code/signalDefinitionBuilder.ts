@@ -56,7 +56,6 @@ export function buildSignalTemplate(definition: SignalTemplateDefinition): Signa
    if (definition.previewsize !== undefined) (template as any).previewsize = definition.previewsize;
    definition.rules?.forEach(([trigger, setting]) => template.addRule(trigger, setting));
    if (definition.menu) template.createSignalCommandMenu(definition.menu);
-   if (definition.config_menu) template.createConfigMenu(definition.config_menu);
    if (definition.config_options?.length) template.configOptions = [...definition.config_options];
    if (definition.dependency) {
       (template as any).dependency = definition.dependency;

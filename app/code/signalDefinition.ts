@@ -87,7 +87,6 @@ export interface SignalTemplateDefinition {
    scale?: number;
    previewsize?: number;
    menu?: SignalMenuDefinition;
-   config_menu?: SignalMenuDefinition;
    rules?: Array<[string, string]>;
    config_options?: SignalConfigOptionDefinition[];
    dependency?: SignalDependencyDefinition;

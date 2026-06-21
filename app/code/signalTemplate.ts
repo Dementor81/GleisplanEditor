@@ -13,7 +13,6 @@ export class SignalTemplate {
    #_json_file: any = null;
    #_scale: number = 0.5;
    #_signalMenu: any = null;
-   #_configMenu: any = null;
    #_distance_from_track: number = 0;
 
    contextMenu: any[] = [];
@@ -50,10 +49,6 @@ export class SignalTemplate {
       return this.#_signalMenu;
    }
 
-   get configMenu() {
-      return this.#_configMenu;
-   }
-
    get start() {
       return this.#_start;
    }
@@ -69,10 +64,6 @@ export class SignalTemplate {
    ///single string without '=' e.g. advanceSpeed: dropdown
    createSignalCommandMenu(menu_string_array: any) {
       this.#_signalMenu = this.#parseCommandMenu(menu_string_array);
-   }
-
-   createConfigMenu(menu_string_array: any) {
-      this.#_configMenu = this.#parseCommandMenu(menu_string_array);
    }
 
    #parseCommandMenu(menu_string_array: any) {

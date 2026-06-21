@@ -30,9 +30,8 @@ A minimal example:
 | `scale` | no | Render scale (default `0.5`). |
 | `previewsize` | no | Size hint for palette previews. |
 | `menu` | no | Stellung (aspect) controls in the signal configuration panel. |
-| `config_menu` | no | Structural options (mast type, etc.), same syntax as `menu`. |
 | `rules` | no | Automatic aspect corrections after each change. |
-| `config_options` | no | Mutually exclusive placement variants (e.g. bent vs straight mast). |
+| `config_options` | no | Structural placement variants (e.g. bent vs straight mast, mastschild type). |
 | `dependency` | no | Inter-signal communication via the semantic aspect bus. |
 
 ---
@@ -48,7 +47,7 @@ Many properties accept **either a single value or an array**. The builder normal
 | `elements` | `"mast,schirm"` or `{ ... }` | `[ "mast", { ... } ]` | Root visual tree: each entry is a sprite string, visual object, text object, or nested array of those. |
 | `children` | — | `["zs3v", { "text": "advanceSpeed" }]` | Child nodes under a visual group (always an array when present). |
 | `image` | `"vr_gelb_oben"` | — | Multiple sprites in **one string**, comma-separated: `"vr_gelb_oben,vr_gelb_unten"`. |
-| `menu`, `config_menu` | one row per string | `["a", "b"]` on a row | Outer array = panel rows. Inner array = controls on the same row. |
+| `menu` | one row per string | `["a", "b"]` on a row | Outer array = panel rows. Inner array = controls on the same row. |
 | `rotation`, `flip` | `{ "element": "flügel", ... }` | `[{ ... }, { ... }]` | One transform or several (e.g. different aspects for different wing angles). |
 | `rotation.element`, `flip.element` | `"lichtscheibe_oben"` | `["lichtscheibe_oben", "lichtscheibe_unten"]` | One labelled child or several animated together. |
 | `dependency.when` | — | `["partner.HPsig", "self.VRsig"]` | **AND** — all must pass (only array form is used). |
@@ -187,7 +186,7 @@ Inside `dependency`, prefix whose signal is tested:
 
 ---
 
-## `menu` and `config_menu`
+## `menu`
 
 Both use the same string format. Parsed in `SignalTemplate.#parseCommandMenu()`. Each entry in the outer array is one **row**; a row may be a single string or an inner array of strings (see [String or array](#string-or-array)).
 
@@ -237,7 +236,11 @@ If the user sets `currentSpeed=80` while `hp>0`, the signal is corrected to `hp=
 
 ## `config_options`
 
-Mutually exclusive structural variants. Shown as checkboxes that swap aspects.
+Structural variants shown as toggle switches in the configuration panel (not the aspect/Stellung tab).
+
+`name` is an aspect command — a flag aspect (`"mast"`) or a full assignment (`"mastschild=wrw"`, `"3_begriffig=1"`). With `convertTo`, two options are mutually exclusive (checking one disables the other).
+
+**Example — mast geometry (`ks.json`):**
 
 ```json
 "config_options": [
@@ -246,7 +249,22 @@ Mutually exclusive structural variants. Shown as checkboxes that swap aspects.
 ]
 ```
 
-Checking “Mast geknickt” enables `mast` and disables `mast2`, and vice versa.
+**Example — mastschild type (`hv_hp.json`):**
+
+```json
+"config_options": [
+  { "name": "mastschild=wrw", "title": "W-R-W", "convertTo": "mastschild=wgwgw" },
+  { "name": "mastschild=wgwgw", "title": "W-G-W-G-W", "convertTo": "mastschild=wrw" }
+]
+```
+
+**Example — single toggle (`form_hp.json`):**
+
+```json
+"config_options": [
+  { "name": "3_begriffig=1", "title": "Dreibegriffig" }
+]
+```
 
 ---
 

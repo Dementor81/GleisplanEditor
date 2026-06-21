@@ -21,8 +21,11 @@
       "ersatz=zs1,ersatz=zs7,ersatz=zs8,ersatz=sh1,ersatz=kennlicht",
       "zs6=1(Zs 6)"
    ],
-   "config_menu": [
-      "3_begriffig=1(Dreibegriffig)"
+   "config_options": [
+      {
+         "name": "3_begriffig=1",
+         "title": "Dreibegriffig"
+      }
    ],
    "dependency": {
       "publish": {
