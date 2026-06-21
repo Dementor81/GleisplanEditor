@@ -93,25 +93,36 @@
          </button>
       </div>
 
-      <div
+      <nav
          id="newItemsMenubar"
-         class="navbar-dark rounded-3 navbar-expand-lg toolbar-shadow d-flex align-items-center gap-2">
-         <button type="button" class="btn btn-secondary btn-nav" id="btnAddSignals" title="Signale hinzufügen">
-            <img src="assets/static_images/plus.svg" width="14" height="14" alt="" />
-            
-            <span>Signale</span>
+         class="navbar navbar-dark rounded-3 navbar-expand-lg toolbar-shadow">
+         <button
+            class="navbar-toggler"
+            type="button"
+            data-bs-toggle="collapse"
+            data-bs-target="#newItemsMenubarCollapse"
+            aria-controls="newItemsMenubarCollapse"
+            aria-expanded="false"
+            aria-label="Elemente hinzufügen">
+            <span class="navbar-toggler-icon"></span>
          </button>
-         <button type="button" class="btn btn-secondary btn-nav" id="btnAddTrain" title="Züge hinzufügen">
-            <img src="assets/static_images/plus.svg" width="14" height="14" alt="" />
-            
-            <span>Züge</span>
-         </button>
-         <button type="button" class="btn btn-secondary btn-nav" id="btnAddObject" title="Objekte hinzufügen">
-            <img src="assets/static_images/plus.svg" width="14" height="14" alt="" />
-            
-            <span>Objekte</span>
-         </button>
-      </div>
+         <div class="collapse navbar-collapse" id="newItemsMenubarCollapse">
+            <div class="d-flex align-items-center gap-2 ms-lg-auto">
+               <button type="button" class="btn btn-secondary btn-nav" id="btnAddSignals" title="Signale hinzufügen">
+                  <img src="assets/static_images/plus.svg" width="14" height="14" alt="" />
+                  <span>Signale</span>
+               </button>
+               <button type="button" class="btn btn-secondary btn-nav" id="btnAddTrain" title="Züge hinzufügen">
+                  <img src="assets/static_images/plus.svg" width="14" height="14" alt="" />
+                  <span>Züge</span>
+               </button>
+               <button type="button" class="btn btn-secondary btn-nav" id="btnAddObject" title="Objekte hinzufügen">
+                  <img src="assets/static_images/plus.svg" width="14" height="14" alt="" />
+                  <span>Objekte</span>
+               </button>
+            </div>
+         </div>
+      </nav>
 
       <div
          class="modal fade"
