@@ -2,7 +2,7 @@
    "id": "ks",
    "title": "Ks Hauptsignal",
    "atlas": "ks",
-   "scale": 0.15,
+   "scale": 0.12,
    "initial": ["HPsig", "verw=asig", "hp=0", "mast"],
    "menu": [
       ["hp=0,hp=1(Ks 1),hp=2(Ks 2)", "zs3"],

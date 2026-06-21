@@ -2,54 +2,211 @@
    "id": "form_vr",
    "title": "Form Vorsignal",
    "atlas": "form_vr",
-   "scale": 0.20,
+   "scale": 0.12,
    "previewsize": 20,
-   "initial": ["vr=0"],
+   "initial": [
+      "VRsig","vr=0"
+   ],
    "menu": [
-      ["vr=0,vr=1,vr=2", "verk=1(verk)"]
+      [
+         "vr=0,vr=1,vr=2",
+         "verk=1(verk)"
+      ]
    ],
    "elements": [
-      "mast","scheibe","lichtscheibe_hintergrund_oben","lichtscheibe_hintergrund_unten","lichtscheibe_licht",
+      "mast",
+      
+      "lichtscheibe_hintergrund_oben",
+      "lichtscheibe_hintergrund_unten",
+      "lichtscheibe_licht",
       {
          "label": "lichtscheibe_oben",
          "image": "lichtscheibe_rahmen_oben",
-         "children": [                        
-            { "image": "farben_oben", "blendMode": "multiply" }
+         "children": [
+            {
+               "image": "farben_oben",
+               "blendMode": "multiply"
+            }
          ]
       },
       {
          "label": "lichtscheibe_unten",
          "image": "lichtscheibe_rahmen_unten",
-         "children": [                        
-            { "image": "farben_unten", "blendMode": "multiply" }
+         "children": [
+            {
+               "image": "farben_unten",
+               "blendMode": "multiply"
+            }
          ]
       },
-     "flügel",
+      "flügel","scheibe",
       {
          "on": "vr=0",
-         "rotation": [            
-            { "element": ["lichtscheibe_oben"], "angle": 0, "pivot": [7, 63] },
-            { "element": ["lichtscheibe_hintergrund_oben"], "angle": 0, "pivot": [-22, 61] },
-            { "element": ["lichtscheibe_unten","lichtscheibe_hintergrund_unten"], "angle": 0, "pivot": [86, 62] }
+         "rotation": [
+            {
+               "element": [
+                  "lichtscheibe_oben"
+               ],
+               "angle": 0,
+               "pivot": [
+                  7,
+                  63
+               ]
+            },
+            {
+               "element": [
+                  "lichtscheibe_hintergrund_oben"
+               ],
+               "angle": 0,
+               "pivot": [
+                  -22,
+                  61
+               ]
+            },
+            {
+               "element": [
+                  "lichtscheibe_unten",
+                  "lichtscheibe_hintergrund_unten"
+               ],
+               "angle": 0,
+               "pivot": [
+                  86,
+                  62
+               ]
+            },
+           {
+               "element": [
+                  "flügel"
+               ],
+               "angle": 0,
+               "pivot": [
+                  28,
+                  162
+               ]
+            }
          ],
-         "flip": [{ "element": "scheibe", "scaleY": 1, "pivot": [3, 112] }]
+         "flip": [
+            {
+               "element": "scheibe",
+               "scaleY": 1,
+               "pivot": [
+                  3,
+                  112
+               ]
+            }
+         ]
       },
       {
          "on": "vr=1",
-         "rotation": [            
-            { "element": ["lichtscheibe_oben"], "angle": -58, "pivot": [7, 63] },
-            { "element": ["lichtscheibe_hintergrund_oben"], "angle": -58, "pivot": [-22, 61] },
-            { "element": ["lichtscheibe_unten","lichtscheibe_hintergrund_unten"], "angle": -58, "pivot": [86, 62] }
+         "rotation": [
+            {
+               "element": [
+                  "lichtscheibe_oben"
+               ],
+               "angle": -58,
+               "pivot": [
+                  7,
+                  63
+               ]
+            },
+            {
+               "element": [
+                  "lichtscheibe_hintergrund_oben"
+               ],
+               "angle": -58,
+               "pivot": [
+                  -22,
+                  61
+               ]
+            },
+            {
+               "element": [
+                  "lichtscheibe_unten",
+                  "lichtscheibe_hintergrund_unten"
+               ],
+               "angle": -58,
+               "pivot": [
+                  86,
+                  62
+               ]
+            },
+           {
+               "element": [
+                  "flügel"
+               ],
+               "angle": 0,
+               "pivot": [
+                  28,
+                  162
+               ]
+            }
          ],
-         "flip": [{ "element": "scheibe", "scaleY": 0, "pivot": [3, 112] }]
+         "flip": [
+            {
+               "element": "scheibe",
+               "scaleY": 0,
+               "pivot": [
+                  3,
+                  112
+               ]
+            }
+         ]
       },
       {
          "on": "vr=2",
-         "rotation": [            
-            { "element": ["lichtscheibe_oben","lichtscheibe_hintergrund_oben"], "angle": -45, "pivot": [3, 15] },
-            { "element": ["lichtscheibe_unten","lichtscheibe_hintergrund_unten"], "angle": -45, "pivot": [3, 15] }
+         "rotation": [
+            {
+               "element": [
+                  "lichtscheibe_oben"
+               ],
+               "angle": -58,
+               "pivot": [
+                  7,
+                  63
+               ]
+            },
+            {
+               "element": [
+                  "lichtscheibe_hintergrund_oben"
+               ],
+               "angle": -58,
+               "pivot": [
+                  -22,
+                  61
+               ]
+            },{
+               "element": [
+                  "flügel"
+               ],
+               "angle": -45,
+               "pivot": [
+                  28,
+                  162
+               ]
+            },
+            {
+               "element": [
+                  "lichtscheibe_unten",
+                  "lichtscheibe_hintergrund_unten"
+               ],
+               "angle": 0,
+               "pivot": [
+                  86,
+                  62
+               ]
+            }
          ],
-         "flip": [{ "element": "scheibe", "scaleY": 0, "pivot": [3, 112] }]
+         "flip": [
+            {
+               "element": "scheibe",
+               "scaleY": 1,
+               "pivot": [
+                  3,
+                  112
+               ]
+            }
+         ]
+         
       }
    ]
 }

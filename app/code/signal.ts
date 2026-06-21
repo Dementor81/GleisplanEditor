@@ -105,19 +105,25 @@ export class Signal {
          this._changed = true;
          if (this._template.getRotationAspectKeys().has(setting)) this._rotationAspectChanged = true;
          if (this._template.getFlipAspectKeys().has(setting)) this._flipAspectChanged = true;
-         Application.getInstance().eventManager?.emit("signalAspectChanged", { signal: this });
+         
       }
 
       if (this._positioning.track && this._changed && chain) {
-         let stop = false;
+         let stop = false; //stop the propagation of the signal dependency, if a signal returns true (a main Signal always returns true while a advance signal decides if the dependency should be propagated)
+         // 1st we check the dependency of the main signal or a master signal and will inform the advance signals
+         // Attention:we must check both both cases since some signals are main and advance at the same time
+         // master is used for signals like lf6 and lf7, which are independent of the main signal
          if (this.check(["HPsig||master"])) {
             let prevSignal: any = this;
             do {
                prevSignal = this.search4Signal(prevSignal, DIRECTION.RIGHT_2_LEFT);
+               //if we found a signal and it has a checkSignalDependency function
                if (prevSignal && prevSignal._template.checkSignalDependency)
                   stop = prevSignal._template.checkSignalDependency(prevSignal, this);
             } while (!stop && prevSignal);
          }
+
+         //then we check the dependency of our advance signal and will get the information from the main signal
          if (this.check(["VRsig||slave"]) && this._template.checkSignalDependency) {
             let nextSignal: any = this;
             do {
@@ -136,6 +142,7 @@ export class Signal {
                if (!this.check(signal_aspect) && this.check(trigger)) this.setSignalAspect(signal_aspect);
             }.bind(this)
          );
+         Application.getInstance().eventManager?.emit("signalAspectChanged", { signal: this });
    }
 
    get(stellung: any) {

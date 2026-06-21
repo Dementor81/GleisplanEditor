@@ -67,6 +67,8 @@ export function initSignals(signalTemplatesRef: Record<string, any>) {
                case "Hv77":
                case "hv_hp":
                case "hv_vr":
+               case "form_hp":
+               case "form_vr":
                   {
                      signal.setSignalAspect("vr", hp.get("hp") >= 0 ? hp.get("hp") : 0, false);
                      if (!signal.check("vr_op=wdh")) stop_propagation = true;
@@ -119,6 +121,8 @@ export function initSignals(signalTemplatesRef: Record<string, any>) {
                case "Hv77":
                case "hv_hp":
                case "hv_vr":
+               case "form_hp":
+               case "form_vr":
                   {
                      signal.setSignalAspect("hp", x >= 1 ? 1 : 2, false);
                      if (x == 2 && anderes_zs3 <= 0) anderes_zs3 = 4;
@@ -163,5 +167,7 @@ export function initSignals(signalTemplatesRef: Record<string, any>) {
    };
 
    registerSignalTemplate(signalTemplates, "form_hp", signalDefinitions.form_hp);
+   (signalTemplates.form_hp as any).checkSignalDependency = checkSignalDependencyFunction4HV;
    registerSignalTemplate(signalTemplates, "form_vr", signalDefinitions.form_vr);
+   (signalTemplates.form_vr as any).checkSignalDependency = checkSignalDependencyFunction4HV;
 }

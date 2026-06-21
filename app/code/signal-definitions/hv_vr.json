@@ -2,7 +2,7 @@
   "id": "hv_vr",
   "title": "Hv Vorsignal",
   "atlas": "hv",
-  "scale": 0.15,
+  "scale": 0.125,
   "initial": ["vr=0", "VRsig"],
   "menu": ["vr=0,vr=1,vr=2", "verk=1(verk)", "zs3v"],
   "elements": [
