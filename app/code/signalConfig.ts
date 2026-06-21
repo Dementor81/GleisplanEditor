@@ -4,8 +4,11 @@
 import 'bootstrap/dist/css/bootstrap.min.css';
 import * as bootstrap from 'bootstrap';
 import { EditorView, basicSetup } from 'codemirror';
-import { json } from '@codemirror/lang-json';
+import { json, jsonParseLinter } from '@codemirror/lang-json';
 import { EditorState } from '@codemirror/state';
+import { linter, lintGutter } from '@codemirror/lint';
+import { syntaxTree } from '@codemirror/language';
+import type { CompletionContext, CompletionResult } from '@codemirror/autocomplete';
 
 import { Application } from './application.ts';
 import { Signal } from './signal.ts';
@@ -35,6 +38,9 @@ let atlasView: EditorView;
 let currentSignal: any = null;
 let currentContainer: any = null;
 let errorToast: any = null;
+
+/** Sprite names of the currently loaded atlas – used as autocomplete options for `image` values. */
+let atlasImageNames: string[] = [];
 
 /** Show an error as a Bootstrap toast at the bottom that only closes manually (or on next render). */
 function showError(message: string) {
@@ -75,6 +81,32 @@ function hideError() {
 
 function setReadOnlyDoc(view: EditorView, text: string) {
    view.dispatch({ changes: { from: 0, to: view.state.doc.length, insert: text } });
+}
+
+/**
+ * Autocomplete the value of an `"image"` property with the sprite names of the loaded atlas.
+ * Only fires when the cursor sits inside the string value of an `image` key.
+ */
+function imageValueCompletions(ctx: CompletionContext): CompletionResult | null {
+   if (!atlasImageNames.length) return null;
+
+   const node = syntaxTree(ctx.state).resolveInner(ctx.pos, -1);
+   if (node.name !== "String") return null; // must be inside a string literal (the value, not the key)
+
+   const property = node.parent;
+   if (!property || property.name !== "Property") return null;
+
+   const keyNode = property.firstChild;
+   if (!keyNode || keyNode.from === node.from) return null; // skip when editing the key itself
+   if (ctx.state.sliceDoc(keyNode.from, keyNode.to) !== '"image"') return null;
+
+   // Complete only the current token (handles comma-separated image lists like "mast,scheibe").
+   const word = ctx.matchBefore(/[\wäöüÄÖÜß-]+/);
+   return {
+      from: word ? word.from : ctx.pos,
+      options: atlasImageNames.map((name) => ({ label: name, type: "constant" })),
+      validFor: /^[\wäöüÄÖÜß-]*$/,
+   };
 }
 
 /**
@@ -220,8 +252,12 @@ async function loadAtlas(atlas: string) {
       const res = await fetch(`${PATHS.IMAGES}/${atlas}.json?${version}`);
       const txt = await res.text();
       setReadOnlyDoc(atlasView, txt);
+      atlasImageNames = (JSON.parse(txt) as { signal?: string }[])
+         .map((item) => item.signal)
+         .filter((name): name is string => !!name);
    } catch {
       setReadOnlyDoc(atlasView, "// Atlas konnte nicht geladen werden");
+      atlasImageNames = [];
    }
 }
 
@@ -259,9 +295,16 @@ $(async () => {
       app.renderingManager!.attachExternalPixiApp(pixiApp);
       setupPanZoom(canvas);
 
+      const configJson = json();
       configView = new EditorView({
          doc: "",
-         extensions: [basicSetup, json()],
+         extensions: [
+            basicSetup,
+            configJson,
+            configJson.language.data.of({ autocomplete: imageValueCompletions }),
+            linter(jsonParseLinter()),
+            lintGutter(),
+         ],
          parent: document.getElementById("configEditor")!,
       });
       atlasView = new EditorView({
