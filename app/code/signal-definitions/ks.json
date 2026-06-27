@@ -82,7 +82,7 @@
       }
    ],
    "dependency": {
-      "when": ["partner.HPsig", "self.VRsig"],
+      "when": ["partner.HPsig"],
       "unless": ["self.HPsig&&self.hp=0", "self.hp=-1"],
       "publish": {
          "route": [
@@ -166,7 +166,7 @@
          "children": [
             {
                "image": "ks1_hpvr",
-               "on": ["VRsig", "advanceSpeed>0"],
+               "on": "VRsig&&advanceSpeed>0",
                "off": "currentSpeed>0&&currentSpeed<=advanceSpeed",
                "blinks": true
             },
@@ -288,7 +288,7 @@
          ]
       },
       {
-         "on": ["zs6=1", "zusatz_oben"],
+         "on": "zs6=1&&zusatz_oben",
          "off": "hp<=0||currentSpeed>0&&advanceSpeed>0",
          "children": [
             {
@@ -304,12 +304,12 @@
       },
       {
          "image": "zs13",
-         "on": ["zs13=1", "zusatz_unten"],
+         "on": "zs13=1&&zusatz_unten",
          "off": "hp=0||advanceSpeed>0||zp9=1||zs6=1"
       },
       {
-         "on": ["zp9=1", "zusatz_unten"],
-         "off": ["hp=0||zs13=1||zs6=1||advanceSpeed>0"],
+         "on": "zp9=1&&zusatz_unten",
+         "off": "hp=0||zs13=1||zs6=1||advanceSpeed>0",
          "children": [
             {
                "image": "zp9",

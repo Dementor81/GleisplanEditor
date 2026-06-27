@@ -42,7 +42,7 @@
     }
   ],
   "dependency": {
-    "when": ["partner.HPsig", "self.VRsig"],
+      "when": ["partner.HPsig"],
     "unless": ["self.HPsig&&self.hp=0", "self.vr=-1"],
     "subscribe": {
       "vr": { "route": { "stop": 0, "go": 1 } }
@@ -64,10 +64,7 @@
     },
     {
       "image": "vr_zusatz_licht",
-      "on": [
-        "vr_op='verk'",
-        "verk=1"
-      ]
+      "on": "vr_op='verk'&&verk=1"
     },
     {
       "image": "vr_zusatz_licht",

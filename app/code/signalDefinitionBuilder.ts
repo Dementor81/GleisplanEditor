@@ -1,6 +1,5 @@
 import {
    SignalTemplateDefinition,
-   SignalCondition,
    SignalElementDefinition,
    SignalTextElementDefinition,
    SignalMenuDefinition,
@@ -41,22 +40,11 @@ export class SignalDefinitionBuilder {
       return template;
    }
 
-   private static applyCondition(element: VisualElement, method: 'on' | 'off', condition?: SignalCondition) {
-      if (condition === undefined) return;
-
-      if (Array.isArray(condition)) {
-         condition.forEach((singleCondition) => element[method](singleCondition));
-         return;
-      }
-
-      element[method](condition);
-   }
-
    private static buildTextElement(definition: SignalTextElementDefinition): TextElement {
       const textElement = new TextElement(definition.text, definition.format, definition.color).pos(definition.pos);
 
-      SignalDefinitionBuilder.applyCondition(textElement, 'on', definition.on);
-      SignalDefinitionBuilder.applyCondition(textElement, 'off', definition.off);
+      if (definition.on !== undefined) textElement.on(definition.on);
+      if (definition.off !== undefined) textElement.off(definition.off);
       if (definition.blinks !== undefined) textElement.blinks(definition.blinks);
 
       return textElement;
@@ -109,8 +97,8 @@ export class SignalDefinitionBuilder {
       const visualElement = new VisualElement(definition.image);
       if (definition.label) visualElement.label(definition.label);
       if (definition.pos) visualElement.pos(definition.pos);
-      SignalDefinitionBuilder.applyCondition(visualElement, 'on', definition.on);
-      SignalDefinitionBuilder.applyCondition(visualElement, 'off', definition.off);
+      if (definition.on !== undefined) visualElement.on(definition.on);
+      if (definition.off !== undefined) visualElement.off(definition.off);
       if (definition.blinks !== undefined) visualElement.blinks(definition.blinks);
       if (definition.blendMode) visualElement.blendMode(definition.blendMode);
       if (definition.rotation) visualElement.rotation(definition.rotation);

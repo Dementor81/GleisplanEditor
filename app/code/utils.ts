@@ -159,11 +159,12 @@ export const ArrayUtils = {
 
 /** Split compound signal conditions (&& / ||) into atomic clauses. */
 export const ConditionUtils = {
-   splitParts(condition: string): string[] {
+   splitParts(condition: string | null | undefined): string[] {
+      if (!condition) return [];
       return condition.split("&&").flatMap((part) => part.split("||").map((c) => c.replace("!", "").trim()));
    },
 
-   includesPart(condition: string, part: string): boolean {
+   includesPart(condition: string | null | undefined, part: string): boolean {
       return this.splitParts(condition).includes(part);
    },
 } as const;

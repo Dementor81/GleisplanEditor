@@ -57,8 +57,7 @@
     ],
     "dependency": {
        "when": [
-          "partner.master",
-          "self.slave"
+          "partner.id='lf7'"
        ]
     },
     "elements": [
@@ -101,9 +100,7 @@
      }
   ],
   "dependency": {
-     "publish": {
-        "currentSpeed": "currentSpeed"
-     }
+     "publish": {}
   },
   "elements": [
      "lf7",

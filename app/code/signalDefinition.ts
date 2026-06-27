@@ -1,4 +1,4 @@
-export type SignalCondition = string | string[];
+export type SignalInitialAspects = string | string[];
 
 export interface SignalMenuButtonItem {
    text: string;
@@ -88,8 +88,8 @@ export interface SignalVisualElementDefinition {
    label?: string;
    image?: string;
    pos?: [number, number];
-   on?: SignalCondition;
-   off?: SignalCondition;
+   on?: string;
+   off?: string;
    blinks?: boolean;
    blendMode?: SignalBlendMode;
    rotation?: SignalRotationConfig;
@@ -102,8 +102,8 @@ export interface SignalTextElementDefinition {
    format?: Array<string | number>;
    color?: string;
    pos: [number, number];
-   on?: SignalCondition;
-   off?: SignalCondition;
+   on?: string;
+   off?: string;
    blinks?: boolean;
 }
 
@@ -120,7 +120,7 @@ export interface SignalDependencyDefinition {
    unless?: string[];
    publish?: {
       route?: PublishRule[];
-      currentSpeed?: PublishRule[] | 'currentSpeed';
+      currentSpeed?: PublishRule[];
    };
    subscribe?: {
       vr?: { route: Record<string, number> };
@@ -135,7 +135,7 @@ export interface SignalTemplateDefinition {
    title: string;
    atlas: string;
    elements?: SignalElementDefinition[];
-   initial?: SignalCondition;
+   initial?: SignalInitialAspects;
    scale?: number;
    previewsize?: number;
    menu?: SignalMenuDefinition;

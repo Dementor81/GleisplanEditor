@@ -185,16 +185,8 @@ export class Sig_UI {
                (mi: any) =>
                   mi.visual_elements?.length > 0 &&
                   mi.visual_elements.every((ve: any) => {
-                     let on = ve.on();
-                     if (Array.isArray(on)) {
-                        if (on.includes(mi.command)) {
-                           on = [...on];
-                           ArrayUtils.remove(on, mi.command);
-                        } else if (on.every((c: any) => ConditionUtils.includesPart(c, mi.command))) {
-                           return true;
-                        }
-                     } else if (on == mi.command || ConditionUtils.includesPart(on, mi.command)) return true;
-
+                     const on = ve.on();
+                     if (on == mi.command || ConditionUtils.includesPart(on, mi.command)) return true;
                      return signal.check(on);
                   })
             )

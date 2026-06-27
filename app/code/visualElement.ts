@@ -11,7 +11,7 @@ export class VisualElement {
    #_image: any = null;
    #_pos: any = 0;
    #_enabled: ((signal: any) => boolean) | null = null;
-   #_on: any = [];
+   #_on: any = null;
    #_off: any = null;
    #_childs: any = null;
    #_rotation: any = null;
@@ -23,24 +23,16 @@ export class VisualElement {
       this.#_image = image;
    }
 
-   on(condition?: any, logic_op: string = "||"): any {
+   on(condition?: any): any {
       if (condition === undefined) return this.#_on;
-      else {
-         if (Array.isArray(condition)) condition = condition.join(logic_op);
-         if (this.#_on == null || !Array.isArray(this.#_on)) this.#_on = condition;
-         else this.#_on.push(condition);
-         return this;
-      }
+      this.#_on = condition;
+      return this;
    }
 
-   off(condition?: any, logic_op: string = "||"): any {
+   off(condition?: any): any {
       if (condition === undefined) return this.#_off;
-      else {
-         if (Array.isArray(condition)) condition = condition.join(logic_op);
-         if (this.#_off == null || !Array.isArray(this.#_off)) this.#_off = condition;
-         else this.#_off.push(condition);
-         return this;
-      }
+      this.#_off = condition;
+      return this;
    }
 
    childs(childs?: any): any {

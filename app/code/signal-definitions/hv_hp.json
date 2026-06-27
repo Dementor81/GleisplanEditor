@@ -101,11 +101,10 @@
             ["hp>=1", "go"]
          ],
          "currentSpeed": [
-            ["hp=2&&currentSpeed<=0", 4],
-            ["else", "currentSpeed"]
+            ["hp=2&&currentSpeed<=0", 4]
          ]
       },
-      "when": ["partner.HPsig", "self.VRsig"],
+      "when": ["partner.HPsig"],
       "unless": ["self.HPsig&&self.hp=0", "self.vr=-1"],
       "subscribe": {
          "vr": { "route": { "stop": 0, "go": 1 } }
@@ -210,10 +209,7 @@
             },
             {
                "image": "vr_zusatz_licht",
-               "on": [
-                  "vr_op='verk'",
-                  "verk=1"
-               ],
+               "on": "vr_op='verk'&&verk=1",
                "off": "hp=0"
             },
             {
@@ -380,10 +376,7 @@
          ]
       },
       {
-         "on": [
-            "verw='asig'||verw='bksig'",
-            "zs6=1"
-         ],
+         "on": "(verw='asig'||verw='bksig')&&zs6=1",
          "off": "advanceSpeed>0",
          "children": [
             {
@@ -392,10 +385,7 @@
             },
             {
                "image": "zs6_licht_unten",
-               "on": [
-                  "zusatz_unten",
-                  "hp>0"
-               ]
+               "on": "zusatz_unten&&hp>0"
             }
          ]
       },

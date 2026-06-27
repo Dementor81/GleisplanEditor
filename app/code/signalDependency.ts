@@ -45,10 +45,16 @@ export class SignalDependency {
             partnerSemantics ??
             SignalDependency.publishSemantics(partner, partner._template?.dependency?.publish);
          if (semantics.currentSpeed === undefined) return false;
-         return SignalDependency.evaluateAspectValueCondition(
+         return SignalDependency.evaluateValueCondition(
             semantics.currentSpeed,
             expr.slice('partner.'.length)
          );
+      }
+
+      if (expr.startsWith('partner.id') || expr.startsWith('self.id')) {
+         const target = expr.startsWith('self.') ? signal : partner;
+         const templateId = target._template?.id ?? '';
+         return SignalDependency.evaluateValueCondition(templateId, expr.slice(expr.indexOf('id')));
       }
 
       if (expr.startsWith('self.')) return signal.check(expr.slice(5));
@@ -56,7 +62,7 @@ export class SignalDependency {
       return signal.check(expr);
    }
 
-   private static evaluateAspectValueCondition(value: number, aspectCondition: string): boolean {
+   private static evaluateValueCondition(value: unknown, aspectCondition: string): boolean {
       const equation = Signal._splitEquation(aspectCondition);
       if (!equation) return false;
 
@@ -73,19 +79,16 @@ export class SignalDependency {
       const semantics: SemanticState = {};
 
       if (publish.route) {
-         const route = SignalDependency.evaluateRules(partner, publish.route, 'route');
+         const route = SignalDependency.evaluateRules(partner, publish.route);
          if (route !== undefined) semantics.route = String(route);
       }
 
-      if (publish.currentSpeed === 'currentSpeed') {
-         const value = partner.get('currentSpeed');
-         if (value !== null) semantics.currentSpeed = Number(value);
-      } else if (publish.currentSpeed) {
-         const value = SignalDependency.evaluateRules(partner, publish.currentSpeed, 'currentSpeed');
-         if (value !== undefined) semantics.currentSpeed = Number(value);
-      } else {
-         const value = partner.get('currentSpeed');
-         if (value !== null) semantics.currentSpeed = Number(value);
+      const nativeSpeed = partner.get('currentSpeed');
+      if (nativeSpeed !== null) semantics.currentSpeed = Number(nativeSpeed);
+
+      if (publish.currentSpeed?.length) {
+         const ruled = SignalDependency.evaluateRules(partner, publish.currentSpeed);
+         if (ruled !== undefined) semantics.currentSpeed = Number(ruled);
       }
 
       return semantics;
@@ -93,43 +96,37 @@ export class SignalDependency {
 
    private static evaluateRules(
       signal: Signal,
-      rules: Array<[string, string | number]> | undefined,
-      aspectKey: string
+      rules: Array<[string, string | number]> | undefined
    ): string | number | undefined {
       if (!rules) return undefined;
 
       for (const [condition, value] of rules) {
-         if (condition === 'else') {
-            if (typeof value === 'string' && value === aspectKey) return signal.get(aspectKey) as number;
-            return value;
-         }
-         if (signal.check(condition)) {
-            if (typeof value === 'string' && value === aspectKey) return signal.get(aspectKey) as number;
-            return value;
-         }
+         if (signal.check(condition)) return value;
       }
       return undefined;
    }
 
    check(signal: Signal, partner: Signal): boolean {
-      if (!this.passesGuards(signal, partner)) return false;
+      if (this.config.when?.length && !this.config.when.every((expr) => SignalDependency.evaluateCondition(signal, partner, expr))) {
+         return false;
+      }
 
-      const semantics = SignalDependency.publishSemantics(partner, partner._template?.dependency?.publish);
-      this.applyRouteSubscribe(signal, semantics);
-      this.applySpeedPropagation(signal, semantics);
-      this.applyOverrides(signal, partner, semantics);
+      const skipApply = this.config.unless?.some((expr) =>
+         SignalDependency.evaluateCondition(signal, partner, expr)
+      );
+
+      if (signal.check('VRsig||slave') ) {
+         const semantics = SignalDependency.publishSemantics(partner, partner._template?.dependency?.publish);
+         if(!skipApply) this.applyRouteSubscribe(signal, semantics);
+         this.applySpeedPropagation(signal, semantics);
+         if(!skipApply)this.applyOverrides(signal, partner, semantics);
+      }
 
       if (!this.config.stopUnless) return true;
       return !SignalDependency.evaluateCondition(signal, partner, this.config.stopUnless);
    }
 
-   private passesGuards(signal: Signal, partner: Signal): boolean {
-      if (this.config.when?.length && !this.config.when.every((expr) => SignalDependency.evaluateCondition(signal, partner, expr))) {
-         return false;
-      }
-      if (this.config.unless?.some((expr) => SignalDependency.evaluateCondition(signal, partner, expr))) return false;
-      return true;
-   }
+
 
    private applyRouteSubscribe(signal: Signal, semantics: SemanticState) {
       const subscribe = this.config.subscribe;

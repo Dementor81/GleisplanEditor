@@ -58,15 +58,15 @@ Many properties accept **either a single value or an array**. The builder normal
 | Property | Single value | Array | Effect |
 |----------|--------------|-------|--------|
 | `initial` | `"hp=0"` | `["hp=0", "VRsig"]` | Aspects set when the signal is placed. |
-| `on`, `off` | `"vr=0"` | `["VRsig", "advanceSpeed>0"]` | **AND** — all conditions must match. Same as `"VRsig&&advanceSpeed>0"`. |
+| `on`, `off` | `"vr=0"` | — | Visibility conditions (use `&&` / `||` in the string). |
 | `elements` | `"mast,schirm"` or `{ ... }` | `[ "mast", { ... } ]` | Root visual tree: each entry is a sprite string, visual object, text object, or nested array of those. |
 | `children` | — | `["zs3v", { "text": "advanceSpeed" }]` | Child nodes under a visual group (always an array when present). |
 | `image` | `"vr_gelb_oben"` | — | Multiple sprites in **one string**, comma-separated: `"vr_gelb_oben,vr_gelb_unten"`. |
 | `rotation`, `flip` | `{ "element": "flügel", ... }` | `[{ ... }, { ... }]` | One transform or several (e.g. different aspects for different wing angles). |
 | `rotation.element`, `flip.element` | `"lichtscheibe_oben"` | `["lichtscheibe_oben", "lichtscheibe_unten"]` | One labelled child or several animated together. |
-| `dependency.when` | — | `["partner.HPsig", "self.VRsig"]` | **AND** — all must pass (only array form is used). |
+| `dependency.when` | — | `["partner.HPsig"]` | **AND** — all must pass (only array form is used). |
 | `dependency.unless` | — | `["self.vr=-1", "self.HPsig&&self.hp=0"]` | **OR** — handler skips if **any** entry matches (only array form is used). |
-| `publish.currentSpeed` | `"currentSpeed"` | `[["hp=2&&currentSpeed<=0", 4], ["else", "currentSpeed"]]` | Shorthand “copy aspect” vs rule list (see `dependency`). |
+| `publish.currentSpeed` | — | `[["hp=2&&currentSpeed<=0", 4]]` | Optional override rules; native `currentSpeed` is published by default when `publish` is set. |
 
 **Examples**
 
@@ -83,7 +83,7 @@ Many properties accept **either a single value or an array**. The builder normal
 ```
 
 ```json
-"on": ["VRsig", "advanceSpeed>0"]
+"on": "VRsig&&advanceSpeed>0"
 ```
 
 ```json
@@ -205,7 +205,6 @@ Conditions appear in `on`, `off`, `rules`, `dependency`, and elsewhere. Evaluate
 | `"VRsig"` | Aspect `VRsig` is set. |
 | `"a&&b"` | AND condition, Both must match. |
 | `"a||b"` | OR condition, Either matches. |
-| `["a", "b"]` | Shorthand for `a&&b` on `on`/`off` only (see [String or array](#string-or-array)). |
 
 Unquoted words are aspect keywords; quoted strings and numbers are literals. Example: `verw='asig'||verw='zsig'` matches either usage type, while `verw=asig` would incorrectly treat `asig` as an aspect name.
 
@@ -217,9 +216,16 @@ Inside `dependency`, prefix whose signal is tested:
 |--------|-----------|
 | `self.` | The signal being updated (subscriber). |
 | `partner.` | The neighbouring signal providing data. |
+| `self.id` / `partner.id` | Template `id` from JSON (exact string match, e.g. `partner.id='lf7'`). |
+
+Subscriber role (`VRsig` or `slave`) is enforced by the engine before propagation runs — it does not need to appear in `when`.
 
 ```json
-"when": ["partner.HPsig", "self.VRsig"]
+"when": ["partner.HPsig"]
+```
+
+```json
+"when": ["partner.id='lf7'"]
 ```
 
 ---
@@ -375,8 +381,8 @@ Comma-separated **sprite names** from the atlas (not aspect names).
 | `image` | Sprite name(s), comma-separated. |
 | `label` | Internal label for rotation/flip targeting (see below). |
 | `pos` | Offset `[x, y]` from parent. |
-| `on` | Condition(s) required to show. String or array (AND). |
-| `off` | Condition(s) that hide the element. String or array (AND). |
+| `on` | Condition required to show. |
+| `off` | Condition that hides the element. |
 | `blinks` | Blinking animation. |
 | `blendMode` | `"multiply"` for colour overlay sprites. |
 | `rotation` | Rotate labelled children when this `on` matches. Single object or array of objects. |
@@ -483,8 +489,8 @@ hp, currentSpeed                          vr, advanceSpeed
 
 | Key | Description |
 |-----|-------------|
-| `when` | All expressions must pass, or the handler exits. |
-| `unless` | If any expression passes, the handler exits. Use `self.vr=-1` / `self.hp=-1` when the user turned the signal off to disable auto-sync. |
+| `when` | All expressions must pass; otherwise the signal is **transparent** (chain continues, no propagation). |
+| `unless` | If any expression passes, skip propagation (`subscribe` / speed / `overrides`); `stopUnless` is still evaluated. Use `self.vr=-1` / `self.hp=-1` when the user turned the signal off to disable auto-sync. |
 | `publish` | How **this** template exposes semantics when it is the **partner**. |
 | `subscribe` | How **this** template maps `route` → native aspects when it is updated. |
 | `overrides` | Extra aspect sets after normal mapping. |
@@ -499,7 +505,7 @@ hp, currentSpeed                          vr, advanceSpeed
 The advance speed blinks only when it is effectively shown:
 
 ```json
-"on": ["VRsig", "advanceSpeed>0"],
+"on": "VRsig&&advanceSpeed>0",
 "off": "currentSpeed>0&&currentSpeed<=advanceSpeed",
 "blinks": true
 ```
@@ -513,8 +519,7 @@ The advance speed blinks only when it is effectively shown:
     ["hp>=1", "go"]
   ],
   "currentSpeed": [
-    ["hp=2&&currentSpeed<=0", 4],
-    ["else", "currentSpeed"]
+    ["hp=2&&currentSpeed<=0", 4]
   ]
 }
 ```
@@ -526,16 +531,14 @@ The advance speed blinks only when it is effectively shown:
 | 0 | `stop` |
 | ≥ 1 | `go` |
 
-**CurrentSpeed rules** — special values:
+**CurrentSpeed** — native `currentSpeed` is always published when a `publish` block exists. Override rules replace it when their condition matches:
 
 | Condition | Published value |
 |-----------|-----------------|
 | `hp=2` and no speed set | `4` (distance marker → expect caution at VR) |
-| otherwise | copy native `currentSpeed` |
+| otherwise | native `currentSpeed` |
 
-Shorthand `"currentSpeed": "currentSpeed"` copies the aspect unchanged (used on Lf 7).
-
-If `publish.route` exists but `currentSpeed` is omitted, native `currentSpeed` is still copied when set.
+If `publish.route` exists but `currentSpeed` rules are omitted, native `currentSpeed` is still copied when set.
 
 ### `subscribe`
 
@@ -585,7 +588,7 @@ When partner published `currentSpeed=4` and this signal already shows `vr>0`, fo
 
 ```json
 "dependency": {
-  "when": ["partner.HPsig", "self.VRsig"],
+  "when": ["partner.HPsig"],
   "unless": ["self.HPsig&&self.hp=0", "self.vr=-1"],
   "subscribe": {
     "vr": { "route": { "stop": 0, "go": 1 } }
@@ -597,7 +600,7 @@ When partner published `currentSpeed=4` and this signal already shows `vr>0`, fo
 }
 ```
 
-- Reacts only to main signals (`partner.HPsig`) when advance function is on (`self.VRsig`).
+- Reacts only to main signals (`partner.HPsig`); advance function is engine-gated via `VRsig||slave`.
 - Skips when this is a combined HP+VR stuck at `hp=0`.
 - User can disable auto-sync with `vr=−1` (`unless` includes `self.vr=-1`).
 - Repeater (`vr_op='wdh'`) lets propagation continue to the next advance signal.
@@ -608,9 +611,9 @@ When partner published `currentSpeed=4` and this signal already shows `vr>0`, fo
 "dependency": {
   "publish": {
     "route": [["hp<=0","stop"],["hp>=1","go"]],
-    "currentSpeed": [["hp=2&&currentSpeed<=0", 4],["else", "currentSpeed"]]
+    "currentSpeed": [["hp=2&&currentSpeed<=0", 4]]
   },
-  "when": ["partner.HPsig", "self.VRsig"],
+  "when": ["partner.HPsig"],
   "unless": ["self.HPsig&&self.hp=0", "self.vr=-1"],
   "subscribe": { "vr": { "route": { "stop": 0, "go": 1 } } },
   "stopUnless": "vr_op='wdh'"
@@ -621,7 +624,7 @@ When partner published `currentSpeed=4` and this signal already shows `vr>0`, fo
 
 ```json
 "dependency": {
-  "when": ["partner.HPsig", "self.VRsig"],
+  "when": ["partner.HPsig"],
   "unless": ["self.HPsig&&self.hp=0", "self.hp=-1"],
   "publish": {
     "route": [["hp<=0","stop"],["hp>=1","go"]]
@@ -635,21 +638,21 @@ When partner published `currentSpeed=4` and this signal already shows `vr>0`, fo
 
 Ks hp=2 (“proceed, stop at next main”) still publishes `go` on the bus; the advance signal derives Ks 1 locally. Use `off: "currentSpeed>0&&currentSpeed<=advanceSpeed"` on advance-speed visuals when the main’s own speed annex overrides the propagated value.
 
-**Lf 7 / Lf 6** — isolated from HP/VR by different guards:
+**Lf 7 / Lf 6** — isolated from HP/VR by template id guard:
 
 ```json
 // lf7 — master (publish only; no track-walk handler)
 "dependency": {
-  "publish": { "currentSpeed": "currentSpeed" }
+  "publish": {}
 }
 
 // lf6 — slave (no stopUnless → stops after handling)
 "dependency": {
-  "when": ["partner.master", "self.slave"]
+  "when": ["partner.id='lf7'"]
 }
 ```
 
-Lf 7 only defines `publish`; it is not invoked during the track walk. Lf 6 copies `advanceSpeed` from Lf 7’s `currentSpeed` and stops propagation (default). An Hv main does not satisfy `partner.master`, so it never affects Lf 6.
+Lf 7 only defines `publish`; it is not invoked during the track walk. Lf 6 copies `advanceSpeed` from Lf 7’s `currentSpeed` and stops propagation (default). The `slave` aspect in `initial` enables the engine subscriber gate; `partner.id='lf7'` ensures an Hv main (or any non-Lf-7 partner) is transparent to the chain.
 
 **Zs 3 standalone** — no `dependency` key. Uses only `localSpeed`. Placed between HP and VR on a track, it is invisible to the bus.
 

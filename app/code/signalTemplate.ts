@@ -84,7 +84,7 @@ export class SignalTemplate {
       function iterateItems(this: any, ve: any): boolean {
          if (Array.isArray(ve)) return ve.some((item: any) => iterateItems.call(this, item));
          else if (ve instanceof VisualElement) {
-            if (ve.childs()?.some((item: any) => iterateItems.call(this, item)) || [].concat(ve.on()).some((c: any) => c.includes(condition))) {
+            if (ve.childs()?.some((item: any) => iterateItems.call(this, item)) || ve.on()?.includes(condition)) {
                results.push(ve);
                return true;
             }
@@ -114,13 +114,13 @@ export class SignalTemplate {
          if (typeof ve !== "object" || !(ve instanceof VisualElement)) continue;
 
          if (ve.rotation()) {
-            [].concat(ve.on()).forEach((c: any) => {
-               if (!c) return;
-               ConditionUtils.splitParts(c).forEach((trimmed: string) => {
+            const on = ve.on();
+            if (on) {
+               ConditionUtils.splitParts(on).forEach((trimmed: string) => {
                   const key = trimmed.split("=")[0]?.trim();
                   if (key) keys.add(key);
                });
-            });
+            }
          }
          if (ve.childs()) stack.push(...ve.childs());
       }
@@ -146,13 +146,13 @@ export class SignalTemplate {
          if (typeof ve !== "object" || !(ve instanceof VisualElement)) continue;
 
          if (ve.flip()) {
-            [].concat(ve.on()).forEach((c: any) => {
-               if (!c) return;
-               ConditionUtils.splitParts(c).forEach((trimmed: string) => {
+            const on = ve.on();
+            if (on) {
+               ConditionUtils.splitParts(on).forEach((trimmed: string) => {
                   const key = trimmed.split("=")[0]?.trim();
                   if (key) keys.add(key);
                });
-            });
+            }
          }
          if (ve.childs()) stack.push(...ve.childs());
       }
@@ -169,9 +169,8 @@ export class SignalTemplate {
       while (stack.length > 0) {
          ve = stack.pop();
          if (typeof ve == "object") {
-            [].concat(ve.on()).forEach((c: any) => {
-               if (c) ConditionUtils.splitParts(c).forEach((part: string) => ArrayUtils.pushUnique(conditions, part));
-            });
+            const on = ve.on();
+            if (on) ConditionUtils.splitParts(on).forEach((part: string) => ArrayUtils.pushUnique(conditions, part));
 
             if (ve.childs()) stack.push(...ve.childs());
          }
@@ -191,7 +190,7 @@ export class SignalTemplate {
       this.#dependencyHandler = handler;
    }
 
-   checkSignalDependency(signal: Signal, partner: Signal, _searchConditions?: string[]): boolean {
+   checkSignalDependency(signal: Signal, partner: Signal): boolean {
       return this.#dependencyHandler?.check(signal, partner) ?? false;
    }
 
