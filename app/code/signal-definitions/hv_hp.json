@@ -72,11 +72,7 @@
                   { "text": "Sh 1", "command": "ersatz='sh1'" },
                   { "text": "Kennlicht", "command": "ersatz='kennlicht'" }
                ]
-            }
-         ]
-      },
-      {
-         "section": [
+            },
             {
                "button": {
                   "text": "Zs 6",
