@@ -48,6 +48,11 @@ module.exports = (env, argv) => {
           },
         },
         {
+          test: /\.json$/,
+          resourceQuery: /raw/,
+          type: 'asset/source',
+        },
+        {
           test: /\.css$/,
           use: [
             isProduction ? MiniCssExtractPlugin.loader : 'style-loader',

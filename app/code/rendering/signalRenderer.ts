@@ -435,9 +435,13 @@ export class SignalRenderer {
    }
 
    static #applyInitialSignalStellung(stellung: Record<string, unknown>, command: string) {
-      const [setting, raw] = command.split("=");
-      const value = raw === undefined ? true : isNaN(Number(raw)) ? raw : Number(raw);
-      stellung[setting] = value;
+      const assignment = Signal._parseAssignment(command);
+      if (assignment) {
+         const [setting, value] = assignment;
+         stellung[setting] = value;
+         return;
+      }
+      stellung[command] = true;
    }
 
    static drawPreview(template: any, container: any) {

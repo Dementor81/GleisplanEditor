@@ -4,7 +4,9 @@
 import { VisualElement } from './visualElement.ts';
 import { ArrayUtils, ConditionUtils } from './utils.ts';
 import { Application } from './application.ts';
-import type { SignalConfigOptionDefinition } from './signalDefinition.ts';
+import type { SignalConfigOptionDefinition, SignalDependencyDefinition, SignalMenuRuntime } from './signalDefinition.ts';
+import type { SignalDependency } from './signalDependency.ts';
+import type { Signal } from './signal.ts';
 
 export class SignalTemplate {
    #_id: any = null;
@@ -12,13 +14,15 @@ export class SignalTemplate {
    #_start: any = null;
    #_json_file: any = null;
    #_scale: number = 0.5;
-   #_signalMenu: any = null;
+   #_signalMenu: SignalMenuRuntime | null = null;
    #_distance_from_track: number = 0;
 
-   contextMenu: any[] = [];
    elements: any[] = [];
    rules: any[] = [];
    configOptions: SignalConfigOptionDefinition[] = [];
+   dependency?: SignalDependencyDefinition;
+   previewsize?: number;
+   #dependencyHandler?: SignalDependency;
 
    get id() {
       return this.#_id;
@@ -57,56 +61,8 @@ export class SignalTemplate {
       return this.configOptions.find((o) => o.name === name);
    }
 
-   ///creates a structured object tree that represents a menu from an array of strings
-   ///array: keeps the array
-   ///comma sperated string e.g."hp=0,hp=1,hp=2": buttonGroup
-   ///single string e.g. "verk=1(verk)": btn
-   ///single string without '=' e.g. advanceSpeed: dropdown
-   createSignalCommandMenu(menu_string_array: any) {
-      this.#_signalMenu = this.#parseCommandMenu(menu_string_array);
-   }
-
-   #parseCommandMenu(menu_string_array: any) {
-      return menu_string_array.map(
-         function (this: any, item: any) {
-            if (!Array.isArray(item)) item = [item];
-            return item.map(
-               function (this: any, str: string) {
-                  let items = str.split(",").map(
-                     function (this: any, str: string) {
-                        let text, command;
-                        let match = str.match(/\(([^)]*)\)/);
-                        if (match) {
-                           command = str.split("(")[0];
-                           text = match[1];
-                        } else {
-                           command = str;
-                           // 1. Entferne alles vor und inklusive einem "="
-                           text = command.includes("=") ? command.split("=")[1] : command;
-                           if (text.length == 1) text = command.replace("=", " ");
-                           else text = text.replace(/(\d)/, " $1");
-                           // 2. Das erste Zeichen in einen Großbuchstaben verwandeln
-                           text = text.charAt(0).toUpperCase() + text.slice(1);
-                        }
-                        return {
-                           type: command.includes("=") ? "btn" : "dropdown",
-                           text: text,
-                           command: command,
-                           visual_elements: this.getVisualElementsByOnCondition(command),
-                        };
-                     }.bind(this)
-                  );
-
-                  if (items.length > 1)
-                     return {
-                        type: "buttonGroup",
-                        items: items,
-                     };
-                  else return items[0];
-               }.bind(this)
-            );
-         }.bind(this)
-      );
+   setSignalMenu(menu: SignalMenuRuntime) {
+      this.#_signalMenu = menu;
    }
 
    constructor(id: any, title: any, json_file: string, startElements: any, initialSignalStellung: any) {
@@ -225,6 +181,18 @@ export class SignalTemplate {
 
    addRule(trigger: any, setting: any) {
       this.rules.push([trigger, setting]);
+   }
+
+   hasDependencyHandler(): boolean {
+      return this.#dependencyHandler !== undefined;
+   }
+
+   attachDependencyHandler(handler: SignalDependency): void {
+      this.#dependencyHandler = handler;
+   }
+
+   checkSignalDependency(signal: Signal, partner: Signal, _searchConditions?: string[]): boolean {
+      return this.#dependencyHandler?.check(signal, partner) ?? false;
    }
 
    stringify() {

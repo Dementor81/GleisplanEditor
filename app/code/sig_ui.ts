@@ -23,12 +23,14 @@ export class Sig_UI {
       const app = Application.getInstance();
 
       let selectedSignal: Signal | null = app.selection.object as Signal | null;
-      if (!selectedSignal) return;
+      if (!selectedSignal?._template) return;
+      const template = selectedSignal._template;
 
-      const conditions = selectedSignal._template.getAllVisualElementConditions();
+      const conditions = template.getAllVisualElementConditions();
 
       const update = function (command: any, isOn?: any) {
          selectedSignal.setSignalAspect(command, isOn);
+         Sig_UI.initSignalAspectsMenu(selectedSignal);
          Sig_UI.syncSignalMenu(selectedSignal);
          STORAGE.save();
       };
@@ -42,15 +44,15 @@ export class Sig_UI {
             ui.div(
                "p-3 border-bottom",
                ui.create_DropDown(
-                  "Esig,Asig,Zsig,Bksig,Sbk".split(",").map((x: any) => x + "|verw=" + x.toLowerCase()),
+                  "Esig,Asig,Zsig,Bksig,Sbk".split(",").map((x: any) => x + "|verw='" + x.toLowerCase() + "'"),
                   "Verwendung",
                   update
                )
             )
          );
       const vorsignalOptions: [string, string?][] = [];
-      if (conditions.includes("vr_op=verk")) vorsignalOptions.push(["verkürzt", "vr_op=verk"]);
-      if (conditions.includes("vr_op=wdh")) vorsignalOptions.push(["wiederholer", "vr_op=wdh"]);
+      if (conditions.includes("vr_op='verk'")) vorsignalOptions.push(["verkürzt", "vr_op='verk'"]);
+      if (conditions.includes("vr_op='wdh'")) vorsignalOptions.push(["wiederholer", "vr_op='wdh'"]);
 
       const vorsignalSwitch = ui.createSwitchStructure(
          ["Vorsignalfunktion", "VRsig", conditions.includes("VRsig")],
@@ -68,10 +70,10 @@ export class Sig_UI {
          signalConfigurationTab.append(ui.createOptionGroup("Zusatzanzeiger", a, "checkbox", update).addClass("p-3 border-bottom"));
       }
 
-      const configOptions = selectedSignal._template.configOptions;
+      const configOptions = template.configOptions;
       if (configOptions?.length) {
          const applyConfigOption = (optionName: string, isOn: boolean) => {
-            const opt = selectedSignal._template.getConfigOption(optionName);
+            const opt = template.getConfigOption(optionName);
             if (isOn) {
                update(optionName, true);
                if (opt?.convertTo) {
@@ -150,7 +152,13 @@ export class Sig_UI {
             STORAGE.save();
          };
 
-         ul.append(signal._template.signalMenu.map((data: any) => Sig_UI.createSignalAspectsMenuItems(signal, data, updateFunc)));
+         ul.append(
+            ArrayUtils.cleanUp(
+               signal._template.signalMenu.map((section: any) =>
+                  Sig_UI.createSignalAspectsMenuSection(signal, section, updateFunc)
+               )
+            ) as any
+         );
 
          Sig_UI.checkSignalAspectMenu(signal, signal._template.signalMenu, ul);
 
@@ -159,73 +167,85 @@ export class Sig_UI {
          tab.append(ul);
       }
    }
-   static createSignalAspectsMenuItems(signal: any, menu_item: any, update: any) {
-      if (menu_item) {
-         if (Array.isArray(menu_item)) {
-            let items = ArrayUtils.cleanUp(menu_item.map((item) => Sig_UI.createSignalAspectsMenuItems(signal, item, update)));
-            if (items) {
-               return ui.div("p-3 border-bottom", ui.create_buttonToolbar(items as any));
-            } else return null;
-         } else if (menu_item.type == "buttonGroup" || menu_item.type == "btn") {
-            let buttons = menu_item.type == "buttonGroup" ? menu_item.items : [menu_item];
-            buttons = buttons
-               .filter(
-                  (mi: any) =>
-                     mi.visual_elements?.length > 0 &&
-                     mi.visual_elements.every((ve: any) => {
-                        let on = ve.on();
-                        if (Array.isArray(on)) {
-                           if (on.includes(mi.command)) {
-                              on = [...on];
-                              ArrayUtils.remove(on, mi.command);
-                           } else if (on.every((c: any) => ConditionUtils.includesPart(c, mi.command))) {
-                              return true;
-                           }
-                        } else if (on == mi.command || ConditionUtils.includesPart(on, mi.command)) return true;
-
-                        return signal.check(on);
-                     })
-               )
-               .map((item: any) =>
-                  ui
-                     .create_toggleButton(item.text)
-                     .on("click", (e: any) => update.bind(signal)(item.command, $(e.target).hasClass("active")))
-               )
-            buttons = ArrayUtils.cleanUp(buttons);
-            if (buttons) return ui.create_buttonGroup(buttons as any);
-            else return null;
-         } else if (menu_item.type == "dropdown") {
-            return Sig_UI.create_SpeedDropDown(menu_item.command, menu_item.text, update.bind(signal));
-         }
-      }
+   static createSignalAspectsMenuSection(signal: any, section: any, update: any) {
+      const items = ArrayUtils.cleanUp(
+         section.section.map((item: any) => Sig_UI.createSignalAspectsMenuItem(signal, item, update))
+      );
+      if (items.length) return ui.div("p-3 border-bottom", ui.create_buttonToolbar(items as any));
       return null;
    }
+
+   static createSignalAspectsMenuItem(signal: any, menu_item: any, update: any) {
+      if (!menu_item) return null;
+
+      if (menu_item.type == "buttonGroup" || menu_item.type == "button") {
+         let buttons = menu_item.type == "buttonGroup" ? menu_item.items : [menu_item];
+         buttons = buttons
+            .filter(
+               (mi: any) =>
+                  mi.visual_elements?.length > 0 &&
+                  mi.visual_elements.every((ve: any) => {
+                     let on = ve.on();
+                     if (Array.isArray(on)) {
+                        if (on.includes(mi.command)) {
+                           on = [...on];
+                           ArrayUtils.remove(on, mi.command);
+                        } else if (on.every((c: any) => ConditionUtils.includesPart(c, mi.command))) {
+                           return true;
+                        }
+                     } else if (on == mi.command || ConditionUtils.includesPart(on, mi.command)) return true;
+
+                     return signal.check(on);
+                  })
+            )
+            .map((item: any) =>
+               ui
+                  .create_toggleButton(item.text)
+                  .on("click", (e: any) => update.bind(signal)(item.command, $(e.target).hasClass("active")))
+            );
+         buttons = ArrayUtils.cleanUp(buttons);
+         if (buttons.length) return ui.create_buttonGroup(buttons as any);
+         return null;
+      }
+
+      if (menu_item.type == "dropdown") {
+         return Sig_UI.create_SpeedDropDown(menu_item.command, menu_item.text, update.bind(signal));
+      }
+
+      return null;
+   }
+
    static checkSignalAspectMenu(signal: any, menu_configuration: any, html_menu: any) {
-      if (menu_configuration) {
-         if (Array.isArray(menu_configuration)) {
-            menu_configuration.forEach((item) => Sig_UI.checkSignalAspectMenu(signal, item, html_menu));
-         } else if (menu_configuration.type == "buttonGroup") {
-            menu_configuration.items.forEach((item: any) => {
-               let button = $("#btn_" + item.text.replace(" ", "_"), html_menu);
-               if (button.length == 1) {
-                  button.toggleClass("active", signal.check(item.command));
-                  if (item.visual_elements.every((ve: any) => ve.isAllowed(signal))) button.removeAttr("disabled");
-                  else button.attr("disabled", "disabled");
-               }
-            });
-         } else if (menu_configuration.type == "dropdown") {
-            let button = $("#btn_" + menu_configuration.text.replace(" ", "_"), html_menu);
+      if (!menu_configuration) return;
+
+      if (Array.isArray(menu_configuration)) {
+         menu_configuration.forEach((section) => {
+            section.section?.forEach((item: any) => Sig_UI.checkSignalAspectMenu(signal, item, html_menu));
+         });
+         return;
+      }
+
+      if (menu_configuration.type == "buttonGroup") {
+         menu_configuration.items.forEach((item: any) => {
+            let button = $("#btn_" + item.text.replace(" ", "_"), html_menu);
             if (button.length == 1) {
-               const v = signal.get(menu_configuration.command);
-               button.text(menu_configuration.text + (v > 0 ? " Kz " + v : " aus"));
-            }
-         } else if (menu_configuration.type == "btn") {
-            let button = $("#btn_" + menu_configuration.text.replace(" ", "_"), html_menu);
-            if (button.length == 1) {
-               button.toggleClass("active", signal.check(menu_configuration.command));
-               if (menu_configuration.visual_elements.every((ve: any) => ve.isAllowed(signal))) button.removeAttr("disabled");
+               button.toggleClass("active", signal.check(item.command));
+               if (item.visual_elements.every((ve: any) => ve.isAllowed(signal))) button.removeAttr("disabled");
                else button.attr("disabled", "disabled");
             }
+         });
+      } else if (menu_configuration.type == "dropdown") {
+         let button = $("#btn_" + menu_configuration.text.replace(" ", "_"), html_menu);
+         if (button.length == 1) {
+            const v = signal.get(menu_configuration.command);
+            button.text(menu_configuration.text + (v > 0 ? " Kz " + v : " aus"));
+         }
+      } else if (menu_configuration.type == "button") {
+         let button = $("#btn_" + menu_configuration.text.replace(" ", "_"), html_menu);
+         if (button.length == 1) {
+            button.toggleClass("active", signal.check(menu_configuration.command));
+            if (menu_configuration.visual_elements.every((ve: any) => ve.isAllowed(signal))) button.removeAttr("disabled");
+            else button.attr("disabled", "disabled");
          }
       }
    }

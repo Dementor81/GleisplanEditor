@@ -9,21 +9,34 @@
       "vr=0"
    ],
    "menu": [
-      [
-         "vr=0,vr=1,vr=2",
-         "verk=1(verk)"
-      ]
+      {
+         "section": [
+            {
+               "buttonGroup": [
+                  { "text": "Vr 0", "command": "vr=0" },
+                  { "text": "Vr 1", "command": "vr=1" },
+                  { "text": "Vr 2", "command": "vr=2" }
+               ]
+            },
+            {
+               "button": {
+                  "text": "verk",
+                  "command": "verk=1"
+               }
+            }
+         ]
+      }
    ],
    "dependency": {
       "when": ["partner.HPsig", "self.VRsig"],
       "unless": ["self.HPsig&&self.hp=0", "self.vr=-1"],
       "subscribe": {
-         "vr": { "route": { "stop": 0, "caution": 1, "clear": 2 } }
+         "vr": { "route": { "stop": 0, "go": 1 } }
       },
       "overrides": [
          ["partner.currentSpeed=4", { "advanceSpeed": 0, "vr": 2, "when": "self.vr>0" }]
       ],
-      "stopUnless": "vr_op=wdh"
+      "stopUnless": "vr_op='wdh'"
    },
    "elements": [
       "mast",

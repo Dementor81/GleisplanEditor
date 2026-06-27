@@ -11,7 +11,22 @@ A minimal example:
   "atlas": "hv",
   "scale": 0.125,
   "initial": ["vr=0", "VRsig"],
-  "menu": ["vr=0,vr=1,vr=2", "advanceSpeed"],
+  "menu": [
+    {
+      "section": [
+        {
+          "buttonGroup": [
+            { "text": "Vr 0", "command": "vr=0" },
+            { "text": "Vr 1", "command": "vr=1" },
+            { "text": "Vr 2", "command": "vr=2" }
+          ]
+        },
+        {
+          "dropdown": { "text": "Vorsignalgeschwindigkeit", "command": "advanceSpeed" }
+        }
+      ]
+    }
+  ],
   "elements": ["mast,vr_schirm"]
 }
 ```
@@ -47,7 +62,6 @@ Many properties accept **either a single value or an array**. The builder normal
 | `elements` | `"mast,schirm"` or `{ ... }` | `[ "mast", { ... } ]` | Root visual tree: each entry is a sprite string, visual object, text object, or nested array of those. |
 | `children` | — | `["zs3v", { "text": "advanceSpeed" }]` | Child nodes under a visual group (always an array when present). |
 | `image` | `"vr_gelb_oben"` | — | Multiple sprites in **one string**, comma-separated: `"vr_gelb_oben,vr_gelb_unten"`. |
-| `menu` | one row per string | `["a", "b"]` on a row | Outer array = panel rows. Inner array = controls on the same row. |
 | `rotation`, `flip` | `{ "element": "flügel", ... }` | `[{ ... }, { ... }]` | One transform or several (e.g. different aspects for different wing angles). |
 | `rotation.element`, `flip.element` | `"lichtscheibe_oben"` | `["lichtscheibe_oben", "lichtscheibe_unten"]` | One labelled child or several animated together. |
 | `dependency.when` | — | `["partner.HPsig", "self.VRsig"]` | **AND** — all must pass (only array form is used). |
@@ -61,7 +75,7 @@ Many properties accept **either a single value or an array**. The builder normal
 ```
 
 ```json
-"initial": ["vr=0", "VRsig", "verw=asig"]
+"initial": ["vr=0", "VRsig", "verw='asig'"]
 ```
 
 ```json
@@ -109,9 +123,12 @@ An **aspect** is a named value stored on each placed signal (`signal.get("hp")`,
 
 | Form | Meaning |
 |------|---------|
-| `"hp=0"` | Set aspect `hp` to `0`. |
+| `"hp=0"` | Set aspect `hp` to numeric literal `0`. |
+| `"verw='asig'"` | Set aspect `verw` to string literal `asig`. |
 | `"VRsig"` | Enable flag aspect `VRsig` (any truthy presence). |
 | `"bez"` | Enable text aspect `bez` (value comes from user input). |
+
+String literals in assignments and comparisons must be **quoted** (`'asig'` or `"asig"`). Unquoted words are treated as aspect **keywords** (resolved via `signal.get()`). Numbers (`0`, `-1`, `60`) are numeric literals and stay unquoted.
 
 ### Common aspect keys
 
@@ -134,20 +151,38 @@ An **aspect** is a named value stored on each placed signal (`signal.get("hp")`,
 | Aspect | Used on | Bus participation |
 |--------|---------|-------------------|
 | `currentSpeed` | Main / master signals (HP, zs3) | Published to downstream signals. Value `−1` = off. Speed in km/h (e.g. `60`) or special values like `4`. |
-| `advanceSpeed` | Advance / slave signals (VR, zs3v) | Received from partner’s `currentSpeed`. Never published. |
-| `localSpeed` | Standalone boards (Lf 6/7) | **Not** part of the bus — isolated from HP/VR chains. |
+| `advanceSpeed` | Advance / slave signals (VR, zs3v) | Received from partner’s `currentSpeed`. Never published. 
 
 **Example — main signal with speed annex:**
 
 ```json
-"menu": [["hp=0,hp=1,hp=2", "currentSpeed"]]
+"menu": [
+  {
+    "section": [
+      {
+        "buttonGroup": [
+          { "text": "Hp 0", "command": "hp=0" },
+          { "text": "Hp 1", "command": "hp=1" },
+          { "text": "Hp 2", "command": "hp=2" }
+        ]
+      },
+      { "dropdown": { "text": "Geschwindigkeit", "command": "currentSpeed" } }
+    ]
+  }
+]
 ```
 
 **Example — isolated construction speed board:**
 
 ```json
 "initial": "localSpeed=60",
-"menu": ["localSpeed()"]
+"menu": [
+  {
+    "section": [
+      { "dropdown": { "text": "Geschwindigkeit", "command": "localSpeed" } }
+    ]
+  }
+]
 ```
 
 No `dependency` block → the sign never participates in inter-signal propagation.
@@ -162,14 +197,17 @@ Conditions appear in `on`, `off`, `rules`, `dependency`, and elsewhere. Evaluate
 
 | Form | Meaning |
 |------|---------|
-| `"hp=0"` | Aspect `hp` equals `0`. |
+| `"hp=0"` | Aspect `hp` equals numeric literal `0`. |
+| `"verw='zsig'"` | Aspect `verw` equals string literal `zsig`. |
 | `"hp>0"` | Numeric comparison against a literal. |
-| `"currentSpeed<=advanceSpeed"` | Compare two aspects on the same signal. |
+| `"currentSpeed<=advanceSpeed"` | Compare two aspects on the same signal (both sides are keywords). |
 | `"hp<=0"`, `"hp>=2"`, `"hp!=1"` | Other comparators (literal or aspect on the right). |
 | `"VRsig"` | Aspect `VRsig` is set. |
 | `"a&&b"` | AND condition, Both must match. |
 | `"a||b"` | OR condition, Either matches. |
 | `["a", "b"]` | Shorthand for `a&&b` on `on`/`off` only (see [String or array](#string-or-array)). |
+
+Unquoted words are aspect keywords; quoted strings and numbers are literals. Example: `verw='asig'||verw='zsig'` matches either usage type, while `verw=asig` would incorrectly treat `asig` as an aspect name.
 
 ### Dependency-scoped conditions
 
@@ -188,30 +226,69 @@ Inside `dependency`, prefix whose signal is tested:
 
 ## `menu`
 
-Both use the same string format. Parsed in `SignalTemplate.#parseCommandMenu()`. Each entry in the outer array is one **row**; a row may be a single string or an inner array of strings (see [String or array](#string-or-array)).
+Built by [`SignalDefinitionBuilder.buildMenu()`](../signalDefinitionBuilder.ts). Each entry in the outer array is one **section** (a bordered row in the Signalstellung tab). A section contains one or more controls rendered side by side.
 
 ### Menu item types
 
-| String pattern | UI control | Example |
-|----------------|------------|---------|
-| `"hp=0,hp=1,hp=2"` | Button group | Three exclusive buttons. |
-| `"verk=1(verk)"` | Single button | Command `verk=1`, label `verk`. |
-| `"currentSpeed"` | Speed dropdown | Values 0–90 km/h, `−1` = off. |
-| `"currentSpeed()"` | Speed dropdown | Same; `()` allows a custom label via `(label)`. |
-| `"zs6=1(Zs 6)"` | Single button | Label in parentheses. |
+| JSON key | Fields | UI control |
+|----------|--------|------------|
+| `section` | array of child items | Row with bottom border; groups controls on one line. |
+| `buttonGroup` | array of `{ text, command }` | Mutually exclusive toggle buttons. |
+| `button` | `{ text, command }` | Single toggle button. |
+| `dropdown` | `{ text, command }` | Speed dropdown (0–90 km/h, `−1` = off) when `command` is a speed aspect (`currentSpeed`, `advanceSpeed`, `localSpeed`). |
 
-### Nesting
+Every button and dropdown requires explicit `text` (label) and `command` (aspect assignment or aspect name for dropdowns).
+
+### Example (`hv_hp`)
 
 ```json
 "menu": [
-  ["hp=0,hp=1,hp=2", "currentSpeed"],
-  "ersatz=zs1,ersatz=zs7",
-  "advanceSpeed"
+  {
+    "section": [
+      {
+        "buttonGroup": [
+          { "text": "Hp 0", "command": "hp=0" },
+          { "text": "Hp 1", "command": "hp=1" },
+          { "text": "Hp 2", "command": "hp=2" }
+        ]
+      },
+      { "dropdown": { "text": "Geschwindigkeit", "command": "currentSpeed" } }
+    ]
+  },
+  {
+    "section": [
+      {
+        "buttonGroup": [
+          { "text": "Vr 0", "command": "vr=0" },
+          { "text": "Vr 1", "command": "vr=1" },
+          { "text": "Vr 2", "command": "vr=2" }
+        ]
+      },
+      { "button": { "text": "verk", "command": "verk=1" } },
+      { "dropdown": { "text": "Vorsignalgeschwindigkeit", "command": "advanceSpeed" } }
+    ]
+  },
+  {
+    "section": [
+      {
+        "buttonGroup": [
+          { "text": "Zs 1", "command": "ersatz='zs1'" },
+          { "text": "Zs 7", "command": "ersatz='zs7'" },
+          { "text": "Kennlicht", "command": "ersatz='kennlicht'" }
+        ]
+      }
+    ]
+  },
+  {
+    "section": [
+      { "button": { "text": "Zs 6", "command": "zs6=1" } }
+    ]
+  }
 ]
 ```
 
-- **Outer array** → rows in the configuration panel.
-- **Inner array** → controls grouped on one row.
+- **Outer array** → sections (bordered rows).
+- **Items inside a `section`** → controls on the same toolbar row.
 
 ---
 
@@ -238,7 +315,7 @@ If the user sets `currentSpeed=80` while `hp>0`, the signal is corrected to `hp=
 
 Structural variants shown as toggle switches in the configuration panel (not the aspect/Stellung tab).
 
-`name` is an aspect command — a flag aspect (`"mast"`) or a full assignment (`"mastschild=wrw"`, `"3_begriffig=1"`). With `convertTo`, two options are mutually exclusive (checking one disables the other).
+`name` is an aspect command — a flag aspect (`"mast"`) or a full assignment (`"mastschild='wrw'"`, `"3_begriffig=1"`). With `convertTo`, two options are mutually exclusive (checking one disables the other).
 
 **Example — mast geometry (`ks.json`):**
 
@@ -253,8 +330,8 @@ Structural variants shown as toggle switches in the configuration panel (not the
 
 ```json
 "config_options": [
-  { "name": "mastschild=wrw", "title": "W-R-W", "convertTo": "mastschild=wgwgw" },
-  { "name": "mastschild=wgwgw", "title": "W-G-W-G-W", "convertTo": "mastschild=wrw" }
+  { "name": "mastschild='wrw'", "title": "W-R-W", "convertTo": "mastschild='wgwgw'" },
+  { "name": "mastschild='wgwgw'", "title": "W-G-W-G-W", "convertTo": "mastschild='wrw'" }
 ]
 ```
 
@@ -336,7 +413,7 @@ A container with only `on`/`off` and `children`:
 {
   "on": "hp=0",
   "children": [
-    { "image": "hp_asig_rot_re", "on": "verw=asig" }
+    { "image": "hp_asig_rot_re", "on": "verw='asig'" }
   ]
 }
 ```
@@ -386,7 +463,7 @@ Signals **without** `dependency` are skipped during the walk (transparent).
 
 | Semantic key | Values | Direction |
 |--------------|--------|-----------|
-| `route` | `stop`, `caution`, `clear` | Published by mains, consumed by advances. |
+| `route` | `stop`, `go` | Published by mains, consumed by advances. |
 | `currentSpeed` | number | Published by mains/masters. |
 | `advanceSpeed` | number | Written on subscribers (from partner `currentSpeed`). |
 
@@ -411,9 +488,8 @@ hp, currentSpeed                          vr, advanceSpeed
 | `publish` | How **this** template exposes semantics when it is the **partner**. |
 | `subscribe` | How **this** template maps `route` → native aspects when it is updated. |
 | `overrides` | Extra aspect sets after normal mapping. |
-| `stopUnless` | Optional. When omitted, propagation stops after this signal. When set, the walk continues while the condition is true (e.g. `vr_op=wdh` for repeaters). |
+| `stopUnless` | Optional. When omitted, propagation stops after this signal. When set, the walk continues while the condition is true (e.g. `vr_op='wdh'` for repeaters). |
 
-When a combined main signal has its own `currentSpeed` that is stricter than the propagated `advanceSpeed`, hide the advance speed display in `elements` instead of manipulating the aspect in `dependency`:
 
 ```json
 "on": "advanceSpeed>0",
@@ -434,8 +510,7 @@ The advance speed blinks only when it is effectively shown:
 "publish": {
   "route": [
     ["hp<=0", "stop"],
-    ["hp=1", "caution"],
-    ["hp>=2", "clear"]
+    ["hp>=1", "go"]
   ],
   "currentSpeed": [
     ["hp=2&&currentSpeed<=0", 4],
@@ -449,8 +524,7 @@ The advance speed blinks only when it is effectively shown:
 | Partner `hp` | Published `route` |
 |--------------|-------------------|
 | 0 | `stop` |
-| 1 | `caution` |
-| ≥ 2 | `clear` |
+| ≥ 1 | `go` |
 
 **CurrentSpeed rules** — special values:
 
@@ -471,29 +545,27 @@ Maps semantic `route` to a native aspect. Speed mapping is built-in (`currentSpe
 
 ```json
 "subscribe": {
-  "vr": { "route": { "stop": 0, "caution": 1, "clear": 2 } }
+  "vr": { "route": { "stop": 0, "go": 1 } }
 }
 ```
 
 | `route` | Sets `vr` to |
 |---------|--------------|
-| `stop` | 0 |
-| `caution` | 1 |
-| `clear` | 2 |
+| `stop` | 0 (expect stop — double yellow) |
+| `go` | 1 (proceed — double green) |
 
 **Ks / Ks VR:**
 
 ```json
 "subscribe": {
-  "hp": { "route": { "stop": 2, "caution": 1, "clear": 1 } }
+  "hp": { "route": { "stop": 2, "go": 1 } }
 }
 ```
 
 | `route` | Sets `hp` to |
 |---------|--------------|
-| `stop` | 2 (Ks 2) |
-| `caution` | 1 (Ks 1) |
-| `clear` | 1 |
+| `stop` | 2 (Ks 2 — expect stop at next main) |
+| `go` | 1 (Ks 1) |
 
 ### `overrides`
 
@@ -516,32 +588,32 @@ When partner published `currentSpeed=4` and this signal already shows `vr>0`, fo
   "when": ["partner.HPsig", "self.VRsig"],
   "unless": ["self.HPsig&&self.hp=0", "self.vr=-1"],
   "subscribe": {
-    "vr": { "route": { "stop": 0, "caution": 1, "clear": 2 } }
+    "vr": { "route": { "stop": 0, "go": 1 } }
   },
   "overrides": [
     ["partner.currentSpeed=4", { "advanceSpeed": 0, "vr": 2, "when": "self.vr>0" }]
   ],
-  "stopUnless": "vr_op=wdh"
+  "stopUnless": "vr_op='wdh'"
 }
 ```
 
 - Reacts only to main signals (`partner.HPsig`) when advance function is on (`self.VRsig`).
 - Skips when this is a combined HP+VR stuck at `hp=0`.
 - User can disable auto-sync with `vr=−1` (`unless` includes `self.vr=-1`).
-- Repeater (`vr_op=wdh`) lets propagation continue to the next advance signal.
+- Repeater (`vr_op='wdh'`) lets propagation continue to the next advance signal.
 
 **Hv Hauptsignal** (`hv_hp.json`) — publisher and subscriber (combined mast):
 
 ```json
 "dependency": {
   "publish": {
-    "route": [["hp<=0","stop"],["hp=1","caution"],["hp>=2","clear"]],
+    "route": [["hp<=0","stop"],["hp>=1","go"]],
     "currentSpeed": [["hp=2&&currentSpeed<=0", 4],["else", "currentSpeed"]]
   },
   "when": ["partner.HPsig", "self.VRsig"],
   "unless": ["self.HPsig&&self.hp=0", "self.vr=-1"],
-  "subscribe": { "vr": { "route": { "stop": 0, "caution": 1, "clear": 2 } } },
-  "stopUnless": "vr_op=wdh"
+  "subscribe": { "vr": { "route": { "stop": 0, "go": 1 } } },
+  "stopUnless": "vr_op='wdh'"
 }
 ```
 
@@ -552,16 +624,16 @@ When partner published `currentSpeed=4` and this signal already shows `vr>0`, fo
   "when": ["partner.HPsig", "self.VRsig"],
   "unless": ["self.HPsig&&self.hp=0", "self.hp=-1"],
   "publish": {
-    "route": [["hp<=0","stop"],["hp=1","caution"],["hp>=2","caution"]]
+    "route": [["hp<=0","stop"],["hp>=1","go"]]
   },
   "subscribe": {
-    "hp": { "route": { "stop": 2, "caution": 1, "clear": 1 } }
+    "hp": { "route": { "stop": 2, "go": 1 } }
   },
-  "stopUnless": "vr_op=wdh"
+  "stopUnless": "vr_op='wdh'"
 }
 ```
 
-KS never publishes `route=clear`, so a Ks main always signals at most “caution” to an Hv VR. Use `off: "currentSpeed>0&&currentSpeed<=advanceSpeed"` on advance-speed visuals when the main’s own speed annex overrides the propagated value.
+Ks hp=2 (“proceed, stop at next main”) still publishes `go` on the bus; the advance signal derives Ks 1 locally. Use `off: "currentSpeed>0&&currentSpeed<=advanceSpeed"` on advance-speed visuals when the main’s own speed annex overrides the propagated value.
 
 **Lf 7 / Lf 6** — isolated from HP/VR by different guards:
 

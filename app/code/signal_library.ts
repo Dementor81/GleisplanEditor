@@ -1,7 +1,7 @@
 "use strict";
 
 import { SignalTemplateDefinition } from './signalDefinition.ts';
-import { buildSignalTemplate } from './signalDefinitionBuilder.ts';
+import { SignalDefinitionBuilder } from './signalDefinitionBuilder.ts';
 import hvHpDefinition from './signal-definitions/hv_hp.json';
 import hvVrDefinition from './signal-definitions/hv_vr.json';
 import ksDefinition from './signal-definitions/ks.json';
@@ -32,11 +32,11 @@ export const signalDefinitions: Record<string, SignalTemplateDefinition> = (() =
 })();
 
 export const CONDITIONS = (function () {
-   const BKsig = "verw=bksig",
-      SBK = "verw=sbk",
-      Esig = "verw=esig",
-      Asig = "verw=asig",
-      Zsig = "verw=zsig",
+   const BKsig = "verw='bksig'",
+      SBK = "verw='sbk'",
+      Esig = "verw='esig'",
+      Asig = "verw='asig'",
+      Zsig = "verw='zsig'",
       STRECKE = [BKsig, SBK, Esig],
       GRENZEN = [BKsig, Esig],
       BAHNHOF = [Asig, Zsig];
@@ -44,7 +44,7 @@ export const CONDITIONS = (function () {
 })();
 
 function registerSignalTemplate(signalTemplates: Record<string, any>, key: string, definition: SignalTemplateDefinition) {
-   signalTemplates[key] = buildSignalTemplate(definition);
+   signalTemplates[key] = SignalDefinitionBuilder.build(definition);
 }
 
 export function initSignals(signalTemplatesRef: Record<string, any>) {

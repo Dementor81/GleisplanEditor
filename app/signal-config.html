@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="de">
    <head>
       <meta charset="utf-8" />
@@ -8,6 +8,21 @@
       <link rel="stylesheet" href="dev/bootstrap-5.3.8/bootstrap-icons.min.css" />
       <script src="dev/jquery-3.7.1.min.js"></script>
       <style>
+         @font-face {
+            font-family: "DOT";
+            src: url("font/intodotmatrix.ttf");
+         }
+
+         @font-face {
+            font-family: "condenced";
+            src: url("font/D-DINCondensed.otf");
+         }
+
+         @font-face {
+            font-family: "Bebas";
+            src: url("font/BebasNeue-Regular.otf");
+         }
+
          html,
          body {
             height: 100%;
@@ -103,7 +118,11 @@
             position: absolute;
             right: 6px;
             bottom: 6px;
-            font: 11px/1.4 ui-monospace, SFMono-Regular, Menlo, monospace;
+            font:
+               11px/1.4 ui-monospace,
+               SFMono-Regular,
+               Menlo,
+               monospace;
             background: rgba(0, 0, 0, 0.55);
             color: #fff;
             padding: 1px 6px;
@@ -136,6 +155,9 @@
          <span class="sc-title"><i class="bi bi-stoplights"></i> Signal konfigurieren</span>
          <label for="templateSelect" class="form-label mb-0 small">Konfiguration</label>
          <select id="templateSelect" class="form-select form-select-sm" style="width: auto"></select>
+         <button id="btnCopy" type="button" class="btn btn-sm btn-outline-secondary">
+            <i class="bi bi-clipboard"></i> Kopieren
+         </button>
          <button id="btnRender" type="button" class="btn btn-sm btn-primary">
             <i class="bi bi-play-fill"></i> Signal rendern
          </button>
@@ -174,10 +196,14 @@
 
                <ul class="nav nav-tabs nav-fill" role="tablist">
                   <li class="nav-item">
-                     <a class="nav-link active" data-bs-toggle="tab" data-bs-target="#signalAspectTab" type="button" role="tab">Signalstellung</a>
+                     <a class="nav-link active" data-bs-toggle="tab" data-bs-target="#signalAspectTab" type="button" role="tab"
+                        >Signalstellung</a
+                     >
                   </li>
                   <li class="nav-item">
-                     <a class="nav-link" data-bs-toggle="tab" data-bs-target="#SignalConfigurationTab" type="button" role="tab">Konfiguration</a>
+                     <a class="nav-link" data-bs-toggle="tab" data-bs-target="#SignalConfigurationTab" type="button" role="tab"
+                        >Konfiguration</a
+                     >
                   </li>
                </ul>
                <div class="tab-content">

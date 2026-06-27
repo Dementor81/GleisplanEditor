@@ -14,7 +14,7 @@ import { Application } from './application.ts';
 import { Signal } from './signal.ts';
 import { Sig_UI } from './sig_ui.ts';
 import { STORAGE } from './storage.ts';
-import { buildSignalTemplate } from './signalDefinitionBuilder.ts';
+import { SignalDefinitionBuilder } from './signalDefinitionBuilder.ts';
 import { signalDefinitions } from './signal_library.ts';
 import { SignalRenderer } from './rendering/signalRenderer.ts';
 import { createPixiApplicationWithViewport } from './pixiPrimitives.ts';
@@ -42,12 +42,10 @@ let errorToast: any = null;
 /** Sprite names of the currently loaded atlas – used as autocomplete options for `image` values. */
 let atlasImageNames: string[] = [];
 
-/** Show an error as a Bootstrap toast at the bottom that only closes manually (or on next render). */
-function showError(message: string) {
-   hideError();
+function createToast(message: string, variant: "danger" | "success", autohide: boolean) {
    const container = document.getElementById("scToastContainer")!;
    const toastEl = document.createElement("div");
-   toastEl.className = "toast align-items-center text-bg-danger border-0";
+   toastEl.className = `toast align-items-center text-bg-${variant} border-0`;
    toastEl.setAttribute("role", "alert");
    toastEl.setAttribute("aria-live", "assertive");
    toastEl.setAttribute("aria-atomic", "true");
@@ -68,8 +66,19 @@ function showError(message: string) {
    container.append(toastEl);
 
    toastEl.addEventListener("hidden.bs.toast", () => toastEl.remove());
-   errorToast = new bootstrap.Toast(toastEl, { autohide: false });
-   errorToast.show();
+   const toast = new bootstrap.Toast(toastEl, { autohide, delay: 2500 });
+   toast.show();
+   return toast;
+}
+
+/** Show an error as a Bootstrap toast at the bottom that only closes manually (or on next render). */
+function showError(message: string) {
+   hideError();
+   errorToast = createToast(message, "danger", false);
+}
+
+function showSuccess(message: string) {
+   createToast(message, "success", true);
 }
 
 function hideError() {
@@ -222,7 +231,7 @@ function renderSignal(preserveState = false) {
    }
 
    try {
-      const template = buildSignalTemplate(definition);
+      const template = SignalDefinitionBuilder.build(definition);
       const signal = new Signal(template);
       if (savedStellung) signal._signalStellung = { ...savedStellung };
 
@@ -322,6 +331,15 @@ $(async () => {
       });
 
       document.getElementById("btnRender")!.addEventListener("click", () => renderSignal(true));
+
+      document.getElementById("btnCopy")!.addEventListener("click", async () => {
+         try {
+            await navigator.clipboard.writeText(configView.state.doc.toString());
+            showSuccess("Konfiguration in die Zwischenablage kopiert");
+         } catch {
+            showError("Kopieren fehlgeschlagen");
+         }
+      });
 
       const select = populateSelect();
       resizePreview();

@@ -7,6 +7,7 @@ import { Track } from './track.ts';
 import { DIRECTION } from './config.ts';
 import { Application } from './application.ts';
 import { SignalRenderer } from './rendering/signalRenderer.ts';
+import { SignalTemplate } from './signalTemplate.ts';
 
 
 /**
@@ -27,7 +28,7 @@ export class Signal {
 
    
 
-   _template: any = null;
+   _template: SignalTemplate | null = null;
    _signalStellung: any = {};
    _positioning: any = {
       track: null,
@@ -42,7 +43,7 @@ export class Signal {
 
    
 
-   constructor(template: any) {
+   constructor(template: SignalTemplate) {
       this._template = template;
       this._positioning = {
          track: null,
@@ -92,19 +93,24 @@ export class Signal {
     * @param chain {boolean} - Whether to chain the signal aspect
     */
    setSignalAspect(command: any, overideValue: any = true, chain: boolean = true) {
-      let setting, value;
-      [setting, value] = command.split("=");
-      if (overideValue === false) value = null;
-      else if (value == undefined) value = overideValue;
+      let setting: string, value: unknown;
+      const assignment = Signal._parseAssignment(command);
+      if (assignment) {
+         [setting, value] = assignment;
+         if (overideValue === false) value = null;
+      } else {
+         setting = command;
+         value = overideValue === false ? null : overideValue;
+      }
 
       if (this.get(setting) != value) {
          if (value == null) this._signalStellung[setting] = null;
-         else if (!isNaN(value)) this._signalStellung[setting] = Number(value);
+         else if (typeof value === "number") this._signalStellung[setting] = value;
          else this._signalStellung[setting] = value;
 
          this._changed = true;
-         if (this._template.getRotationAspectKeys().has(setting)) this._rotationAspectChanged = true;
-         if (this._template.getFlipAspectKeys().has(setting)) this._flipAspectChanged = true;
+         if (this._template!.getRotationAspectKeys().has(setting)) this._rotationAspectChanged = true;
+         if (this._template!.getFlipAspectKeys().has(setting)) this._flipAspectChanged = true;
          
       }
 
@@ -114,28 +120,28 @@ export class Signal {
          // Attention:we must check both both cases since some signals are main and advance at the same time
          // master is used for signals like lf6 and lf7, which are independent of the main signal
          if (this.check(["HPsig||master"])) {
-            let prevSignal: any = this;
+            let prevSignal: Signal | null = this;
             do {
                prevSignal = this.search4Signal(prevSignal, DIRECTION.RIGHT_2_LEFT);
                //if we found a signal and it has a checkSignalDependency function
-               if (prevSignal && prevSignal._template.checkSignalDependency)
-                  stop = prevSignal._template.checkSignalDependency(prevSignal, this);
+               if (prevSignal && prevSignal._template!.hasDependencyHandler())
+                  stop = prevSignal._template!.checkSignalDependency(prevSignal, this);
             } while (!stop && prevSignal);
          }
 
          //then we check the dependency of our advance signal and will get the information from the main signal
-         if (this.check(["VRsig||slave"]) && this._template.checkSignalDependency) {
-            let nextSignal: any = this;
+         if (this.check(["VRsig||slave"]) && this._template!.hasDependencyHandler()) {
+            let nextSignal: Signal | null = this;
             do {
                nextSignal = this.search4Signal(nextSignal, DIRECTION.LEFT_2_RIGHT);
-               if (nextSignal && nextSignal._template.checkSignalDependency)
-                  stop = nextSignal._template.checkSignalDependency(this, nextSignal, ["HPsig||master"]);
+               if (nextSignal && nextSignal._template!.hasDependencyHandler())
+                  stop = nextSignal._template!.checkSignalDependency(this, nextSignal, ["HPsig||master"]);
             } while (!stop && nextSignal);
          }
       }
 
       if (this._changed)
-         this._template.rules.forEach(
+         this._template!.rules.forEach(
             function (this: any, rule: any) {
                let trigger = rule[0];
                let signal_aspect = rule[1];
@@ -151,30 +157,67 @@ export class Signal {
       else return null;
    }
 
-   static _splitEquation(equation: string) {
-      const ret: any = {};
-      const operators = ["||", "&&", "!=", "<=", ">=", "=", ">", "<"];
-      let parts;
-      for (let op of operators) {
-         parts = equation.split(op);
-         if (parts.length > 1) {
-            ret.operands = parts;
-            ret.operator = op;
-            break;
+   static _parseQuotedLiteral(token: string): string | null {
+      const trimmed = token.trim();
+      const match = trimmed.match(/^(['"])(.*)\1$/s);
+      return match ? match[2] : null;
+   }
+
+   static _isNumericLiteral(token: string): boolean {
+      const trimmed = token.trim();
+      return trimmed.length > 0 && Number.isFinite(Number(trimmed));
+   }
+
+   static _parseAssignment(command: string): [string, string | number] | null {
+      const eqIndex = Signal._indexOfOperatorOutsideQuotes(command, "=");
+      if (eqIndex === -1) return null;
+
+      const setting = command.slice(0, eqIndex).trim();
+      const raw = command.slice(eqIndex + 1).trim();
+      const quoted = Signal._parseQuotedLiteral(raw);
+      if (quoted !== null) return [setting, quoted];
+      if (Signal._isNumericLiteral(raw)) return [setting, Number(raw)];
+      return null;
+   }
+
+   static _indexOfOperatorOutsideQuotes(text: string, operator: string): number {
+      let inQuote: "'" | '"' | null = null;
+      for (let i = 0; i <= text.length - operator.length; i++) {
+         const ch = text[i];
+         if (inQuote) {
+            if (ch === inQuote) inQuote = null;
+            continue;
          }
+         if (ch === "'" || ch === '"') {
+            inQuote = ch;
+            continue;
+         }
+         if (text.startsWith(operator, i)) return i;
       }
+      return -1;
+   }
 
-      if (!ret.operator) return null;
-
-      return ret;
+   static _splitEquation(equation: string) {
+      const operators = ["||", "&&", "!=", "<=", ">=", "=", ">", "<"];
+      for (const op of operators) {
+         const index = Signal._indexOfOperatorOutsideQuotes(equation, op);
+         if (index === -1) continue;
+         return {
+            operands: [equation.slice(0, index), equation.slice(index + op.length)],
+            operator: op,
+         };
+      }
+      return null;
    }
 
    static _resolveConditionOperand(signal: Signal, token: string) {
       const trimmed = token.trim();
+      const quoted = Signal._parseQuotedLiteral(trimmed);
+      if (quoted !== null) return quoted;
+      if (Signal._isNumericLiteral(trimmed)) return Number(trimmed);
       const aspect = signal.get(trimmed);
       if (aspect != null) return aspect;
-      if (/^-?\d+$/.test(trimmed)) return Number(trimmed);
-      return trimmed;
+      return -1;
    }
 
    static _compareConditionValues(left: unknown, right: unknown, operator: string) {
@@ -225,7 +268,7 @@ export class Signal {
       SignalRenderer.draw(this, c, force);
    }
 
-   search4Signal(signal: any, dir: number, feature?: any) {
+   search4Signal(signal: any, dir: number, feature?: any): Signal | null {
       if (signal._positioning.above != signal._positioning.flipped) dir *= -1;
 
       let track = signal._positioning.track;
@@ -265,6 +308,7 @@ export class Signal {
             }
          } else track = null;
       }
+      return null;
    }
 
    setTrack(track: any,km: number) {

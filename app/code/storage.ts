@@ -29,7 +29,7 @@ interface SavedSettings {
    zoom: number;
    scrollX: number;
    scrollY: number;
-   renderer: "advanced" | "basic";
+   renderer: "advanced" | "basic" | "textured";
 }
 
 interface LoadedData {

@@ -4,24 +4,70 @@
    "atlas": "ks",
    "scale": 0.12,
    "previewsize": 20,
-   "initial": [
-      "HPsig",
-      "verw=asig",
-      "hp=0",
-      "mast"
-   ],
+   "initial": ["HPsig", "verw='asig'", "hp=0", "mast"],
    "menu": [
-      [
-         "hp=0,hp=1(Ks 1),hp=2(Ks 2)",
-         "currentSpeed"
-      ],
-      "advanceSpeed",
-      "ersatz=zs1,ersatz=zs7,ersatz=zs8,ersatz=sh1,ersatz=kennlicht",
-      "zs6=1(Zs 6)",
-      [
-         "zs13=1(Zs 13)",
-         "zp9=1(Zp 9)"
-      ]
+      {
+         "section": [
+            {
+               "buttonGroup": [
+                  { "text": "Hp 0", "command": "hp=0" },
+                  { "text": "Ks 1", "command": "hp=1" },
+                  { "text": "Ks 2", "command": "hp=2" }
+               ]
+            },
+            {
+               "dropdown": {
+                  "text": "Zs3",
+                  "command": "currentSpeed"
+               }
+            }
+         ]
+      },
+      {
+         "section": [
+            {
+               "dropdown": {
+                  "text": "Zs3v",
+                  "command": "advanceSpeed"
+               }
+            }
+         ]
+      },
+      {
+         "section": [
+            {
+               "buttonGroup": [
+                  { "text": "Zs 1", "command": "ersatz='zs1'" },
+                  { "text": "Zs 7", "command": "ersatz='zs7'" },
+                  { "text": "Zs 8", "command": "ersatz='zs8'" },
+                  { "text": "Sh 1", "command": "ersatz='sh1'" },
+                  { "text": "Kennlicht", "command": "ersatz='kennlicht'" }
+               ]
+            }
+         ]
+      },
+      {
+         "section": [
+            {
+               "button": {
+                  "text": "Zs 6",
+                  "command": "zs6=1"
+               }
+            },         
+            {
+               "button": {
+                  "text": "Zs 13",
+                  "command": "zs13=1"
+               }
+            },
+            {
+               "button": {
+                  "text": "Zp 9",
+                  "command": "zp9=1"
+               }
+            }
+         ]
+      }
    ],
    "config_options": [
       {
@@ -41,14 +87,18 @@
       "publish": {
          "route": [
             ["hp<=0", "stop"],
-            ["hp=1", "caution"],
-            ["hp>=2", "caution"]
+            ["hp>=1", "go"]
          ]
       },
       "subscribe": {
-         "hp": { "route": { "stop": 2, "caution": 1, "clear": 1 } }
+         "hp": {
+            "route": {
+               "stop": 2,
+               "go": 1
+            }
+         }
       },
-      "stopUnless": "vr_op=wdh"
+      "stopUnless": "vr_op='wdh'"
    },
    "elements": [
       {
@@ -57,14 +107,8 @@
          "children": [
             {
                "text": "currentSpeed",
-               "format": [
-                  85,
-                  "DOT"
-               ],
-               "pos": [
-                  90,
-                  40
-               ],
+               "format": [85, "DOT"],
+               "pos": [90, 40],
                "on": "currentSpeed>0",
                "off": "hp<=0"
             }
@@ -77,15 +121,8 @@
             "zs3",
             {
                "text": "currentSpeed",
-               "format": [
-                  80,
-                  "Arial",
-                  1
-               ],
-               "pos": [
-                  85,
-                  70
-               ]
+               "format": [80, "Arial", 1],
+               "pos": [85, 70]
             }
          ]
       },
@@ -129,27 +166,24 @@
          "children": [
             {
                "image": "ks1_hpvr",
-               "on": [
-                  "VRsig",
-                  "advanceSpeed>0"
-               ],
+               "on": ["VRsig", "advanceSpeed>0"],
                "off": "currentSpeed>0&&currentSpeed<=advanceSpeed",
                "blinks": true
             },
             {
                "image": "ks1_hpvr",
                "on": "VRsig",
-               "off": "advanceSpeed>0&&(currentSpeed<=0||currentSpeed>advanceSpeed)"
+               "off": "advanceSpeed>0&&currentSpeed>advanceSpeed"
             },
             {
                "image": "ks1_hp",
                "on": "advanceSpeed>0",
-               "off": "VRsig||currentSpeed>0&&currentSpeed<=advanceSpeed",
+               "off": "VRsig",
                "blinks": true
             },
             {
                "image": "ks1_hp",
-               "off": "VRsig||advanceSpeed>0&&(currentSpeed<=0||currentSpeed>advanceSpeed)"
+               "off": "VRsig||advanceSpeed"
             }
          ]
       },
@@ -171,42 +205,42 @@
          "on": "hp=0"
       },
       {
-         "on": "verw=asig||verw=bksig||verw=sbk",
+         "on": "verw='asig'||verw='bksig'||verw='sbk'",
          "children": [
             "zs1_optik",
             {
                "image": "zs1",
-               "on": "ersatz=zs1",
+               "on": "ersatz='zs1'",
                "off": "hp>0",
                "blinks": true
             }
          ]
       },
       {
-         "on": "verw=esig||verw=zsig",
+         "on": "verw='esig'||verw='zsig'",
          "children": [
             "zs7_optik",
             {
                "image": "zs7",
-               "on": "ersatz=zs7",
+               "on": "ersatz='zs7'",
                "off": "hp>0"
             }
          ]
       },
       {
-         "on": "verw=asig||verw=zsig",
+         "on": "verw='asig'||verw='zsig'",
          "children": [
             "sh1_optik",
             "zs1_optik",
             {
                "image": "zs1,sh1",
-               "on": "ersatz=sh1",
+               "on": "ersatz='sh1'",
                "off": "hp>0"
             }
          ]
       },
       {
-         "on": "vr_op=verk&&VRsig",
+         "on": "vr_op='verk'&&VRsig",
          "children": [
             "kennlicht_optik",
             {
@@ -216,12 +250,12 @@
          ]
       },
       {
-         "on": "verw=asig||verw=zsig",
+         "on": "verw='asig'||verw='zsig'",
          "children": [
             "kennlicht_optik",
             {
                "image": "kennlicht",
-               "on": "ersatz=kennlicht",
+               "on": "ersatz='kennlicht'",
                "off": "hp>=0"
             }
          ]
@@ -233,16 +267,9 @@
             "zs3v",
             {
                "text": "advanceSpeed",
-               "format": [
-                  80,
-                  "Arial",
-                  1
-               ],
+               "format": [80, "Arial", 1],
                "color": "#ffde36",
-               "pos": [
-                  85,
-                  490
-               ]
+               "pos": [85, 490]
             }
          ]
       },
@@ -252,25 +279,16 @@
          "children": [
             {
                "text": "advanceSpeed",
-               "format": [
-                  85,
-                  "DOT"
-               ],
+               "format": [85, "DOT"],
                "color": "#ffde36",
                "on": "advanceSpeed>0",
                "off": "hp<=0||currentSpeed>0&&currentSpeed<=advanceSpeed",
-               "pos": [
-                  90,
-                  520
-               ]
+               "pos": [90, 520]
             }
          ]
       },
       {
-         "on": [
-            "zs6=1",
-            "zusatz_oben"
-         ],
+         "on": ["zs6=1", "zusatz_oben"],
          "off": "hp<=0||currentSpeed>0&&advanceSpeed>0",
          "children": [
             {
@@ -280,42 +298,18 @@
             {
                "image": "zs6_licht",
                "on": "currentSpeed>0",
-               "pos": [
-                  40,
-                  500
-               ]
+               "pos": [40, 500]
             }
          ]
       },
       {
-         "on": [
-            "zs13=1",
-            "zusatz_unten"
-         ],
-         "off": [
-            "hp=0",
-            "advanceSpeed>0&&(currentSpeed<=0||currentSpeed>advanceSpeed)",
-            "zp9=1",
-            "zs6=1&&currentSpeed>0"
-         ],
-         "children": [
-            {
-               "image": "zs13",
-               "on": "zs13=1"
-            }
-         ]
+         "image": "zs13",
+         "on": ["zs13=1", "zusatz_unten"],
+         "off": "hp=0||advanceSpeed>0||zp9=1||zs6=1"
       },
       {
-         "on": [
-            "zp9=1",
-            "zusatz_unten"
-         ],
-         "off": [
-            "hp=0",
-            "advanceSpeed>0&&(currentSpeed<=0||currentSpeed>advanceSpeed)",
-            "zs13=1",
-            "zs6=1&&currentSpeed>0"
-         ],
+         "on": ["zp9=1", "zusatz_unten"],
+         "off": ["hp=0||zs13=1||zs6=1||advanceSpeed>0"],
          "children": [
             {
                "image": "zp9",
@@ -329,16 +323,9 @@
          "children": [
             {
                "text": "bez",
-               "format": [
-                  55,
-                  "condenced",
-                  1
-               ],
+               "format": [55, "condenced", 1],
                "color": "#333",
-               "pos": [
-                  85,
-                  626
-               ]
+               "pos": [85, 626]
             }
          ]
       }

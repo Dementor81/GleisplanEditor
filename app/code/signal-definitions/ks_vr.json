@@ -10,9 +10,36 @@
       "mast"
    ],
    "menu": [
-      "hp=1(Ks 1),hp=2(Ks 2)",
-      "advanceSpeed",
-      "ersatz=kennlicht"
+      {
+         "section": [
+            {
+               "buttonGroup": [
+                  { "text": "Ks 1", "command": "hp=1" },
+                  { "text": "Ks 2", "command": "hp=2" }
+               ]
+            }
+         ]
+      },
+      {
+         "section": [
+            {
+               "dropdown": {
+                  "text": "Zs3v",
+                  "command": "advanceSpeed"
+               }
+            }
+         ]
+      },
+      {
+         "section": [
+            {
+               "button": {
+                  "text": "Kennlicht",
+                  "command": "ersatz='kennlicht'"
+               }
+            }
+         ]
+      }
    ],
    "config_options": [
       {
@@ -30,9 +57,9 @@
       "when": ["partner.HPsig", "self.VRsig"],
       "unless": ["self.HPsig&&self.hp=0", "self.hp=-1"],
       "subscribe": {
-         "hp": { "route": { "stop": 2, "caution": 1, "clear": 1 } }
+         "hp": { "route": { "stop": 2, "go": 1 } }
       },
-      "stopUnless": "vr_op=wdh"
+      "stopUnless": "vr_op='wdh'"
    },
    "elements": [
       {
@@ -65,7 +92,7 @@
          ]
       },
       {
-         "on": "vr_op=wdh",
+         "on": "vr_op='wdh'",
          "image": "vr_wdh_optik",
          "children": [
             {
@@ -75,7 +102,7 @@
          ]
       },
       {
-         "off": "vr_op=wdh",
+         "off": "vr_op='wdh'",
          "children": [
             {
                "image": "ne2",
@@ -92,7 +119,7 @@
          ]
       },
       {
-         "on": "vr_op=verk",
+         "on": "vr_op='verk'",
          "image": "vr_verk_optik",
          "children": [
             {

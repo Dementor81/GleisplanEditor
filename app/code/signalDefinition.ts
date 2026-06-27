@@ -1,6 +1,62 @@
 export type SignalCondition = string | string[];
 
-export type SignalMenuDefinition = Array<string | string[]>;
+export interface SignalMenuButtonItem {
+   text: string;
+   command: string;
+}
+
+export interface SignalMenuButtonDefinition {
+   button: SignalMenuButtonItem;
+}
+
+export interface SignalMenuDropdownDefinition {
+   dropdown: SignalMenuButtonItem;
+}
+
+export interface SignalMenuButtonGroupDefinition {
+   buttonGroup: SignalMenuButtonItem[];
+}
+
+export type SignalMenuItemDefinition =
+   | SignalMenuButtonGroupDefinition
+   | SignalMenuButtonDefinition
+   | SignalMenuDropdownDefinition;
+
+export interface SignalMenuSectionDefinition {
+   section: SignalMenuItemDefinition[];
+}
+
+export type SignalMenuDefinition = SignalMenuSectionDefinition[];
+
+export interface SignalMenuRuntimeButton {
+   type: 'button';
+   text: string;
+   command: string;
+   visual_elements: unknown[];
+}
+
+export interface SignalMenuRuntimeDropdown {
+   type: 'dropdown';
+   text: string;
+   command: string;
+   visual_elements: unknown[];
+}
+
+export interface SignalMenuRuntimeButtonGroup {
+   type: 'buttonGroup';
+   items: SignalMenuRuntimeButton[];
+}
+
+export type SignalMenuRuntimeItem =
+   | SignalMenuRuntimeButtonGroup
+   | SignalMenuRuntimeButton
+   | SignalMenuRuntimeDropdown;
+
+export interface SignalMenuRuntimeSection {
+   section: SignalMenuRuntimeItem[];
+}
+
+export type SignalMenuRuntime = SignalMenuRuntimeSection[];
 
 export type SignalElementDefinition =
    | string
@@ -72,10 +128,6 @@ export interface SignalDependencyDefinition {
    };
    overrides?: Array<[string, Record<string, string | number>]>;
    stopUnless?: string;
-}
-
-export function dependencyHasHandler(dependency: SignalDependencyDefinition): boolean {
-   return !!(dependency.when?.length || dependency.unless?.length || dependency.subscribe || dependency.overrides?.length || dependency.stopUnless);
 }
 
 export interface SignalTemplateDefinition {

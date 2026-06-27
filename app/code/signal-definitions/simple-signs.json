@@ -44,7 +44,16 @@
        "advanceSpeed=9"
     ],
     "menu": [
-       "advanceSpeed()"
+       {
+          "section": [
+             {
+                "dropdown": {
+                   "text": "Zs3v",
+                   "command": "advanceSpeed"
+                }
+             }
+          ]
+       }
     ],
     "dependency": {
        "when": [
@@ -80,7 +89,16 @@
      "currentSpeed=9"
   ],
   "menu": [
-     "currentSpeed()"
+     {
+        "section": [
+           {
+              "dropdown": {
+                 "text": "Zs3",
+                 "command": "currentSpeed"
+              }
+           }
+        ]
+     }
   ],
   "dependency": {
      "publish": {
@@ -111,7 +129,16 @@
   "scale": 0.15,
   "initial": "localSpeed=9",
   "menu": [
-     "localSpeed()"
+     {
+        "section": [
+           {
+              "dropdown": {
+                 "text": "Zs3",
+                 "command": "localSpeed"
+              }
+           }
+        ]
+     }
   ],
   "elements": [
      "zs3",
@@ -161,10 +188,26 @@
     "previewsize": 30,
     "initial": "zs6=1",
     "menu": [
-      [
-        "zs6=1(Zs 6)"
-      ],
-      "localSpeed()"
+      {
+        "section": [
+          {
+            "button": {
+              "text": "Zs 6",
+              "command": "zs6=1"
+            }
+          }
+        ]
+      },
+      {
+        "section": [
+          {
+            "dropdown": {
+              "text": "Zs3",
+              "command": "localSpeed"
+            }
+          }
+        ]
+      }
     ],
     "elements": [
       "zusatzanzeiger",
