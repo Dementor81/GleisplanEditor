@@ -8,6 +8,7 @@ import { DIRECTION } from './config.ts';
 import { Application } from './application.ts';
 import { SignalRenderer } from './rendering/signalRenderer.ts';
 import { SignalTemplate } from './signalTemplate.ts';
+import { SignalConditionEvaluator } from './signalConditionEvaluator.ts';
 
 
 /**
@@ -94,7 +95,7 @@ export class Signal {
     */
    setSignalAspect(command: any, overideValue: any = true, chain: boolean = true) {
       let setting: string, value: unknown;
-      const assignment = Signal._parseAssignment(command);
+      const assignment = SignalConditionEvaluator.parseAssignment(command);
       if (assignment) {
          [setting, value] = assignment;
          if (overideValue === false) value = null;
@@ -105,7 +106,6 @@ export class Signal {
 
       if (this.get(setting) != value) {
          if (value == null) this._signalStellung[setting] = null;
-         else if (typeof value === "number") this._signalStellung[setting] = value;
          else this._signalStellung[setting] = value;
 
          this._changed = true;
@@ -158,109 +158,8 @@ export class Signal {
       else return null;
    }
 
-   static _parseQuotedLiteral(token: string): string | null {
-      const trimmed = token.trim();
-      const match = trimmed.match(/^(['"])(.*)\1$/s);
-      return match ? match[2] : null;
-   }
-
-   static _isNumericLiteral(token: string): boolean {
-      const trimmed = token.trim();
-      return trimmed.length > 0 && Number.isFinite(Number(trimmed));
-   }
-
-   static _parseAssignment(command: string): [string, string | number] | null {
-      const eqIndex = Signal._indexOfOperatorOutsideQuotes(command, "=");
-      if (eqIndex === -1) return null;
-
-      const setting = command.slice(0, eqIndex).trim();
-      const raw = command.slice(eqIndex + 1).trim();
-      const quoted = Signal._parseQuotedLiteral(raw);
-      if (quoted !== null) return [setting, quoted];
-      if (Signal._isNumericLiteral(raw)) return [setting, Number(raw)];
-      return null;
-   }
-
-   static _indexOfOperatorOutsideQuotes(text: string, operator: string): number {
-      let inQuote: "'" | '"' | null = null;
-      for (let i = 0; i <= text.length - operator.length; i++) {
-         const ch = text[i];
-         if (inQuote) {
-            if (ch === inQuote) inQuote = null;
-            continue;
-         }
-         if (ch === "'" || ch === '"') {
-            inQuote = ch;
-            continue;
-         }
-         if (text.startsWith(operator, i)) return i;
-      }
-      return -1;
-   }
-
-   static _splitEquation(equation: string) {
-      const operators = ["||", "&&", "!=", "<=", ">=", "=", ">", "<"];
-      for (const op of operators) {
-         const index = Signal._indexOfOperatorOutsideQuotes(equation, op);
-         if (index === -1) continue;
-         return {
-            operands: [equation.slice(0, index), equation.slice(index + op.length)],
-            operator: op,
-         };
-      }
-      return null;
-   }
-
-   static _resolveConditionOperand(signal: Signal, token: string) {
-      const trimmed = token.trim();
-      const quoted = Signal._parseQuotedLiteral(trimmed);
-      if (quoted !== null) return quoted;
-      if (Signal._isNumericLiteral(trimmed)) return Number(trimmed);
-      const aspect = signal.get(trimmed);
-      if (aspect != null) return aspect;
-      return -1;
-   }
-
-   static _compareConditionValues(left: unknown, right: unknown, operator: string) {
-      const leftValue = left === null || left === undefined ? "null" : left;
-      const rightValue = right === null || right === undefined ? "null" : right;
-
-      if (operator === "=") return leftValue == rightValue;
-      if (operator === "!=") return leftValue != rightValue;
-
-      const ln = Number(leftValue);
-      const rn = Number(rightValue);
-      if (Number.isNaN(ln) || Number.isNaN(rn)) return false;
-
-      switch (operator) {
-         case "<":
-            return ln < rn;
-         case "<=":
-            return ln <= rn;
-         case ">=":
-            return ln >= rn;
-         case ">":
-            return ln > rn;
-      }
-      return false;
-   }
-
    check(stellung: any) {
-      if (stellung == null) return true;
-
-      const equation = Signal._splitEquation(stellung);
-      if (equation == null) return this.get(stellung) != null;
-
-      switch (equation.operator) {
-         case "&&":
-            return equation.operands.every(this.check, this);
-         case "||":
-            return equation.operands.some(this.check, this);
-      }
-
-      const left = Signal._resolveConditionOperand(this, equation.operands[0]);
-      const right = Signal._resolveConditionOperand(this, equation.operands[1]);
-      return Signal._compareConditionValues(left, right, equation.operator);
+      return SignalConditionEvaluator.evaluate(this, stellung);
    }
 
    draw(c: any, force: boolean = false) {

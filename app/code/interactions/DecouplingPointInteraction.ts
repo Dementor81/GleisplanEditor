@@ -1,10 +1,10 @@
 "use strict";
 
 import type { FederatedPointerEvent } from "pixi.js";
-import { Application } from "../application.ts";
 import { CUSTOM_MOUSE_ACTION } from "../config.ts";
-import { Point } from "../tools.ts";
+import type { Point } from "../tools.ts";
 import { Train } from "../train.ts";
+import { PointerInteractionAttachment } from "./attachPointerInteraction.ts";
 import type { PointerInteraction } from "./PointerInteraction.ts";
 
 /** Tap a decoupling overlay point to split a train. */
@@ -18,15 +18,10 @@ export class DecouplingPointInteraction implements PointerInteraction {
    }
 
    static attach(container: any): void {
-      container.on("pointerdown", (e: FederatedPointerEvent) => {
-         const app = Application.getInstance();
-         if (app.customMouseMode !== CUSTOM_MOUSE_ACTION.TRAIN_DECOUPLE) return;
-         if (e.button !== 0) return;
-         const rm = app.renderingManager!;
-         rm.recordCanvasPointer(e.nativeEvent as MouseEvent);
-         const data = rm.getGameObjFromDisplayObj(container);
-         app.eventManager!.startInteraction(new DecouplingPointInteraction(data));
-         e.stopPropagation();
-      });
+      PointerInteractionAttachment.attach(
+         container,
+         ({ app }) => new DecouplingPointInteraction(app.renderingManager!.getGameObjFromDisplayObj(container)),
+         { mode: CUSTOM_MOUSE_ACTION.TRAIN_DECOUPLE }
+      );
    }
 }

@@ -2,12 +2,11 @@
 
 import type { Container, FederatedPointerEvent } from "pixi.js";
 import { Application } from "../application.ts";
-import { STORAGE } from "../storage.ts";
 import { Point } from "../tools.ts";
 import { Signal } from "../signal.ts";
 import { SignalRenderer } from "../rendering/signalRenderer.ts";
 import type { PointerInteraction } from "./PointerInteraction.ts";
-import { SignalDragState } from "./signalDrag.ts";
+import { SignalDragCommitter, SignalDragState } from "./signalDrag.ts";
 
 /** Drag a new signal from the template palette onto the plan. */
 export class SignalTemplateInteraction implements PointerInteraction {
@@ -32,29 +31,8 @@ export class SignalTemplateInteraction implements PointerInteraction {
    }
 
    onUp(_local: Point, _e: FederatedPointerEvent): void {
-      const app = Application.getInstance();
-      const rm = app.renderingManager!;
-      this.#drag.clearPositionLine();
-
-      rm.containers.overlay.removeChild(this.container);
-
-      if (this.#drag.hitTrack) {
-         rm.containers.signals.addChild(this.container);
-         this.#drag.hitTrack.track.AddSignal(
-            this.signal,
-            this.#drag.hitTrack.km,
-            this.#drag.hitTrack.above,
-            this.#drag.hitTrack.flipped
-         );
-         rm.renderer.renderAllSignals();
-         rm.renderer.updateSelection();
-      } else {
-         Signal.removeSignal(this.signal);
-         rm.renderer.reDrawEverything(true);
-      }
-
-      STORAGE.save();
-      STORAGE.saveUndoHistory();
+      const rm = Application.getInstance().renderingManager!;
+      SignalDragCommitter.commit(this.signal, this.container, this.#drag);
       rm.update();
    }
 }

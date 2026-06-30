@@ -2,10 +2,10 @@
 
 import type { FederatedPointerEvent } from "pixi.js";
 import { Application } from "../application.ts";
-import { CUSTOM_MOUSE_ACTION } from "../config.ts";
-import { STORAGE } from "../storage.ts";
+import { EditorCommitter } from "../editorCommitter.ts";
 import { Point } from "../tools.ts";
 import { Train } from "../train.ts";
+import { PointerInteractionAttachment } from "./attachPointerInteraction.ts";
 import { ElementInteraction } from "./ElementInteraction.ts";
 
 /** Select on tap, drag to move along track on drag. */
@@ -29,20 +29,10 @@ export class TrainInteraction extends ElementInteraction {
    }
 
    protected override onDragEnd(): void {
-      STORAGE.save();
-      STORAGE.saveUndoHistory();
+      EditorCommitter.commit();
    }
 
    static attach(container: any, train: Train): void {
-      container.on("pointerdown", (e: FederatedPointerEvent) => {
-         const app = Application.getInstance();
-         if (app.customMouseMode !== CUSTOM_MOUSE_ACTION.NONE) return;
-         if (e.button !== 0) return;
-         const rm = app.renderingManager!;
-         rm.recordCanvasPointer(e.nativeEvent as MouseEvent);
-         const start = Point.fromPoint(rm.viewportPointerLocal());
-         app.eventManager!.startInteraction(new TrainInteraction(train, start));
-         e.stopPropagation();
-      });
+      PointerInteractionAttachment.attach(container, ({ start }) => new TrainInteraction(train, start));
    }
 }

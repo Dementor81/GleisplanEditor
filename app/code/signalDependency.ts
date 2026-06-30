@@ -1,10 +1,8 @@
 import { Signal } from './signal.ts';
+import { SignalConditionEvaluator, type SignalSemanticState } from './signalConditionEvaluator.ts';
 import type { SignalDependencyDefinition } from './signalDefinition.ts';
 
-export type SemanticState = {
-   route?: string;
-   currentSpeed?: number;
-};
+export type SemanticState = SignalSemanticState;
 
 export class SignalDependency {
    readonly config: SignalDependencyDefinition;
@@ -29,48 +27,13 @@ export class SignalDependency {
       expr: string,
       partnerSemantics?: SemanticState
    ): boolean {
-      if (expr.includes('&&')) {
-         return expr.split('&&').every((part) =>
-            SignalDependency.evaluateCondition(signal, partner, part.trim(), partnerSemantics)
-         );
-      }
-      if (expr.includes('||')) {
-         return expr.split('||').some((part) =>
-            SignalDependency.evaluateCondition(signal, partner, part.trim(), partnerSemantics)
-         );
-      }
-
-      if (expr.startsWith('partner.currentSpeed')) {
-         const semantics =
-            partnerSemantics ??
-            SignalDependency.publishSemantics(partner, partner._template?.dependency?.publish);
-         if (semantics.currentSpeed === undefined) return false;
-         return SignalDependency.evaluateValueCondition(
-            semantics.currentSpeed,
-            expr.slice('partner.'.length)
-         );
-      }
-
-      if (expr.startsWith('partner.id') || expr.startsWith('self.id')) {
-         const target = expr.startsWith('self.') ? signal : partner;
-         const templateId = target._template?.id ?? '';
-         return SignalDependency.evaluateValueCondition(templateId, expr.slice(expr.indexOf('id')));
-      }
-
-      if (expr.startsWith('self.')) return signal.check(expr.slice(5));
-      if (expr.startsWith('partner.')) return partner.check(expr.slice(8));
-      return signal.check(expr);
-   }
-
-   private static evaluateValueCondition(value: unknown, aspectCondition: string): boolean {
-      const equation = Signal._splitEquation(aspectCondition);
-      if (!equation) return false;
-
-      const rightToken = equation.operands[1].trim();
-      const quoted = Signal._parseQuotedLiteral(rightToken);
-      const right =
-         quoted !== null ? quoted : Signal._isNumericLiteral(rightToken) ? Number(rightToken) : rightToken;
-      return Signal._compareConditionValues(value, right, equation.operator);
+      const semantics =
+         partnerSemantics ??
+         SignalDependency.publishSemantics(partner, partner._template?.dependency?.publish);
+      return SignalConditionEvaluator.evaluate(signal, expr, {
+         partner,
+         partnerSemantics: semantics,
+      });
    }
 
    static publishSemantics(partner: Signal, publish?: SignalDependencyDefinition['publish']): SemanticState {
@@ -113,25 +76,30 @@ export class SignalDependency {
     * @returns True if the signal should NOT be propagated further, false otherwise.
     */
    check(signal: Signal, partner: Signal): boolean {
+      const semantics = SignalDependency.publishSemantics(partner, partner._template?.dependency?.publish);
+      const matches = (expr: string) =>
+         SignalConditionEvaluator.evaluate(signal, expr, {
+            partner,
+            partnerSemantics: semantics,
+         });
+
       // checks when condition is met. if not, the signal is transparent and the propagation stops.
-      if (this.config.when?.length && !this.config.when.every((expr) => SignalDependency.evaluateCondition(signal, partner, expr))) {
+      if (this.config.when?.length && !this.config.when.every(matches)) {
          return false; // the signal is transparent and the propagation goes on.
       }
 
       // checks the unless condition. if it fails, the signal will not presignal the stop/go aspect but it will apply the speed..
-      const skipApply = this.config.unless?.some((expr) =>
-         SignalDependency.evaluateCondition(signal, partner, expr)
-      );
+      const skipApply = this.config.unless?.some(matches) ?? false;
 
       if (signal.check('VRsig||slave') ) {
-         const semantics = SignalDependency.publishSemantics(partner, partner._template?.dependency?.publish);
-         if(!skipApply) this.applyRouteSubscribe(signal, semantics);
+         if (!skipApply) this.applyRouteSubscribe(signal, semantics);
          this.applySpeedPropagation(signal, semantics);
-         if(!skipApply)this.applyOverrides(signal, partner, semantics);
+         if (!skipApply) this.applyOverrides(signal, partner, semantics);
       }
 
       if (!this.config.stopUnless) return true;
-      return !SignalDependency.evaluateCondition(signal, partner, this.config.stopUnless);
+      const shouldContinue = matches(this.config.stopUnless);
+      return !shouldContinue;
    }
 
 

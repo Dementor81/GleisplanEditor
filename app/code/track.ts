@@ -6,7 +6,7 @@ import { Switch } from "./switch.ts";
 import { Signal } from "./signal.ts";
 import { ArrayUtils } from "./utils.ts";
 import { CONFIG } from "./config.ts";
-import { STORAGE } from "./storage.ts";
+import { EditorCommitter } from "./editorCommitter.ts";
 import { Application } from "./application.ts";
 
 export class Track {
@@ -482,8 +482,7 @@ export class Track {
       $("#inputBumper").prop("checked", track.hasBumper);
       $("#inputBumper").on("change", (e: any) => {
          track.hasBumper = e.target.checked;
-         STORAGE.save();
-         STORAGE.saveUndoHistory();
+         EditorCommitter.commit();
          Application.getInstance().renderingManager!.reDrawEverything(true);
       });
       $("#btnRemoveTrack").off("click");

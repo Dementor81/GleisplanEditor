@@ -3,7 +3,7 @@
 import type { FederatedPointerEvent } from "pixi.js";
 import { Application } from "../application.ts";
 import { COLORS, CUSTOM_MOUSE_ACTION } from "../config.ts";
-import { STORAGE } from "../storage.ts";
+import { EditorCommitter } from "../editorCommitter.ts";
 import type { Point } from "../tools.ts";
 import { GenericObject } from "../generic_object.ts";
 import { gleisGraphics } from "../pixiPrimitives.ts";
@@ -40,7 +40,6 @@ export class PlatformPlaceInteraction implements PointerInteraction {
       app.renderingManager!.renderer.renderAllGenericObjects();
       app.selectObject(o);
       app.customMouseMode = CUSTOM_MOUSE_ACTION.NONE;
-      STORAGE.saveUndoHistory();
-      STORAGE.save();
+      EditorCommitter.commit();
    }
 }

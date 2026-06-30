@@ -3,6 +3,8 @@
 import type { Container, Graphics } from "pixi.js";
 import { Application } from "../application.ts";
 import { COLORS } from "../config.ts";
+import { EditorCommitter } from "../editorCommitter.ts";
+import { Signal } from "../signal.ts";
 import { Point } from "../tools.ts";
 import { gleisGraphics } from "../pixiPrimitives.ts";
 import { findChildByLabel } from "../pixiUtils.ts";
@@ -54,5 +56,30 @@ export class SignalDragState {
       const overlay = Application.getInstance().renderingManager!.containers.overlay;
       const shape = findChildByLabel(overlay, "SignalPositionLine") as Graphics | null;
       if (shape) overlay.removeChild(shape);
+   }
+}
+
+export class SignalDragCommitter {
+   static commit(signal: Signal, container: Container, drag: SignalDragState): void {
+      const rm = Application.getInstance().renderingManager!;
+      drag.clearPositionLine();
+      rm.containers.overlay.removeChild(container);
+
+      if (drag.hitTrack) {
+         rm.containers.signals.addChild(container);
+         drag.hitTrack.track.AddSignal(
+            signal,
+            drag.hitTrack.km,
+            drag.hitTrack.above,
+            drag.hitTrack.flipped
+         );
+         rm.renderer.renderAllSignals();
+         rm.renderer.updateSelection();
+      } else {
+         Signal.removeSignal(signal);
+         rm.renderer.reDrawEverything(true);
+      }
+
+      EditorCommitter.commit();
    }
 }

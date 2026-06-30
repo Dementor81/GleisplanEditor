@@ -3,7 +3,7 @@
 import type { FederatedPointerEvent } from "pixi.js";
 import { Application } from "../application.ts";
 import { CUSTOM_MOUSE_ACTION } from "../config.ts";
-import { STORAGE } from "../storage.ts";
+import { EditorCommitter } from "../editorCommitter.ts";
 import type { Point } from "../tools.ts";
 import { GenericObject } from "../generic_object.ts";
 import type { PointerInteraction } from "./PointerInteraction.ts";
@@ -21,7 +21,6 @@ export class TextPlaceInteraction implements PointerInteraction {
       app.selectObject(o);
       app.renderingManager!.renderer.renderAllGenericObjects();
       app.customMouseMode = CUSTOM_MOUSE_ACTION.NONE;
-      STORAGE.saveUndoHistory();
-      STORAGE.save();
+      EditorCommitter.commit();
    }
 }

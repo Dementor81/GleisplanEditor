@@ -2,6 +2,7 @@
 
 // ES6 Module imports
 import { ArrayUtils } from './utils.ts';
+import { EditorCommitter } from './editorCommitter.ts';
 import { STORAGE } from './storage.ts';
 import { Application } from './application.ts';
 
@@ -26,8 +27,7 @@ export class GenericObject {
       ArrayUtils.remove(this.all_objects, o);
       Application.getInstance().renderingManager!.renderer.renderAllGenericObjects();
       Application.getInstance().renderingManager!.update();
-      STORAGE.save();
-      STORAGE.saveUndoHistory();
+      EditorCommitter.commit();
    }
 
    static initEditMenu(o: any): void {

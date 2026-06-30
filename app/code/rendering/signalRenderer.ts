@@ -20,6 +20,7 @@ import { rectHitArea } from '../pixiPrimitives.ts';
 import { createLayerContainer, findChildByLabel } from '../pixiUtils.ts';
 import { SignalInteraction } from '../interactions/SignalInteraction.ts';
 import { Signal } from '../signal.ts';
+import { SignalConditionEvaluator } from '../signalConditionEvaluator.ts';
 import type { SignalFlipConfig, SignalFlipDefinition, SignalRotationConfig, SignalRotationDefinition } from '../signalDefinition.ts';
 
 type DrawParent = { container: Container; originX: number; originY: number; ve?: VisualElement } | VisualElement | null;
@@ -435,7 +436,7 @@ export class SignalRenderer {
    }
 
    static #applyInitialSignalStellung(stellung: Record<string, unknown>, command: string) {
-      const assignment = Signal._parseAssignment(command);
+      const assignment = SignalConditionEvaluator.parseAssignment(command);
       if (assignment) {
          const [setting, value] = assignment;
          stellung[setting] = value;

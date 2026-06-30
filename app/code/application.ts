@@ -11,6 +11,7 @@ import { initSignals } from "./signal_library.ts";
 import { geometry } from "./tools.ts";
 import { ui } from "./ui.ts";
 import { CONFIG, CUSTOM_MOUSE_ACTION, MENU, PATHS, Menu, CustomMouseAction } from "./config.ts";
+import { DRAWING_MODE_CURSORS } from "./ui/drawingCursors.ts";
 import { EventManager } from "./managers/EventManager.ts";
 import { RenderingManager } from "./rendering/RenderingManager.ts";
 import { UIManager } from "./managers/UIManager.ts";
@@ -300,6 +301,17 @@ export class Application {
    // Setters for controlled state changes
    set customMouseMode(mode: CustomMouseAction) {
       this.#customMouseMode = mode;
+      this.syncCustomMouseModeCursor();
+   }
+
+   syncCustomMouseModeCursor(): void {
+      const canvas = (window as any).myCanvas as HTMLCanvasElement | undefined;
+      if (!canvas) return;
+
+      if (this.#customMouseMode === CUSTOM_MOUSE_ACTION.ERASER) canvas.style.cursor = DRAWING_MODE_CURSORS.eraser;
+      else if (this.#customMouseMode === CUSTOM_MOUSE_ACTION.DRAWING) canvas.style.cursor = DRAWING_MODE_CURSORS.brush;
+      else if (this.#customMouseMode === CUSTOM_MOUSE_ACTION.TEXT) canvas.style.cursor = "text";
+      else canvas.style.cursor = "auto";
    }
 }
 

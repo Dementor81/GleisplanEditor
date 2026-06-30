@@ -2,14 +2,15 @@
 
 import type { FederatedPointerEvent, Graphics } from "pixi.js";
 import { Application } from "../application.ts";
-import { COLORS, CONFIG, CUSTOM_MOUSE_ACTION } from "../config.ts";
-import { STORAGE } from "../storage.ts";
+import { COLORS, CONFIG } from "../config.ts";
+import { EditorCommitter } from "../editorCommitter.ts";
 import { geometry, Point } from "../tools.ts";
 import { ArrayUtils } from "../utils.ts";
 import { Track } from "../track.ts";
 import { Train } from "../train.ts";
 import { gleisGraphics } from "../pixiPrimitives.ts";
 import { BasicRendering } from "../rendering/BasicRendering.ts";
+import { PointerInteractionAttachment } from "./attachPointerInteraction.ts";
 import { ElementInteraction } from "./ElementInteraction.ts";
 /** Tap to select/deselect; drag to place new track nodes on the grid. */
 export class TrackBuildInteraction extends ElementInteraction {
@@ -59,8 +60,7 @@ export class TrackBuildInteraction extends ElementInteraction {
          Track.createRailNetwork();
          Train.allTrains.forEach((t) => t.restore());
          rm.renderer.reDrawEverything(true);
-         STORAGE.saveUndoHistory();
-         STORAGE.save();
+         EditorCommitter.commit();
       }
       if (this.#lineShape) rm.containers.overlay.removeChild(this.#lineShape);
       rm.update();
@@ -102,15 +102,6 @@ export class TrackBuildInteraction extends ElementInteraction {
    }
 
    static attach(container: any, track: Track): void {
-      container.on("pointerdown", (e: FederatedPointerEvent) => {
-         const app = Application.getInstance();
-         if (app.customMouseMode !== CUSTOM_MOUSE_ACTION.NONE) return;
-         if (e.button !== 0) return;
-         const rm = app.renderingManager!;
-         rm.recordCanvasPointer(e.nativeEvent as MouseEvent);
-         const start = Point.fromPoint(rm.viewportPointerLocal());
-         app.eventManager!.startInteraction(new TrackBuildInteraction(start, track));
-         e.stopPropagation();
-      });
+      PointerInteractionAttachment.attach(container, ({ start }) => new TrackBuildInteraction(start, track));
    }
 }

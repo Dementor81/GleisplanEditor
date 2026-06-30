@@ -77,6 +77,5 @@ export class NewObjectMenu {
       else $hint.hide();
 
       app.customMouseMode = kind ? KINDS[kind].mode : CUSTOM_MOUSE_ACTION.NONE;
-      app.uiManager?.activateCustomMouseMode();
    }
 }

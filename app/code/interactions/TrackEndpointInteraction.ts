@@ -2,10 +2,11 @@
 
 import type { FederatedPointerEvent } from "pixi.js";
 import { Application } from "../application.ts";
-import { CONFIG, CUSTOM_MOUSE_ACTION } from "../config.ts";
-import { STORAGE } from "../storage.ts";
+import { CONFIG } from "../config.ts";
+import { EditorCommitter } from "../editorCommitter.ts";
 import { geometry, Point } from "../tools.ts";
 import { Track } from "../track.ts";
+import { PointerInteractionAttachment } from "./attachPointerInteraction.ts";
 import type { PointerInteraction } from "./PointerInteraction.ts";
 
 /** Drag a track endpoint to reposition it on the grid. */
@@ -32,19 +33,10 @@ export class TrackEndpointInteraction implements PointerInteraction {
    }
 
    onUp(_local: Point, _e: FederatedPointerEvent): void {
-      STORAGE.saveUndoHistory();
-      STORAGE.save();
+      EditorCommitter.commit();
    }
 
    static attach(container: any, track: Track, endpoint: "start" | "end"): void {
-      container.on("pointerdown", (e: FederatedPointerEvent) => {
-         const app = Application.getInstance();
-         if (app.customMouseMode !== CUSTOM_MOUSE_ACTION.NONE) return;
-         if (e.button !== 0) return;
-         const rm = app.renderingManager!;
-         rm.recordCanvasPointer(e.nativeEvent as MouseEvent);
-         app.eventManager!.startInteraction(new TrackEndpointInteraction(track, endpoint));
-         e.stopPropagation();
-      });
+      PointerInteractionAttachment.attach(container, () => new TrackEndpointInteraction(track, endpoint));
    }
 }

@@ -2,10 +2,10 @@
 
 import type { Container, FederatedPointerEvent } from "pixi.js";
 import { Application } from "../application.ts";
-import { CUSTOM_MOUSE_ACTION } from "../config.ts";
-import { STORAGE } from "../storage.ts";
+import { EditorCommitter } from "../editorCommitter.ts";
 import { Point } from "../tools.ts";
 import type { GenericObject } from "../generic_object.ts";
+import { PointerInteractionAttachment } from "./attachPointerInteraction.ts";
 import { ElementInteraction } from "./ElementInteraction.ts";
 
 /** Select on tap, move on drag for platform/text objects. Owns its full lifecycle. */
@@ -35,8 +35,7 @@ export class GenericObjectInteraction extends ElementInteraction {
 
    protected override onDragEnd(): void {
       this.#syncPosFromContainer();
-      STORAGE.save();
-      STORAGE.saveUndoHistory();
+      EditorCommitter.commit();
    }
 
    #syncPosFromContainer(): void {
@@ -45,15 +44,6 @@ export class GenericObjectInteraction extends ElementInteraction {
 
    /** Wire a GenericObject container so its pointerdown starts a GenericObjectInteraction. */
    static attach(container: Container, obj: GenericObject): void {
-      container.on("pointerdown", (e: FederatedPointerEvent) => {
-         const app = Application.getInstance();
-         if (app.customMouseMode !== CUSTOM_MOUSE_ACTION.NONE) return;
-         if (e.button !== 0) return;
-         const rm = app.renderingManager!;
-         rm.recordCanvasPointer(e.nativeEvent as MouseEvent);
-         const start = Point.fromPoint(rm.viewportPointerLocal());
-         app.eventManager!.startInteraction(new GenericObjectInteraction(obj, container, start));
-         e.stopPropagation();
-      });
+      PointerInteractionAttachment.attach(container, ({ start }) => new GenericObjectInteraction(obj, container, start));
    }
 }

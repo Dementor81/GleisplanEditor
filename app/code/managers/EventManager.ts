@@ -1,18 +1,11 @@
 "use strict";
 
-// ES6 Module imports
-import { Collapse, Modal } from "bootstrap";
-import { COMPUTED, CUSTOM_MOUSE_ACTION, MENU } from "../config.ts";
-import { STORAGE } from "../storage.ts";
-import { ui } from "../ui.ts";
+import { COMPUTED, CUSTOM_MOUSE_ACTION } from "../config.ts";
 import { Point, geometry } from "../tools.ts";
 import { NumberUtils } from "../utils.ts";
-import { Sig_UI } from "../sig_ui.ts";
 import { Track } from "../track.ts";
 import { Application } from "../application.ts";
 import type { FederatedPointerEvent } from "pixi.js";
-import { DrawingPanel } from "../ui/DrawingPanel.ts";
-import { DRAWING_MODE_CURSORS } from "../ui/drawingCursors.ts";
 import type { PointerInteraction } from "../interactions/PointerInteraction.ts";
 import { DrawingInteraction } from "../interactions/DrawingInteraction.ts";
 import { EraserInteraction } from "../interactions/EraserInteraction.ts";
@@ -45,7 +38,6 @@ import { ViewportScrollInteraction } from "../interactions/ViewportScrollInterac
  */
 export class EventManager {
    #app: Application;
-   #drawingPanel: DrawingPanel;
    #eventListeners: Map<string, Function[]> = new Map();
    #mainCanvas: HTMLCanvasElement = (window as any).myCanvas as HTMLCanvasElement;
 
@@ -67,7 +59,6 @@ export class EventManager {
 
    constructor(application: Application) {
       this.#app = application;
-      this.#drawingPanel = new DrawingPanel();
    }
 
    /**
@@ -118,12 +109,11 @@ export class EventManager {
       this.#boundHandleTouchStart = this.#handleTouchStart.bind(this);
       this.#boundHandleTouchMove = this.#handleTouchMove.bind(this);
       this.#boundHandleCanvasPointerMove = this.#handleCanvasPointerMove.bind(this);
-      this.#boundSyncDrawModeCanvasCursor = this.#syncDrawModeCanvasCursor.bind(this);
+      this.#boundSyncDrawModeCanvasCursor = this.#app.syncCustomMouseModeCursor.bind(this.#app);
       this.#boundClearCanvasCursor = this.#clearCanvasCursor.bind(this);
 
       this.#initializeCanvasEvents();
       this.#initializeTouchEvents();
-      this.#initializeButtonEvents();
       this.#initializeKeyboardEvents();
       this.#initializeWindowEvents();
    }
@@ -149,15 +139,6 @@ export class EventManager {
       stage.on("pointerupoutside", this.#boundHandleStagePointerUp);
    }
 
-   /** SVG cursors for annotate modes; preserves text cursor when placing labels. */
-   #syncDrawModeCanvasCursor(): void {
-      const m = this.#app.customMouseMode;
-      if (m === CUSTOM_MOUSE_ACTION.ERASER) this.#mainCanvas.style.cursor = DRAWING_MODE_CURSORS.eraser;
-      else if (m === CUSTOM_MOUSE_ACTION.DRAWING) this.#mainCanvas.style.cursor = DRAWING_MODE_CURSORS.brush;
-      else if (m === CUSTOM_MOUSE_ACTION.TEXT) this.#mainCanvas.style.cursor = "text";
-      else this.#mainCanvas.style.cursor = "auto";
-   }
-
    #clearCanvasCursor(): void {
       this.#mainCanvas.style.cursor = "auto";
    }
@@ -178,87 +159,6 @@ export class EventManager {
       if (!canvas) return;
       canvas.addEventListener("touchstart", this.#boundHandleTouchStart!);
       canvas.addEventListener("touchmove", this.#boundHandleTouchMove!);
-   }
-
-   /**
-    * Initialize button events
-    * @private
-    */
-   #afterAdvancedPlanLoad(): void {
-      const rm = this.#app.renderingManager;
-      rm?.drawGrid();
-      rm?.renderer.reDrawEverything(true);
-      $("#myCanvas").trigger("focus");
-   }
-
-   #collapseNewItemsMenubarOnMobile(): void {
-      if (window.matchMedia("(min-width: 992px)").matches) return;
-      const el = document.getElementById("newItemsMenubarCollapse");
-      if (!el?.classList.contains("show")) return;
-      Collapse.getOrCreateInstance(el).hide();
-   }
-
-   #initializeButtonEvents(): void {
-      // Menu buttons
-      $("#btnAddSignals").onclick(() => {
-         this.#collapseNewItemsMenubarOnMobile();
-         this.#app.uiManager?.showMenu(MENU.NEW_SIGNAL);
-      });
-      $("#btnAddTrain").onclick(() => {
-         this.#collapseNewItemsMenubarOnMobile();
-         this.#app.uiManager?.showMenu(MENU.NEW_TRAIN);
-      });
-      $("#btnAddObject").onclick(() => {
-         this.#collapseNewItemsMenubarOnMobile();
-         this.#app.uiManager?.showMenu(MENU.NEW_OBJECT);
-      });
-      $("#menuNeu").onclick(() => this.#app.uiManager?.showStartScreen());
-      $("#menuSpeichern").onclick(() => STORAGE.downloadAsFile());
-      $("#menuModusAendern").onclick(() => {
-         Modal.getOrCreateInstance(document.getElementById("rendererChoiceModal")!).show();
-      });
-
-
-      $("#menuLoadFromFile").onclick(() => {
-         STORAGE.restoreFromFile().then(() => {
-            this.#afterAdvancedPlanLoad();
-            STORAGE.saveUndoHistory();
-         });
-      });
-
-      const rendererModalEl = document.getElementById("rendererChoiceModal");
-      rendererModalEl?.addEventListener("show.bs.modal", () => {
-         this.#app.uiManager?.handleRendererUIUpdate(
-            this.#app.renderingManager?.usesAdvancedRenderer() ?? true
-         );
-      });
-
-      $("#btnRendererChoiceOk").onclick(() => {
-         const handle = this.#app.uiManager?.rendererChoiceCardsHandle;
-         if (!handle) return;
-         this.#app.renderingManager?.selectRenderer(handle.getSelectedAdvanced());
-         STORAGE.save();
-         Modal.getInstance(document.getElementById("rendererChoiceModal")!)?.hide();
-      });
-
-      // Action buttons
-      $("#btnClear").onclick(() => this.#app.renderingManager?.clear());
-      $("#btnRedraw").onclick(() => this.#app.renderingManager?.forceRedraw());
-      $("#btnImage").onclick(this.#handleImageExport.bind(this));
-      $("#btnDraw").onclick(this.#handleDrawToggle.bind(this));
-      $(this.#drawingPanel.btnClear).onclick(this.#handleDrawingClear.bind(this));
-
-      $(this.#drawingPanel.btnEraser).onclick(() => {
-         const mode_active = this.#app.customMouseMode === CUSTOM_MOUSE_ACTION.ERASER;
-         this.#drawingPanel.setEraserActive(!mode_active);
-         this.#app.customMouseMode = !mode_active ? CUSTOM_MOUSE_ACTION.ERASER : CUSTOM_MOUSE_ACTION.DRAWING;
-         this.#syncDrawModeCanvasCursor();
-      });
-
-      $("#btnUndo").onclick(this.#handleUndo.bind(this));
-
-      // Signal edit menu
-      $("#signalEditMenuHeader a").on("click", this.#handleSignalEditClick.bind(this));
    }
 
    /**
@@ -341,7 +241,7 @@ export class EventManager {
          return;
       }
       if (mode === CUSTOM_MOUSE_ACTION.DRAWING) {
-         this.startInteraction(new DrawingInteraction(start, this.#drawingPanel));
+         this.startInteraction(new DrawingInteraction(start, this.#app.uiManager!.drawingPanel));
          return;
       }
       if (mode === CUSTOM_MOUSE_ACTION.ERASER) {
@@ -380,7 +280,7 @@ export class EventManager {
          this.#activeInteraction.onUp(local, event as FederatedPointerEvent);
          this.#activeInteraction = null;
       }
-      this.#syncDrawModeCanvasCursor();
+      this.#app.syncCustomMouseModeCursor();
       rm.containers.overlay.removeChildren();
       rm.update();
    }
@@ -448,123 +348,6 @@ export class EventManager {
     */
    #handleWindowResize(): void {
       this.#app.renderingManager?.onResizeWindow();
-   }
-
-   /**
-    * Handle image export
-    * @private
-    */
-   async #handleImageExport(): Promise<void> {
-      const viewport = this.#app.renderingManager!.viewport;
-      let backup = { x: viewport.x, y: viewport.y, scale: viewport.scale.x };
-
-      try {
-         const rm = this.#app.renderingManager!;
-         const renderer = rm.pixiApp.renderer;
-
-         rm.reDrawEverything(true, true);
-
-         const b = rm.viewport.getLocalBounds();
-         if (!(b.width > 0 && b.height > 0 && Number.isFinite(b.width + b.height))) {
-            ui.showInfoToast("Nix zu sehen");
-            return;
-         }
-
-         const bw = Math.max(1, Math.ceil(b.width));
-         const bh = Math.max(1, Math.ceil(b.height));
-         const gl = (renderer as { gl?: WebGLRenderingContext }).gl;
-         const maxDim = gl ? gl.getParameter(gl.MAX_TEXTURE_SIZE) : 8192;
-         const exportResolution = Math.min(2, maxDim / Math.max(bw, bh));
-
-         rm.setGridVisible(false);
-         rm.containers.drawing.visible = false;
-         rm.containers.ui.visible = false;
-         rm.update();
-
-         const img_data = await renderer.extract.base64({
-            target: rm.viewport,
-            resolution: exportResolution,
-            clearColor: "#00000000",
-            antialias: false,
-         });
-         const img = $("<img>", { src: img_data, width: "100%" }).css("object-fit", "scale-down").css("max-height", "50vh");
-         ui.showModalDialog(img, () => {
-            const a = $("<a>", { download: "gleisplan.png", href: img_data });
-            a[0].click();
-         });
-      } catch (error) {
-         ui.showErrorToast(error as Error);
-      } finally {
-         viewport.x = backup.x;
-         viewport.y = backup.y;
-         viewport.scale.set(backup.scale);
-         this.#app.renderingManager!.setGridVisible(true);
-         this.#app.renderingManager!.containers.drawing.visible = true;
-         this.#app.renderingManager!.containers.ui.visible = true;
-         this.#app.renderingManager?.reDrawEverything(true);
-         this.#app.renderingManager!.update();
-         this.#app.renderingManager?.notifyViewportChanged();
-      }
-   }
-
-   /**
-    * Handle draw toggle
-    * @private
-    */
-   #handleDrawToggle(): void {
-      this.#app.customMouseMode = $("#btnDraw").hasClass("active") ? CUSTOM_MOUSE_ACTION.DRAWING : CUSTOM_MOUSE_ACTION.NONE;
-      this.#drawingPanel.setEraserActive(false);
-      if (this.#app.customMouseMode === CUSTOM_MOUSE_ACTION.DRAWING) {
-         this.#drawingPanel.show();
-      } else {
-         this.#drawingPanel.hide();
-      }
-      this.#syncDrawModeCanvasCursor();
-   }
-
-   /**
-    * Handle drawing clear
-    * @private
-    */
-   #handleDrawingClear(): void {
-      this.#app.renderingManager?.containers.drawing.removeChildren();
-      this.#app.renderingManager?.update();
-   }
-
-   /**
-    * Handle undo
-    * @private
-    */
-   #handleUndo(): void {
-      this.#app.undo();
-   }
-
-   /**
-    * Handle signal edit click
-    * @private
-    */
-   #handleSignalEditClick(): void {
-      $("#signalEditMenuHeader .card-text").hide();
-      $("#signalEditMenuHeader input")
-         .val(this.#app.selection.object.get("bez"))
-         .show()
-         .focus()
-         .on(
-            "keydown",
-            (e) => {
-               if (e.key === "Enter") {
-                  this.#app.selection.object.setSignalAspect("bez", (e.target as HTMLInputElement).value);
-                  $("#signalEditMenuHeader .card-text").show();
-                  $("#signalEditMenuHeader input").hide();
-                  Sig_UI.syncSignalMenu(this.#app.selection.object);
-                  STORAGE.save();
-               }
-            }
-         )
-         .on("blur", () => {
-            $("#signalEditMenuHeader .card-text").show();
-            $("#signalEditMenuHeader input").hide();
-         });
    }
 
    /**
