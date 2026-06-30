@@ -115,11 +115,11 @@ export class Signal {
       }
 
       if (this._positioning.track && this._changed && chain) {
-         let stop = false; //stop the propagation of the signal dependency, if a signal returns true (a main Signal always returns true while a advance signal decides if the dependency should be propagated)
          // 1st we check the dependency of the main signal or a master signal and will inform the advance signals
          // Attention:we must check both both cases since some signals are main and advance at the same time
          // master is used for signals like lf6 and lf7, which are independent of the main signal
          if (this.check("HPsig||master")) {
+            let stop = false; // stop propagation when the receiving signal handled the dependency.
             let prevSignal: Signal | null = this;
             do {
                prevSignal = this.search4Signal(prevSignal, DIRECTION.RIGHT_2_LEFT);
@@ -131,11 +131,12 @@ export class Signal {
 
          //then we check the dependency of our advance signal and will get the information from the main signal
          if (this.check("VRsig||slave") && this._template!.hasDependencyHandler()) {
+            let stop = false;
             let nextSignal: Signal | null = this;
             do {
                nextSignal = this.search4Signal(nextSignal, DIRECTION.LEFT_2_RIGHT);
-               if (nextSignal && nextSignal._template!.hasDependencyHandler())
-                  stop = nextSignal._template!.checkSignalDependency(this, nextSignal);
+               if (nextSignal)
+                  stop = this._template!.checkSignalDependency(this, nextSignal);
             } while (!stop && nextSignal);
          }
       }

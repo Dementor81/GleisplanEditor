@@ -106,11 +106,19 @@ export class SignalDependency {
       return undefined;
    }
 
+   /**
+    * Checks the signal dependency. returns true if the signal should NOT be propagated further.
+    * @param signal - The signal to check. The signal that is the destination of the data. It should always be a advance signal or a combined main and advance signal.
+    * @param partner - The partner signal. The signal that is the source of the data. It should always be a main or master signal.
+    * @returns True if the signal should NOT be propagated further, false otherwise.
+    */
    check(signal: Signal, partner: Signal): boolean {
+      // checks when condition is met. if not, the signal is transparent and the propagation stops.
       if (this.config.when?.length && !this.config.when.every((expr) => SignalDependency.evaluateCondition(signal, partner, expr))) {
-         return false;
+         return false; // the signal is transparent and the propagation goes on.
       }
 
+      // checks the unless condition. if it fails, the signal will not presignal the stop/go aspect but it will apply the speed..
       const skipApply = this.config.unless?.some((expr) =>
          SignalDependency.evaluateCondition(signal, partner, expr)
       );
