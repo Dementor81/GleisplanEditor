@@ -2,7 +2,7 @@
 
 import type { FederatedPointerEvent, Graphics } from "pixi.js";
 import { Application } from "../application.ts";
-import { COLORS, CONFIG } from "../config.ts";
+import { COLORS, CONFIG, CUSTOM_MOUSE_ACTION } from "../config.ts";
 import { EditorCommitter } from "../editorCommitter.ts";
 import { geometry, Point } from "../tools.ts";
 import { ArrayUtils } from "../utils.ts";
@@ -12,6 +12,7 @@ import { gleisGraphics } from "../pixiPrimitives.ts";
 import { BasicRendering } from "../rendering/BasicRendering.ts";
 import { PointerInteractionAttachment } from "./attachPointerInteraction.ts";
 import { ElementInteraction } from "./ElementInteraction.ts";
+import { RailwayCrossingPlaceInteraction } from "./RailwayCrossingPlaceInteraction.ts";
 /** Tap to select/deselect; drag to place new track nodes on the grid. */
 export class TrackBuildInteraction extends ElementInteraction {
    #nodes: Point[] = [];
@@ -103,5 +104,10 @@ export class TrackBuildInteraction extends ElementInteraction {
 
    static attach(container: any, track: Track): void {
       PointerInteractionAttachment.attach(container, ({ start }) => new TrackBuildInteraction(start, track));
+      PointerInteractionAttachment.attach(
+         container,
+         () => new RailwayCrossingPlaceInteraction(track),
+         { mode: CUSTOM_MOUSE_ACTION.RAILWAY_CROSSING }
+      );
    }
 }

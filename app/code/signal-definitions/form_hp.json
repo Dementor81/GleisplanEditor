@@ -2,7 +2,7 @@
    "id": "form_hp",
    "title": "Form Hauptsignal",
    "atlas": "formsignal",
-   "scale": 0.2,
+   "scale": 0.24,
    "previewsize": 20,
    "initial": [
       "hp=0",

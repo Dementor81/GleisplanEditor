@@ -74,6 +74,7 @@ export enum CustomMouseAction {
     PLATTFORM = 4,
     TRAIN_COUPLE = 5,
     TRAIN_DECOUPLE = 6,
+    RAILWAY_CROSSING = 7,
 }
 
 // Backward compatibility
@@ -85,6 +86,7 @@ export const CUSTOM_MOUSE_ACTION = {
     PLATTFORM: CustomMouseAction.PLATTFORM,
     TRAIN_COUPLE: CustomMouseAction.TRAIN_COUPLE,
     TRAIN_DECOUPLE: CustomMouseAction.TRAIN_DECOUPLE,
+    RAILWAY_CROSSING: CustomMouseAction.RAILWAY_CROSSING,
 } as const;
 
 /**

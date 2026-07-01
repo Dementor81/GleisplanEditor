@@ -1,6 +1,7 @@
 "use strict";
 
 import { Application } from "../application.ts";
+import { RailwayCrossing } from "../railway_crossing.ts";
 import type { Switch } from "../switch.ts";
 import { gleisGraphics, rectHitArea, TrackGraphics } from "../pixiPrimitives.ts";
 import { TrackEndpointInteraction } from "../interactions/TrackEndpointInteraction.ts";
@@ -37,6 +38,14 @@ export abstract class TrackRenderingBase {
       return tracks.children as any[];
    }
 
+   protected crossingDisplayObjectsForSelection(): any[] {
+      const tracks = this.app.renderingManager!.containers.tracks as any;
+      if (tracks.children[1]?.label === "global_crossings") {
+         return tracks.children[1].children as any[];
+      }
+      return tracks.children.filter((child: any) => this.app.renderingManager!.getGameObjFromDisplayObj(child) instanceof RailwayCrossing);
+   }
+
    updateSelection(): void {
       const rmSel = this.app.renderingManager!;
       rmSel.containers.selection.removeChildren();
@@ -59,6 +68,11 @@ export abstract class TrackRenderingBase {
             const d = rmSel.getGameObjFromDisplayObj(c);
             if (d != null && this.app.selection.isSelectedObject(d)) this.visualizeTrackBounds(c);
          });
+      } else if (this.app.selection.type == "RailwayCrossing") {
+         for (const c of this.crossingDisplayObjectsForSelection()) {
+            const d = rmSel.getGameObjFromDisplayObj(c);
+            if (d != null && this.app.selection.isSelectedObject(d)) this.visualizeTrackBounds(c);
+         }
       }
       rmSel.update();
    }

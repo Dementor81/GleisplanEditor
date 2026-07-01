@@ -4,6 +4,7 @@ import { geometry, Point } from "../../tools.ts";
 import { Rectangle, Sprite } from "pixi.js";
 import { gleisGraphics, imageSize, textureRegion } from "../../pixiPrimitives.ts";
 import { createLayerContainer } from "../../pixiUtils.ts";
+import { RailwayCrossing } from "../../railway_crossing.ts";
 import { SCHWELLEN_VARIANTEN, TRACK_SCALE } from "./constants.ts";
 import type { AdvancedRendering } from "./AdvancedRendering.ts";
 
@@ -51,9 +52,11 @@ export class AdvancedSleeperRendering {
       const r = this.renderer;
       const l = geometry.distance(startPoint, endPoint);
       const amount = Math.floor(l / r.sleeperIntervall);
+      if (amount <= 0) return;
 
       const remainingSpace = l % r.sleeperIntervall;
       const adjustedInterval = r.sleeperIntervall + remainingSpace / amount;
+      const crossingRanges = RailwayCrossing.rangesForTrack(track);
 
       const step_x = track.cos * adjustedInterval;
       const step_y = track.sin * adjustedInterval;
@@ -63,7 +66,10 @@ export class AdvancedSleeperRendering {
       let y = startPoint.y + track.sin * startOffset;
 
       for (let i = 0; i < amount; i++) {
-         this.drawSleeper(i, x, y, track.deg, container);
+         const km = track.unit.dot({ x: x - track.start.x, y: y - track.start.y });
+         if (!crossingRanges.some((range) => km >= range.startKm && km <= range.endKm)) {
+            this.drawSleeper(i, x, y, track.deg, container);
+         }
          y += step_y;
          x += step_x;
       }

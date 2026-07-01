@@ -6,6 +6,7 @@ import { Signal } from "./signal.ts";
 import { Train } from "./train.ts";
 import { Track } from "./track.ts";
 import { GenericObject } from "./generic_object.ts";
+import { RailwayCrossing } from "./railway_crossing.ts";
 import { STORAGE } from "./storage.ts";
 import { initSignals } from "./signal_library.ts";
 import { geometry } from "./tools.ts";
@@ -186,6 +187,7 @@ export class Application {
       if (object instanceof Signal) return "Signal";
       else if (object instanceof Train) return "Train";
       else if (object instanceof GenericObject) return "GenericObject";
+      else if (object instanceof RailwayCrossing) return "RailwayCrossing";
       else if (object instanceof Track) return "Track";
       else return null;
    }
@@ -225,6 +227,8 @@ export class Application {
          menu = MENU.EDIT_TRAIN;
       } else if (object instanceof GenericObject) {
          menu = MENU.EDIT_OBJECT;
+      } else if (object instanceof RailwayCrossing) {
+         menu = null;
       } else if (object instanceof Track) {
          menu = MENU.EDIT_TRACK;
       } else {
@@ -247,10 +251,14 @@ export class Application {
                for (const train of trainsOnTrack) {
                   Train.deleteTrain(train);
                }
+               RailwayCrossing.removeTrackReference(track);
             }
             Track.createRailNetwork();
          }
          if (this.selection.type == "Signal") [].concat(this.selection.object).forEach((s: any) => Signal.removeSignal(s));
+         if (this.selection.type == "RailwayCrossing") {
+            [].concat(this.selection.object).forEach((crossing: any) => RailwayCrossing.removeCrossing(crossing));
+         }
          STORAGE.saveUndoHistory();
          STORAGE.save();
          this.renderingManager?.renderer.reDrawEverything(true);
@@ -311,6 +319,7 @@ export class Application {
       if (this.#customMouseMode === CUSTOM_MOUSE_ACTION.ERASER) canvas.style.cursor = DRAWING_MODE_CURSORS.eraser;
       else if (this.#customMouseMode === CUSTOM_MOUSE_ACTION.DRAWING) canvas.style.cursor = DRAWING_MODE_CURSORS.brush;
       else if (this.#customMouseMode === CUSTOM_MOUSE_ACTION.TEXT) canvas.style.cursor = "text";
+      else if (this.#customMouseMode === CUSTOM_MOUSE_ACTION.RAILWAY_CROSSING) canvas.style.cursor = "crosshair";
       else canvas.style.cursor = "auto";
    }
 }

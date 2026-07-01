@@ -9,7 +9,10 @@ import { NumberUtils } from "../../utils.ts";
 import { ui } from "../../ui.ts";
 import { CONFIG } from "../../config.ts";
 import { Application } from "../../application.ts";
+import { polygonHitArea, TrackGraphics } from "../../pixiPrimitives.ts";
 import { createLayerContainer } from "../../pixiUtils.ts";
+import { RailwayCrossing } from "../../railway_crossing.ts";
+import { RailwayCrossingInteraction } from "../../interactions/RailwayCrossingInteraction.ts";
 import type { AdvancedRendering } from "./AdvancedRendering.ts";
 
 export class AdvancedRendererCore {
@@ -52,14 +55,14 @@ export class AdvancedRendererCore {
                rm.containers.tracks.renderedTracks.delete(track);
 
                const sleepersToRemove = rm.containers.tracks.children[0].children.filter((c: any) => rm.getGameObjFromDisplayObj(c) === track);
-               const railsToRemove = rm.containers.tracks.children[1].children.filter((c: any) => rm.getGameObjFromDisplayObj(c) === track);
+               const railsToRemove = rm.containers.tracks.children[2].children.filter((c: any) => rm.getGameObjFromDisplayObj(c) === track);
 
                sleepersToRemove.forEach((c: any) => {
                   rm.containers.tracks.children[0].removeChild(c);
                });
 
                railsToRemove.forEach((c: any) => {
-                  rm.containers.tracks.children[1].removeChild(c);
+                  rm.containers.tracks.children[2].removeChild(c);
                });
             });
 
@@ -101,6 +104,7 @@ export class AdvancedRendererCore {
 
                try {
                   this.renderAllTracks(force);
+                  this.renderAllCrossings();
                   this.renderAllSignals();
                   r.renderAllTrains();
                   r.genericElements.renderAllGenericObjects();
@@ -137,12 +141,14 @@ export class AdvancedRendererCore {
       const containers = r.app.renderingManager!.containers;
       if (force) {
          containers.tracks.addChild(r._rendering.sleepers_container = createLayerContainer("global_sleepers"));
+         containers.tracks.addChild(r._rendering.crossings_container = createLayerContainer("global_crossings"));
          containers.tracks.addChild(r._rendering.rails_container = createLayerContainer("global_rails"));
          containers.tracks.renderedTracks = new Set();
          containers.tracks.renderedSwitches = new Set();
       } else {
          r._rendering.sleepers_container = containers.tracks.children[0];
-         r._rendering.rails_container = containers.tracks.children[1];
+         r._rendering.crossings_container = containers.tracks.children[1];
+         r._rendering.rails_container = containers.tracks.children[2];
       }
 
       for (const sw of Switch.allSwitches) {
@@ -167,6 +173,36 @@ export class AdvancedRendererCore {
             }
          }
       }
+   }
+
+   renderAllCrossings() {
+      const r = this.renderer;
+      const container = r._rendering.crossings_container;
+      container.removeChildren();
+
+      RailwayCrossing.allCrossings.forEach((crossing) => {
+         const polygon = crossing.streetPolygon();
+         const shape = new TrackGraphics("railway_crossing");
+         r.app.renderingManager!.bindGameObjToDisplayObj(shape, crossing);
+         shape.hitArea = polygonHitArea(crossing.hitPolygon());
+         RailwayCrossingInteraction.attach(shape, crossing);
+         shape.fillPoly(polygon, "#777777");
+         crossing.roadMarkings().forEach((line) => {
+            shape.lineFromTo(line.start, line.end).stroke({
+               width: line.width,
+               color: RailwayCrossing.ROAD_MARKING_COLOR,
+               cap: "butt",
+               join: "round",
+            });
+         });
+
+         const xs = polygon.map((point) => point.x);
+         const ys = polygon.map((point) => point.y);
+         const minX = Math.min(...xs);
+         const minY = Math.min(...ys);
+         shape.setBounds(minX, minY, Math.max(...xs) - minX, Math.max(...ys) - minY);
+         container.addChild(shape);
+      });
    }
 
    PointVisible(p1: any) {

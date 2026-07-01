@@ -6,6 +6,7 @@ import { Switch } from './switch.ts';
 import { Signal } from './signal.ts';
 import { Train } from './train.ts';
 import { GenericObject } from './generic_object.ts';
+import { RailwayCrossing } from './railway_crossing.ts';
 import { ArrayUtils } from './utils.ts';
 import { ui } from './ui.ts';
 import { CONFIG } from './config.ts';
@@ -23,6 +24,7 @@ interface ClassMap {
    Signal: typeof Signal;
    Train: typeof Train;
    GenericObject: typeof GenericObject;
+   RailwayCrossing: typeof RailwayCrossing;
 }
 
 interface SavedSettings {
@@ -37,6 +39,7 @@ interface LoadedData {
    trains?: any[];
    switches?: any[];
    objects?: any[];
+   crossings?: any[];
    settings?: SavedSettings;
 }
 
@@ -63,6 +66,7 @@ export const STORAGE = {
          Signal: Signal,
          Train: Train,
          GenericObject: GenericObject,
+         RailwayCrossing: RailwayCrossing,
       };
    },
 
@@ -124,6 +128,7 @@ export const STORAGE = {
             trains: Train.allTrains,
             switches: Switch.allSwitches,
             objects: GenericObject.all_objects,
+            crossings: RailwayCrossing.allCrossings,
             settings: settings,
          },
          STORAGE.replacer
@@ -179,6 +184,9 @@ export const STORAGE = {
          });
          delete t.switches_data;
       });
+
+      RailwayCrossing.allCrossings.forEach((crossing) => crossing.relinkTracks());
+      RailwayCrossing.allCrossings = RailwayCrossing.allCrossings.filter((crossing) => crossing.entries.length > 0);
    },
 
    /**
@@ -201,12 +209,14 @@ export const STORAGE = {
       }
       
       if (loaded.objects) GenericObject.all_objects = loaded.objects;
+      RailwayCrossing.allCrossings = loaded.crossings ? (ArrayUtils.cleanUp(loaded.crossings) as RailwayCrossing[]) : [];
       Track.allTracks = loaded.tracks ? (ArrayUtils.cleanUp(loaded.tracks) as unknown as Track[]) : []; // Filter out nulls from loading errors
       Switch.allSwitches = loaded.switches ? (ArrayUtils.cleanUp(loaded.switches) as unknown as Switch[]) : []; // Filter out nulls from loading errors
 
       // Reset counters
       Track.counter = Track.allTracks.length ? Math.max(...Track.allTracks.map((t) => t.id)) + 1 : 0;
       Switch.counter = Switch.allSwitches.length ? Math.max(...Switch.allSwitches.map((s) => s.id)) + 1 : 0;
+      RailwayCrossing.counter = RailwayCrossing.allCrossings.length ? Math.max(...RailwayCrossing.allCrossings.map((crossing) => crossing.id)) + 1 : 0;
 
       STORAGE.linkObjects();
 

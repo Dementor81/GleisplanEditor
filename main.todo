@@ -16,11 +16,12 @@ Detailing:
         
 
 Intern:
-    ☐ rework signal dependancy logic 
+    ✔ rework signal dependancy logic @done(26-07-01 19:18)
    
 
 Features:
-    ☐ Bahnübergänge
+    ☐ Bahnübergänge @started(26-07-01 19:14)
+    ☐ improve landing page
     ☐ Signale in einem eigenen Fenster vergrößern (wie beim SignalSim)
     ☐ support touch screens
     ☐ Signale kopieren, per drag&drop

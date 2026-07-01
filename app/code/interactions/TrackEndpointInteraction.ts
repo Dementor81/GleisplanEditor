@@ -6,6 +6,7 @@ import { CONFIG } from "../config.ts";
 import { EditorCommitter } from "../editorCommitter.ts";
 import { geometry, Point } from "../tools.ts";
 import { Track } from "../track.ts";
+import { RailwayCrossing } from "../railway_crossing.ts";
 import { PointerInteractionAttachment } from "./attachPointerInteraction.ts";
 import type { PointerInteraction } from "./PointerInteraction.ts";
 
@@ -22,9 +23,11 @@ export class TrackEndpointInteraction implements PointerInteraction {
 
       if (geometry.distance(local, gridSnap) <= CONFIG.SNAP_TO_GRID) {
          if (Track.isValidTrackNodePoint(gridSnap, null)) {
+            const oldStart = this.endpoint === "start" ? this.track.start : undefined;
             if (this.endpoint === "start") this.track.setNewStart(gridSnap);
             else this.track.setNewEnd(gridSnap);
             Track.createRailNetwork();
+            RailwayCrossing.refreshAfterTrackGeometryChange(this.track, oldStart);
             rm.renderer.reDrawEverything(true);
          }
       }

@@ -2,7 +2,7 @@
 
 import { CUSTOM_MOUSE_ACTION, type CustomMouseAction } from "../config.ts";
 
-type ObjectKind = "text" | "platform";
+type ObjectKind = "text" | "platform" | "railwayCrossing";
 
 interface ObjectKindDef {
    buttonId: string;
@@ -21,6 +21,11 @@ const KINDS: Record<ObjectKind, ObjectKindDef> = {
       mode: CUSTOM_MOUSE_ACTION.PLATTFORM,
       hint: "Ziehe entlang eines Gleises, um einen Bahnsteig zu zeichnen.",
    },
+   railwayCrossing: {
+      buttonId: "btnAddRailwayCrossing",
+      mode: CUSTOM_MOUSE_ACTION.RAILWAY_CROSSING,
+      hint: "Klicke auf ein gerades Gleis, um einen Bahnübergang zu platzieren.",
+   },
 };
 
 const MARKUP = `
@@ -35,6 +40,9 @@ const MARKUP = `
       </button>
       <button id="btnAddPlatform" type="button" class="btn btn-secondary" title="Bahnsteig hinzufügen">
          <i class="bi bi-signpost"></i> Bahnsteig
+      </button>
+      <button id="btnAddRailwayCrossing" type="button" class="btn btn-secondary" title="Bahnübergang hinzufügen">
+         <i class="bi bi-sign-intersection"></i> Bahnübergang
       </button>
    </div>
    <div id="newObjectMenuHint" class="alert alert-info mt-3 mb-0 small" role="status" style="display: none;"></div>

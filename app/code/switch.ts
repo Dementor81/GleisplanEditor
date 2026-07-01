@@ -311,7 +311,6 @@ export class Switch {
       );
       
       this.slope = this.track3!.slope - this.track2!.slope;
-      console.log(this.id, this.slope);
       this.angle = geometry.degToRad(Switch.getAngleBetweenTracks(this.track2!, this.track3!)!);
 
 

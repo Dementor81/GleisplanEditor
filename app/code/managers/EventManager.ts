@@ -10,6 +10,7 @@ import type { PointerInteraction } from "../interactions/PointerInteraction.ts";
 import { DrawingInteraction } from "../interactions/DrawingInteraction.ts";
 import { EraserInteraction } from "../interactions/EraserInteraction.ts";
 import { PlatformPlaceInteraction } from "../interactions/PlatformPlaceInteraction.ts";
+import { RailwayCrossingPlaceInteraction } from "../interactions/RailwayCrossingPlaceInteraction.ts";
 import { SignalTemplateInteraction } from "../interactions/SignalTemplateInteraction.ts";
 import { TextPlaceInteraction } from "../interactions/TextPlaceInteraction.ts";
 import { TrackBuildInteraction } from "../interactions/TrackBuildInteraction.ts";
@@ -234,6 +235,10 @@ export class EventManager {
       }
       if (mode === CUSTOM_MOUSE_ACTION.PLATTFORM) {
          this.startInteraction(new PlatformPlaceInteraction(start));
+         return;
+      }
+      if (mode === CUSTOM_MOUSE_ACTION.RAILWAY_CROSSING) {
+         this.startInteraction(new RailwayCrossingPlaceInteraction());
          return;
       }
       if (mode === CUSTOM_MOUSE_ACTION.TRAIN_COUPLE || mode === CUSTOM_MOUSE_ACTION.TRAIN_DECOUPLE) {
