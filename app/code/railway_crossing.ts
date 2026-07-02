@@ -23,6 +23,12 @@ export interface RoadMarkingLine {
    width: number;
 }
 
+export interface CrossingDecorationPlacement {
+   position: Point;
+   rotation: number;
+   scale: number;
+}
+
 interface CrossingObject {
    id: number;
    center: IPoint;
@@ -44,6 +50,10 @@ export class RailwayCrossing {
    static ROAD_MARKING_STOP_LINE_WIDTH = 5;
    static ROAD_MARKING_STOP_LINE_DISTANCE = CONFIG.GRID_SIZE * 0.75;
    static HIT_TEST_DISTANCE = 10;
+   static ANDREASKREUZ_SCALE = 0.02;
+   static ANDREASKREUZ_OFFSET_STREET = -30;
+   static ANDREASKREUZ_OFFSET_TRACK = 10;
+   static ANDREASKREUZ_ROTATION_OFFSET = 270;
 
    id: number;
    center: Point;
@@ -277,22 +287,59 @@ export class RailwayCrossing {
    roadMarkings(): RoadMarkingLine[] {
       const frame = this.streetFrame();
       const edgeOffset = Math.max(0, frame.halfWidth - RailwayCrossing.ROAD_MARKING_EDGE_PADDING);
-      const stopLaneEdge = edgeOffset;
       const lines: RoadMarkingLine[] = [
          this.markingLine(frame, -frame.halfLength, edgeOffset, frame.halfLength, edgeOffset),
          this.markingLine(frame, -frame.halfLength, -edgeOffset, frame.halfLength, -edgeOffset),
          this.markingLine(frame, -frame.halfLength, 0, frame.halfLength, 0),
       ];
 
-      const projections = this.entryStreetProjections(frame.streetUnit);
-      if (projections.length > 0) {
-         const minStop = Math.min(...projections) - frame.centerOffset - RailwayCrossing.ROAD_MARKING_STOP_LINE_DISTANCE;
-         const maxStop = Math.max(...projections) - frame.centerOffset + RailwayCrossing.ROAD_MARKING_STOP_LINE_DISTANCE;
-         lines.push(this.stopLine(frame, minStop, 0, -stopLaneEdge));
-         lines.push(this.stopLine(frame, maxStop, 0, stopLaneEdge));
+      const stopGeometry = this.stopLineGeometry(frame);
+      if (stopGeometry) {
+         lines.push(this.stopLine(frame, stopGeometry.minStop, 0, -stopGeometry.stopLaneEdge));
+         lines.push(this.stopLine(frame, stopGeometry.maxStop, 0, stopGeometry.stopLaneEdge));
       }
 
       return lines;
+   }
+
+   andreaskreuzPlacements(): CrossingDecorationPlacement[] {
+      const frame = this.streetFrame();
+      const stopGeometry = this.stopLineGeometry(frame);
+      if (!stopGeometry) return [];
+
+      const scale = RailwayCrossing.ANDREASKREUZ_SCALE;
+      const streetOffset = RailwayCrossing.ANDREASKREUZ_OFFSET_STREET;
+      const trackOffset = RailwayCrossing.ANDREASKREUZ_OFFSET_TRACK;
+      const rotationOffset = RailwayCrossing.ANDREASKREUZ_ROTATION_OFFSET;
+      const { minStop, maxStop, stopLaneEdge } = stopGeometry;
+
+      const minStopFacing = this.scaled(frame.streetUnit, -1);
+      const maxStopFacing = frame.streetUnit;
+
+      return [
+         {
+            position: this.localStreetPoint(
+               frame,
+               minStop + streetOffset,
+               -stopLaneEdge - trackOffset
+            ),
+            rotation: Math.atan2(minStopFacing.y, minStopFacing.x) * (180 / Math.PI) + rotationOffset,
+            scale,
+         },
+         {
+            position: this.localStreetPoint(
+               frame,
+               maxStop - streetOffset,
+               stopLaneEdge + trackOffset
+            ),
+            rotation: Math.atan2(maxStopFacing.y, maxStopFacing.x) * (180 / Math.PI) + rotationOffset,
+            scale,
+         },
+      ];
+   }
+
+   gatePlacements(): CrossingDecorationPlacement[] {
+      return [];
    }
 
    private renderHalfLength(streetUnit: IPoint): number {
@@ -301,6 +348,22 @@ export class RailwayCrossing {
 
       const halfSpan = (Math.max(...projections) - Math.min(...projections)) / 2;
       return halfSpan + RailwayCrossing.STREET_OVERHANG;
+   }
+
+   private stopLineGeometry(frame: ReturnType<RailwayCrossing["streetFrame"]>): {
+      minStop: number;
+      maxStop: number;
+      stopLaneEdge: number;
+   } | null {
+      const projections = this.entryStreetProjections(frame.streetUnit);
+      if (projections.length === 0) return null;
+
+      const stopLaneEdge = Math.max(0, frame.halfWidth - RailwayCrossing.ROAD_MARKING_EDGE_PADDING);
+      return {
+         minStop: Math.min(...projections) - frame.centerOffset - RailwayCrossing.ROAD_MARKING_STOP_LINE_DISTANCE,
+         maxStop: Math.max(...projections) - frame.centerOffset + RailwayCrossing.ROAD_MARKING_STOP_LINE_DISTANCE,
+         stopLaneEdge,
+      };
    }
 
    private streetFrame(padding = 0): {

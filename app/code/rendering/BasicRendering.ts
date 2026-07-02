@@ -15,7 +15,7 @@ import { TrackBuildInteraction } from '../interactions/TrackBuildInteraction.ts'
 import { createLayerContainer } from '../pixiUtils.ts';
 import { TrackRenderingBase } from './TrackRenderingBase.ts';
 import { GenericObjectInteraction } from '../interactions/GenericObjectInteraction.ts';
-import { RailwayCrossingInteraction } from '../interactions/RailwayCrossingInteraction.ts';
+import { createRailwayCrossingDisplay } from './RailwayCrossingRenderer.ts';
 import { SwitchInteraction } from '../interactions/SwitchInteraction.ts';
 
 export class BasicRendering extends TrackRenderingBase {
@@ -66,28 +66,9 @@ export class BasicRendering extends TrackRenderingBase {
 
    renderAllCrossings() {
       const container = this.app.renderingManager!.containers.tracks;
+      const signTexture = this.app.preLoader!.getImage("andreaskreuz");
       RailwayCrossing.allCrossings.forEach((crossing) => {
-         const polygon = crossing.streetPolygon();
-         const shape = new TrackGraphics("railway_crossing");
-         this.app.renderingManager!.bindGameObjToDisplayObj(shape, crossing);
-         shape.hitArea = polygonHitArea(crossing.hitPolygon());
-         RailwayCrossingInteraction.attach(shape, crossing);
-         shape.fillPoly(polygon, "#777777");
-         crossing.roadMarkings().forEach((line) => {
-            shape.lineFromTo(line.start, line.end).stroke({
-               width: line.width,
-               color: RailwayCrossing.ROAD_MARKING_COLOR,
-               cap: "butt",
-               join: "round",
-            });
-         });
-
-         const xs = polygon.map((point) => point.x);
-         const ys = polygon.map((point) => point.y);
-         const minX = Math.min(...xs);
-         const minY = Math.min(...ys);
-         shape.setBounds(minX, minY, Math.max(...xs) - minX, Math.max(...ys) - minY);
-         container.addChild(shape);
+         container.addChild(createRailwayCrossingDisplay(this.app.renderingManager!, crossing, signTexture));
       });
    }
 

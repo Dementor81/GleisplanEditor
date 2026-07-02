@@ -120,6 +120,7 @@ export class Application {
       // Add basic images
       this.#preLoader.addImage("schwellen.png", "schwellen");
       this.#preLoader.addImage("bumper1.svg", "bumper");
+      this.#preLoader.addImage("andreaskreuz.svg", "andreaskreuz");
 
       // Start preloading
       await this.#preLoader.start();
