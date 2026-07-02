@@ -100,6 +100,7 @@ export enum Menu {
     NEW_OBJECT = 4,
     EDIT_OBJECT = 5,
     EDIT_TRACK = 6,
+    EDIT_RAILWAY_CROSSING = 7,
 }
 
 // Backward compatibility
@@ -111,6 +112,7 @@ export const MENU = {
     NEW_OBJECT: Menu.NEW_OBJECT,
     EDIT_OBJECT: Menu.EDIT_OBJECT,
     EDIT_TRACK: Menu.EDIT_TRACK,
+    EDIT_RAILWAY_CROSSING: Menu.EDIT_RAILWAY_CROSSING,
 } as const;
 
 // ============================================================================

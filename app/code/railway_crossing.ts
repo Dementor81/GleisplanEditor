@@ -1,6 +1,8 @@
 "use strict";
 
+import { Application } from "./application.ts";
 import { CONFIG } from "./config.ts";
+import { EditorCommitter } from "./editorCommitter.ts";
 import { Track } from "./track.ts";
 import { geometry, Point, type IPoint } from "./tools.ts";
 
@@ -126,10 +128,39 @@ export class RailwayCrossing {
    }
 
    static canFitOnTrack(track: Track, km: number, streetWidth: number): boolean {
+      const { min, max } = RailwayCrossing.kmRangeOnTrack(track, streetWidth);
+      return km >= min && km <= max;
+   }
+
+   static kmRangeOnTrack(track: Track, streetWidth: number): { min: number; max: number } {
       const halfWidth = streetWidth / 2;
       const startMargin = track.switchAtTheStart ? CONFIG.GRID_SIZE / 2 : 0;
       const endMargin = track.switchAtTheEnd ? CONFIG.GRID_SIZE / 2 : 0;
-      return km - halfWidth >= startMargin && km + halfWidth <= track.length - endMargin;
+      return {
+         min: startMargin + halfWidth,
+         max: track.length - endMargin - halfWidth,
+      };
+   }
+
+   anchorEntry(): RailwayCrossingEntry | undefined {
+      return this.entries.find((entry) => entry.track != null);
+   }
+
+   moveToPointOnAnchorTrack(point: Point): boolean {
+      const anchor = this.anchorEntry();
+      if (!anchor?.track) return false;
+
+      const track = anchor.track;
+      const projected = geometry.nearestPointOnLine(track.start, track.end, point);
+      const range = RailwayCrossing.kmRangeOnTrack(track, this.streetWidth);
+      if (range.min > range.max) return false;
+
+      const km = Math.max(range.min, Math.min(range.max, track.getKmfromPoint(projected)));
+      this.center = track.getPointFromKm(km);
+      this.trackAngle = track.rad;
+      this.streetLength = Math.max(this.streetLength, RailwayCrossing.DEFAULT_STREET_LENGTH);
+      this.entries = RailwayCrossing.findAffectedEntries(track, this.center, this.streetWidth, this.streetLength);
+      return this.entries.length > 0;
    }
 
    static rangesForTrack(track: Track): CrossingRange[] {
@@ -149,6 +180,32 @@ export class RailwayCrossing {
 
    static removeCrossing(crossing: RailwayCrossing): void {
       RailwayCrossing.allCrossings = RailwayCrossing.allCrossings.filter((item) => item !== crossing);
+   }
+
+   static initEditMenu(crossing: RailwayCrossing): void {
+      $("#inputRailwayCrossingWidth")
+         .off()
+         .val(crossing.streetWidth)
+         .on("input", function (this: HTMLInputElement) {
+            const width = Number(this.value);
+            if (!Number.isFinite(width) || width <= 0) return;
+
+            crossing.streetWidth = width;
+            crossing.refreshFromAnchor();
+            const rm = Application.getInstance().renderingManager!;
+            rm.renderer.reDrawEverything(true);
+            rm.renderer.updateSelection();
+            rm.update();
+         })
+         .on("change", () => {
+            EditorCommitter.commit();
+         });
+
+      $("#btnRemoveRailwayCrossing")
+         .off()
+         .onclick(() => {
+            Application.getInstance().deleteSelectedObject();
+         });
    }
 
    static refreshAfterTrackGeometryChange(track: Track, oldStart?: Point): void {

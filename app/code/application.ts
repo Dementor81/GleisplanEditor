@@ -228,7 +228,7 @@ export class Application {
       } else if (object instanceof GenericObject) {
          menu = MENU.EDIT_OBJECT;
       } else if (object instanceof RailwayCrossing) {
-         menu = null;
+         menu = MENU.EDIT_RAILWAY_CROSSING;
       } else if (object instanceof Track) {
          menu = MENU.EDIT_TRACK;
       } else {

@@ -10,6 +10,7 @@ import { SignalRenderer } from "../rendering/signalRenderer.ts";
 import { Track } from "../track.ts";
 import { Train } from "../train.ts";
 import { GenericObject } from "../generic_object.ts";
+import { RailwayCrossing } from "../railway_crossing.ts";
 import type { Application } from "../application.ts";
 import { createLayerContainer } from "../pixiUtils.ts";
 import { mountRendererChoiceCards, type RendererChoiceCardsHandle } from "../ui/rendererChoiceCards.ts";
@@ -305,6 +306,10 @@ export class UIManager {
          case MENU.EDIT_TRACK:
             div_id = "editTrackMenu";
             Track.initEditTrackMenu(this.#app.selection.object);
+            break;
+         case MENU.EDIT_RAILWAY_CROSSING:
+            div_id = "editRailwayCrossingMenu";
+            RailwayCrossing.initEditMenu(this.#app.selection.object);
             break;
          default:
             throw new Error("unknown Menu");
