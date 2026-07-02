@@ -169,6 +169,80 @@ export class Track {
       });
    }
 
+   static #findTrackContainingPoint(point: Point, tracks: Track[]): Track | undefined {
+      const containing = tracks.filter((track) => geometry.pointOnLine(track.start, track.end, point));
+      return (
+         containing.find((track) => !point.equals(track.start) && !point.equals(track.end)) ?? containing[0]
+      );
+   }
+
+   static #endpointTowardOther(track: Track, other: Track): Point {
+      const distStart = Math.min(
+         geometry.distance(track.start, other.start),
+         geometry.distance(track.start, other.end)
+      );
+      const distEnd = Math.min(
+         geometry.distance(track.end, other.start),
+         geometry.distance(track.end, other.end)
+      );
+      return distStart <= distEnd ? track.start : track.end;
+   }
+
+   static #fillGapBetweenTracks(startTrack: Track, endTrack: Track): Track | null {
+      const gapStart = Track.#endpointTowardOther(startTrack, endTrack);
+      const gapEnd = Track.#endpointTowardOther(endTrack, startTrack);
+      if (gapStart.equals(gapEnd)) return null;
+      return new Track(gapStart, gapEnd);
+   }
+
+   static #findColinearOverlappingTracks(start: Point, end: Point, slope: number): Track[] {
+      return Track.allTracks.filter((track) => {
+         if (track.slope !== slope) return false;
+         const startOn = geometry.pointOnLine(track.start, track.end, start);
+         const endOn = geometry.pointOnLine(track.start, track.end, end);
+         if (startOn && endOn) return true;
+         return geometry.areSegmentsOverlapping2D(start, end, track.start, track.end);
+      });
+   }
+
+   static #splitTrackIntoSegments(track: Track, splitPoints: Point[]): Track[] {
+      const interiorPoints = splitPoints
+         .filter((p) => geometry.pointOnLine(track.start, track.end, p))
+         .filter((p) => !p.equals(track.start) && !p.equals(track.end))
+         .sort((a, b) => track.getKmfromPoint(a) - track.getKmfromPoint(b));
+
+      const uniquePoints: Point[] = [];
+      for (const p of interiorPoints) {
+         if (!uniquePoints.some((u) => u.equals(p))) uniquePoints.push(p);
+      }
+
+      if (uniquePoints.length === 0) return [track];
+
+      const segments: Track[] = [];
+      let remainder = track;
+      for (const point of uniquePoints) {
+         const [left, right] = Track.splitTrackAtPoint(remainder, point);
+         segments.push(left);
+         remainder = right;
+      }
+      segments.push(remainder);
+      return segments;
+   }
+
+   static #rebuildColinearTracks(start: Point, end: Point, tracks: Track[]): void {
+      const splitPoints = [start, end];
+      for (const track of tracks) {
+         splitPoints.push(track.start, track.end);
+      }
+
+      const newSegments: Track[] = [];
+      for (const track of tracks) {
+         ArrayUtils.remove(Track.allTracks, track);
+         newSegments.push(...Track.#splitTrackIntoSegments(track, splitPoints));
+      }
+      Track.allTracks.push(...newSegments);
+   }
+
    static checkNodesAndCreateTracks(points: any[]): Track[] | undefined {
       if (points == null || points.length <= 1) return;
 
@@ -208,47 +282,62 @@ export class Track {
          const next_point = points.shift();
          const current_track = new Track(current_point, next_point);
 
-         // Check if the new segment would overlap with any existing track
-         const overlapping_tracks = Track.allTracks
-            .filter((track) => current_track.slope === track.slope)
-            .filter((track) => {
-               return geometry.areSegmentsOverlapping2D(current_point, next_point, track.start, track.end);
-            });
+         const overlapping_tracks = Track.#findColinearOverlappingTracks(
+            current_point,
+            next_point,
+            current_track.slope
+         );
 
          if (overlapping_tracks.length === 0) {
-            // No overlap, create a new track
             new_tracks.push(current_track);
          } else {
-            // Handle overlapping tracks
-            for (const overlapping_track of overlapping_tracks) {
-               // Helper: get distances along the overlapping track
-               const startOn = geometry.pointOnLine(overlapping_track.start, overlapping_track.end, current_point);
-               const endOn = geometry.pointOnLine(overlapping_track.start, overlapping_track.end, next_point);
+            const startOnColinear = overlapping_tracks.some((track) =>
+               geometry.pointOnLine(track.start, track.end, current_point)
+            );
+            const endOnColinear = overlapping_tracks.some((track) =>
+               geometry.pointOnLine(track.start, track.end, next_point)
+            );
 
-               // Case 1: new track is fully inside the overlapping track
-               if (startOn && endOn) {
-                  //we do nothing, the new track is fully inside the overlapping track
+            if (startOnColinear && endOnColinear) {
+               const onSingleTrack = overlapping_tracks.some(
+                  (track) =>
+                     geometry.pointOnLine(track.start, track.end, current_point) &&
+                     geometry.pointOnLine(track.start, track.end, next_point)
+               );
+               if (!onSingleTrack) {
+                  const startTrack = Track.#findTrackContainingPoint(current_point, overlapping_tracks);
+                  const endTrack = Track.#findTrackContainingPoint(next_point, overlapping_tracks);
+
+                  if (startTrack && endTrack && startTrack !== endTrack) {
+                     const gapTrack = Track.#fillGapBetweenTracks(startTrack, endTrack);
+                     if (gapTrack) {
+                        new_tracks.push(gapTrack);
+                     } else {
+                        Track.#rebuildColinearTracks(current_point, next_point, overlapping_tracks);
+                     }
+                  } else {
+                     Track.#rebuildColinearTracks(current_point, next_point, overlapping_tracks);
+                  }
                }
-               // Case 2: new track fully covers the overlapping track
-               else if (
-                  !startOn &&
-                  !endOn &&
-                  geometry.pointOnLine(current_point, next_point, overlapping_track.start) &&
-                  geometry.pointOnLine(current_point, next_point, overlapping_track.end)
-               ) {
-                  // Remove the overlapping track, add the new track
-                  overlapping_track.setNewStart(current_point);
-                  overlapping_track.setNewEnd(next_point);
+            } else {
+               for (const overlapping_track of overlapping_tracks) {
+                  const startOn = geometry.pointOnLine(overlapping_track.start, overlapping_track.end, current_point);
+                  const endOn = geometry.pointOnLine(overlapping_track.start, overlapping_track.end, next_point);
+
+                  if (
+                     !startOn &&
+                     !endOn &&
+                     geometry.pointOnLine(current_point, next_point, overlapping_track.start) &&
+                     geometry.pointOnLine(current_point, next_point, overlapping_track.end)
+                  ) {
+                     overlapping_track.setNewStart(current_point);
+                     overlapping_track.setNewEnd(next_point);
+                  } else if (!startOn && endOn) {
+                     overlapping_track.setNewStart(current_point);
+                  } else if (startOn && !endOn) {
+                     overlapping_track.setNewEnd(next_point);
+                  }
                }
-               // Case 3: new track starts before and ends inside the overlapping track
-               else if (!startOn && endOn) {
-                  overlapping_track.setNewStart(current_point);
-               }
-               // Case 4: new track starts inside and ends after the overlapping track
-               else if (startOn && !endOn) {
-                  overlapping_track.setNewEnd(next_point);
-               }
-               // If none of the above, just skip (or handle as needed)
             }
          }
 
