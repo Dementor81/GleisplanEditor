@@ -24,7 +24,6 @@ export class Switch {
       CROSSING: 10,
    };
 
-   static REFERENCE_ANGLE = Math.PI / 4;
 
    static hasMinimumTracks(sw: Switch): boolean {
       return !!(sw.track1 && sw.track2 && sw.track3);
