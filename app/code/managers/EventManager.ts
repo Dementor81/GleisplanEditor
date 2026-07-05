@@ -17,6 +17,7 @@ import { TrackBuildInteraction } from "../interactions/TrackBuildInteraction.ts"
 import { TrainCoupleModeCancelInteraction } from "../interactions/TrainCoupleModeCancelInteraction.ts";
 import { TrainPlaceInteraction } from "../interactions/TrainPlaceInteraction.ts";
 import { ViewportScrollInteraction } from "../interactions/ViewportScrollInteraction.ts";
+import { STORAGE } from "../storage.ts";
 
 /**
  * EventManager handles all event-related functionality
@@ -42,8 +43,10 @@ export class EventManager {
    #eventListeners: Map<string, Function[]> = new Map();
    #mainCanvas: HTMLCanvasElement = (window as any).myCanvas as HTMLCanvasElement;
 
-   #previousTouch: Touch | null = null;
    #activeInteraction: PointerInteraction | null = null;
+   #twoFingerGestureActive = false;
+   #lastPinchDistance: number | null = null;
+   #lastCentroid: { x: number; y: number } | null = null;
 
    // Store bound function references for proper event listener removal
    #boundHandleStagePointerDown: (event: FederatedPointerEvent) => void = () => { };
@@ -54,6 +57,7 @@ export class EventManager {
    #boundHandleWindowResize: () => void = () => { };
    #boundHandleTouchStart: (event: TouchEvent) => void = () => { };
    #boundHandleTouchMove: (event: TouchEvent) => void = () => { };
+   #boundHandleTouchEnd: (event: TouchEvent) => void = () => { };
    #boundHandleCanvasPointerMove: (event: PointerEvent) => void = () => { };
    #boundSyncDrawModeCanvasCursor: () => void = () => { };
    #boundClearCanvasCursor: () => void = () => { };
@@ -109,6 +113,7 @@ export class EventManager {
       this.#boundHandleWindowResize = this.#handleWindowResize.bind(this);
       this.#boundHandleTouchStart = this.#handleTouchStart.bind(this);
       this.#boundHandleTouchMove = this.#handleTouchMove.bind(this);
+      this.#boundHandleTouchEnd = this.#handleTouchEnd.bind(this);
       this.#boundHandleCanvasPointerMove = this.#handleCanvasPointerMove.bind(this);
       this.#boundSyncDrawModeCanvasCursor = this.#app.syncCustomMouseModeCursor.bind(this.#app);
       this.#boundClearCanvasCursor = this.#clearCanvasCursor.bind(this);
@@ -158,8 +163,42 @@ export class EventManager {
 
       const canvas = this.#mainCanvas;
       if (!canvas) return;
-      canvas.addEventListener("touchstart", this.#boundHandleTouchStart!);
-      canvas.addEventListener("touchmove", this.#boundHandleTouchMove!);
+      const opts = { passive: false } as const;
+      canvas.addEventListener("touchstart", this.#boundHandleTouchStart!, opts);
+      canvas.addEventListener("touchmove", this.#boundHandleTouchMove!, opts);
+      canvas.addEventListener("touchend", this.#boundHandleTouchEnd!);
+      canvas.addEventListener("touchcancel", this.#boundHandleTouchEnd!);
+   }
+
+   #getTwoFingerMetrics(touches: TouchList): { centroidX: number; centroidY: number; distance: number } {
+      const t1 = touches[0];
+      const t2 = touches[1];
+      const rect = this.#mainCanvas.getBoundingClientRect();
+      return {
+         centroidX: (t1.clientX + t2.clientX) / 2 - rect.left,
+         centroidY: (t1.clientY + t2.clientY) / 2 - rect.top,
+         distance: Math.hypot(t1.clientX - t2.clientX, t1.clientY - t2.clientY),
+      };
+   }
+
+   #startTwoFingerGesture(event: TouchEvent): void {
+      const { centroidX, centroidY, distance } = this.#getTwoFingerMetrics(event.touches);
+      this.#twoFingerGestureActive = true;
+      this.#lastPinchDistance = distance;
+      this.#lastCentroid = { x: centroidX, y: centroidY };
+
+      if (this.#activeInteraction) {
+         this.#activeInteraction = null;
+         this.#app.renderingManager?.containers.overlay.removeChildren();
+      }
+   }
+
+   #endTwoFingerGesture(): void {
+      if (!this.#twoFingerGestureActive) return;
+      this.#twoFingerGestureActive = false;
+      this.#lastPinchDistance = null;
+      this.#lastCentroid = null;
+      STORAGE.save();
    }
 
    /**
@@ -193,29 +232,39 @@ export class EventManager {
     * @private
     */
    #handleTouchStart(event: TouchEvent): void {
-      if (event.touches.length === 1) {
-         // Single-touch drawing can be added here if needed.
+      if (event.touches.length >= 2) {
+         event.preventDefault();
+         this.#startTwoFingerGesture(event);
       }
    }
 
-   /**
-    * Handle touch move event
-    * @private
-    */
    #handleTouchMove(event: TouchEvent): void {
-      if (event.touches.length === 1) {
-         let touch = event.touches[0];
+      if (event.touches.length < 2) return;
 
-         if (this.#previousTouch) {
-            const vp = this.#app.renderingManager!.viewport;
-            vp.x += touch.clientX - this.#previousTouch.clientX;
-            vp.y += touch.clientY - this.#previousTouch.clientY;
+      event.preventDefault();
+      const rm = this.#app.renderingManager;
+      if (!rm) return;
 
-            this.#app.renderingManager?.drawGrid(false);
-            this.#app.renderingManager?.reDrawEverything();
-         }
+      if (!this.#twoFingerGestureActive) {
+         this.#startTwoFingerGesture(event);
+      }
 
-         this.#previousTouch = touch;
+      const { centroidX, centroidY, distance } = this.#getTwoFingerMetrics(event.touches);
+
+      if (this.#lastCentroid) {
+         rm.scroll(centroidX - this.#lastCentroid.x, centroidY - this.#lastCentroid.y);
+      }
+      if (this.#lastPinchDistance && distance > 0 && this.#lastPinchDistance > 0) {
+         rm.zoomByScaleFactor(distance / this.#lastPinchDistance, centroidX, centroidY);
+      }
+
+      this.#lastCentroid = { x: centroidX, y: centroidY };
+      this.#lastPinchDistance = distance;
+   }
+
+   #handleTouchEnd(event: TouchEvent): void {
+      if (event.touches.length < 2) {
+         this.#endTwoFingerGesture();
       }
    }
 
@@ -295,6 +344,7 @@ export class EventManager {
     * @param {Event} event - The mouse move event
     */
    handleMouseMove(event: FederatedPointerEvent): void {
+      if (this.#twoFingerGestureActive) return;
       if (!event.isPrimary || !this.#activeInteraction) return;
 
       if (event.buttons === 0) return this.handleStageMouseUp(event);
@@ -414,6 +464,8 @@ export class EventManager {
       c?.removeEventListener("pointermove", this.#boundHandleCanvasPointerMove!);
       c?.removeEventListener("touchstart", this.#boundHandleTouchStart!);
       c?.removeEventListener("touchmove", this.#boundHandleTouchMove!);
+      c?.removeEventListener("touchend", this.#boundHandleTouchEnd!);
+      c?.removeEventListener("touchcancel", this.#boundHandleTouchEnd!);
 
       // Remove stage federated event listeners
       const stage = this.#app.renderingManager?.pixiApp?.stage;

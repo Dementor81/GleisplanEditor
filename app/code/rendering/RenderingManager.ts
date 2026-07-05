@@ -211,6 +211,36 @@ export class RenderingManager {
    }
 
    /**
+    * Zoom the viewport so that the point at (canvasX, canvasY) stays fixed on screen.
+    * @returns true when the scale actually changed
+    */
+   zoomAtPoint(canvasX: number, canvasY: number, nextScale: number): boolean {
+      const viewport = this.viewport;
+      const point = { x: canvasX, y: canvasY };
+      const localPoint = viewport.toLocal(point);
+      const oldScale = viewport.scale.x;
+      nextScale = Math.min(Math.max(CONFIG.MIN_SCALE, nextScale), CONFIG.MAX_SCALE);
+      viewport.scale.set(nextScale);
+
+      if (viewport.scale.x !== oldScale) {
+         const globalPoint = viewport.toGlobal(localPoint);
+         viewport.x -= globalPoint.x - point.x;
+         viewport.y -= globalPoint.y - point.y;
+         this.drawGrid();
+         this.reDrawEverything();
+         this.update();
+         this.notifyViewportChanged();
+         return true;
+      }
+      return false;
+   }
+
+   /** Apply a multiplicative scale factor around a canvas-local focal point (pinch zoom). */
+   zoomByScaleFactor(scaleFactor: number, canvasX: number, canvasY: number): void {
+      this.zoomAtPoint(canvasX, canvasY, this.viewport.scale.x * scaleFactor);
+   }
+
+   /**
     * Zoom the stage
     * @param deltaY - The zoom delta
     */
@@ -219,29 +249,10 @@ export class RenderingManager {
 
       if (!myCanvas.prevent_input) {
          myCanvas.prevent_input = true;
-
-         const viewport = this.viewport;
-         const point = { x: this.#pointerX, y: this.#pointerY };
-         const localPoint = viewport.toLocal(point);
-         const old_scale = viewport.scale.x;
-         const step = deltaY / (INPUT.ZOOM_STEP_DIVISOR / viewport.scale.x);
-
-         let nextScale = viewport.scale.x - step;
-         nextScale = Math.min(Math.max(CONFIG.MIN_SCALE, nextScale), CONFIG.MAX_SCALE);
-         viewport.scale.set(nextScale);
-
-         if (viewport.scale.x != old_scale) {
-            const globalPoint = viewport.toGlobal(localPoint);
-            viewport.x -= globalPoint.x - point.x;
-            viewport.y -= globalPoint.y - point.y;
-
-            this.drawGrid();
-            this.reDrawEverything();
-            this.update();
+         const step = deltaY / (INPUT.ZOOM_STEP_DIVISOR / this.viewport.scale.x);
+         if (this.zoomAtPoint(this.#pointerX, this.#pointerY, this.viewport.scale.x - step)) {
             STORAGE.save();
-            this.notifyViewportChanged();
          }
-
          myCanvas.prevent_input = false;
       }
    }
