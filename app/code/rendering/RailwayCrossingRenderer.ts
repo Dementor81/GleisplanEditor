@@ -3,7 +3,7 @@
 import { Container } from "pixi.js";
 import { RailwayCrossing } from "../railway_crossing.ts";
 import { polygonHitArea, TrackGraphics } from "../pixiPrimitives.ts";
-import { createLayerContainer, findChildByLabel } from "../pixiUtils.ts";
+import { createLayerContainer } from "../pixiUtils.ts";
 import { RailwayCrossingInteraction } from "../interactions/RailwayCrossingInteraction.ts";
 import { SignalRenderer } from "./signalRenderer.ts";
 import type { RenderingManager } from "./RenderingManager.ts";
@@ -17,10 +17,6 @@ export class RailwayCrossingRenderer {
       this.#drawCrossingSurface(surface, crossing);
       root.addChild(surface);
 
-      const streetSigns = createLayerContainer("street_signs");
-      this.#addStreetSignDisplays(rm, streetSigns, crossing);
-      root.addChild(streetSigns);
-
       const gates = createLayerContainer("gates");
       root.addChild(gates);
 
@@ -31,34 +27,22 @@ export class RailwayCrossingRenderer {
       return root;
    }
 
-   redrawStreetSigns(rm: RenderingManager, crossing: RailwayCrossing): void {
-      const root = this.#findCrossingDisplay(rm, crossing);
-      if (!root) return;
-
-      const layer = findChildByLabel(root, "street_signs");
-      if (!layer) return;
-
-      const facade = crossing.streetLights;
-      facade.markChanged();
-      for (const child of layer.children) {
-         facade.draw(child, true);
-         SignalRenderer.applyContainerBounds(child);
-      }
-      rm.update();
+   renderStreetSigns(rm: RenderingManager): void {
+      RailwayCrossing.allCrossings.forEach((crossing) => {
+         this.#addStreetSignDisplays(rm, rm.containers.signals, crossing);
+      });
    }
 
-   #findCrossingDisplay(rm: RenderingManager, crossing: RailwayCrossing): Container | undefined {
-      const tracks = rm.containers.tracks;
-      const crossingsLayer = tracks.children.find((child: Container) => child.label === "global_crossings");
-      if (crossingsLayer) {
-         return crossingsLayer.children.find(
-            (child: Container) => rm.getGameObjFromDisplayObj(child) === crossing
-         ) as Container | undefined;
+   redrawStreetSigns(rm: RenderingManager, crossing: RailwayCrossing): void {
+      const facade = crossing.streetLights;
+      facade.markChanged();
+      for (const child of rm.containers.signals.children) {
+         if (child.label?.startsWith(`crossing_street_sign_${crossing.id}_`)) {
+            facade.draw(child, true);
+            SignalRenderer.applyContainerBounds(child);
+         }
       }
-
-      return tracks.children.find(
-         (child: Container) => rm.getGameObjFromDisplayObj(child) === crossing
-      ) as Container | undefined;
+      rm.update();
    }
 
    #drawCrossingSurface(shape: TrackGraphics, crossing: RailwayCrossing): void {
@@ -88,7 +72,7 @@ export class RailwayCrossingRenderer {
       const facade = crossing.streetLights;
       crossing.streetSignPlacements().forEach((placement, index) => {
          const signalContainer = SignalRenderer.createSignalContainer(rm, facade, false);
-         signalContainer.label = `street_sign_${index}`;
+         signalContainer.label = `crossing_street_sign_${crossing.id}_${index}`;
          signalContainer.eventMode = "none";
          signalContainer.position.set(placement.position.x, placement.position.y);
          signalContainer.angle = placement.rotation;

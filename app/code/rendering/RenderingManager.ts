@@ -8,6 +8,7 @@ import { Track } from '../track.ts';
 import { Switch } from '../switch.ts';
 import { Signal } from '../signal.ts';
 import { GenericObject } from '../generic_object.ts';
+import { RailwayCrossing } from '../railway_crossing.ts';
 import { BasicRendering } from './BasicRendering.ts';
 import { AdvancedRendering } from './advanced/AdvancedRendering.ts';
 import type { TrackRenderingBase } from './TrackRenderingBase.ts';
@@ -296,6 +297,8 @@ export class RenderingManager {
       Signal.allSignals = new Set();
       Train.allTrains = [];
       GenericObject.all_objects = [];
+      RailwayCrossing.allCrossings = [];
+      RailwayCrossing.counter = 0;
 
       this.#renderer?.reDrawEverything(true);
    }

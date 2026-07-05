@@ -133,6 +133,7 @@ export class AdvancedRendererCore {
          let container = rm.containers.signals.addChild(SignalRenderer.createSignalContainer(rm, signal));
          this.renderer.app.alignSignalContainerWithTrack(container, signal._positioning);
       });
+      railwayCrossingRenderer.renderStreetSigns(rm);
    }
 
    renderAllTracks(force?: boolean) {

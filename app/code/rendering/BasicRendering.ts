@@ -56,6 +56,7 @@ export class BasicRendering extends TrackRenderingBase {
          let container = rm.containers.signals.addChild(SignalRenderer.createSignalContainer(rm, signal));
          this.app.alignSignalContainerWithTrack(container, signal._positioning);
       });
+      railwayCrossingRenderer.renderStreetSigns(rm);
    }
 
    renderAllTracks() {
