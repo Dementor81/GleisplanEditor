@@ -21,7 +21,8 @@ import { createLayerContainer, findChildByLabel } from '../pixiUtils.ts';
 import { SignalInteraction } from '../interactions/SignalInteraction.ts';
 import { Signal } from '../signal.ts';
 import { SignalConditionEvaluator } from '../signalConditionEvaluator.ts';
-import type { SignalFlipConfig, SignalFlipDefinition, SignalRotationConfig, SignalRotationDefinition } from '../signalDefinition.ts';
+import type { AspectAnimationKind, SignalFlipConfig, SignalFlipDefinition, SignalRotationConfig, SignalRotationDefinition } from '../signalDefinition.ts';
+import type { SequenceController } from '../signalTemplate.ts';
 
 type DrawParent = { container: Container; originX: number; originY: number; ve?: VisualElement } | VisualElement | null;
 
@@ -36,6 +37,8 @@ type RenderingState = {
 export class SignalRenderer {
    static #renderingState = new WeakMap<any, RenderingState>();
    static #activeTransformAnimations = new WeakMap<any, Set<() => void>>();
+   static #activeSequenceAnimations = new WeakMap<any, () => void>();
+   static #sequenceContainers = new WeakMap<any, Set<Container>>();
 
    static #captureRotations(container: Container): Map<string, number> {
       const rotations = new Map<string, number>();
@@ -137,6 +140,109 @@ export class SignalRenderer {
       ticker.add(tick);
    }
 
+   static #cancelSequenceAnimation(signal: any) {
+      const cancel = SignalRenderer.#activeSequenceAnimations.get(signal);
+      if (cancel) {
+         cancel();
+         SignalRenderer.#activeSequenceAnimations.delete(signal);
+      }
+   }
+
+   static #registerSequenceContainer(signal: any, container: Container) {
+      let set = SignalRenderer.#sequenceContainers.get(signal);
+      if (!set) {
+         set = new Set();
+         SignalRenderer.#sequenceContainers.set(signal, set);
+      }
+      set.add(container);
+   }
+
+   static #setManagedLabelVisibility(container: Container, controllers: SequenceController[], visibleLabel: string | null) {
+      for (const controller of controllers) {
+         for (const label of controller.managedLabels) {
+            const sprite = findChildByLabel(container, label);
+            if (sprite) sprite.visible = label === visibleLabel;
+         }
+      }
+   }
+
+   static #setManagedLabelVisibilityOnAll(signal: any, controllers: SequenceController[], visibleLabel: string | null) {
+      for (const container of SignalRenderer.#sequenceContainers.get(signal) ?? []) {
+         SignalRenderer.#setManagedLabelVisibility(container, controllers, visibleLabel);
+      }
+   }
+
+   static #applySequenceStep(signal: any, container: Container, controllers: SequenceController[], controller: SequenceController) {
+      const step = controller.steps[signal._sequenceState.stepIndex];
+      SignalRenderer.#setManagedLabelVisibility(container, controllers, step?.element ?? null);
+   }
+
+   static #applySequenceStepOnAll(signal: any, controllers: SequenceController[], controller: SequenceController) {
+      for (const container of SignalRenderer.#sequenceContainers.get(signal) ?? []) {
+         SignalRenderer.#applySequenceStep(signal, container, controllers, controller);
+      }
+   }
+
+   /** Drive sequence controllers: advance the active one via the ticker, hide managed labels when inactive. */
+   static #syncSequence(signal: any, container: Container, restart: boolean) {
+      const controllers: SequenceController[] = signal._template.getSequenceControllers?.() ?? [];
+      if (controllers.length === 0) return;
+
+      SignalRenderer.#registerSequenceContainer(signal, container);
+
+      const active = controllers.find((c) => signal.check(c.on));
+      if (!active) {
+         SignalRenderer.#cancelSequenceAnimation(signal);
+         signal._sequenceState = undefined;
+         SignalRenderer.#setManagedLabelVisibilityOnAll(signal, controllers, null);
+         return;
+      }
+
+      const state = signal._sequenceState;
+      const controllerChanged = !state || state.controllerOn !== (active.on ?? null);
+      if (restart || controllerChanged) {
+         SignalRenderer.#cancelSequenceAnimation(signal);
+         signal._sequenceState = { controllerOn: active.on ?? null, stepIndex: 0, elapsedMs: 0 };
+      }
+
+      signal._dontCache = true;
+      SignalRenderer.#applySequenceStepOnAll(signal, controllers, active);
+
+      const durationOf = (index: number) => active.steps[index]?.duration;
+      if (durationOf(signal._sequenceState.stepIndex) === undefined) return; // last/hold step, no ticker
+      if (SignalRenderer.#activeSequenceAnimations.has(signal)) return;
+
+      const ticker = Application.getInstance().renderingManager?.pixiApp?.ticker;
+      if (!ticker) return;
+
+      const tick = (t: { deltaMS: number }) => {
+         const seq = signal._sequenceState;
+         if (!seq) {
+            remove();
+            return;
+         }
+         const duration = durationOf(seq.stepIndex);
+         if (duration === undefined) {
+            remove();
+            return;
+         }
+         seq.elapsedMs += t.deltaMS;
+         if (seq.elapsedMs >= duration && seq.stepIndex < active.steps.length - 1) {
+            seq.stepIndex += 1;
+            seq.elapsedMs = 0;
+            SignalRenderer.#applySequenceStepOnAll(signal, controllers, active);
+            if (durationOf(seq.stepIndex) === undefined) remove();
+         }
+      };
+      const remove = () => {
+         ticker.remove(tick);
+         SignalRenderer.#activeSequenceAnimations.delete(signal);
+      };
+
+      SignalRenderer.#activeSequenceAnimations.set(signal, remove);
+      ticker.add(tick);
+   }
+
    static #resolveElementNames(target: string | string[]): string[] {
       return (Array.isArray(target) ? target : [target]).flatMap((entry) =>
          entry.split(",").map((name) => name.trim()).filter(Boolean)
@@ -176,8 +282,10 @@ export class SignalRenderer {
          SignalRenderer.#cancelTransformAnimations(signal);
          const previousRotations = SignalRenderer.#captureRotations(container);
          const previousScaleYs = SignalRenderer.#captureScaleYs(container);
-         const animateRotation = !!signal._rotationAspectChanged;
-         const animateFlip = !!signal._flipAspectChanged;
+         const animations: Set<AspectAnimationKind> = signal._aspectAnimations ?? new Set();
+         const animateRotation = animations.has("rotation");
+         const animateFlip = animations.has("flip");
+         const restartSequence = animations.has("sequence");
 
          SignalRenderer.#renderingState.set(signal, { container, previousRotations, previousScaleYs, animateRotation, animateFlip });
 
@@ -186,9 +294,10 @@ export class SignalRenderer {
          signal._dontCache = false;
          signal._template.elements.forEach((ve: any) => this.drawVisualElement(signal, ve));
          signal._changed = false;
-         signal._rotationAspectChanged = false;
-         signal._flipAspectChanged = false;
+         signal._aspectAnimations?.clear();
          SignalRenderer.#renderingState.delete(signal);
+
+         SignalRenderer.#syncSequence(signal, container, restartSequence);
       }
    }
 
@@ -467,6 +576,12 @@ export class SignalRenderer {
       SignalRenderer.#renderingState.set(previewContext, { container });
       template.elements.forEach((ve: any) => this.drawVisualElement(previewContext, ve));
       SignalRenderer.#renderingState.delete(previewContext);
+
+      const controllers: SequenceController[] = template.getSequenceControllers?.() ?? [];
+      if (controllers.length > 0) {
+         const active = controllers.find((c) => previewContext.check(c.on));
+         SignalRenderer.#setManagedLabelVisibility(container, controllers, active?.steps[0]?.element ?? null);
+      }
    }
 }
 

@@ -4,7 +4,12 @@ import { Application } from "./application.ts";
 import { CONFIG } from "./config.ts";
 import { EditorCommitter } from "./editorCommitter.ts";
 import { Track } from "./track.ts";
+import { CrossingStreetLights } from "./crossingStreetLights.ts";
 import { geometry, Point, type IPoint } from "./tools.ts";
+import { railwayCrossingRenderer } from "./rendering/RailwayCrossingRenderer.ts";
+import { Sig_UI } from "./sig_ui.ts";
+
+export type CrossingApproachSide = "min" | "max";
 
 export interface RailwayCrossingEntry {
    track: Track | null;
@@ -27,6 +32,7 @@ export interface CrossingDecorationPlacement {
    position: Point;
    rotation: number;
    scale: number;
+   side?: CrossingApproachSide;
 }
 
 interface CrossingObject {
@@ -35,25 +41,26 @@ interface CrossingObject {
    trackAngle: number;
    streetWidth: number;
    streetLength: number;
+   secured?: number;
+   streetLightAspects?: Record<string, unknown>;
    entries: { trackId: number; km: number }[];
 }
 
 export class RailwayCrossing {
    static allCrossings: RailwayCrossing[] = [];
    static counter = 0;
-   static DEFAULT_STREET_WIDTH = CONFIG.GRID_SIZE * 1.6;
+   static DEFAULT_STREET_WIDTH = CONFIG.GRID_SIZE * 2.5;
    static DEFAULT_STREET_LENGTH = CONFIG.GRID_SIZE * 4;
-   static STREET_OVERHANG = CONFIG.GRID_SIZE * 2;
+   static STREET_OVERHANG = CONFIG.GRID_SIZE * 3;
    static ROAD_MARKING_COLOR = "#cccccc";
    static ROAD_MARKING_WIDTH = 2;
    static ROAD_MARKING_EDGE_PADDING = CONFIG.GRID_SIZE * 0.10;
    static ROAD_MARKING_STOP_LINE_WIDTH = 5;
    static ROAD_MARKING_STOP_LINE_DISTANCE = CONFIG.GRID_SIZE * 0.75;
    static HIT_TEST_DISTANCE = 10;
-   static ANDREASKREUZ_SCALE = 0.02;
-   static ANDREASKREUZ_OFFSET_STREET = -30;
-   static ANDREASKREUZ_OFFSET_TRACK = 10;
-   static ANDREASKREUZ_ROTATION_OFFSET = 270;
+   static STREET_SIGN_OFFSET_STREET = -85;
+   static STREET_SIGN_OFFSET_TRACK = 0;
+   static STREET_SIGN_ROTATION_OFFSET = 270;
 
    id: number;
    center: Point;
@@ -61,6 +68,9 @@ export class RailwayCrossing {
    streetWidth: number;
    streetLength: number;
    entries: RailwayCrossingEntry[];
+   secured = 0;
+   streetLightAspects: Record<string, unknown> = {};
+   readonly streetLights: CrossingStreetLights;
 
    constructor(
       center: Point,
@@ -75,6 +85,20 @@ export class RailwayCrossing {
       this.entries = entries;
       this.streetWidth = streetWidth;
       this.streetLength = streetLength;
+      this.streetLights = new CrossingStreetLights(this);
+   }
+
+   setSecured(value: number): void {
+      const next = value ? 1 : 0;
+      if (this.secured === next) return;
+      this.secured = next;
+      this.refreshStreetSignDisplays();
+   }
+
+   refreshStreetSignDisplays(): void {
+      this.streetLights.markChanged();
+      const rm = Application.getInstance().renderingManager;
+      if (rm) railwayCrossingRenderer.redrawStreetSigns(rm, this);
    }
 
    static createAt(anchorTrack: Track, clickPoint: Point): RailwayCrossing | null {
@@ -84,7 +108,8 @@ export class RailwayCrossing {
       const entries = RailwayCrossing.findAffectedEntries(anchorTrack, center);
 
       if (entries.length === 0) return null;
-      return new RailwayCrossing(center, anchorTrack.rad, entries);
+      const crossing = new RailwayCrossing(center, anchorTrack.rad, entries);
+      return crossing;
    }
 
    static findNearestTrack(point: Point): Track | null {
@@ -211,6 +236,27 @@ export class RailwayCrossing {
             EditorCommitter.commit();
          });
 
+      Sig_UI.initSignalAspectsMenu(
+         crossing.streetLights,
+         "#crossingStreetLightMenu",
+         () => EditorCommitter.commit()
+      );
+
+      const refreshStreetLightMenu = () => {
+         Sig_UI.initSignalAspectsMenu(
+            crossing.streetLights,
+            "#crossingStreetLightMenu",
+            () => EditorCommitter.commit()
+         );
+      };
+
+      Sig_UI.initConfigOptionsMenu(
+         crossing.streetLights,
+         "#crossingStreetLightConfigMenu",
+         () => EditorCommitter.commit(),
+         refreshStreetLightMenu
+      );
+
       $("#btnRemoveRailwayCrossing")
          .off()
          .onclick(() => {
@@ -241,6 +287,8 @@ export class RailwayCrossing {
          Math.max(o.streetLength, RailwayCrossing.DEFAULT_STREET_LENGTH)
       );
       crossing.id = o.id;
+      crossing.secured = o.secured ?? 0;
+      crossing.streetLightAspects = o.streetLightAspects ? { ...o.streetLightAspects } : {};
       return crossing;
    }
 
@@ -302,15 +350,14 @@ export class RailwayCrossing {
       return lines;
    }
 
-   andreaskreuzPlacements(): CrossingDecorationPlacement[] {
+   streetSignPlacements(): CrossingDecorationPlacement[] {
       const frame = this.streetFrame();
       const stopGeometry = this.stopLineGeometry(frame);
       if (!stopGeometry) return [];
 
-      const scale = RailwayCrossing.ANDREASKREUZ_SCALE;
-      const streetOffset = RailwayCrossing.ANDREASKREUZ_OFFSET_STREET;
-      const trackOffset = RailwayCrossing.ANDREASKREUZ_OFFSET_TRACK;
-      const rotationOffset = RailwayCrossing.ANDREASKREUZ_ROTATION_OFFSET;
+      const streetOffset = RailwayCrossing.STREET_SIGN_OFFSET_STREET;
+      const trackOffset = RailwayCrossing.STREET_SIGN_OFFSET_TRACK;
+      const rotationOffset = RailwayCrossing.STREET_SIGN_ROTATION_OFFSET;
       const { minStop, maxStop, stopLaneEdge } = stopGeometry;
 
       const minStopFacing = this.scaled(frame.streetUnit, -1);
@@ -318,22 +365,24 @@ export class RailwayCrossing {
 
       return [
          {
+            side: "min",
             position: this.localStreetPoint(
                frame,
                minStop + streetOffset,
                -stopLaneEdge - trackOffset
             ),
             rotation: Math.atan2(minStopFacing.y, minStopFacing.x) * (180 / Math.PI) + rotationOffset,
-            scale,
+            scale: 1,
          },
          {
+            side: "max",
             position: this.localStreetPoint(
                frame,
                maxStop - streetOffset,
                stopLaneEdge + trackOffset
             ),
             rotation: Math.atan2(maxStopFacing.y, maxStopFacing.x) * (180 / Math.PI) + rotationOffset,
-            scale,
+            scale: 1,
          },
       ];
    }
@@ -449,6 +498,8 @@ export class RailwayCrossing {
          trackAngle: this.trackAngle,
          streetWidth: this.streetWidth,
          streetLength: this.streetLength,
+         secured: this.secured,
+         streetLightAspects: this.streetLightAspects,
          entries: this.entries.map((entry) => ({ trackId: entry.track?.id ?? entry.trackId, km: entry.km })),
       };
    }

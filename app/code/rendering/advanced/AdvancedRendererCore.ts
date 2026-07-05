@@ -11,7 +11,7 @@ import { CONFIG } from "../../config.ts";
 import { Application } from "../../application.ts";
 import { createLayerContainer } from "../../pixiUtils.ts";
 import { RailwayCrossing } from "../../railway_crossing.ts";
-import { createRailwayCrossingDisplay } from "../RailwayCrossingRenderer.ts";
+import { railwayCrossingRenderer } from "../RailwayCrossingRenderer.ts";
 import type { AdvancedRendering } from "./AdvancedRendering.ts";
 
 export class AdvancedRendererCore {
@@ -179,9 +179,8 @@ export class AdvancedRendererCore {
       const container = r._rendering.crossings_container;
       container.removeChildren();
 
-      const signTexture = r.app.preLoader!.getImage("andreaskreuz");
       RailwayCrossing.allCrossings.forEach((crossing) => {
-         container.addChild(createRailwayCrossingDisplay(r.app.renderingManager!, crossing, signTexture));
+         container.addChild(railwayCrossingRenderer.createDisplay(r.app.renderingManager!, crossing));
       });
    }
 

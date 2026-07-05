@@ -9,6 +9,7 @@ import { Application } from './application.ts';
 import { SignalRenderer } from './rendering/signalRenderer.ts';
 import { SignalTemplate } from './signalTemplate.ts';
 import { SignalConditionEvaluator } from './signalConditionEvaluator.ts';
+import type { AspectAnimationKind, SequenceState } from './signalDefinition.ts';
 
 
 /**
@@ -39,8 +40,8 @@ export class Signal {
    };
    _changed: boolean = false;
    _dontCache: boolean = false;
-   _rotationAspectChanged: boolean = false;
-   _flipAspectChanged: boolean = false;
+   _aspectAnimations = new Set<AspectAnimationKind>();
+   _sequenceState?: SequenceState;
 
    
 
@@ -109,8 +110,7 @@ export class Signal {
          else this._signalStellung[setting] = value;
 
          this._changed = true;
-         if (this._template!.getRotationAspectKeys().has(setting)) this._rotationAspectChanged = true;
-         if (this._template!.getFlipAspectKeys().has(setting)) this._flipAspectChanged = true;
+         for (const kind of this._template!.getAnimationKindsForAspect(setting)) this._aspectAnimations.add(kind);
          
       }
 

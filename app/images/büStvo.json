@@ -1,0 +1,21 @@
+[ 
+{"signal":"andreaskreuz","sourceRect":{"x":4,"y":4,"width":253,"height":738},"pos":
+        {"left":0,"top":184}
+    },
+
+{"signal":"lichtzeichen_aus","sourceRect":{"x":4,"y":750,"width":142,"height":619},"pos":
+        {"left":56,"top":0}
+    },
+
+{"signal":"gelb","sourceRect":{"x":4,"y":1377,"width":81,"height":85},"pos":
+        {"left":86,"top":100}
+    },
+
+{"signal":"rot","sourceRect":{"x":4,"y":1470,"width":81,"height":85},"pos":
+        {"left":86,"top":19}
+    },
+
+{"signal":"blitz","sourceRect":{"x":4,"y":1563,"width":21,"height":57},"pos":
+        {"left":118,"top":350}
+    }
+]

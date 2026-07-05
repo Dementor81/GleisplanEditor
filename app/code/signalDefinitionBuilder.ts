@@ -103,6 +103,7 @@ export class SignalDefinitionBuilder {
       if (definition.blendMode) visualElement.blendMode(definition.blendMode);
       if (definition.rotation) visualElement.rotation(definition.rotation);
       if (definition.flip) visualElement.flip(definition.flip);
+      if (definition.sequence) visualElement.sequence(definition.sequence);
       if (definition.children) visualElement.childs(definition.children.map(SignalDefinitionBuilder.buildElement));
 
       return visualElement;

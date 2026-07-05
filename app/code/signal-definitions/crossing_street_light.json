@@ -1,0 +1,41 @@
+{
+  "id": "crossing_street_light",
+  "title": "Bahnübergang Warnlicht",
+  "atlas": "büStvo",
+  "scale": 0.10,
+  "menu": [
+      {
+         "section": [
+            {
+               "buttonGroup": [
+                  { "text": "gesichert", "command": "secured=1" }
+               ]
+            }
+         ]
+      }
+    ],
+    "config_options": [
+      {
+         "name": "elektrifiziert=1",
+         "title": "elektrifiziert"
+      },
+      {
+        "name": "technisch=1",
+        "title": "technisch gesichert"
+     }
+   ],
+  "elements": [
+    { "image": "lichtzeichen_aus", "on": "technisch=1"},
+    "andreaskreuz",    
+    { "image": "blitz", "on": "elektrifiziert=1"},
+    { "label": "warnlicht_gelb", "image": "gelb"},
+    { "label": "warnlicht_rot", "image": "rot"},
+    {
+      "on": "technisch=1&&secured=1",
+      "sequence": [
+        { "element": "warnlicht_gelb", "duration": 3000 },
+        { "element": "warnlicht_rot" }
+      ]
+    }
+  ]
+}

@@ -82,6 +82,19 @@ export interface SignalFlipDefinition {
 
 export type SignalFlipConfig = SignalFlipDefinition | SignalFlipDefinition[];
 
+export interface SignalSequenceStepDefinition {
+   element: string;
+   duration?: number;
+}
+
+export type AspectAnimationKind = "rotation" | "flip" | "sequence";
+
+export interface SequenceState {
+   controllerOn: string | null;
+   stepIndex: number;
+   elapsedMs: number;
+}
+
 export type SignalBlendMode = "multiply";
 
 export interface SignalVisualElementDefinition {
@@ -94,6 +107,7 @@ export interface SignalVisualElementDefinition {
    blendMode?: SignalBlendMode;
    rotation?: SignalRotationConfig;
    flip?: SignalFlipConfig;
+   sequence?: SignalSequenceStepDefinition[];
    children?: SignalElementDefinition[];
 }
 

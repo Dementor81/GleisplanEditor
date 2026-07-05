@@ -4,7 +4,13 @@
 import { VisualElement } from './visualElement.ts';
 import { ArrayUtils, ConditionUtils } from './utils.ts';
 import { Application } from './application.ts';
-import type { SignalConfigOptionDefinition, SignalDependencyDefinition, SignalMenuRuntime } from './signalDefinition.ts';
+import type { AspectAnimationKind, SignalConfigOptionDefinition, SignalDependencyDefinition, SignalMenuRuntime, SignalSequenceStepDefinition } from './signalDefinition.ts';
+
+export interface SequenceController {
+   on: string | null;
+   steps: SignalSequenceStepDefinition[];
+   managedLabels: string[];
+}
 import type { SignalDependency } from './signalDependency.ts';
 import type { Signal } from './signal.ts';
 
@@ -97,45 +103,26 @@ export class SignalTemplate {
       return results;
    }
 
-   #_rotationAspectKeys: Set<string> | null = null;
+   #_aspectAnimationKeys: Map<AspectAnimationKind, Set<string>> | null = null;
 
-   /** Setting keys (e.g. hp) that appear in `on` conditions of elements with rotation. */
-   getRotationAspectKeys(): Set<string> {
-      if (this.#_rotationAspectKeys) return this.#_rotationAspectKeys;
-
-      const keys = new Set<string>();
-      const stack = [...this.elements];
-      while (stack.length > 0) {
-         const ve = stack.pop();
-         if (Array.isArray(ve)) {
-            stack.push(...ve);
-            continue;
-         }
-         if (typeof ve !== "object" || !(ve instanceof VisualElement)) continue;
-
-         if (ve.rotation()) {
-            const on = ve.on();
-            if (on) {
-               ConditionUtils.splitParts(on).forEach((trimmed: string) => {
-                  const key = trimmed.split("=")[0]?.trim();
-                  if (key) keys.add(key);
-               });
-            }
-         }
-         if (ve.childs()) stack.push(...ve.childs());
-      }
-
-      this.#_rotationAspectKeys = keys;
-      return keys;
+   #addAspectKeys(keys: Set<string>, on: string): void {
+      if (!on) return;
+      ConditionUtils.splitParts(on).forEach((trimmed: string) => {
+         const key = trimmed.split("=")[0]?.trim();
+         if (key) keys.add(key);
+      });
    }
 
-   #_flipAspectKeys: Set<string> | null = null;
+   /** Setting keys (e.g. hp, vr) grouped by the animation kind they trigger. */
+   getAspectAnimationKeys(): Map<AspectAnimationKind, Set<string>> {
+      if (this.#_aspectAnimationKeys) return this.#_aspectAnimationKeys;
 
-   /** Setting keys (e.g. vr) that appear in `on` conditions of elements with flip. */
-   getFlipAspectKeys(): Set<string> {
-      if (this.#_flipAspectKeys) return this.#_flipAspectKeys;
+      const map = new Map<AspectAnimationKind, Set<string>>([
+         ["rotation", new Set<string>()],
+         ["flip", new Set<string>()],
+         ["sequence", new Set<string>()],
+      ]);
 
-      const keys = new Set<string>();
       const stack = [...this.elements];
       while (stack.length > 0) {
          const ve = stack.pop();
@@ -145,20 +132,61 @@ export class SignalTemplate {
          }
          if (typeof ve !== "object" || !(ve instanceof VisualElement)) continue;
 
-         if (ve.flip()) {
-            const on = ve.on();
-            if (on) {
-               ConditionUtils.splitParts(on).forEach((trimmed: string) => {
-                  const key = trimmed.split("=")[0]?.trim();
-                  if (key) keys.add(key);
-               });
-            }
+         if (ve.rotation()) this.#addAspectKeys(map.get("rotation")!, ve.on());
+         if (ve.flip()) this.#addAspectKeys(map.get("flip")!, ve.on());
+         if (ve.sequence()) this.#addAspectKeys(map.get("sequence")!, ve.on());
+
+         if (ve.childs()) stack.push(...ve.childs());
+      }
+
+      this.#_aspectAnimationKeys = map;
+      return map;
+   }
+
+   /** Which animation kinds should react when the given setting key changes. */
+   getAnimationKindsForAspect(setting: string): AspectAnimationKind[] {
+      const kinds: AspectAnimationKind[] = [];
+      for (const [kind, keys] of this.getAspectAnimationKeys()) {
+         if (keys.has(setting)) kinds.push(kind);
+      }
+      return kinds;
+   }
+
+   #_sequenceControllers: SequenceController[] | null = null;
+
+   /** Sequence controllers (elements with a `sequence`) and the labels they manage. */
+   getSequenceControllers(): SequenceController[] {
+      if (this.#_sequenceControllers) return this.#_sequenceControllers;
+
+      const controllers: SequenceController[] = [];
+      const stack = [...this.elements];
+      while (stack.length > 0) {
+         const ve = stack.pop();
+         if (Array.isArray(ve)) {
+            stack.push(...ve);
+            continue;
+         }
+         if (typeof ve !== "object" || !(ve instanceof VisualElement)) continue;
+
+         const steps = ve.sequence() as SignalSequenceStepDefinition[] | null;
+         if (steps) {
+            controllers.push({ on: ve.on() ?? null, steps, managedLabels: steps.map((s) => s.element) });
          }
          if (ve.childs()) stack.push(...ve.childs());
       }
 
-      this.#_flipAspectKeys = keys;
-      return keys;
+      this.#_sequenceControllers = controllers;
+      return controllers;
+   }
+
+   #_sequenceManagedLabels: Set<string> | null = null;
+
+   /** Whether a label is shown/hidden by a sequence controller. */
+   isSequenceManagedLabel(label: string): boolean {
+      if (!this.#_sequenceManagedLabels) {
+         this.#_sequenceManagedLabels = new Set(this.getSequenceControllers().flatMap((c) => c.managedLabels));
+      }
+      return this.#_sequenceManagedLabels.has(label);
    }
 
    ///returns an array with all conditions. Used by UI to determent if a Feauture should be displayed

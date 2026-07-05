@@ -16,6 +16,7 @@ export class VisualElement {
    #_childs: any = null;
    #_rotation: any = null;
    #_flip: any = null;
+   #_sequence: any = null;
    #_blendMode: any = null;
    #_label: any = null;
 
@@ -71,6 +72,14 @@ export class VisualElement {
       if (flip === undefined) return this.#_flip;
       else {
          this.#_flip = flip;
+         return this;
+      }
+   }
+
+   sequence(sequence?: any): any {
+      if (sequence === undefined) return this.#_sequence;
+      else {
+         this.#_sequence = sequence;
          return this;
       }
    }

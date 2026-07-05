@@ -15,7 +15,7 @@ import { TrackBuildInteraction } from '../interactions/TrackBuildInteraction.ts'
 import { createLayerContainer } from '../pixiUtils.ts';
 import { TrackRenderingBase } from './TrackRenderingBase.ts';
 import { GenericObjectInteraction } from '../interactions/GenericObjectInteraction.ts';
-import { createRailwayCrossingDisplay } from './RailwayCrossingRenderer.ts';
+import { railwayCrossingRenderer } from './RailwayCrossingRenderer.ts';
 import { SwitchInteraction } from '../interactions/SwitchInteraction.ts';
 
 export class BasicRendering extends TrackRenderingBase {
@@ -66,9 +66,8 @@ export class BasicRendering extends TrackRenderingBase {
 
    renderAllCrossings() {
       const container = this.app.renderingManager!.containers.tracks;
-      const signTexture = this.app.preLoader!.getImage("andreaskreuz");
       RailwayCrossing.allCrossings.forEach((crossing) => {
-         container.addChild(createRailwayCrossingDisplay(this.app.renderingManager!, crossing, signTexture));
+         container.addChild(railwayCrossingRenderer.createDisplay(this.app.renderingManager!, crossing));
       });
    }
 

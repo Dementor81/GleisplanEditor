@@ -191,6 +191,7 @@ Options:
 - `children`: nested elements.
 - `rotation`: rotate a labelled element when this visual object is active.
 - `flip`: set vertical scale on a labelled element when this visual object is active.
+- `sequence`: show labelled elements one after another while this visual object is active.
 
 ### Text Objects
 
@@ -238,6 +239,35 @@ Options:
 - `duration`: animation duration in milliseconds. Defaults to `400`.
 
 The renderer animates only when the aspect key that controls the active `on` condition changes.
+
+### Sequence
+
+A `sequence` shows labelled elements one at a time, switching from one to the next after a per-step duration. Like rotation controllers, the sequence lives on a controller object with an `on` condition and usually no `image` of its own. The elements it drives are declared separately as labelled visual objects.
+
+```json
+{ "label": "warnlicht_gelb", "image": "gelb" },
+{ "label": "warnlicht_rot", "image": "rot" },
+{
+  "on": "technisch=1&&secured=1",
+  "sequence": [
+    { "element": "warnlicht_gelb", "duration": 3000 },
+    { "element": "warnlicht_rot" }
+  ]
+}
+```
+
+Options:
+
+- `element`: label of the visual object shown during this step.
+- `duration`: how long the step stays visible, in milliseconds. Required on every step except the last.
+
+Behavior:
+
+- A label referenced by a step is only visible while the controller's `on` condition is true and that step is the current one. Otherwise it is hidden.
+- The final step may omit `duration`; it then holds until the controller's `on` condition turns off. In the example above, yellow shows for three seconds, then red stays on until the crossing is no longer secured.
+- The sequence restarts from the first step when an aspect key from the controller's `on` condition changes. Unrelated redraws keep the current step, so the sequence does not replay on every redraw.
+
+Rotation, flip, and sequence all share the same aspect-animation mechanism: each signal tracks which animation kinds a changed aspect should trigger (`_aspectAnimations`), and the renderer only animates or restarts when that aspect actually changed.
 
 ## Menu
 

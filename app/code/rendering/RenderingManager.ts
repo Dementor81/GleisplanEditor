@@ -175,7 +175,7 @@ export class RenderingManager {
    }
 
    redrawSignal(signal: Signal): void {
-      //TODO: that quiet performance heavy, so we need to optimize it later
+      //TODO: that quite the performance heavy, so we need to optimize it later
       const container = (this.#containers as ContainersType).signals.children.find(
          (c: Container) => this.getGameObjFromDisplayObj(c) === signal
       );

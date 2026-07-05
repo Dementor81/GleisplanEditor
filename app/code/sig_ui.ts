@@ -72,51 +72,84 @@ export class Sig_UI {
 
       const configOptions = template.configOptions;
       if (configOptions?.length) {
-         const applyConfigOption = (optionName: string, isOn: boolean) => {
-            const opt = template.getConfigOption(optionName);
-            if (isOn) {
-               update(optionName, true);
-               if (opt?.convertTo) {
-                  const optionKey = optionName.split("=")[0];
-                  const convertKey = opt.convertTo.split("=")[0];
-                  if (optionKey !== convertKey) update(opt.convertTo, false);
-               }
-            } else {
-               update(optionName, false);
-               if (opt?.convertTo) update(opt.convertTo, true);
-            }
-         };
-
-         signalConfigurationTab.append(
-            ui.div(
-               "p-3 border-bottom",
-               configOptions.map((opt: SignalConfigOptionDefinition) =>
-                  ui.div("form-check form-switch", [
-                     $("<input/>", {
-                        class: "form-check-input",
-                        type: "checkbox",
-                        role: "switch",
-                        id: "switch_config_" + opt.name,
-                     })
-                        .attr("value", opt.name)
-                        .attr("data-config-option", "")
-                        .on("change", function () {
-                           applyConfigOption($(this).attr("value") ?? "", $(this).is(":checked"));
-                        }),
-                     $("<label/>", {
-                        class: "form-check-label",
-                        for: "switch_config_" + opt.name,
-                        text: opt.title,
-                     }),
-                  ])
-               )
-            )
-         );
+         const configSection = Sig_UI.buildConfigOptionsSection(selectedSignal, update);
+         if (configSection) signalConfigurationTab.append(configSection);
       }
    }
 
-   static syncConfigOptionSwitches(signal: any) {
-      $("#SignalConfigurationTab input[data-config-option]").each(function () {
+   static buildConfigOptionsSection(
+      signal: any,
+      update: (command: string, isOn?: unknown) => void
+   ): JQuery | null {
+      const template = signal._template;
+      const configOptions = template.configOptions;
+      if (!configOptions?.length) return null;
+
+      const applyConfigOption = (optionName: string, isOn: boolean) => {
+         const opt = template.getConfigOption(optionName);
+         if (isOn) {
+            update(optionName, true);
+            if (opt?.convertTo) {
+               const optionKey = optionName.split("=")[0];
+               const convertKey = opt.convertTo.split("=")[0];
+               if (optionKey !== convertKey) update(opt.convertTo, false);
+            }
+         } else {
+            update(optionName, false);
+            if (opt?.convertTo) update(opt.convertTo, true);
+         }
+      };
+
+      return ui.div(
+         "p-3 border-bottom",
+         configOptions.map((opt: SignalConfigOptionDefinition) =>
+            ui.div("form-check form-switch", [
+               $("<input/>", {
+                  class: "form-check-input",
+                  type: "checkbox",
+                  role: "switch",
+                  id: "switch_config_" + opt.name,
+               })
+                  .attr("value", opt.name)
+                  .attr("data-config-option", "")
+                  .on("change", function () {
+                     applyConfigOption($(this).attr("value") ?? "", $(this).is(":checked"));
+                  }),
+               $("<label/>", {
+                  class: "form-check-label",
+                  for: "switch_config_" + opt.name,
+                  text: opt.title,
+               }),
+            ])
+         )
+      );
+   }
+
+   static initConfigOptionsMenu(
+      signal: any,
+      menuContainer: JQuery | string,
+      onChange?: () => void,
+      refreshAspectsMenu?: () => void
+   ): void {
+      const tab = typeof menuContainer === "string" ? $(menuContainer) : menuContainer;
+      tab.empty();
+
+      const update = (command: string, isOn?: unknown) => {
+         signal.setSignalAspect(command, isOn);
+         refreshAspectsMenu?.();
+         Sig_UI.syncConfigOptionSwitches(signal, tab);
+         STORAGE.save();
+         onChange?.();
+      };
+
+      const section = Sig_UI.buildConfigOptionsSection(signal, update);
+      if (section) tab.append(section);
+      Sig_UI.syncConfigOptionSwitches(signal, tab);
+   }
+
+   static syncConfigOptionSwitches(signal: any, container: JQuery | string = "#SignalConfigurationTab") {
+      const root = typeof container === "string" ? $(container) : container;
+      root.find("input[data-config-option]").each(function () {
          const input = $(this);
          input.prop("checked", signal.check(input.attr("value")) ? "checked" : null);
       });
@@ -142,7 +175,11 @@ export class Sig_UI {
       Sig_UI.syncConfigOptionSwitches(signal);
    }
 
-   static initSignalAspectsMenu(signal: any) {
+   static initSignalAspectsMenu(
+      signal: any,
+      menuContainer: JQuery | string = "#signalAspectTab",
+      onChange?: () => void
+   ) {
       if (signal._template.signalMenu?.length) {
          const ul = ui.div("d-flex flex-column bd-highlight mb-3");
 
@@ -150,6 +187,7 @@ export class Sig_UI {
             signal.setSignalAspect(command, !active);
             Sig_UI.checkSignalAspectMenu(signal, signal._template.signalMenu, ul);
             STORAGE.save();
+            onChange?.();
          };
 
          ul.append(
@@ -162,7 +200,7 @@ export class Sig_UI {
 
          Sig_UI.checkSignalAspectMenu(signal, signal._template.signalMenu, ul);
 
-         const tab = $("#signalAspectTab");
+         const tab = typeof menuContainer === "string" ? $(menuContainer) : menuContainer;
          tab.empty();
          tab.append(ul);
       }
@@ -252,8 +290,7 @@ export class Sig_UI {
          [].concat(selection.object).forEach((s: any) => {
             s._signalStellung = {};
             s._changed = true;
-            s._rotationAspectChanged = false;
-            s._flipAspectChanged = false;
+            s._aspectAnimations.clear();
             app.eventManager?.emit("signalAspectChanged", { signal: s });
             if (s._template.initialSignalStellung)
                s._template.initialSignalStellung.forEach((i: any) => s.setSignalAspect(i, null, true));

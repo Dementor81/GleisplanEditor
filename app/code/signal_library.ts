@@ -10,6 +10,7 @@ import lsDefinition from './signal-definitions/ls.json';
 import formHpDefinition from './signal-definitions/form_hp.json';
 import formVrDefinition from './signal-definitions/form_vr.json';
 import simpleSignDefinitions from './signal-definitions/simple-signs.json';
+import crossingStreetLightDefinition from './signal-definitions/crossing_street_light.json';
 
 /**
  * All signal configuration definitions keyed exactly like the runtime template registry.
@@ -28,6 +29,7 @@ export const signalDefinitions: Record<string, SignalTemplateDefinition> = (() =
    (simpleSignDefinitions as SignalTemplateDefinition[]).forEach((definition) => {
       defs[definition.id === "zusatz" ? "zusatzSignal" : definition.id] = definition;
    });
+   defs.crossing_street_light = crossingStreetLightDefinition as unknown as SignalTemplateDefinition;
    return defs;
 })();
 
@@ -62,4 +64,6 @@ export function initSignals(signalTemplatesRef: Record<string, any>) {
       const key = definition.id === "zusatz" ? "zusatzSignal" : definition.id;
       registerSignalTemplate(signalTemplates, key, signalDefinitions[key]);
    });
+
+   registerSignalTemplate(signalTemplates, "crossing_street_light", signalDefinitions.crossing_street_light);
 }
