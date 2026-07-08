@@ -5,7 +5,7 @@
   "savePath": "/Users/marcus/Developer/GleisplanEditor/app/images",
   "images": [],
   "folders": [
-    "/Users/marcus/Desktop/formsignal"
+    "/Users/marcus/Developer/GleisplanEditor/raw signal images/formsignal"
   ],
   "packOptions": {
     "textureName": "formsignal",
@@ -13,8 +13,8 @@
     "removeFileExtension": true,
     "prependFolderName": false,
     "base64Export": false,
-    "tinify": false,
-    "tinifyKey": "",
+    "tinify": true,
+    "tinifyKey": "V2pbYSV1ZxnFyDqZj5CTzlc017vcSmGj",
     "scale": 1,
     "filter": "none",
     "exporter": "custom",

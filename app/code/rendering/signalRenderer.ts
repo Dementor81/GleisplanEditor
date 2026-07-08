@@ -8,7 +8,7 @@ import type { Container } from 'pixi.js';
 import { Graphics, Text } from 'pixi.js';
 
 /** Set true to draw rotation pivot markers on rotated signal elements. */
-export const DEBUG_VISUALIZE_SIGNAL_PIVOTS = true;
+export const DEBUG_VISUALIZE_SIGNAL_PIVOTS = false;
 
 const DEFAULT_ROTATION_DURATION_MS = 400;
 const ROTATION_ANGLE_EPSILON = 1e-4;

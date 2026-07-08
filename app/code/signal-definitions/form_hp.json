@@ -4,10 +4,7 @@
    "atlas": "formsignal",
    "scale": 0.24,
    "previewsize": 20,
-   "initial": [
-      "hp=0",
-      "HPsig"
-   ],
+   "initial": ["hp=0", "HPsig"],
    "menu": [
       {
          "section": [
@@ -30,45 +27,8 @@
          "section": [
             {
                "buttonGroup": [
-                  { "text": "Vr 0", "command": "vr=0" },
-                  { "text": "Vr 1", "command": "vr=1" },
-                  { "text": "Vr 2", "command": "vr=2" }
+                  { "text": "Zs 1", "command": "ersatz='zs1'" }
                ]
-            },
-            {
-               "button": {
-                  "text": "verk",
-                  "command": "verk=1"
-               }
-            },
-            {
-               "dropdown": {
-                  "text": "Zs3v",
-                  "command": "advanceSpeed"
-               }
-            }
-         ]
-      },
-      {
-         "section": [
-            {
-               "buttonGroup": [
-                  { "text": "Zs 1", "command": "ersatz='zs1'" },
-                  { "text": "Zs 7", "command": "ersatz='zs7'" },
-                  { "text": "Zs 8", "command": "ersatz='zs8'" },
-                  { "text": "Sh 1", "command": "ersatz='sh1'" },
-                  { "text": "Kennlicht", "command": "ersatz='kennlicht'" }
-               ]
-            }
-         ]
-      },
-      {
-         "section": [
-            {
-               "button": {
-                  "text": "Zs 6",
-                  "command": "zs6=1"
-               }
             }
          ]
       }
@@ -77,6 +37,10 @@
       {
          "name": "3_begriffig=1",
          "title": "Dreibegriffig"
+      },
+      {
+         "name": "ersatz_zs1=1",
+         "title": "Ersatzsignal"
       }
    ],
    "dependency": {
@@ -85,18 +49,14 @@
             ["hp<=0", "stop"],
             ["hp>=1", "go"]
          ],
-         "currentSpeed": [
-            ["hp=2&&currentSpeed<=0", 4]
-         ]
+         "currentSpeed": [["hp=2&&currentSpeed<=0", 4]]
       },
       "when": ["partner.HPsig"],
       "unless": ["self.HPsig&&self.hp=0", "self.vr=-1"],
       "subscribe": {
          "vr": { "route": { "stop": 0, "go": 1 } }
       },
-      "overrides": [
-         ["partner.currentSpeed=4", { "advanceSpeed": 0, "vr": 2, "when": "self.vr>0" }]
-      ],
+      "overrides": [["partner.currentSpeed=4", { "advanceSpeed": 0, "vr": 2, "when": "self.vr>0" }]],
       "stopUnless": "vr_op='wdh'"
    },
    "elements": [
@@ -138,40 +98,22 @@
             {
                "element": "flügel_oben",
                "angle": 0,
-               "pivot": [
-                  36.5,
-                  25.5
-               ]
+               "pivot": [36.5, 25.5]
             },
             {
-               "element": [
-                  "lichtscheibe",
-                  "lichtscheibe_hintergrund"
-               ],
+               "element": ["lichtscheibe", "lichtscheibe_hintergrund"],
                "angle": 0,
-               "pivot": [
-                  3,
-                  15
-               ]
+               "pivot": [3, 15]
             },
             {
                "element": "flügel_unten",
                "angle": 0,
-               "pivot": [
-                  25.5,
-                  154
-               ]
+               "pivot": [25.5, 154]
             },
             {
-               "element": [
-                  "lichtscheibe_unten",
-                  "lichtscheibe_hintergrund_unten"
-               ],
+               "element": ["lichtscheibe_unten", "lichtscheibe_hintergrund_unten"],
                "angle": 0,
-               "pivot": [
-                  3,
-                  15
-               ]
+               "pivot": [3, 15]
             }
          ]
       },
@@ -181,21 +123,27 @@
             {
                "element": "flügel_unten",
                "angle": 42,
-               "pivot": [
-                  25.5,
-                  154
-               ]
+               "pivot": [25.5, 154]
             },
             {
-               "element": [
-                  "lichtscheibe_unten",
-                  "lichtscheibe_hintergrund_unten"
-               ],
+               "element": ["lichtscheibe_unten", "lichtscheibe_hintergrund_unten"],
                "angle": -62,
-               "pivot": [
-                  3,
-                  15
-               ]
+               "pivot": [3, 15]
+            }
+         ]
+      },
+      {
+         "on": "hp=1",
+         "rotation": [
+            {
+               "element": "flügel_unten",
+               "angle": 0,
+               "pivot": [25.5, 154]
+            },
+            {
+               "element": ["lichtscheibe_unten", "lichtscheibe_hintergrund_unten"],
+               "angle": 0,
+               "pivot": [3, 15]
             }
          ]
       },
@@ -205,21 +153,33 @@
             {
                "element": "flügel_oben",
                "angle": -42,
-               "pivot": [
-                  36.5,
-                  25.5
-               ]
+               "pivot": [36.5, 25.5]
             },
             {
-               "element": [
-                  "lichtscheibe",
-                  "lichtscheibe_hintergrund"
-               ],
+               "element": ["lichtscheibe", "lichtscheibe_hintergrund"],
                "angle": -62,
-               "pivot": [
-                  3,
-                  15
-               ]
+               "pivot": [3, 15]
+            }
+         ]
+      },
+      {
+         "on": "ersatz_zs1=1",
+         "image": "zs1_aus",
+         "children": [
+            {
+               "image": "zs1",
+               "on": "ersatz='zs1'"
+            }
+         ]
+      },
+      {
+         "on": "currentSpeed>0",
+         "children": [
+            "zs3_blech",
+            {
+               "text": "currentSpeed",
+               "format": [50, "Arial", 1],
+               "pos": [46, 422]
             }
          ]
       }

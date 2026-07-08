@@ -2,10 +2,10 @@
   "meta": {
     "version": "0.6.7"
   },
-  "savePath": "/home/marcus/code/bahnhof/images",
+  "savePath": "/Users/marcus/Developer/GleisplanEditor/app/images",
   "images": [],
   "folders": [
-    "/home/marcus/code/bahnhof/raw signal images/ks1"
+    "/Users/marcus/Developer/GleisplanEditor/raw signal images/ks"
   ],
   "packOptions": {
     "textureName": "ks",
@@ -13,13 +13,13 @@
     "removeFileExtension": true,
     "prependFolderName": false,
     "base64Export": false,
-    "tinify": false,
-    "tinifyKey": "",
+    "tinify": true,
+    "tinifyKey": "V2pbYSV1ZxnFyDqZj5CTzlc017vcSmGj",
     "scale": 1,
     "filter": "none",
     "exporter": "custom",
     "fileName": "pack-result",
-    "savePath": "/home/marcus/code/bahnhof/images",
+    "savePath": "/Users/marcus/Developer/GleisplanEditor/app/images",
     "width": 2048,
     "height": 2048,
     "fixedSize": false,
@@ -32,6 +32,6 @@
     "alphaThreshold": "0",
     "detectIdentical": true,
     "packer": "MaxRectsBin",
-    "packerMethod": "BestAreaFit"
+    "packerMethod": "BestShortSideFit"
   }
 }

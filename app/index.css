@@ -20,7 +20,7 @@ html, body {
 #banner {
     height: 500px;
     width: 100%;
-    background-image: url('gleisplan.png');
+    background-image: url('assets/static_images/titelbild.png');
     background-position: center;
     /* Center the image */
     background-repeat: no-repeat;

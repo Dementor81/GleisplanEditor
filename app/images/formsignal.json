@@ -1,49 +1,61 @@
 [ 
-{"signal":"mast","sourceRect":{"x":2,"y":2,"width":74,"height":851},"pos":
+{"signal":"mast","sourceRect":{"x":2,"y":2,"width":73,"height":864},"pos":
         {"left":0,"top":0}
     },
 
-{"signal":"flügel_unten","sourceRect":{"x":2,"y":857,"width":52,"height":191},"pos":
+{"signal":"hp2_assembly","sourceRect":{"x":2,"y":870,"width":37,"height":276},"pos":
+        {"left":39,"top":84}
+    },
+
+{"signal":"flügel_unten","sourceRect":{"x":2,"y":1150,"width":52,"height":191},"pos":
         {"left":14,"top":99}
     },
 
-{"signal":"hp2_assembly","sourceRect":{"x":2,"y":1052,"width":37,"height":82},"pos":
-        {"left":39,"top":278}
+{"signal":"zs3_blech","sourceRect":{"x":43,"y":870,"width":90,"height":82},"pos":
+        {"left":0,"top":422}
     },
 
-{"signal":"flügel_oben","sourceRect":{"x":2,"y":1138,"width":223,"height":60},"pos":
+{"signal":"flügel_oben","sourceRect":{"x":43,"y":956,"width":223,"height":60},"pos":
         {"left":3,"top":25}
     },
 
-{"signal":"lichtscheibe_rahmen","sourceRect":{"x":43,"y":1052,"width":43,"height":52},"pos":
+{"signal":"lichtscheibe_rahmen","sourceRect":{"x":43,"y":1020,"width":43,"height":52},"pos":
         {"left":55,"top":68}
     },
 
-{"signal":"lichtscheibe_licht_unten","sourceRect":{"x":43,"y":1108,"width":25,"height":25},"pos":
-        {"left":69,"top":276}
-    },
-
-{"signal":"lichtscheibe_farbfilter_unten","sourceRect":{"x":72,"y":1108,"width":25,"height":24},"pos":
-        {"left":55,"top":296}
-    },
-
-{"signal":"lichtscheibe_licht","sourceRect":{"x":101,"y":1108,"width":25,"height":24},"pos":
-        {"left":70,"top":71}
-    },
-
-{"signal":"lichtscheibe_hintergrund","sourceRect":{"x":58,"y":857,"width":42,"height":51},"pos":
+{"signal":"lichtscheibe_hintergrund","sourceRect":{"x":43,"y":1076,"width":42,"height":51},"pos":
         {"left":55,"top":69}
     },
 
-{"signal":"lichtscheibe_rahmen_unten","sourceRect":{"x":58,"y":912,"width":46,"height":50},"pos":
+{"signal":"lichtscheibe_rahmen_unten","sourceRect":{"x":2,"y":1345,"width":46,"height":50},"pos":
         {"left":52,"top":272}
     },
 
-{"signal":"lichtscheibe_hintergrund_unten","sourceRect":{"x":104,"y":966,"width":44,"height":50},"pos":
+{"signal":"lichtscheibe_hintergrund_unten","sourceRect":{"x":2,"y":1399,"width":44,"height":50},"pos":
         {"left":53,"top":272}
     },
 
-{"signal":"lichtscheibe_farbfilter","sourceRect":{"x":58,"y":966,"width":38,"height":47},"pos":
+{"signal":"lichtscheibe_farbfilter","sourceRect":{"x":2,"y":1453,"width":38,"height":47},"pos":
         {"left":57,"top":71}
+    },
+
+{"signal":"zs1_aus","sourceRect":{"x":2,"y":1504,"width":32,"height":32},"pos":
+        {"left":23,"top":367}
+    },
+
+{"signal":"zs1","sourceRect":{"x":2,"y":1540,"width":29,"height":26},"pos":
+        {"left":25,"top":370}
+    },
+
+{"signal":"lichtscheibe_licht_unten","sourceRect":{"x":2,"y":1570,"width":25,"height":25},"pos":
+        {"left":69,"top":276}
+    },
+
+{"signal":"lichtscheibe_farbfilter_unten","sourceRect":{"x":2,"y":1599,"width":25,"height":24},"pos":
+        {"left":55,"top":296}
+    },
+
+{"signal":"lichtscheibe_licht","sourceRect":{"x":2,"y":1627,"width":25,"height":24},"pos":
+        {"left":70,"top":71}
     }
 ]
