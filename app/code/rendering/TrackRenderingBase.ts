@@ -1,9 +1,11 @@
 "use strict";
 
 import { Application } from "../application.ts";
+import { GenericObject } from "../generic_object.ts";
+import { PlatformResizeInteraction } from "../interactions/PlatformResizeInteraction.ts";
 import { RailwayCrossing } from "../railway_crossing.ts";
 import type { Switch } from "../switch.ts";
-import { gleisGraphics, rectHitArea, TrackGraphics } from "../pixiPrimitives.ts";
+import { gleisGraphics, polygonHitArea, rectHitArea, TrackGraphics } from "../pixiPrimitives.ts";
 import { TrackEndpointInteraction } from "../interactions/TrackEndpointInteraction.ts";
 import { TrainRenderer } from "./TrainRenderer.ts";
 
@@ -66,7 +68,12 @@ export abstract class TrackRenderingBase {
       } else if (this.app.selection.type == "GenericObject") {
          rmSel.containers.objects.children.forEach((c: any) => {
             const d = rmSel.getGameObjFromDisplayObj(c);
-            if (d != null && this.app.selection.isSelectedObject(d)) this.visualizeTrackBounds(c);
+            if (d != null && this.app.selection.isSelectedObject(d)) {
+               this.visualizeTrackBounds(c);
+               if (d instanceof GenericObject && d.type() === GenericObject.OBJECT_TYPE.plattform) {
+                  this.drawPlatformResizeHandle(c, d);
+               }
+            }
          });
       } else if (this.app.selection.type == "RailwayCrossing") {
          for (const c of this.crossingDisplayObjectsForSelection()) {
@@ -96,6 +103,32 @@ export abstract class TrackRenderingBase {
       const sel = this.app.renderingManager!.containers.selection;
       sel.addChild(this.createEndpointShape(track.start, track, "start"));
       sel.addChild(this.createEndpointShape(track.end, track, "end"));
+   }
+
+   protected drawPlatformResizeHandle(container: any, obj: GenericObject) {
+      const HANDLE_SIZE = 8;
+      const bounds = container.getBounds();
+      const vp = this.app.renderingManager!.viewport;
+      const corner = vp.toLocal({ x: bounds.x + bounds.width, y: bounds.y + bounds.height });
+
+      const p1 = { x: corner.x - HANDLE_SIZE, y: corner.y };
+      const p2 = { x: corner.x, y: corner.y };
+      const p3 = { x: corner.x, y: corner.y - HANDLE_SIZE };
+
+      const shape = new TrackGraphics("platform_resize");
+      this.app.renderingManager!.bindGameObjToDisplayObj(shape, obj);
+      shape.hitArea = polygonHitArea([p1, p2, p3]);
+      PlatformResizeInteraction.attach(shape, obj);
+
+      shape
+         .moveTo(p1.x, p1.y)
+         .lineTo(p2.x, p2.y)
+         .lineTo(p3.x, p3.y)
+         .closePath()
+         .fill("#aa0000")
+         .stroke({ width: 0.1, color: "#111111", cap: "round", join: "round" });
+
+      this.app.renderingManager!.containers.selection.addChild(shape);
    }
 
    protected visualizeTrackBounds(container: any) {
