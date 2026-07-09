@@ -180,8 +180,7 @@ export class UIManager {
                this.#app.signalTemplates.hv_hp,
                this.#app.signalTemplates.ks,
                this.#app.signalTemplates.form_hp,
-               this.#app.signalTemplates.ls,
-               this.#app.signalTemplates.zusatzSignal
+               this.#app.signalTemplates.ls
             ) as any,
             true
          ),
@@ -210,15 +209,27 @@ export class UIManager {
             ) as any
          ),
          ui.createAccordionItem(
-            "Weitere",
+            "Zusatzsignale",
             accordionId,
             this.#createNewItemButtons(
                this.#app.signalTemplates.zs3,
                this.#app.signalTemplates.zs3v,
                this.#app.signalTemplates.zs6,
                this.#app.signalTemplates.zs10,
+               this.#app.signalTemplates.zusatzSignal
+            ) as any
+         ),
+         ui.createAccordionItem(
+            "Weitere",
+            accordionId,
+            this.#createNewItemButtons(
                this.#app.signalTemplates.ra10
             ) as any
+         ),
+         ui.createAccordionItem(
+            "Bahnübergang",
+            accordionId,
+            this.#createNewItemButtons(this.#app.signalTemplates.bue) as any
          ),
       ]);
    }

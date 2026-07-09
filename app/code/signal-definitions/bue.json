@@ -1,0 +1,63 @@
+{
+   "id": "bue",
+   "title": "BÜ-Signal",
+   "atlas": "bue",
+   "scale": 0.30,
+   "previewsize": 20,
+   "menu": [
+      {
+         "section": [
+            {
+               "buttonGroup": [
+                  { "text": "gesichert", "command": "gesichert=1" }
+               ]
+            }
+         ]
+      }
+   ],
+   "config_options": [
+      {
+         "name": "bue_op='verk'",
+         "title": "verkürzt"
+      },
+      {
+         "name": "bue_op='wdh'",
+         "title": "wiederholer"
+      }
+   ],
+   "elements": [
+      "basis",
+      {
+         "image": "verk",
+         "on": "bue_op='verk'"
+      },
+      {
+         "image": "wdh",
+         "on": "bue_op='wdh'"
+      },
+      {
+         "image": "licht",
+         "on": "gesichert=1",
+         "blinks": true
+      },
+      {
+         "image": "schild",
+         "on": "bez",
+         "children": [
+            {
+               "text": "bez",
+               "format": [
+                  55,
+                  "condenced",
+                  1
+               ],
+               "color": "#333",
+               "pos": [
+                  26,
+                  123
+               ]
+            }
+         ]
+      }
+   ]
+}

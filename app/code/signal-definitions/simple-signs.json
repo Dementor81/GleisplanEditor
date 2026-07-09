@@ -230,6 +230,7 @@
       "title": "Ne 5",
       "atlas": "basis",
       "scale": 0.15,
+      "previewsize": 20,
      "config_options": [
             {
                "type": "textinput",
