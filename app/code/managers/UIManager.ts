@@ -60,6 +60,10 @@ export class UIManager {
       return this.#drawingPanel;
    }
 
+   deactivateNewObjectTool(): void {
+      this.#newObjectMenu.deactivate();
+   }
+
    /**
     * Initialize UI components
     */

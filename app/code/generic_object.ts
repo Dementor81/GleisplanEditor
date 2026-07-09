@@ -13,6 +13,8 @@ export class GenericObject {
       plattform: 2,
    };
 
+   static MIN_PLATFORM_SIZE = 50;
+
    static all_objects: any[] = [];
 
    static FromObject(o: any): GenericObject {

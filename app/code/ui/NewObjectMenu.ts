@@ -69,6 +69,10 @@ export class NewObjectMenu {
       });
    }
 
+   deactivate(): void {
+      this.#setActive(null);
+   }
+
    #toggle(kind: ObjectKind): void {
       const isActive = $("#" + KINDS[kind].buttonId).hasClass("active");
       this.#setActive(isActive ? null : kind);

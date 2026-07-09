@@ -3,12 +3,10 @@
 import type { FederatedPointerEvent } from "pixi.js";
 import { Application } from "../application.ts";
 import { EditorCommitter } from "../editorCommitter.ts";
-import type { GenericObject } from "../generic_object.ts";
+import { GenericObject } from "../generic_object.ts";
 import { Point } from "../tools.ts";
 import { PointerInteractionAttachment } from "./attachPointerInteraction.ts";
 import type { PointerInteraction } from "./PointerInteraction.ts";
-
-const MIN_SIZE = 10;
 
 /** Drag the lower-right corner of a platform to resize it. */
 export class PlatformResizeInteraction implements PointerInteraction {
@@ -24,8 +22,9 @@ export class PlatformResizeInteraction implements PointerInteraction {
 
       let w = local.x - tl.x;
       let h = local.y - tl.y;
-      if (Math.abs(w) < MIN_SIZE) w = w < 0 ? -MIN_SIZE : MIN_SIZE;
-      if (Math.abs(h) < MIN_SIZE) h = h < 0 ? -MIN_SIZE : MIN_SIZE;
+      const min = GenericObject.MIN_PLATFORM_SIZE;
+      if (Math.abs(w) < min) w = w < 0 ? -min : min;
+      if (Math.abs(h) < min) h = h < 0 ? -min : min;
 
       this.obj.pos(tl);
       this.obj.size(w, h);

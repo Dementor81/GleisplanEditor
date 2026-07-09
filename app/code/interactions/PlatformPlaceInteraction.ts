@@ -2,7 +2,7 @@
 
 import type { FederatedPointerEvent } from "pixi.js";
 import { Application } from "../application.ts";
-import { COLORS, CUSTOM_MOUSE_ACTION } from "../config.ts";
+import { COLORS } from "../config.ts";
 import { EditorCommitter } from "../editorCommitter.ts";
 import type { Point } from "../tools.ts";
 import { GenericObject } from "../generic_object.ts";
@@ -32,14 +32,20 @@ export class PlatformPlaceInteraction implements PointerInteraction {
    onUp(local: Point, _e: FederatedPointerEvent): void {
       const app = Application.getInstance();
       app.renderingManager!.containers.overlay.removeChildren();
-      const o = new GenericObject(GenericObject.OBJECT_TYPE.plattform);
-      o.content("Bahnsteig");
-      o.pos(this.start);
-      o.size(local.x - this.start.x, local.y - this.start.y);
-      GenericObject.all_objects.push(o);
-      app.renderingManager!.renderer.renderAllGenericObjects();
-      app.selectObject(o);
-      app.customMouseMode = CUSTOM_MOUSE_ACTION.NONE;
-      EditorCommitter.commit();
+
+      const w = local.x - this.start.x;
+      const h = local.y - this.start.y;
+      if (Math.abs(w) >= GenericObject.MIN_PLATFORM_SIZE && Math.abs(h) >= GenericObject.MIN_PLATFORM_SIZE) {
+         const o = new GenericObject(GenericObject.OBJECT_TYPE.plattform);
+         o.content("Bahnsteig");
+         o.pos(this.start);
+         o.size(w, h);
+         GenericObject.all_objects.push(o);
+         app.renderingManager!.renderer.renderAllGenericObjects();
+         app.selectObject(o);
+         EditorCommitter.commit();
+      }
+
+      app.uiManager?.deactivateNewObjectTool();
    }
 }
