@@ -4,7 +4,14 @@
 import { VisualElement } from './visualElement.ts';
 import { ArrayUtils, ConditionUtils } from './utils.ts';
 import { Application } from './application.ts';
-import type { AspectAnimationKind, SignalConfigOptionDefinition, SignalDependencyDefinition, SignalMenuRuntime, SignalSequenceStepDefinition } from './signalDefinition.ts';
+import type {
+   AspectAnimationKind,
+   SignalConfigOptionDefinition,
+   SignalConfigSwitchOptionDefinition,
+   SignalDependencyDefinition,
+   SignalMenuRuntime,
+   SignalSequenceStepDefinition
+} from './signalDefinition.ts';
 
 export interface SequenceController {
    on: string | null;
@@ -63,8 +70,8 @@ export class SignalTemplate {
       return this.#_start;
    }
 
-   getConfigOption(name: string): SignalConfigOptionDefinition | undefined {
-      return this.configOptions.find((o) => o.name === name);
+   getConfigOption(name: string): SignalConfigSwitchOptionDefinition | undefined {
+      return this.configOptions.find((o): o is SignalConfigSwitchOptionDefinition => 'name' in o && o.name === name);
    }
 
    setSignalMenu(menu: SignalMenuRuntime) {

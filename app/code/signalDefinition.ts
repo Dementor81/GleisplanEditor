@@ -13,6 +13,16 @@ export interface SignalMenuDropdownDefinition {
    dropdown: SignalMenuButtonItem;
 }
 
+export interface SignalTextInputDefinition {
+   text: string;
+   command: string;
+   maxLength?: number;
+}
+
+export interface SignalMenuTextInputDefinition {
+   textinput: SignalTextInputDefinition;
+}
+
 export interface SignalMenuButtonGroupDefinition {
    buttonGroup: SignalMenuButtonItem[];
 }
@@ -20,7 +30,8 @@ export interface SignalMenuButtonGroupDefinition {
 export type SignalMenuItemDefinition =
    | SignalMenuButtonGroupDefinition
    | SignalMenuButtonDefinition
-   | SignalMenuDropdownDefinition;
+   | SignalMenuDropdownDefinition
+   | SignalMenuTextInputDefinition;
 
 export interface SignalMenuSectionDefinition {
    section: SignalMenuItemDefinition[];
@@ -47,10 +58,18 @@ export interface SignalMenuRuntimeButtonGroup {
    items: SignalMenuRuntimeButton[];
 }
 
+export interface SignalMenuRuntimeTextInput {
+   type: 'textinput';
+   text: string;
+   command: string;
+   maxLength?: number;
+}
+
 export type SignalMenuRuntimeItem =
    | SignalMenuRuntimeButtonGroup
    | SignalMenuRuntimeButton
-   | SignalMenuRuntimeDropdown;
+   | SignalMenuRuntimeDropdown
+   | SignalMenuRuntimeTextInput;
 
 export interface SignalMenuRuntimeSection {
    section: SignalMenuRuntimeItem[];
@@ -121,11 +140,18 @@ export interface SignalTextElementDefinition {
    blinks?: boolean;
 }
 
-export interface SignalConfigOptionDefinition {
+export interface SignalConfigSwitchOptionDefinition {
    name: string;
    title: string;
    convertTo?: string;
+   type?: 'switch';
 }
+
+export interface SignalConfigTextOptionDefinition extends SignalTextInputDefinition {
+   type: 'textinput';
+}
+
+export type SignalConfigOptionDefinition = SignalConfigSwitchOptionDefinition | SignalConfigTextOptionDefinition;
 
 export type PublishRule = [condition: string, value: string | number];
 

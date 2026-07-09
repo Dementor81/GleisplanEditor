@@ -8,7 +8,9 @@ import {
    SignalMenuRuntime,
    SignalMenuRuntimeButton,
    SignalMenuRuntimeDropdown,
+   SignalMenuRuntimeTextInput,
    SignalMenuRuntimeItem,
+   SignalTextInputDefinition,
 } from './signalDefinition.ts';
 import { SignalTemplate } from './signalTemplate.ts';
 import { TextElement, VisualElement } from './visualElement.ts';
@@ -68,6 +70,15 @@ export class SignalDefinitionBuilder {
       };
    }
 
+   private static buildTextInputItem(item: SignalTextInputDefinition): SignalMenuRuntimeTextInput {
+      return {
+         type: 'textinput',
+         text: item.text,
+         command: item.command,
+         maxLength: item.maxLength,
+      };
+   }
+
    private static buildMenuItemDefinition(item: SignalMenuItemDefinition, template: SignalTemplate): SignalMenuRuntimeItem | null {
       if ('buttonGroup' in item) {
          if (!item.buttonGroup.length) return null;
@@ -78,6 +89,7 @@ export class SignalDefinitionBuilder {
       }
       if ('button' in item) return SignalDefinitionBuilder.buildButtonItem(item.button, template);
       if ('dropdown' in item) return SignalDefinitionBuilder.buildDropdownItem(item.dropdown, template);
+      if ('textinput' in item) return SignalDefinitionBuilder.buildTextInputItem(item.textinput);
       throw new Error('Unknown menu item');
    }
 

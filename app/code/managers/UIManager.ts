@@ -200,6 +200,7 @@ export class UIManager {
             accordionId,
             this.#createNewItemButtons(
                this.#app.signalTemplates.ne4,
+               this.#app.signalTemplates.ne5,
                this.#app.signalTemplates.ne1,
                this.#app.signalTemplates.ne2
             ) as any
@@ -209,6 +210,7 @@ export class UIManager {
             accordionId,
             this.#createNewItemButtons(
                this.#app.signalTemplates.zs3,
+               this.#app.signalTemplates.zs3v,
                this.#app.signalTemplates.zs6,
                this.#app.signalTemplates.zs10,
                this.#app.signalTemplates.ra10

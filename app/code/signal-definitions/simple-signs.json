@@ -1,230 +1,365 @@
 [
-  {
-    "id": "ne4",
-    "title": "Ne 4",
-    "atlas": "basis",
-    "scale": 0.2,
-    "previewsize": 10
-  },
-  {
-    "id": "ne1",
-    "title": "Ne 1",
-    "atlas": "basis",
-    "scale": 0.15,
-    "elements": [
-      "ne1",
-      {
-        "text": "ne1",
-        "format": [
-          20,
-          "Arial",
-          1
-        ],
-        "pos": [
-          100,
-          105
-        ]
-      }
-    ]
-  },
-  {
-    "id": "ne2",
-    "title": "Ne 2",
-    "atlas": "basis",
-    "scale": 0.25,
-    "previewsize": 20
-  },
-  {
-    "id": "lf6",
-    "title": "Lf 6",
-    "atlas": "basis",
-    "scale": 0.12,
-    "initial": [
-       "slave",
-       "advanceSpeed=9"
-    ],
-    "menu": [
-       {
-          "section": [
-             {
-                "dropdown": {
-                   "text": "Zs3v",
-                   "command": "advanceSpeed"
-                }
-             }
-          ]
-       }
-    ],
-    "dependency": {
-       "when": [
-          "partner.id='lf7'"
-       ]
-    },
-    "elements": [
-       "lf6",
-       {
-          "text": "advanceSpeed",
-          "format": [
-             110,
-             "Arial",
-             1
-          ],
-          "color": "#333",
-          "pos": [
-             98,
-             0
-          ]
-       }
-    ]
- },
- {
-  "id": "lf7",
-  "title": "Lf 7",
-  "atlas": "basis",
-  "scale": 0.15,
-  "previewsize": 30,
-  "initial": [
-     "master",
-     "currentSpeed=9"
-  ],
-  "menu": [
-     {
-        "section": [
-           {
-              "dropdown": {
-                 "text": "Zs3",
-                 "command": "currentSpeed"
-              }
-           }
-        ]
-     }
-  ],
-  "dependency": {
-     "publish": {}
-  },
-  "elements": [
-     "lf7",
-     {
-        "text": "currentSpeed",
-        "format": [
-           130,
-           "Arial",
-           1
-        ],
-        "color": "#333",
-        "pos": [
-           55,
-           0
-        ]
-     }
-  ]
-},
-{
-  "id": "zs3",
-  "title": "Zs 3 (alleinst.)",
-  "atlas": "basis",
-  "scale": 0.15,
-  "initial": "localSpeed=9",
-  "menu": [
-     {
-        "section": [
-           {
-              "dropdown": {
-                 "text": "Zs3",
-                 "command": "localSpeed"
-              }
-           }
-        ]
-     }
-  ],
-  "elements": [
-     "zs3",
-     {
-        "text": "localSpeed",
-        "format": [
-           120,
-           "Arial",
-           1
-        ],
-        "pos": [
-           94,
-           40
-        ]
-     }
-  ]
-},
-  {
-    "id": "zs10",
-    "title": "Zs 10",
-    "atlas": "basis",
-    "scale": 0.2,
-    "previewsize": 15
-  },
-  {
-    "id": "ra10",
-    "title": "Ra 10",
-    "atlas": "basis",
-    "scale": 0.15
-  },
-  {
-    "id": "zs6",
-    "title": "Zs 6",
-    "atlas": "basis",
-    "scale": 0.2,
-    "previewsize": 30,
-    "elements": [
-      "zs6_blech_mast",
-      "zs6_blech"
-    ]
-  },
-  {
-    "id": "zusatz",
-    "title": "Zusatzanzeiger",
-    "atlas": "basis",
-    "scale": 0.15,
-    "previewsize": 30,
-    "initial": "zs6=1",
-    "menu": [
-      {
-        "section": [
-          {
-            "button": {
-              "text": "Zs 6",
-              "command": "zs6=1"
-            }
-          }
-        ]
+   {
+      "id": "ne4",
+      "title": "Ne 4",
+      "atlas": "basis",
+      "scale": 0.2,
+      "previewsize": 10
+   },
+   {
+      "id": "ne1",
+      "title": "Ne 1",
+      "atlas": "basis",
+      "scale": 0.15,
+      "config_options": [
+         {
+            "type": "textinput",
+            "text": "Standort",
+            "command": "text",
+            "maxLength": 10
+         }
+      ],
+      "elements": [
+         "ne1",
+         {
+            "text": "text",
+            "color": "#333",
+            "format": [20, "Arial", 1],
+            "pos": [100, 103]
+         }
+      ]
+   },
+   {
+      "id": "ne2",
+      "title": "Ne 2",
+      "atlas": "basis",
+      "scale": 0.25,
+      "previewsize": 20,
+      "config_options": [
+         {
+            "name": "verk=1",
+            "title": "Verkürzt"
+         }
+      ],
+      "elements": [
+         {
+            "on": "verk",
+            "image": "ne2_verk"
+         },
+         "ne2"
+      ]
+   },
+   {
+      "id": "lf6",
+      "title": "Lf 6",
+      "atlas": "basis",
+      "scale": 0.12,
+      "initial": ["slave", "advanceSpeed=9"],
+      "menu": [
+         {
+            "section": [
+               {
+                  "dropdown": {
+                     "text": "Lf 6",
+                     "command": "advanceSpeed"
+                  }
+               }
+            ]
+         }
+      ],
+      "config_options": [
+         {
+            "name": "gedreht=1",
+            "title": "Gedreht"
+         }
+      ],
+      "dependency": {
+         "when": ["partner.id='lf7'"]
       },
-      {
-        "section": [
-          {
-            "dropdown": {
-              "text": "Zs3",
-              "command": "localSpeed"
-            }
-          }
-        ]
-      }
-    ],
-    "elements": [
-      "zusatzanzeiger",
-      {
-        "image": "zs6_licht",
-        "on": "zs6=1"
+      "elements": [
+         {
+            "image": "lf6_unten",
+            "off": "gedreht=1"
+         },
+         {
+            "image": "lf6_oben",
+            "on": "gedreht=1"
+         },
+         {
+            "text": "advanceSpeed",
+            "format": [100, "Arial", 1],
+            "color": "#2d2d2dff",
+            "pos": [85, 40]
+         }
+      ]
+   },
+   {
+      "id": "lf7",
+      "title": "Lf 7",
+      "atlas": "basis",
+      "scale": 0.15,
+      "previewsize": 30,
+      "initial": ["master", "currentSpeed=9"],
+      "menu": [
+         {
+            "section": [
+               {
+                  "dropdown": {
+                     "text": "Lf 7",
+                     "command": "currentSpeed"
+                  }
+               }
+            ]
+         }
+      ],
+      "dependency": {
+         "publish": {}
       },
-      {
-        "text": "localSpeed",
-        "format": [
-          85,
-          "DOT"
-        ],
-        "pos": [
-          70,
-          40
-        ],
-        "off": "zs6=1",
-        "on": "localSpeed>0"
-      }
-    ]
-  }
+      "elements": [
+         "lf7",
+         {
+            "text": "currentSpeed",
+            "format": [130, "Arial", 1],
+            "color": "#333",
+            "pos": [55, 0]
+         }
+      ]
+   },
+   {
+      "id": "zs3",
+      "title": "Zs 3",
+      "atlas": "basis",
+      "scale": 0.12,
+      "initial": ["slave", "currentSpeed=9"],
+      "menu": [
+         {
+            "section": [
+               {
+                  "dropdown": {
+                     "text": "Zs3",
+                     "command": "currentSpeed"
+                  }
+               }
+            ]
+         }
+      ],
+      "config_options": [
+         {
+            "name": "gedreht=1",
+            "title": "Gedreht"
+         }
+      ],
+      "dependency": {
+         "publish": {}
+      },
+      "elements": [
+         {
+            "image": "zs3_unten",
+            "off": "gedreht"
+         },
+         {
+            "image": "zs3_oben",
+            "on": "gedreht"
+         },
+         {
+            "text": "currentSpeed",
+            "format": [100, "Arial", 1],
+            "color": "#dadada",
+            "pos": [81, 40]
+         }
+      ]
+   },
+   {
+      "id": "zs3v",
+      "title": "Zs 3v",
+      "atlas": "basis",
+      "scale": 0.12,
+      "initial": ["slave", "advanceSpeed=9"],
+      "menu": [
+         {
+            "section": [
+               {
+                  "dropdown": {
+                     "text": "Zs3v",
+                     "command": "advanceSpeed"
+                  }
+               }
+            ]
+         }
+      ],
+      "config_options": [
+         {
+            "name": "gedreht=1",
+            "title": "Gedreht"
+         }
+      ],
+      "dependency": {
+         "when": ["partner.id='zs3'"]
+      },
+      "elements": [
+         {
+            "image": "zs3v_unten",
+            "off": "gedreht"
+         },
+         {
+            "image": "zs3v_oben",
+            "on": "gedreht"
+         },
+         {
+            "text": "advanceSpeed",
+            "format": [100, "Arial", 1],
+            "color": "#dfc223",
+            "pos": [81, 38]
+         }
+      ]
+   },
+   {
+      "id": "zs10",
+      "title": "Zs 10",
+      "atlas": "basis",
+      "scale": 0.2,
+      "previewsize": 15
+   },
+   {
+      "id": "ra10",
+      "title": "Ra 10",
+      "atlas": "basis",
+      "scale": 0.10
+   },{
+      "id": "ne5",
+      "title": "Ne 5",
+      "atlas": "basis",
+      "scale": 0.15,
+     "config_options": [
+            {
+               "type": "textinput",
+               "text": "Standort",
+               "command": "text",
+               "maxLength": 8
+            }
+         ],
+     "elements": [
+            "ne5",
+       {
+         "on":"text",
+         "image":"ne5_schild",
+         "children":[
+           {
+               "text": "text",
+               "color": "#333",
+               "format": [20, "Arial", 1],
+               "pos": [53, 151]
+            }
+         ]
+       }
+            
+         ]
+   },
+   {
+      "id": "zs6",
+      "title": "Zs 6",
+      "atlas": "basis",
+      "scale": 0.2,
+      "previewsize": 30,
+      "elements": ["zs6_blech"]
+   },
+   {
+      "id": "zusatz",
+      "title": "Zusatzanzeiger",
+      "atlas": "basis",
+      "scale": 0.12,
+      "previewsize": 30,
+      "initial": "zs6=1",
+      "menu": [
+         {
+            "section": [
+               {
+                  "button": {
+                     "text": "Zs 6",
+                     "command": "zs6=1"
+                  }
+               }
+            ]
+         },
+         {
+            "section": [
+               {
+                  "dropdown": {
+                     "text": "Zs3",
+                     "command": "localSpeed"
+                  }
+               }
+            ]
+         },
+         {
+            "section": [
+               {
+                  "textinput": {
+                     "text": "Zs 2",
+                     "command": "zs2",
+                     "maxLength": 1
+                  }
+               }
+            ]
+         },
+         {
+            "section": [
+               {
+                  "textinput": {
+                     "text": "Zs 2v",
+                     "command": "zs2v",
+                     "maxLength": 1
+                  }
+               }
+            ]
+         }
+      ],
+      "elements": [
+         "zusatzanzeiger",
+         {
+            "image": "zs6_licht",
+            "on": "zs6=1"
+         },
+         {
+            "text": "localSpeed",
+            "format": [
+               85,
+               "DOT"
+            ],
+            "pos": [
+               70,
+               40
+            ],
+            "off": "zs6=1",
+            "on": "localSpeed>0"
+         },
+         {
+            "text": "zs2",
+            "format": [
+               85,
+               "DOT"
+            ],
+            "pos": [
+               70,
+               40
+            ],
+            "off": "zs6=1||localSpeed>0",
+            "on": "zs2"
+         },
+         {
+            "text": "zs2v",
+           "color":"#dfc223",
+            "format": [
+               85,
+               "DOT"
+            ],
+            "pos": [
+               70,
+               40
+            ],
+            "off": "zs6=1||localSpeed>0||zs2",
+            "on": "zs2v"
+         }
+      ]
+   }
 ]

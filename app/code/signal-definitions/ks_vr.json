@@ -2,7 +2,7 @@
    "id": "ks_vr",
    "title": "Ks Vorsignal",
    "atlas": "ks",
-   "scale": 0.13,
+   "scale": 0.10,
    "previewsize": 20,
    "initial": [
       "VRsig",

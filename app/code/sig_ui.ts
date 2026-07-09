@@ -6,13 +6,70 @@ import { ArrayUtils, ConditionUtils } from './utils.ts';
 import { STORAGE } from './storage.ts';
 import { Application } from './application.ts';
 import { Signal } from './signal.ts';
-import type { SignalConfigOptionDefinition } from './signalDefinition.ts';
+import type { SignalConfigOptionDefinition, SignalTextInputDefinition } from './signalDefinition.ts';
 
 export class Sig_UI {
+   static #toInputValue(value: unknown): string {
+      return value == null ? "" : String(value);
+   }
+
+   static #sanitizeId(value: string): string {
+      return value.replace(/[^a-zA-Z0-9_-]/g, "_");
+   }
+
+   static #trimmedInputValue(raw: string, maxLength?: number): string {
+      const value = raw.trim();
+      if (maxLength == null || maxLength < 0) return value;
+      return value.slice(0, maxLength);
+   }
+
    static create_SpeedDropDown(signal: any, text: string, onChange: any) {
       const items = Array.from({ length: 10 }, (_, i) => `${i}0|${signal}=${i}`);
       items[0] = `aus|${signal}=-1`;
       return ui.create_DropDown(items, text, onChange);
+   }
+
+   static buildTextInputField(
+      signal: any,
+      inputDef: SignalTextInputDefinition,
+      onChange: (command: string, value: string | null) => void,
+      cssClass = "mb-2"
+   ): JQuery {
+      const safeId = `textinput_${Sig_UI.#sanitizeId(inputDef.command)}_${Sig_UI.#sanitizeId(inputDef.text)}`;
+      const input = $("<input/>", {
+         class: "form-control form-control-sm flex-grow-1 min-w-0",
+         id: safeId,
+         type: "text",
+      })
+         .attr("data-textinput-command", inputDef.command)
+         .val(Sig_UI.#toInputValue(signal.get(inputDef.command)));
+
+      if (inputDef.maxLength != null) input.attr("maxlength", Math.max(0, inputDef.maxLength));
+
+      const commit = () => {
+         const nextValue = Sig_UI.#trimmedInputValue(String(input.val() ?? ""), inputDef.maxLength);
+         input.val(nextValue);
+         onChange(inputDef.command, nextValue.length ? nextValue : null);
+      };
+
+      input.on("change", commit);
+      input.on("blur", commit);
+      input.on("keydown", (event) => {
+         if (event.key === "Enter") {
+            event.preventDefault();
+            commit();
+            input.trigger("blur");
+         }
+      });
+
+      return ui.div(`${cssClass} d-flex align-items-center gap-2 w-100`, [
+         $("<label/>", {
+            class: "col-form-label col-form-label-sm mb-0 flex-shrink-0",
+            for: safeId,
+            text: inputDef.text,
+         }),
+         input,
+      ]);
    }
 
    /**
@@ -100,10 +157,18 @@ export class Sig_UI {
          }
       };
 
+      const updateTextInput = (command: string, value: string | null) => {
+         update(command, value);
+      };
+
       return ui.div(
          "p-3 border-bottom",
-         configOptions.map((opt: SignalConfigOptionDefinition) =>
-            ui.div("form-check form-switch", [
+         configOptions.map((opt: SignalConfigOptionDefinition) => {
+            if (opt.type === "textinput") {
+               return Sig_UI.buildTextInputField(signal, opt, updateTextInput, "mb-3");
+            }
+
+            return ui.div("form-check form-switch", [
                $("<input/>", {
                   class: "form-check-input",
                   type: "checkbox",
@@ -120,8 +185,8 @@ export class Sig_UI {
                   for: "switch_config_" + opt.name,
                   text: opt.title,
                }),
-            ])
-         )
+            ]);
+         })
       );
    }
 
@@ -153,6 +218,12 @@ export class Sig_UI {
          const input = $(this);
          input.prop("checked", signal.check(input.attr("value")) ? "checked" : null);
       });
+      root.find("input[data-textinput-command]").each(function () {
+         const input = $(this);
+         const command = input.attr("data-textinput-command");
+         if (!command) return;
+         input.val(Sig_UI.#toInputValue(signal.get(command)));
+      });
    }
 
    static syncSignalMenu(signal: any) {
@@ -165,7 +236,7 @@ export class Sig_UI {
          $a.toggleClass("active", signal.check($a.attr("value")));
       });
 
-      $("#SignalConfigurationTab>div input").each(function () {
+      $("#SignalConfigurationTab>div input[type='checkbox']").each(function () {
          const input = $(this);
          const v = signal.check(input.attr("value"));
          input.prop("checked", v ? "checked" : null);
@@ -208,8 +279,17 @@ export class Sig_UI {
    static createSignalAspectsMenuSection(signal: any, section: any, update: any) {
       const items = ArrayUtils.cleanUp(
          section.section.map((item: any) => Sig_UI.createSignalAspectsMenuItem(signal, item, update))
-      );
-      if (items.length) return ui.div("p-3 border-bottom", ui.create_buttonToolbar(items as any));
+      ) as JQuery[];
+      if (!items.length) return null;
+
+      const toolbarItems = items.filter((item) => !item.is("[data-menu-textinput]"));
+      const textInputs = items.filter((item) => item.is("[data-menu-textinput]"));
+      const sectionItems: JQuery[] = [];
+
+      if (toolbarItems.length) sectionItems.push(ui.create_buttonToolbar(toolbarItems as any));
+      textInputs.forEach((input) => sectionItems.push(input));
+
+      if (sectionItems.length) return ui.div("p-3 border-bottom", sectionItems);
       return null;
    }
 
@@ -240,6 +320,16 @@ export class Sig_UI {
 
       if (menu_item.type == "dropdown") {
          return Sig_UI.create_SpeedDropDown(menu_item.command, menu_item.text, update.bind(signal));
+      }
+
+      if (menu_item.type == "textinput") {
+         const onChange = (command: string, value: string | null) => {
+            signal.setSignalAspect(command, value);
+            Sig_UI.checkSignalAspectMenu(signal, signal._template.signalMenu, $("#signalAspectTab"));
+            STORAGE.save();
+         };
+
+         return Sig_UI.buildTextInputField(signal, menu_item, onChange).attr("data-menu-textinput", "");
       }
 
       return null;
@@ -277,6 +367,9 @@ export class Sig_UI {
             if (menu_configuration.visual_elements.every((ve: any) => ve.isAllowed(signal))) button.removeAttr("disabled");
             else button.attr("disabled", "disabled");
          }
+      } else if (menu_configuration.type == "textinput") {
+         const input = $(`input[data-textinput-command='${menu_configuration.command}']`, html_menu);
+         if (input.length == 1) input.val(Sig_UI.#toInputValue(signal.get(menu_configuration.command)));
       }
    }
    /**
