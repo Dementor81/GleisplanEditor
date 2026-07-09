@@ -1,0 +1,21 @@
+[ 
+{"signal":"basis","sourceRect":{"x":2,"y":2,"width":51,"height":490},"pos":
+        {"left":0,"top":0}
+    },
+
+{"signal":"wdh","sourceRect":{"x":2,"y":496,"width":39,"height":40},"pos":
+        {"left":7,"top":304}
+    },
+
+{"signal":"verk","sourceRect":{"x":2,"y":540,"width":49,"height":36},"pos":
+        {"left":1,"top":310}
+    },
+
+{"signal":"schild","sourceRect":{"x":45,"y":496,"width":37,"height":25},"pos":
+        {"left":7,"top":121}
+    },
+
+{"signal":"licht","sourceRect":{"x":57,"y":2,"width":19,"height":19},"pos":
+        {"left":16,"top":10}
+    }
+]
