@@ -1,95 +1,283 @@
-html, body {
-    height: 100%;
-    background-color: rgb(54, 54, 54) !important;
+:root {
+    --bg: #363636;
+    --grid-line: rgba(255, 255, 255, 0.045);
+    --grid-line-strong: rgba(255, 255, 255, 0.07);
+    --surface: #f6f7f8;
+    --surface-border: rgba(0, 0, 0, 0.08);
+    --ink: #23262b;
+    --accent: #0d6efd;
 }
 
+html, body {
+    height: 100%;
+    background-color: var(--bg) !important;
+}
 
-
+/* ---------- Navbar ---------- */
 .navbar {
     height: 4rem;
-    /*  margin-top: 9rem; */
     padding: 0px !important;
     padding-left: 2rem !important;
-    box-shadow: 0 .5rem 1rem rgba(0, 0, 0, .15);
+    box-shadow: 0 .5rem 1rem rgba(0, 0, 0, .25);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
 }
 
 .navbar-brand {
     font-size: xx-large !important;
 }
 
-#banner {
-    height: 500px;
-    width: 100%;
-    background-image: url('assets/static_images/titelbild.png');
-    background-position: center;
-    /* Center the image */
-    background-repeat: no-repeat;
-    /* Do not repeat the image */
-    background-size: 200%;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
-}
-
-#banner div {
-    margin-top: auto;
-    margin-bottom: 3rem;
-    width: 60rem;
-    color: aliceblue;
-    /* height: 20rem; */
-}
-
-#banner h1{
-    font-size: 4vw;
-    font-weight: 600;
-    font-family: "FSKoopman", "Helvetica Neue", Helvetica, "Lucida Grande", sans-serif;
-    font-feature-settings: "liga", "dlig", "kern", "onus";
-}
-
-
+/* ---------- Blueprint / checkered background ---------- */
 .main_container {
     width: 100vw;
     height: calc(100% - 4rem);
     margin-left: auto;
     margin-right: auto;
     overflow-y: scroll;
+    scroll-behavior: smooth;
+    background-color: var(--bg);
+    background-attachment: local;
+    background-image:
+        linear-gradient(var(--grid-line-strong) 1px, transparent 1px),
+        linear-gradient(90deg, var(--grid-line-strong) 1px, transparent 1px),
+        linear-gradient(var(--grid-line) 1px, transparent 1px),
+        linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+    background-size:
+        160px 160px,
+        160px 160px,
+        32px 32px,
+        32px 32px;
 }
 
+/* ---------- Hero (side-by-side) ---------- */
+.hero {
+    position: relative;
+    min-height: calc(100vh - 4rem);
+    display: flex;
+    align-items: center;
+    overflow: hidden;
+    padding: 2.5rem clamp(1.5rem, 5vw, 5rem);
+}
+
+.hero::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image: url('assets/static_images/titelbild.png');
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: cover;
+    opacity: 0.08;
+    pointer-events: none;
+}
+
+.hero-inner {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    max-width: 1500px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: minmax(280px, 1fr) minmax(0, 1.35fr);
+    align-items: center;
+    gap: clamp(2rem, 4vw, 4.5rem);
+}
+
+.hero-text {
+    color: aliceblue;
+}
+
+.hero-eyebrow {
+    display: inline-block;
+    font-size: 0.85rem;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.55);
+    margin-bottom: 1rem;
+    padding: 0.25rem 0.75rem;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 999px;
+}
+
+.hero-text h1 {
+    font-size: clamp(2.4rem, 3.6vw, 4rem);
+    font-weight: 600;
+    line-height: 1.05;
+    margin-bottom: 1.25rem;
+    font-family: "FSKoopman", "Helvetica Neue", Helvetica, "Lucida Grande", sans-serif;
+    font-feature-settings: "liga", "dlig", "kern", "onus";
+}
+
+.hero-lead {
+    font-size: clamp(1.05rem, 1.3vw, 1.35rem);
+    color: rgba(255, 255, 255, 0.78);
+    max-width: 34ch;
+    margin-bottom: 2rem;
+}
+
+/* ---------- Feature carousel (styled to not look like a carousel) ---------- */
+.hero-media {
+    position: relative;
+}
+
+.feature-carousel {
+    position: relative;
+    border-radius: 0.75rem;
+    overflow: hidden;
+    box-shadow: 0 1.5rem 3rem rgba(0, 0, 0, 0.45);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: #101215;
+}
+
+.feature-carousel .carousel-item {
+    transition: opacity 0.6s ease;
+}
+
+.feature-carousel video {
+    display: block;
+    width: 100%;
+    aspect-ratio: 1370 / 766;
+    object-fit: cover;
+}
+
+.feature-label {
+    position: absolute;
+    left: 1rem;
+    bottom: 1rem;
+    z-index: 2;
+    color: #fff;
+    font-size: 0.95rem;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+    padding: 0.4rem 0.85rem;
+    background: rgba(15, 17, 20, 0.65);
+    backdrop-filter: blur(6px);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 999px;
+}
+
+.feature-progress {
+    position: absolute;
+    right: 1rem;
+    bottom: 1.15rem;
+    z-index: 2;
+    display: flex;
+    gap: 0.4rem;
+}
+
+.feature-dot {
+    width: 22px;
+    height: 4px;
+    padding: 0;
+    border: none;
+    border-radius: 999px;
+    background: rgba(15, 17, 20, 0.4);
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.25);
+    cursor: pointer;
+    transition: background 0.3s ease, width 0.3s ease;
+}
+
+.feature-dot.active {
+    width: 34px;
+    background: rgba(15, 17, 20, 0.9);
+}
+
+/* ---------- Content sections (seamless, de-blockified) ---------- */
 .content {
-    margin-top: 5rem;
-    width: 67vw;
-    margin-left: auto;
-    margin-right: auto;
-    background-color: rgb(248 249 250);
-    box-shadow: 0 .5rem 1rem rgba(0, 0, 0, .15);
+    width: min(85rem, 92vw);
+    margin: 4rem auto 0;
+    background-color: color-mix(in srgb, var(--surface) 96%, transparent);
+    border: 1px solid var(--surface-border);
     border-radius: 0.5rem;
-    padding: 3rem;
+    padding: clamp(1rem, 3vw, 1.75rem);
+    color: var(--ink);
 }
 
 .content:last-child {
-    margin-bottom: 5rem;
+    margin-bottom: 4rem;
 }
 
-.carousel-control-prev {
-    align-items: end !important;
+.section-title {
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    margin-bottom: 1.5rem;
 }
 
-.carousel-control-next {
-    align-items: end !important;
+.content h4 {
+    font-weight: 700;
 }
 
-.carousel-control-prev>span {
-    height: 10rem !important;
+/* ---------- Anleitung (StartScreen-style tabs, fixed height) ---------- */
+.help-box {
+    height: 65vh;
 }
 
-.carousel-control-next>span {
-    height: 10rem !important;
+.help-box > [class^="col-"] {
+    height: 100%;
 }
 
+.help-tablist {
+    height: 100%;
+    overflow-y: auto;
+    gap: 0.6rem;
+    padding-right: 1rem;
+}
 
+.help-tablist .list-group-item {
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    border: none;
+    border-radius: 0.5rem !important;
+    background: transparent;
+    color: #4a4f57;
+    padding: 0.6rem 0.85rem;
+}
 
+.help-tablist .list-group-item i {
+    font-size: 1.1rem;
+    opacity: 0.75;
+}
 
-/* .main_container div:last-child{
-    height: 30vh;
-} */
+.help-tablist .list-group-item:hover {
+    background: rgba(13, 110, 253, 0.08);
+    color: var(--accent);
+}
+
+.help-tablist .list-group-item.active {
+    background: rgba(13, 110, 253, 0.12);
+    color: var(--accent);
+    font-weight: 600;
+}
+
+.help-tablist .list-group-item.active i {
+    opacity: 1;
+}
+
+.help-scroll {
+    height: 100%;
+    overflow-y: auto;
+    padding-right: 0.75rem;
+}
+
+.help-category ul {
+    margin-bottom: 0;
+    line-height: 1.7;
+}
+
+/* ---------- Responsive ---------- */
+@media (max-width: 900px) {
+    .hero {
+        min-height: auto;
+        padding: 3rem 1.5rem;
+    }
+
+    .hero-inner {
+        grid-template-columns: 1fr;
+        gap: 2rem;
+    }
+
+    .hero-lead {
+        max-width: none;
+    }
+}

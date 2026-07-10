@@ -6,9 +6,8 @@
       <meta http-equiv="Cache-control" content="no-cache, no-store, must-revalidate" />
       <meta http-equiv="Pragma" content="no-cache" />
       <link rel="shortcut icon" type="image/ico" href="favicon.ico" />
-      <title>Bahn Simulator</title>
-      <link rel="stylesheet" href="index.css?01" />
-      <script src="https://code.jquery.com/jquery-3.6.3.min.js"></script>
+      <title>Bahn Baukasten</title>
+      <link rel="stylesheet" href="index.css?05" />
       <link
          href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
          rel="stylesheet"
@@ -21,29 +20,12 @@
          crossorigin="anonymous"
       ></script>
       <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
-      <!-- <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet"
-        integrity="sha384-GLhlTQ8iRABdZLl6O3oVMWSktQOp6b7In1Zl3/Jr59b6EGGoI1aFkw7cmDA6j6gD" crossorigin="anonymous">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.5.0/font/bootstrap-icons.css">-->
-
-      <!-- <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"
-        integrity="sha384-w76AqPfDkMBDXo30jS1Sgez6pr3x5MlQ1ZAGC+nuZB+EYdgRZgiwxhTBTkF7CXvN"
-        crossorigin="anonymous"></script>
-    <script src="https://code.jquery.com/jquery-3.6.3.min.js"></script> -->
-      <!-- <link rel="stylesheet" href="dev/bootstrap-5.2.2/bootstrap-icons.css" />
-        <link href="dev/bootstrap-5.2.2/css/bootstrap.min.css" rel="stylesheet" />
-        <script src="dev/bootstrap-5.2.2/js/bootstrap.bundle.min.js"></script>
-        <script src="dev/jquery-3.6.1.js"></script> -->
-
-      <style type="text/css"></style>
-      <script>
-         
-      </script>
    </head>
 
    <body>
       <nav id="mainNavBar" class="navbar bg-body-tertiary navbar-expand-lg" data-bs-theme="dark">
          <div class="container-fluid">
-            <a class="navbar-brand" href="#"> <img src="logo.svg" alt="" width="70" height="70" />Bahn Simulator</a>
+            <a class="navbar-brand" href="#"> <img src="logo.svg" alt="" width="70" height="70" />Bahn Baukasten</a>
 
             <button
                class="navbar-toggler"
@@ -60,9 +42,6 @@
                <ul class="nav nav-pills">
                   <li class="nav-item">
                      <a class="nav-link" href="#banner">Start</a>
-                  </li>
-                  <li class="nav-item">
-                     <a class="nav-link" href="#welcome">Features</a>
                   </li>
                   <li class="nav-item">
                      <a class="nav-link" href="#help">Anleitung</a>
@@ -83,96 +62,139 @@
          data-bs-smooth-Scroll="true"
          tabindex="0"
       >
-         <div id="banner">
-            <div>
-               <h1>Zeichne eigene Gleispläne</h1>
-               <a href="start.html?v=0.5" type="button" class="btn btn-primary btn-lg"><i class="bi bi-play-fill"></i> Hier geht's los</a>
-            </div>
-         </div>
-         <div class="content" id="welcome">
-            <h1 class="fs-1 fw-bold">Features</h1>
-               <p  class="fs-4">
-                 Erstelle Interaktive Gleispläne für deinen Unterricht.
-               </p>
-            <div id="carouselIntro" class="carousel slide border" data-bs-theme="dark">
-               <div class="carousel-indicators">
-                  <button
-                     type="button"
-                     data-bs-target="#carouselIntro"
-                     data-bs-slide-to="0"
-                     class="active"
-                     aria-current="true"
-                     aria-label="Slide 1"
-                  ></button>
-                  <button type="button" data-bs-target="#carouselIntro" data-bs-slide-to="1" aria-label="Slide 2"></button>
-                  <button type="button" data-bs-target="#carouselIntro" data-bs-slide-to="2" aria-label="Slide 3"></button>
+         <section id="banner" class="hero">
+            <div class="hero-inner">
+               <div class="hero-text">
+                  <span class="hero-eyebrow">Bahn Baukasten</span>
+                  <h1>Zeichne eigene Gleispläne</h1>
+                  <p class="hero-lead">Erstelle interaktive Gleispläne für deinen Unterricht oder einfach aus Spaß &ndash;<br> Gleise, Signale, Weichen und Züge direkt im Browser.</p>
+                  <a href="start.html?v=0.5" type="button" class="btn btn-primary btn-lg"><i class="bi bi-play-fill"></i> Hier geht's los</a>
                </div>
-               <div class="carousel-inner">
-                  <div class="carousel-item active">
-                     <img src="intro_1.jpg" class="d-block w-100" alt="..." />
-                     <div class="carousel-caption d-none d-md-block">
-                        <h5>Gleispläne</h5>
-                        <p>Einfach Gleise zeichnen und Signale hinzufügen.</p>
+
+               <div class="hero-media">
+                  <div id="carouselIntro" class="carousel slide feature-carousel" data-bs-theme="dark" data-bs-interval="false" data-bs-ride="false" data-bs-wrap="true">
+                     <div class="carousel-inner">
+                        <div class="carousel-item active">
+                           <video muted playsinline preload="auto"><source src="assets/videos/tracks.mp4" type="video/mp4" /></video>
+                           <div class="feature-label">Gleise zeichnen</div>
+                        </div>
+                        <div class="carousel-item">
+                           <video muted playsinline preload="auto"><source src="assets/videos/signals.mp4" type="video/mp4" /></video>
+                           <div class="feature-label">Signale setzen</div>
+                        </div>
+                        <div class="carousel-item">
+                           <video muted playsinline preload="auto"><source src="assets/videos/signals2.mp4" type="video/mp4" /></video>
+                           <div class="feature-label">Signalbilder &amp; Fahrbegriffe</div>
+                        </div>
+                        <div class="carousel-item">
+                           <video muted playsinline preload="auto"><source src="assets/videos/trains.mp4" type="video/mp4" /></video>
+                           <div class="feature-label">Züge bewegen</div>
+                        </div>
+                        <div class="carousel-item">
+                           <video muted playsinline preload="auto"><source src="assets/videos/plattform.mp4" type="video/mp4" /></video>
+                           <div class="feature-label">Bahnsteige</div>
+                        </div>
+                        <div class="carousel-item">
+                           <video muted playsinline preload="auto"><source src="assets/videos/annotations.mp4" type="video/mp4" /></video>
+                           <div class="feature-label">Beschriftungen &amp; Anmerkungen</div>
+                        </div>
                      </div>
-                  </div>
-                  <div class="carousel-item">
-                     <img src="intro_2.jpg" class="d-block w-100" alt="..." />
-                     <div class="carousel-caption d-none d-md-block">
-                        <h5>Züge</h5>
-                        <p>Stelle Züge auf die Gleise und bewege sie vor und zurück.</p>
-                     </div>
-                  </div>
-                  <div class="carousel-item">
-                     <img src="intro_3.jpg" class="d-block w-100" alt="..." />
-                     <div class="carousel-caption d-none d-md-block">
-                        <h5>Kommentiere</h5>
-                        <p>Zeichen Bemerkungen einfach direkt in den Gleisplan.</p>
-                     </div>
+                     <div class="feature-progress" id="featureProgress"></div>
                   </div>
                </div>
-               <button class="carousel-control-prev" type="button" data-bs-target="#carouselIntro" data-bs-slide="prev">
-                  <span class="carousel-control-prev-icon" aria-hidden="true"></span>
-                  <span class="visually-hidden">Previous</span>
-               </button>
-               <button class="carousel-control-next" type="button" data-bs-target="#carouselIntro" data-bs-slide="next">
-                  <span class="carousel-control-next-icon" aria-hidden="true"></span>
-                  <span class="visually-hidden">Next</span>
-               </button>
             </div>
-            <div class="text-center pt-5">
-               <a href="start.html?v=0.5" type="button" class="btn btn-primary btn-lg"><i class="bi bi-play-fill"></i> Hier geht's los</a>
-            </div>
-         </div>
+         </section>
 
          <div class="content" id="help">
-            <h4>Anleitung</h4>
-            <p>
-            <strong>Grundlegende Bedienung:</strong><br>
-            <ul>
-               <li>Mit der linken Maustaste können Sie Gleise zeichnen</li>
-               <li>Mit der rechten Maustaste können Sie den Bildschirm verschieben</li>
-               <li>Mit dem Mausrad können Sie zoomen</li>
-            </ul>
+            <h2 class="section-title">Anleitung</h2>
 
-            <strong>Signale und Weichen:</strong><br>
-            <ul>
-               <li>Signale können über das Menü auf der rechten Seite hinzugefügt werden</li>
-               <li>Signale werden durch Ziehen an ein Gleis angeheftet</li>
-               <li>Signale können durch die Alt-Taste für das Gegengleis gedreht werden</li>
-               <li>Weichen werden automatisch erstellt, wenn Sie ein Gleis von einem bestehenden Gleis abzweigen lassen</li>
-               <li>Weichen können durch Klicken umgestellt werden</li>
-            </ul>
+            <div class="row g-4 align-items-start help-box">
+               <div class="col-md-3">
+                  <div class="list-group help-tablist" id="helpTab" role="tablist">
+                     <a class="list-group-item list-group-item-action active" id="help-bedienung-tab" data-bs-toggle="list" href="#help-bedienung" role="tab" aria-controls="help-bedienung" aria-selected="true"><i class="bi bi-mouse"></i>Bedienung</a>
+                     <a class="list-group-item list-group-item-action" id="help-gleise-tab" data-bs-toggle="list" href="#help-gleise" role="tab" aria-controls="help-gleise" aria-selected="false"><i class="bi bi-signpost-split"></i>Gleise &amp; Weichen</a>
+                     <a class="list-group-item list-group-item-action" id="help-signale-tab" data-bs-toggle="list" href="#help-signale" role="tab" aria-controls="help-signale" aria-selected="false"><i class="bi bi-lightbulb"></i>Signale</a>
+                     <a class="list-group-item list-group-item-action" id="help-zuege-tab" data-bs-toggle="list" href="#help-zuege" role="tab" aria-controls="help-zuege" aria-selected="false"><i class="bi bi-train-front"></i>Züge</a>
+                     <a class="list-group-item list-group-item-action" id="help-objekte-tab" data-bs-toggle="list" href="#help-objekte" role="tab" aria-controls="help-objekte" aria-selected="false"><i class="bi bi-bounding-box"></i>Bahnsteige &amp; Objekte</a>
+                     <a class="list-group-item list-group-item-action" id="help-speichern-tab" data-bs-toggle="list" href="#help-speichern" role="tab" aria-controls="help-speichern" aria-selected="false"><i class="bi bi-save"></i>Speichern &amp; Export</a>
+                  </div>
+               </div>
 
-            <strong>Züge und Objekte:</strong><br>
-            <ul>
-               <li>Züge können über das Menü auf der rechten Seite hinzugefügt werden</li>
-               <li>Züge können mit der Maus verschoben werden</li>
-               <li>Züge können über das Menü gekuppelt und getrennt werden</li>
-               <li>Text und Bahnsteige können über das Objekt-Menü hinzugefügt werden</li>
-            </ul>
+               <div class="col-md-9">
+                  <div class="tab-content help-scroll" id="helpTabContent">
+                     <div class="tab-pane fade show active help-category" id="help-bedienung" role="tabpanel" aria-labelledby="help-bedienung-tab">                        
+                        <ul>
+                           <li>Drücke die <strong>Rechte Maustaste + Ziehen</strong> um die Ansicht zu verschieben.</li>
+                           <li>Nutze das <strong>Mausrad</strong> um zu zoomen.</li>
+                           <li>Mit der <strong>Zwei Finger</strong> Geste kannst du auf Touch-Geräten: Zoomen und Verschieben.</li>
+                           <li>Drücke <strong>Strg+Z bzw Cmd+Z</strong> oder auf derToolbar <strong>Rückgängig Button</strong> um die letzte Änderung zu widerzurufen.</li>
+                           <li><strong>Entf oder Backspace</strong> lässt dich das ausgewähltes Objekt löschen.</li>
+                           <li>Mit <strong>Esc</strong> kannst du die Auswahl aufheben.</li>
+                           <li>Unten rechts siehst du den aktuellen Zoom. Mit einem <strong>Klick auf den Zoomfaktor </strong> springst du zurück auf 100%</li>
+                           <li>Mit einem Klick auf den nabenliegenden Button springst du zurück <strong> zum Startpunkt</strong>.</li>
+                        </ul>
+                     </div>
 
-            
-            </p>
+                     <div class="tab-pane fade help-category" id="help-gleise" role="tabpanel" aria-labelledby="help-gleise-tab">
+                        <ul>
+                           <li><strong>Linke Maustaste</strong> auf einem Gleis: Gleis auswählen und Eigenschaften bearbeiten.</li>
+                           <li><strong>Linke Maustaste + Ziehen</strong> auf freier Fläche: Gleise zeichnen (mit Rasterfang).</li>
+                           <li>Gleise werden als Polylinie gezeichnet und rasten auf ein <strong>50-Pixel-Raster</strong> ein.</li>
+                           <li>Erlaubt sind <strong>horizontale und schräge</strong> Segmente; reine Vertikalen sind nicht möglich.</li>
+                           <li>Richtungswechsel sind auf <strong>maximal 45°</strong> begrenzt.</li>
+                           <li>Beim Abzweigen von einem bestehenden Gleis entsteht automatisch eine <strong>Weiche</strong>.</li>
+                           <li><strong>Klick auf die Weichenpfeile</strong> im Plan: Weichenstellung umschalten.</li>
+                           <li>Ausgewähltes Gleis: <strong>Prellbock</strong> an Gleisenden ein-/ausschalten, <strong>Entfernen</strong> löscht Gleis und darauf befindliche Züge.</li>
+                        </ul>
+                     </div>
+
+                     <div class="tab-pane fade help-category" id="help-signale" role="tabpanel" aria-labelledby="help-signale-tab">
+                        <ul>
+                           <li>Über <strong>+ Signale</strong> in der Toolbar öffnet sich die Signalbibliothek (Haupt-, Vor-, Lf-, Ne- und Zusatzsignale).</li>
+                           <li>Signal per Drag &amp; Drop auf ein Gleis ziehen; es wird automatisch angeheftet.</li>
+                           <li>Signal anklicken zum Auswählen; per Drag entlang des Gleises verschieben.</li>
+                           <li><strong>Alt-Taste</strong> beim Ziehen: Signal auf die <strong>Gegengleisseite</strong> drehen.</li>
+                           <li>Im Seitenbereich: <strong>Signalstellung</strong> umschalten, <strong>Konfiguration</strong> anpassen, <strong>Grundstellung</strong> zurücksetzen.</li>
+                           <li>Signalname über das Stift-Symbol neben der Bezeichnung bearbeiten.</li>
+                        </ul>
+                     </div>
+
+                     <div class="tab-pane fade help-category" id="help-zuege" role="tabpanel" aria-labelledby="help-zuege-tab">
+                        <ul>
+                           <li>Über <strong>+ Züge</strong>: Zug aus der Vorschau auf ein Gleis ziehen (Standard: Lok + 3 Wagen).</li>
+                           <li>Zug per Maus entlang des Gleises verschieben.</li>
+                           <li>Im Seitenbereich <strong>Zugsteuerung</strong>: Richtung wählen, <strong>Start / Stop</strong> für automatische Fahrt.</li>
+                           <li>Züge fahren durch Weichen und können das Gleisnetz nutzen; Hindernisse stoppen die Fahrt.</li>
+                           <li><strong>Kuppeln</strong>: Kupplungspunkt anklicken, um Züge auf demselben Gleis zu verbinden.</li>
+                           <li><strong>Entkuppeln</strong>: zwischen Wagen klicken, um den Zug zu teilen.</li>
+                           <li>Zugnummer, Farbe und Wagentyp im Seitenbereich anpassen.</li>
+                        </ul>
+                     </div>
+
+                     <div class="tab-pane fade help-category" id="help-objekte" role="tabpanel" aria-labelledby="help-objekte-tab">
+                        <ul>
+                           <li>Über <strong>+ Objekte → Weitere Elemente</strong>: Beschriftungen, Bahnsteige und Bahnübergänge platzieren.</li>
+                           <li><strong>Beschriftung</strong>: Klick setzt Textfeld; Text im Seitenbereich bearbeiten.</li>
+                           <li><strong>Bahnsteig</strong>: Rechteck aufziehen (mind. 50×50 px), beschriften und bei Auswahl über Griff vergrößern.</li>
+                           <li><strong>Bahnübergang</strong>: auf geradem Gleis platzieren; Breite und Optionen im Seitenbereich.</li>
+                           <li>Toolbar <strong>Zeichnen</strong>: Freihand-Anmerkungen mit Farbe und Strichstärke; Radierer und <strong>Alle Zeichnungen löschen</strong>.</li>
+                        </ul>
+                     </div>
+
+                     <div class="tab-pane fade help-category" id="help-speichern" role="tabpanel" aria-labelledby="help-speichern-tab">
+                        <ul>
+                           <li>Der Plan wird automatisch im Browser (<strong>localStorage</strong>) gesichert und beim nächsten Besuch wiederhergestellt.</li>
+                           <li>Menü <strong>Lokal Speichern</strong>: Plan als <strong>bahnhof.xml</strong> herunterladen.</li>
+                           <li>Menü <strong>Aus Datei laden</strong>: gespeicherten Plan importieren (max. 512 KB).</li>
+                           <li>Menü <strong>Plan als Bild</strong>: Gleisplan als <strong>gleisplan.png</strong> exportieren.</li>
+                           <li>Menü <strong>Mit Vorlage starten</strong>: neuer Plan (zweigleisig, eingleisig oder leer).</li>
+                           <li>Menü <strong>Darstellung ändern</strong>: detaillierte oder vereinfachte Ansicht wählen.</li>
+                           <li>Teilen erfolgt über exportierte <strong>XML-Datei</strong> oder <strong>PNG-Bild</strong> – es gibt keine Online-Freigabe per Link.</li>
+                        </ul>
+                     </div>
+                  </div>
+               </div>
+            </div>
          </div>
 
          <div class="content" id="impressum">
@@ -184,10 +206,72 @@
                Bitte beachtet, dass die Anwendung aktuell noch in der Entwicklung ist. Sie ist nicht vollständig und hat leider noch diverse Fehler.
                Danksagungen und Ideen könnt Ihr gerne per Mail schreiben an:
 
-               <a href="mailto:signale@metzme.de">signale@metzme.de</a>
+               <a href="#" class="email-link" data-e="c2lnbmFsZUBtZXR6bWUuZGU="></a>
 
             </p>
          </div>
       </div>
+
+      <script>
+         document.addEventListener("DOMContentLoaded", function () {
+            // --- Self-playing feature carousel: advance when each video ends ---
+            const root = document.getElementById("carouselIntro");
+            if (root) {
+               const carousel = bootstrap.Carousel.getOrCreateInstance(root, { interval: false, ride: false });
+               const items = Array.from(root.querySelectorAll(".carousel-item"));
+               const videos = items.map((item) => item.querySelector("video"));
+               const progress = document.getElementById("featureProgress");
+
+               // Build subtle progress dots (act as a stepper, not Bootstrap controls)
+               const dots = items.map((_, i) => {
+                  const dot = document.createElement("button");
+                  dot.type = "button";
+                  dot.className = "feature-dot";
+                  dot.setAttribute("aria-label", "Feature " + (i + 1));
+                  dot.addEventListener("click", () => carousel.to(i));
+                  progress.appendChild(dot);
+                  return dot;
+               });
+
+               function activeIndex() {
+                  return items.findIndex((item) => item.classList.contains("active"));
+               }
+
+               function syncDots(idx) {
+                  dots.forEach((dot, i) => dot.classList.toggle("active", i === idx));
+               }
+
+               function playActive() {
+                  const idx = activeIndex();
+                  syncDots(idx);
+                  videos.forEach((v, i) => {
+                     if (!v) return;
+                     if (i === idx) {
+                        v.currentTime = 0;
+                        const p = v.play();
+                        if (p) p.catch(() => {});
+                     } else {
+                        v.pause();
+                        v.currentTime = 0;
+                     }
+                  });
+               }
+
+               videos.forEach((v) => {
+                  if (v) v.addEventListener("ended", () => carousel.next());
+               });
+
+               root.addEventListener("slid.bs.carousel", playActive);
+               playActive();
+            }
+
+            const emailLink = document.querySelector(".email-link");
+            if (emailLink) {
+               const email = atob(emailLink.dataset.e);
+               emailLink.textContent = email;
+               emailLink.href = "mailto:" + email;
+            }
+         });
+      </script>
    </body>
 </html>
