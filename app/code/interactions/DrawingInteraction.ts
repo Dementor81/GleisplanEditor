@@ -9,6 +9,7 @@ import type { PointerInteraction } from "./PointerInteraction.ts";
 
 /** Freehand stroke on the drawing layer (draw tool mode). */
 export class DrawingInteraction implements PointerInteraction {
+   readonly planLockPolicy = "block" as const;
    readonly #shape: Graphics;
    #lastDraw: Point;
    readonly #stroke: { width: number; color: string; cap: "round"; join: "round" };

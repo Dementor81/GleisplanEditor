@@ -12,6 +12,8 @@ import type { PointerInteraction } from "./PointerInteraction.ts";
 
 /** Drag a track endpoint to reposition it on the grid. */
 export class TrackEndpointInteraction implements PointerInteraction {
+   readonly planLockPolicy = "block" as const;
+
    constructor(
       private track: Track,
       private endpoint: "start" | "end"

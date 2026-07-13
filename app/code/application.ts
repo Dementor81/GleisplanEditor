@@ -57,6 +57,7 @@ export class Application {
 
    // Application state
    #customMouseMode: CustomMouseAction = CUSTOM_MOUSE_ACTION.NONE;
+   #planLocked = false;
 
    // Managers
    #eventManager: EventManager = new EventManager(this);
@@ -242,6 +243,7 @@ export class Application {
     * Delete selected object
     */
    deleteSelectedObject(): void {
+      if (this.planLocked) return;
       if (this.selection.object) {
          if (this.selection.type == "Track") {
             const removedTracks = [].concat(this.selection.object);
@@ -271,6 +273,7 @@ export class Application {
     * Undo the last action
     */
    undo(): void {
+      if (this.planLocked) return;
       STORAGE.restoreLastUndoStep();
       STORAGE.save();
       this.renderingManager?.renderer.reDrawEverything(true);
@@ -294,6 +297,9 @@ export class Application {
    get customMouseMode(): CustomMouseAction {
       return this.#customMouseMode;
    }
+   get planLocked(): boolean {
+      return this.#planLocked;
+   }
 
    // Manager getters
    get eventManager(): EventManager | null {
@@ -310,6 +316,14 @@ export class Application {
    set customMouseMode(mode: CustomMouseAction) {
       this.#customMouseMode = mode;
       this.syncCustomMouseModeCursor();
+   }
+
+   set planLocked(locked: boolean) {
+      if (this.#planLocked === locked) return;
+      this.#planLocked = locked;
+      if (locked) this.customMouseMode = CUSTOM_MOUSE_ACTION.NONE;
+      this.uiManager?.syncPlanLockUI();
+      this.renderingManager?.renderer?.updateSelection();
    }
 
    syncCustomMouseModeCursor(): void {

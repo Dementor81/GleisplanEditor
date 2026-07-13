@@ -9,6 +9,8 @@ import type { PointerInteraction } from "./PointerInteraction.ts";
 
 /** Tap a coupling overlay point to join two trains. */
 export class CouplingPointInteraction implements PointerInteraction {
+   readonly planLockPolicy = "allow" as const;
+
    constructor(private data: any) {}
 
    onMove(_local: Point, _e: FederatedPointerEvent): void {}

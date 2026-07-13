@@ -71,6 +71,7 @@ export class EventManager {
     * Moved from UI layer to centralize mouseAction handling.
     */
    startSignalDragFromTemplate(template: any): void {
+      if (this.#app.planLocked) return;
       const rm = this.#app.renderingManager;
       if (!rm) return;
 
@@ -314,6 +315,7 @@ export class EventManager {
 
    /** Register a self-contained interaction; the stage forwards subsequent move/up to it until release. */
    startInteraction(interaction: PointerInteraction): void {
+      if (this.#app.planLocked && interaction.planLockPolicy === "block") return;
       this.#activeInteraction = interaction;
    }
 

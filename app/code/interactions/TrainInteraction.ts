@@ -10,6 +10,8 @@ import { ElementInteraction } from "./ElementInteraction.ts";
 
 /** Select on tap, drag to move along track on drag. */
 export class TrainInteraction extends ElementInteraction {
+   override readonly planLockPolicy = "allow" as const;
+
    constructor(private train: Train, start: Point) {
       super(start);
    }

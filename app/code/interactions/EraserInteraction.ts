@@ -7,6 +7,8 @@ import type { PointerInteraction } from "./PointerInteraction.ts";
 
 /** Erase drawing strokes under the pointer (eraser tool mode). */
 export class EraserInteraction implements PointerInteraction {
+   readonly planLockPolicy = "block" as const;
+
    onMove(_local: Point, _e: FederatedPointerEvent): void {
       const rm = Application.getInstance().renderingManager!;
       const drawingContainer = rm.containers.drawing;

@@ -10,6 +10,8 @@ import type { PointerInteraction } from "./PointerInteraction.ts";
 
 /** Place a new text label on pointer up (text tool mode). */
 export class TextPlaceInteraction implements PointerInteraction {
+   readonly planLockPolicy = "block" as const;
+
    onMove(): void {}
 
    onUp(local: Point, _e: FederatedPointerEvent): void {

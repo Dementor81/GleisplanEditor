@@ -8,6 +8,8 @@ import type { PointerInteraction } from "./PointerInteraction.ts";
 
 /** Click empty space while in couple/decouple mode to cancel. */
 export class TrainCoupleModeCancelInteraction implements PointerInteraction {
+   readonly planLockPolicy = "allow" as const;
+
    constructor(private mode: CustomMouseAction) {}
 
    onMove(_local: Point, _e: FederatedPointerEvent): void {}

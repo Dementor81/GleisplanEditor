@@ -11,6 +11,8 @@ import type { PointerInteraction } from "./PointerInteraction.ts";
 
 /** Drag a rectangle on the canvas to place a new platform (platform tool mode). */
 export class PlatformPlaceInteraction implements PointerInteraction {
+   readonly planLockPolicy = "block" as const;
+
    constructor(private start: Point) {}
 
    onMove(local: Point, _e: FederatedPointerEvent): void {

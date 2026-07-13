@@ -154,6 +154,7 @@ export class UIManager {
       $("#btnRedraw").onclick(() => this.#app.renderingManager?.forceRedraw());
       $("#btnImage").onclick(this.#handleImageExport.bind(this));
       $("#btnDraw").onclick(this.#handleDrawToggle.bind(this));
+      $("#btnLock").onclick(this.#handleLockToggle.bind(this));
       $(this.#drawingPanel.btnClear).onclick(this.#handleDrawingClear.bind(this));
 
       $(this.#drawingPanel.btnEraser).onclick(() => {
@@ -405,6 +406,10 @@ export class UIManager {
    }
 
    #handleDrawToggle(): void {
+      if (this.#app.planLocked) {
+         $("#btnDraw").removeClass("active");
+         return;
+      }
       this.#app.customMouseMode = $("#btnDraw").hasClass("active") ? CUSTOM_MOUSE_ACTION.DRAWING : CUSTOM_MOUSE_ACTION.NONE;
       this.#drawingPanel.setEraserActive(false);
       if (this.#app.customMouseMode === CUSTOM_MOUSE_ACTION.DRAWING) {
@@ -412,6 +417,35 @@ export class UIManager {
       } else {
          this.#drawingPanel.hide();
       }
+   }
+
+   #handleLockToggle(): void {
+      const locked = $("#btnLock").hasClass("active");
+      $("#btnLock i")
+         .toggleClass("bi-lock", locked)
+         .toggleClass("bi-unlock-fill", !locked);
+      this.#app.planLocked = locked;
+   }
+
+   syncPlanLockUI(): void {
+      const locked = this.#app.planLocked;
+
+      if (locked) {
+         $("#btnDraw").removeClass("active");
+         this.#drawingPanel.setEraserActive(false);
+         this.#drawingPanel.hide();
+         this.#newObjectMenu.deactivate();
+      }
+
+      $("#btnDraw").prop("disabled", locked);
+      $("#btnUndo").prop("disabled", locked || this.#app.undoHistory.length <= 1);
+      $("#btnAddSignals").prop("disabled", locked);
+      $("#btnAddObject").prop("disabled", locked);
+      $(
+         "#btnRemoveTrack, #btnRemoveSignal, #btnRemoveObject, #btnRemoveRailwayCrossing, #btnRemoveTrain"
+      ).prop("disabled", locked);
+
+      if (!locked) this.updateUndoButtonState();
    }
 
    #handleDrawingClear(): void {
@@ -452,7 +486,7 @@ export class UIManager {
     * Update undo button state
     */
    updateUndoButtonState(): void {
-      $("#btnUndo").prop("disabled", this.#app.undoHistory.length <= 1);
+      $("#btnUndo").prop("disabled", this.#app.planLocked || this.#app.undoHistory.length <= 1);
    }
 
    /**

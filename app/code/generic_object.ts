@@ -26,6 +26,7 @@ export class GenericObject {
    }
 
    static removeObject(o: any): void {
+      if (Application.getInstance().planLocked) return;
       ArrayUtils.remove(this.all_objects, o);
       Application.getInstance().renderingManager!.renderer.renderAllGenericObjects();
       Application.getInstance().renderingManager!.update();

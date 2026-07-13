@@ -9,6 +9,8 @@ import type { PointerInteraction } from "./PointerInteraction.ts";
 
 /** Click the switch UI arrows to toggle branch direction. */
 export class SwitchInteraction implements PointerInteraction {
+   readonly planLockPolicy = "allow" as const;
+
    constructor(private sw: Switch) {}
 
    onMove(_local: Point, _e: FederatedPointerEvent): void {}

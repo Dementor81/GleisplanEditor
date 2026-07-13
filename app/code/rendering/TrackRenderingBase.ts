@@ -57,7 +57,7 @@ export abstract class TrackRenderingBase {
             const d = rmSel.getGameObjFromDisplayObj(c);
             if (d != null && this.app.selection.isSelectedObject(d)) {
                this.visualizeTrackBounds(c);
-               this.drawTrackEndpoints(d);
+               if (!this.app.planLocked) this.drawTrackEndpoints(d);
             }
          }
       } else if (this.app.selection.type == "Signal") {
@@ -70,7 +70,11 @@ export abstract class TrackRenderingBase {
             const d = rmSel.getGameObjFromDisplayObj(c);
             if (d != null && this.app.selection.isSelectedObject(d)) {
                this.visualizeTrackBounds(c);
-               if (d instanceof GenericObject && d.type() === GenericObject.OBJECT_TYPE.plattform) {
+               if (
+                  !this.app.planLocked &&
+                  d instanceof GenericObject &&
+                  d.type() === GenericObject.OBJECT_TYPE.plattform
+               ) {
                   this.drawPlatformResizeHandle(c, d);
                }
             }

@@ -10,6 +10,8 @@ import type { Track } from "../track.ts";
 import type { PointerInteraction } from "./PointerInteraction.ts";
 
 export class RailwayCrossingPlaceInteraction implements PointerInteraction {
+   readonly planLockPolicy = "block" as const;
+
    constructor(private anchorTrack: Track | null = null) {}
 
    onMove(): void {}

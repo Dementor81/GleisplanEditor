@@ -11,6 +11,7 @@ import type { PointerInteraction } from "./PointerInteraction.ts";
 
 /** Drag a train preview from the palette onto a track. */
 export class TrainPlaceInteraction implements PointerInteraction {
+   readonly planLockPolicy = "allow" as const;
    readonly #preview: Graphics;
 
    constructor(start: Point) {

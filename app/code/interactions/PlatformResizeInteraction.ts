@@ -10,6 +10,8 @@ import type { PointerInteraction } from "./PointerInteraction.ts";
 
 /** Drag the lower-right corner of a platform to resize it. */
 export class PlatformResizeInteraction implements PointerInteraction {
+   readonly planLockPolicy = "block" as const;
+
    constructor(private obj: GenericObject) {}
 
    onMove(local: Point, _e: FederatedPointerEvent): void {

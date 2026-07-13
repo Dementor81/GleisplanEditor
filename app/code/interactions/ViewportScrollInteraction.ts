@@ -8,6 +8,8 @@ import type { PointerInteraction } from "./PointerInteraction.ts";
 
 /** Right-button drag to pan the viewport. */
 export class ViewportScrollInteraction implements PointerInteraction {
+   readonly planLockPolicy = "allow" as const;
+
    onMove(_local: Point, e: FederatedPointerEvent): void {
       Application.getInstance().renderingManager?.scroll(e.movementX, e.movementY);
    }

@@ -10,6 +10,7 @@ import { SignalDragCommitter, SignalDragState } from "./signalDrag.ts";
 
 /** Drag a new signal from the template palette onto the plan. */
 export class SignalTemplateInteraction implements PointerInteraction {
+   readonly planLockPolicy = "block" as const;
    readonly signal: any;
    readonly container: Container;
    readonly #drag: SignalDragState;

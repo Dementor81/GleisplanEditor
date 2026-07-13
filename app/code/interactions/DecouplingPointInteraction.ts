@@ -9,6 +9,8 @@ import type { PointerInteraction } from "./PointerInteraction.ts";
 
 /** Tap a decoupling overlay point to split a train. */
 export class DecouplingPointInteraction implements PointerInteraction {
+   readonly planLockPolicy = "allow" as const;
+
    constructor(private data: any) {}
 
    onMove(_local: Point, _e: FederatedPointerEvent): void {}
