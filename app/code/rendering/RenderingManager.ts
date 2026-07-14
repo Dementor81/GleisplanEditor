@@ -285,10 +285,11 @@ export class RenderingManager {
 
    /**
     * Clear all content from the application
+    * @param recordUndo - when false, skip undo snapshot (used while restoring from JSON)
     */
-   clear(): void {
+   clear(recordUndo = true): void {
       this.#application.selectObject(null as any, null as any);
-      STORAGE.saveUndoHistory();
+      if (recordUndo) STORAGE.saveUndoHistory();
       // Stop any moving trains first
       Train.stopAllTrains();
 

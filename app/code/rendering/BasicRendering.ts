@@ -52,7 +52,7 @@ export class BasicRendering extends TrackRenderingBase {
    renderAllSignals() {
       const rm = this.app.renderingManager!;
       rm.containers.signals.removeChildren();
-      Signal.allSignals.forEach((signal: any) => {
+      Signal.signalsForRendering().forEach((signal: any) => {
          let container = rm.containers.signals.addChild(SignalRenderer.createSignalContainer(rm, signal));
          this.app.alignSignalContainerWithTrack(container, signal._positioning);
       });

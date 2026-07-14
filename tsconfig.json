@@ -4,7 +4,7 @@
     "target": "ES2020",
     "module": "ES2020",
     "lib": ["ES2020", "DOM", "DOM.Iterable"],
-    "moduleResolution": "node",
+    "moduleResolution": "bundler",
     
     // JavaScript Interop (no longer needed now that code is migrated)
     "allowJs": false,
@@ -51,10 +51,9 @@
     "emitDecoratorMetadata": true,
     
     // Path Mapping (optional, for cleaner imports)
-    "baseUrl": "app/code",
     "paths": {
-      "@/*": ["./*"],
-      "@managers/*": ["./managers/*"]
+      "@/*": ["./app/code/*"],
+      "@managers/*": ["./app/code/managers/*"]
     }
   },
   "include": [

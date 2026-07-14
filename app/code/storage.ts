@@ -193,7 +193,7 @@ export const STORAGE = {
     * Load application state from JSON string
     */
    loadFromJson(json: string): void {
-      (window as any).app.renderingManager.clear();
+      (window as any).app.renderingManager.clear(false);
       const loaded: LoadedData = JSON.parse(json, STORAGE.receiver);
       
       if (loaded.settings) {
@@ -219,6 +219,8 @@ export const STORAGE = {
       RailwayCrossing.counter = RailwayCrossing.allCrossings.length ? Math.max(...RailwayCrossing.allCrossings.map((crossing) => crossing.id)) + 1 : 0;
 
       STORAGE.linkObjects();
+
+      Signal.migrateRenderOrder();
 
       Track.createRailNetwork();
       Train.allTrains = loaded.trains ? (ArrayUtils.cleanUp(loaded.trains) as unknown as Train[]) : []; // Filter out nulls from loading errors

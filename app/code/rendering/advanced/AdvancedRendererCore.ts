@@ -129,7 +129,7 @@ export class AdvancedRendererCore {
    renderAllSignals() {
       const rm = this.renderer.app.renderingManager!;
       rm.containers.signals.removeChildren();
-      Signal.allSignals.forEach((signal: any) => {
+      Signal.signalsForRendering().forEach((signal: any) => {
          let container = rm.containers.signals.addChild(SignalRenderer.createSignalContainer(rm, signal));
          this.renderer.app.alignSignalContainerWithTrack(container, signal._positioning);
       });

@@ -66,6 +66,7 @@ export class SignalDragCommitter {
       rm.containers.overlay.removeChild(container);
 
       if (drag.hitTrack) {
+         signal.touchRenderOrder();
          rm.containers.signals.addChild(container);
          drag.hitTrack.track.AddSignal(
             signal,

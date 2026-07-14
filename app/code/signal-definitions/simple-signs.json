@@ -224,37 +224,37 @@
       "id": "ra10",
       "title": "Ra 10",
       "atlas": "basis",
-      "scale": 0.10
-   },{
+      "scale": 0.1
+   },
+   {
       "id": "ne5",
       "title": "Ne 5",
       "atlas": "basis",
       "scale": 0.15,
       "previewsize": 20,
-     "config_options": [
-            {
-               "type": "textinput",
-               "text": "Standort",
-               "command": "text",
-               "maxLength": 8
-            }
-         ],
-     "elements": [
-            "ne5",
-       {
-         "on":"text",
-         "image":"ne5_schild",
-         "children":[
-           {
-               "text": "text",
-               "color": "#333",
-               "format": [20, "Arial", 1],
-               "pos": [53, 151]
-            }
-         ]
-       }
-            
-         ]
+      "config_options": [
+         {
+            "type": "textinput",
+            "text": "Standort",
+            "command": "text",
+            "maxLength": 8
+         }
+      ],
+      "elements": [
+         "ne5",
+         {
+            "on": "text",
+            "image": "ne5_schild",
+            "children": [
+               {
+                  "text": "text",
+                  "color": "#333",
+                  "format": [20, "Arial", 1],
+                  "pos": [53, 151]
+               }
+            ]
+         }
+      ]
    },
    {
       "id": "zs6",
@@ -323,43 +323,175 @@
          },
          {
             "text": "localSpeed",
-            "format": [
-               85,
-               "DOT"
-            ],
-            "pos": [
-               70,
-               40
-            ],
+            "format": [85, "DOT"],
+            "pos": [70, 40],
             "off": "zs6=1",
             "on": "localSpeed>0"
          },
          {
             "text": "zs2",
-            "format": [
-               85,
-               "DOT"
-            ],
-            "pos": [
-               70,
-               40
-            ],
+            "format": [85, "DOT"],
+            "pos": [70, 40],
             "off": "zs6=1||localSpeed>0",
             "on": "zs2"
          },
          {
             "text": "zs2v",
-           "color":"#dfc223",
-            "format": [
-               85,
-               "DOT"
-            ],
-            "pos": [
-               70,
-               40
-            ],
+            "color": "#dfc223",
+            "format": [85, "DOT"],
+            "pos": [70, 40],
             "off": "zs6=1||localSpeed>0||zs2",
             "on": "zs2v"
+         }
+      ]
+   },
+   {
+      "id": "bü_kennzeichen",
+      "title": "Bü Kennzeichentafel",
+      "atlas": "basis",
+      "scale": 0.12,
+      "previewsize": 30,
+      "config_options": [
+         {
+            "type": "textinput",
+            "text": "Standort",
+            "command": "standort",
+            "maxLength": 7
+         },
+         {
+            "type": "textinput",
+            "text": "Ankündigung",
+            "command": "ank",
+            "maxLength": 7
+         }
+      ],
+      "elements": [
+         "bue_kennzeichen",
+         {
+            "image": "bue_kennzeichen_ankünde",
+            "on": "ank"
+         },
+         {
+            "text": "standort",
+            "format": [20, "condenced"],
+            "pos": [30, 36],
+            "color": "#333"
+         },
+         {
+            "text": "ank",
+            "format": [20, "condenced"],
+            "pos": [28, 102],
+            "color": "#333"
+         }
+      ]
+   },
+   {
+      "id": "bü_2",
+      "title": "Bü 2",
+      "atlas": "basis",
+      "scale": 0.12,
+      "previewsize": 30,
+      "initial": "tiles=4",
+      "config_options": [
+         {
+            "name": "tiles=4",
+            "title": "4 Rauten"
+         },
+         {
+            "name": "tiles=3",
+            "title": "3 Rauten"
+         },
+         {
+            "name": "tiles=2",
+            "title": "2 Rauten"
+         },
+         {
+            "name": "tiles=1",
+            "title": "1 Raute"
+         },
+         {
+            "name": "kette=1",
+            "title": "Kette"
+         },
+         {
+            "type": "textinput",
+            "text": "Ankündigung",
+            "command": "ank",
+            "maxLength": 7
+         }
+      ],
+      "elements": [
+         "bue2",
+         {
+            "image": "bue_kennzeichen_ankünde"
+         },
+         {
+            "image": "bue2_buebue",
+            "on": "kette=1"
+         },
+         {
+            "image": "bue2_4",
+            "on": "tiles=4"
+         },
+         {
+            "image": "bue2_3",
+            "on": "tiles=3"
+         },
+         {
+            "image": "bue2_2",
+            "on": "tiles=2"
+         },
+         {
+            "image": "bue2_1",
+            "on": "tiles=1"
+         },
+         {
+            "text": "ank",
+            "format": [20, "condenced"],
+            "pos": [28, 102],
+            "color": "#333"
+         }
+      ]
+   },{
+      "id": "bü_3",
+      "title": "Bü 3",
+      "atlas": "basis",
+      "scale": 0.12,
+      "previewsize": 30,
+      "initial": "tiles=4",
+      "config_options": [
+         {
+            "name": "kette=1",
+            "title": "Kette"
+         },
+         {
+            "type": "textinput",
+            "text": "Ankündigung",
+            "command": "ank",
+            "maxLength": 7
+         }
+      ],
+      "elements": [
+         "bue3",
+        
+            {
+               "image": "bue3_buebue",
+               "on": "kette=1"
+            },
+         {
+            "image": "bue_kennzeichen_ankünde"
+         },
+         {
+            "text": "ank",
+            "format": [
+               20,
+               "condenced"
+            ],
+            "pos": [
+               28,
+               102
+            ],
+            "color": "#333"
          }
       ]
    }

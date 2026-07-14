@@ -28,7 +28,17 @@ export class Signal {
       Signal.allSignals.delete(s);
    }
 
-   
+   static signalsForRendering(): Signal[] {
+      return [...Signal.allSignals].sort((a, b) => a._renderOrder - b._renderOrder);
+   }
+
+   /** Assign compact 0..n-1 indices preserving current relative order (load migration). */
+   static migrateRenderOrder(): void {
+      const ordered = Signal.signalsForRendering();
+      ordered.forEach((s, i) => {
+         s._renderOrder = i;
+      });
+   }
 
    _template: SignalTemplate | null = null;
    _signalStellung: any = {};
@@ -38,6 +48,7 @@ export class Signal {
       above: false,
       flipped: false,
    };
+   _renderOrder: number = 0;
    _changed: boolean = false;
    _dontCache: boolean = false;
    _aspectAnimations = new Set<AspectAnimationKind>();
@@ -209,6 +220,14 @@ export class Signal {
       return null;
    }
 
+   touchRenderOrder(): void {
+      const ordered = Signal.signalsForRendering().filter((s) => s !== this);
+      ordered.push(this);
+      ordered.forEach((s, i) => {
+         s._renderOrder = i;
+      });
+   }
+
    setTrack(track: any,km: number) {
       if (this._positioning.track) {
          ArrayUtils.remove(this._positioning.track.signals, this);
@@ -230,6 +249,7 @@ export class Signal {
             above: this._positioning.above,
             flipped: this._positioning.flipped,
          },
+         _renderOrder: this._renderOrder,
       };
    }
 
@@ -238,6 +258,7 @@ export class Signal {
       const s = new Signal(Application.getInstance().signalTemplates[templateKey]);
       s._signalStellung = Signal.migrateSignalStellung(templateKey, o._signalStellung);
       s._positioning = o._positioning;
+      if (o._renderOrder != null) s._renderOrder = o._renderOrder;
       return s;
    }
 
