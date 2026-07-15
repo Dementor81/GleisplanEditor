@@ -503,38 +503,47 @@
       "initial": "stripes=4",
       "config_options": [
          {
-            "name": "kette=1",
-            "title": "Kette"
-         },
-         {
-            "type": "textinput",
-            "text": "Ankündigung",
-            "command": "ank",
-            "maxLength": 7
-         }
+            "name": "verk=1",
+            "title": "Verkürzt"
+         },{
+               "name": "stripes=4",
+               "title": "4 Streifen"
+            },
+            {
+               "name": "stripes=3",
+               "title": "3 Streifen"
+            },
+            {
+               "name": "stripes=2",
+               "title": "2 Streifen"
+            },
+            {
+               "name": "stripes=1",
+               "title": "1 Streifen"
+            }
       ],
       "elements": [
-         "bue3",
+         {
+          "image":"ne3_verk",
+          "on":"verk=1"
+        },"ne3_basis",
         
-            {
-               "image": "bue3_buebue",
-               "on": "kette=1"
+         {
+               "image": "ne3_4",
+               "on": "stripes=4"
             },
-         {
-            "image": "bue_kennzeichen_ankünde"
-         },
-         {
-            "text": "ank",
-            "format": [
-               20,
-               "condenced"
-            ],
-            "pos": [
-               28,
-               102
-            ],
-            "color": "#333"
-         }
+            {
+               "image": "ne3_3",
+               "on": "stripes=3"
+            },
+            {
+               "image": "ne3_2",
+               "on": "stripes=2"
+            },
+            {
+               "image": "ne3_1",
+               "on": "stripes=1"
+            }
       ]
    }
 ]
