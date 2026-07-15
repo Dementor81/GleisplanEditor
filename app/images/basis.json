@@ -55,15 +55,19 @@
         {"left":0,"top":0}
     },
 
-{"signal":"ne3_verk","sourceRect":{"x":60,"y":1353,"width":45,"height":39},"pos":
+{"signal":"bue2_1","sourceRect":{"x":60,"y":1353,"width":28,"height":40},"pos":
+        {"left":16,"top":210}
+    },
+
+{"signal":"ne3_verk","sourceRect":{"x":90,"y":1353,"width":45,"height":39},"pos":
         {"left":6,"top":0}
     },
 
-{"signal":"ne2_verk","sourceRect":{"x":107,"y":1353,"width":44,"height":36},"pos":
+{"signal":"ne2_verk","sourceRect":{"x":137,"y":1353,"width":44,"height":36},"pos":
         {"left":8,"top":0}
     },
 
-{"signal":"ne5_schild","sourceRect":{"x":153,"y":1353,"width":105,"height":34},"pos":
+{"signal":"ne5_schild","sourceRect":{"x":183,"y":1353,"width":105,"height":34},"pos":
         {"left":0,"top":147}
     },
 
@@ -71,75 +75,75 @@
         {"left":0,"top":0}
     },
 
-{"signal":"lf7","sourceRect":{"x":67,"y":1394,"width":108,"height":253},"pos":
+{"signal":"lf7","sourceRect":{"x":67,"y":1395,"width":108,"height":253},"pos":
         {"left":0,"top":0}
     },
 
-{"signal":"ne5","sourceRect":{"x":177,"y":1389,"width":105,"height":251},"pos":
+{"signal":"ne5","sourceRect":{"x":177,"y":1391,"width":105,"height":251},"pos":
         {"left":0,"top":0}
     },
 
-{"signal":"ra10","sourceRect":{"x":203,"y":1642,"width":180,"height":244},"pos":
+{"signal":"ra10","sourceRect":{"x":203,"y":1644,"width":180,"height":244},"pos":
         {"left":0,"top":0}
     },
 
-{"signal":"bue2_4","sourceRect":{"x":326,"y":1888,"width":28,"height":157},"pos":
+{"signal":"bue2_4","sourceRect":{"x":326,"y":1890,"width":28,"height":157},"pos":
         {"left":16,"top":151}
     },
 
-{"signal":"bue_kennzeichen_ankünde","sourceRect":{"x":203,"y":1888,"width":57,"height":65},"pos":
+{"signal":"bue_kennzeichen_ankünde","sourceRect":{"x":203,"y":1890,"width":57,"height":65},"pos":
         {"left":0,"top":65}
     },
 
-{"signal":"ne3_1","sourceRect":{"x":262,"y":1888,"width":57,"height":48},"pos":
+{"signal":"ne3_1","sourceRect":{"x":262,"y":1890,"width":57,"height":48},"pos":
         {"left":0,"top":119}
     },
 
-{"signal":"ne2","sourceRect":{"x":356,"y":1888,"width":60,"height":143},"pos":
+{"signal":"ne2","sourceRect":{"x":356,"y":1890,"width":60,"height":143},"pos":
         {"left":0,"top":31}
     },
 
-{"signal":"ne3_4","sourceRect":{"x":418,"y":1888,"width":57,"height":135},"pos":
-        {"left":0,"top":76}
-    },
-
-{"signal":"zs6_licht","sourceRect":{"x":477,"y":1888,"width":71,"height":122},"pos":
-        {"left":29,"top":19}
-    },
-
-{"signal":"bue2_3","sourceRect":{"x":550,"y":1888,"width":28,"height":119},"pos":
-        {"left":16,"top":170}
-    },
-
-{"signal":"ne3_3","sourceRect":{"x":580,"y":1888,"width":57,"height":105},"pos":
-        {"left":0,"top":91}
-    },
-
-{"signal":"zs10","sourceRect":{"x":284,"y":1352,"width":42,"height":234},"pos":
+{"signal":"zs10","sourceRect":{"x":284,"y":1389,"width":42,"height":234},"pos":
         {"left":0,"top":0}
     },
 
-{"signal":"lf6_unten","sourceRect":{"x":328,"y":1352,"width":168,"height":226},"pos":
+{"signal":"lf6_unten","sourceRect":{"x":328,"y":1389,"width":168,"height":226},"pos":
         {"left":0,"top":35}
     },
 
-{"signal":"zs6_blech","sourceRect":{"x":385,"y":1580,"width":98,"height":224},"pos":
+{"signal":"zs6_blech","sourceRect":{"x":385,"y":1617,"width":98,"height":224},"pos":
         {"left":0,"top":0}
     },
 
-{"signal":"zs3v_unten","sourceRect":{"x":485,"y":1580,"width":161,"height":218},"pos":
+{"signal":"ne3_5","sourceRect":{"x":418,"y":1843,"width":57,"height":164},"pos":
+        {"left":0,"top":61}
+    },
+
+{"signal":"ne3_4","sourceRect":{"x":477,"y":1843,"width":57,"height":135},"pos":
+        {"left":0,"top":76}
+    },
+
+{"signal":"zs3v_unten","sourceRect":{"x":485,"y":1617,"width":161,"height":218},"pos":
         {"left":0,"top":40}
     },
 
-{"signal":"zs3_unten","sourceRect":{"x":639,"y":1800,"width":161,"height":216},"pos":
-        {"left":0,"top":41}
-    },
-
-{"signal":"bue_kennzeichen","sourceRect":{"x":802,"y":1800,"width":57,"height":207},"pos":
+{"signal":"bue_kennzeichen","sourceRect":{"x":536,"y":1837,"width":57,"height":207},"pos":
         {"left":0,"top":0}
     },
 
-{"signal":"ne3_5","sourceRect":{"x":861,"y":1800,"width":57,"height":164},"pos":
-        {"left":0,"top":61}
+{"signal":"zs6_licht","sourceRect":{"x":595,"y":1837,"width":71,"height":122},"pos":
+        {"left":29,"top":19}
+    },
+
+{"signal":"bue2_3","sourceRect":{"x":668,"y":1837,"width":28,"height":119},"pos":
+        {"left":16,"top":170}
+    },
+
+{"signal":"ne3_3","sourceRect":{"x":698,"y":1837,"width":57,"height":105},"pos":
+        {"left":0,"top":91}
+    },
+
+{"signal":"zs3_unten","sourceRect":{"x":757,"y":1617,"width":161,"height":216},"pos":
+        {"left":0,"top":41}
     }
 ]

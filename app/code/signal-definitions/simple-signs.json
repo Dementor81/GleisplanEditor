@@ -494,5 +494,47 @@
             "color": "#333"
          }
       ]
+   },{
+      "id": "ne_3",
+      "title": "Ne 3",
+      "atlas": "basis",
+      "scale": 0.12,
+      "previewsize": 30,
+      "initial": "stripes=4",
+      "config_options": [
+         {
+            "name": "kette=1",
+            "title": "Kette"
+         },
+         {
+            "type": "textinput",
+            "text": "Ankündigung",
+            "command": "ank",
+            "maxLength": 7
+         }
+      ],
+      "elements": [
+         "bue3",
+        
+            {
+               "image": "bue3_buebue",
+               "on": "kette=1"
+            },
+         {
+            "image": "bue_kennzeichen_ankünde"
+         },
+         {
+            "text": "ank",
+            "format": [
+               20,
+               "condenced"
+            ],
+            "pos": [
+               28,
+               102
+            ],
+            "color": "#333"
+         }
+      ]
    }
 ]
