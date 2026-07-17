@@ -618,5 +618,27 @@
                "on": "stripes=1"
             }
       ]
+   },
+   {
+      "id": "ne14",
+      "title": "Ne 14",
+      "atlas": "basis",
+      "scale": 0.15,
+      "padding":6,
+      "elements": [
+         "ne14",
+         {
+            "image": "ne14_schild",
+            "on": "bez",
+            "children": [
+               {
+                  "text": "bez",
+                  "color": "#333",
+                  "format": [40, "Arial", 1],
+                  "pos": [52, 115]
+               }
+            ]
+         }
+      ]
    }
 ]

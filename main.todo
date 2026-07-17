@@ -1,14 +1,14 @@
 Bugs:
     ✔ navbar funktioniert bei kleinen Bildschirmen nicht @done(26-06-21 19:50)
     ☐ züge sehr schnell über weichen bewegen, macht sie kaputt
-    ☐ Bahnsteige mit Größe 0 können gebaut werden
+    ✔ Bahnsteige mit Größe 0 können gebaut werden @done(26-07-17 20:33)
 
 Content:
-    ☐ Ne 3
+    ✔ Ne 3 @done(26-07-17 20:33)
     ✔ Ne 5 @done(26-07-09 13:15)
     ☐ Ne 14
-    ☐ lf 1,2 & 3
-    ☐ Bü 0,1,2 @started(26-07-09 17:09)
+    ✔ lf 1,2 & 3 @done(26-07-17 20:33)
+    ✔ Bü 0,1,2 @started(26-07-09 17:09) @done(26-07-17 20:33) @lasted(1w1d3h24m53s)
 
 
 Detailing:    
@@ -29,7 +29,7 @@ Features:
     ☐ Verwendung schaltet automatisch mehrere Feature um (Mastschild + Zusatzsignale), das könnte man mit rules erreichen
     ☐ mehrere Gleise, ganze Bahnhöfe verschieben
     ☐ Auswahlrahmen ziehen (unklar, ob das sinnvoll ist)
-    ☐ Wenn Signale übereinander liegen, dann die Reihenfolge sicherstellen (move to front)
+    ✔ Wenn Signale übereinander liegen, dann die Reihenfolge sicherstellen (move to front) @done(26-07-17 20:33)
     ☐ Bemahlungen automatisch an einem Gleis ausrichten
     ☐ weiteres Performance Update
     ☐ die Verbindung von Signalen besser visualisieren

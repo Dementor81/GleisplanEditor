@@ -232,7 +232,8 @@ export class UIManager {
                this.#app.signalTemplates.ne5,
                this.#app.signalTemplates.ne1,
                this.#app.signalTemplates.ne2,
-               this.#app.signalTemplates.ne_3
+               this.#app.signalTemplates.ne_3,
+               this.#app.signalTemplates.ne14
             ) as any
          ),
          ui.createAccordionItem(

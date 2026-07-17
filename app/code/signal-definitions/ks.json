@@ -2,18 +2,32 @@
    "id": "ks",
    "title": "Ks Hauptsignal",
    "atlas": "ks",
-   "padding":-2,
+   "padding": -2,
    "scale": 0.12,
    "previewsize": 20,
-   "initial": ["HPsig", "verw='asig'", "hp=0", "mast"],
+   "initial": [
+      "HPsig",
+      "verw='asig'",
+      "hp=0",
+      "mast"
+   ],
    "menu": [
       {
          "section": [
             {
                "buttonGroup": [
-                  { "text": "Hp 0", "command": "hp=0" },
-                  { "text": "Ks 1", "command": "hp=1" },
-                  { "text": "Ks 2", "command": "hp=2" }
+                  {
+                     "text": "Hp 0",
+                     "command": "hp=0"
+                  },
+                  {
+                     "text": "Ks 1",
+                     "command": "hp=1"
+                  },
+                  {
+                     "text": "Ks 2",
+                     "command": "hp=2"
+                  }
                ]
             },
             {
@@ -38,11 +52,26 @@
          "section": [
             {
                "buttonGroup": [
-                  { "text": "Zs 1", "command": "ersatz='zs1'" },
-                  { "text": "Zs 7", "command": "ersatz='zs7'" },
-                  { "text": "Zs 8", "command": "ersatz='zs8'" },
-                  { "text": "Sh 1", "command": "ersatz='sh1'" },
-                  { "text": "Kennlicht", "command": "ersatz='kennlicht'" }
+                  {
+                     "text": "Zs 1",
+                     "command": "ersatz='zs1'"
+                  },
+                  {
+                     "text": "Zs 7",
+                     "command": "ersatz='zs7'"
+                  },
+                  {
+                     "text": "Zs 8",
+                     "command": "ersatz='zs8'"
+                  },
+                  {
+                     "text": "Sh 1",
+                     "command": "ersatz='sh1'"
+                  },
+                  {
+                     "text": "Kennlicht",
+                     "command": "ersatz='kennlicht'"
+                  }
                ]
             }
          ]
@@ -54,7 +83,7 @@
                   "text": "Zs 6",
                   "command": "zs6=1"
                }
-            },         
+            },
             {
                "button": {
                   "text": "Zs 13",
@@ -80,15 +109,30 @@
          "name": "mast2",
          "title": "Mast gerade",
          "convertTo": "mast"
+      },
+      {
+         "name": "etcs",
+         "title": "Ne 14"
       }
    ],
    "dependency": {
-      "when": ["partner.HPsig"],
-      "unless": ["self.HPsig&&self.hp=0", "self.hp=-1"],
+      "when": [
+         "partner.HPsig"
+      ],
+      "unless": [
+         "self.HPsig&&self.hp=0",
+         "self.hp=-1"
+      ],
       "publish": {
          "route": [
-            ["hp<=0", "stop"],
-            ["hp>=1", "go"]
+            [
+               "hp<=0",
+               "stop"
+            ],
+            [
+               "hp>=1",
+               "go"
+            ]
          ]
       },
       "subscribe": {
@@ -108,8 +152,14 @@
          "children": [
             {
                "text": "currentSpeed",
-               "format": [85, "DOT"],
-               "pos": [90, 40],
+               "format": [
+                  85,
+                  "DOT"
+               ],
+               "pos": [
+                  90,
+                  40
+               ],
                "on": "currentSpeed>0",
                "off": "hp<=0"
             }
@@ -122,8 +172,15 @@
             "zs3",
             {
                "text": "currentSpeed",
-               "format": [80, "Arial", 1],
-               "pos": [85, 70]
+               "format": [
+                  80,
+                  "Arial",
+                  1
+               ],
+               "pos": [
+                  85,
+                  70
+               ]
             }
          ]
       },
@@ -268,9 +325,16 @@
             "zs3v",
             {
                "text": "advanceSpeed",
-               "format": [80, "Arial", 1],
+               "format": [
+                  80,
+                  "Arial",
+                  1
+               ],
                "color": "#ffde36",
-               "pos": [85, 490]
+               "pos": [
+                  85,
+                  490
+               ]
             }
          ]
       },
@@ -280,11 +344,17 @@
          "children": [
             {
                "text": "advanceSpeed",
-               "format": [85, "DOT"],
+               "format": [
+                  85,
+                  "DOT"
+               ],
                "color": "#ffde36",
                "on": "advanceSpeed>0",
                "off": "hp<=0||currentSpeed>0&&currentSpeed<=advanceSpeed",
-               "pos": [90, 520]
+               "pos": [
+                  90,
+                  520
+               ]
             }
          ]
       },
@@ -299,7 +369,10 @@
             {
                "image": "zs6_licht",
                "on": "currentSpeed>0",
-               "pos": [40, 500]
+               "pos": [
+                  40,
+                  500
+               ]
             }
          ]
       },
@@ -318,15 +391,37 @@
             }
          ]
       },
+     {
+     "on":"etcs=1",
+     "children":[{
+       "on":"mast",
+       "image":"ne14"
+     },
+     {
+       "on":"mast2",
+       "image":"ne14",
+       "pos": [
+                  30,
+                  760
+               ]
+     }]
+     },
       {
          "image": "schild",
          "on": "bez",
          "children": [
             {
                "text": "bez",
-               "format": [55, "condenced", 1],
+               "format": [
+                  55,
+                  "condenced",
+                  1
+               ],
                "color": "#333",
-               "pos": [85, 626]
+               "pos": [
+                  85,
+                  626
+               ]
             }
          ]
       }
