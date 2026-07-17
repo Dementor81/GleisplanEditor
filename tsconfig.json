@@ -21,6 +21,9 @@
     "sourceMap": true,
     "removeComments": false,
     
+    // Ensure jQuery globals ($) are available (loaded via script tag)
+    "types": ["jquery"],
+
     // Type Checking
     "strict": true,
     "noImplicitAny": true,
