@@ -197,7 +197,13 @@ export class UIManager {
          ui.createAccordionItem(
             "Lf-Signale",
             accordionId,
-            this.#createNewItemButtons(this.#app.signalTemplates.lf6, this.#app.signalTemplates.lf7) as any
+            this.#createNewItemButtons(
+               this.#app.signalTemplates.lf1,
+               this.#app.signalTemplates.lf2,
+               this.#app.signalTemplates.lf3,
+               this.#app.signalTemplates.lf6,
+               this.#app.signalTemplates.lf7
+            ) as any
          ),
          ui.createAccordionItem(
             "Ne-Signale",
@@ -206,7 +212,8 @@ export class UIManager {
                this.#app.signalTemplates.ne4,
                this.#app.signalTemplates.ne5,
                this.#app.signalTemplates.ne1,
-               this.#app.signalTemplates.ne2
+               this.#app.signalTemplates.ne2,
+               this.#app.signalTemplates.ne_3
             ) as any
          ),
          ui.createAccordionItem(
@@ -230,7 +237,12 @@ export class UIManager {
          ui.createAccordionItem(
             "Bahnübergang",
             accordionId,
-            this.#createNewItemButtons(this.#app.signalTemplates.bue) as any
+            this.#createNewItemButtons(
+               this.#app.signalTemplates.bue,
+               this.#app.signalTemplates["bü_kennzeichen"],
+               this.#app.signalTemplates["bü_2"],
+               this.#app.signalTemplates["bü_3"]
+            ) as any
          ),
       ]);
    }

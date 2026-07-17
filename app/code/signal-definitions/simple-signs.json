@@ -50,6 +50,60 @@
       ]
    },
    {
+      "id": "lf1",
+      "title": "Lf 1",
+      "atlas": "basis",
+      "scale": 0.12,
+      "initial": ["slave", "advanceSpeed=9"],
+      "menu": [
+         {
+            "section": [
+               {
+                  "dropdown": {
+                     "text": "Lf 1",
+                     "command": "advanceSpeed"
+                  }
+               }
+            ]
+         }
+      ],
+      "config_options": [
+         {
+            "name": "gedreht=1",
+            "title": "Gedreht"
+         }
+      ],      
+      "elements": [
+         {
+            "image": "lf1_unten",
+            "off": "gedreht=1"
+         },
+         {
+            "image": "lf1_oben",
+            "on": "gedreht=1"
+         },
+         {
+            "text": "advanceSpeed",
+            "format": [100, "Arial", 1],
+            "color": "#2d2d2dff",
+            "pos": [85, 40]
+         }
+      ]
+   },{
+      "id": "lf2",
+      "title": "Lf 2",
+      "atlas": "basis",
+      "scale": 0.14,
+      "previewsize": 30
+   },
+   {
+      "id": "lf3",
+      "title": "Lf 3",
+      "atlas": "basis",
+      "scale": 0.14,
+      "previewsize": 30
+   },
+   {
       "id": "lf6",
       "title": "Lf 6",
       "atlas": "basis",
@@ -389,8 +443,8 @@
       "id": "bü_2",
       "title": "Bü 2",
       "atlas": "basis",
-      "scale": 0.12,
-      "previewsize": 30,
+      "scale": 0.17,
+      "previewsize": 15,
       "initial": "tiles=4",
       "config_options": [
          {
@@ -456,8 +510,8 @@
       "id": "bü_3",
       "title": "Bü 3",
       "atlas": "basis",
-      "scale": 0.12,
-      "previewsize": 30,
+      "scale": 0.17,
+      "previewsize": 15,
       "initial": "tiles=4",
       "config_options": [
          {
@@ -498,8 +552,8 @@
       "id": "ne_3",
       "title": "Ne 3",
       "atlas": "basis",
-      "scale": 0.12,
-      "previewsize": 30,
+      "scale": 0.15,
+      "previewsize": 25,
       "initial": "stripes=4",
       "config_options": [
          {
