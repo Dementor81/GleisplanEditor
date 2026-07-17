@@ -2,7 +2,7 @@
 
 // ES6 Module imports
 import { Collapse, Modal, Offcanvas } from "bootstrap";
-import { CUSTOM_MOUSE_ACTION, MENU, Menu } from "../config.ts";
+import { CUSTOM_MOUSE_ACTION, MENU, Menu, COLORS } from "../config.ts";
 import { STORAGE } from "../storage.ts";
 import { ui } from "../ui.ts";
 import { Sig_UI } from "../sig_ui.ts";
@@ -68,6 +68,7 @@ export class UIManager {
     * Initialize UI components
     */
    initialize(): void {
+      this.#applyDarkMode(STORAGE.getDarkMode());
       this.#startScreen.mount();
       this.#rendererChoiceCardsHandle = mountRendererChoiceCards($("#rendererChoiceModalMount"));
       const $startMount = $("#startScreenRendererMount");
@@ -85,6 +86,19 @@ export class UIManager {
       this.#initializeButtonEvents();
       this.#viewportHud.mount();
       this.#newObjectMenu.mount();
+   }
+
+   #applyDarkMode(enabled: boolean): void {
+      document.documentElement.setAttribute("data-bs-theme", enabled ? "dark" : "light");
+      document.documentElement.classList.toggle("dark-mode", enabled);
+      COLORS.GRID = enabled ? COLORS.GRID_DARK : COLORS.GRID_LIGHT;
+      this.#app.renderingManager?.drawGrid(true);
+
+      const $item = $("#menuDarkMode");
+      if ($item.length) {
+         $item.attr("aria-checked", enabled ? "true" : "false");
+         $item.find(".dark-mode-check").toggleClass("d-none", !enabled);
+      }
    }
 
    /**
@@ -128,6 +142,11 @@ export class UIManager {
       $("#menuSpeichern").onclick(() => STORAGE.downloadAsFile());
       $("#menuModusAendern").onclick(() => {
          Modal.getOrCreateInstance(document.getElementById("rendererChoiceModal")!).show();
+      });
+      $("#menuDarkMode").onclick(() => {
+         const enabled = !STORAGE.getDarkMode();
+         STORAGE.setDarkMode(enabled);
+         this.#applyDarkMode(enabled);
       });
 
       $("#menuLoadFromFile").onclick(() => {

@@ -34,6 +34,10 @@ interface SavedSettings {
    renderer: "advanced" | "basic" | "textured";
 }
 
+interface UserPrefs {
+   darkMode?: boolean;
+}
+
 interface LoadedData {
    tracks?: any[];
    trains?: any[];
@@ -55,7 +59,28 @@ interface SwitchData {
 export const STORAGE = {
    MIN_STORAGE_VERSION: 0.5 as const,
    STORAGE_IDENT: "bahnhof_last1" as const,
-   
+   PREFS_IDENT: "bahnhof_prefs" as const,
+
+   getPrefs(): UserPrefs {
+      try {
+         const raw = localStorage.getItem(STORAGE.PREFS_IDENT);
+         if (!raw) return {};
+         return JSON.parse(raw) as UserPrefs;
+      } catch {
+         return {};
+      }
+   },
+
+   getDarkMode(): boolean {
+      return STORAGE.getPrefs().darkMode === true;
+   },
+
+   setDarkMode(enabled: boolean): void {
+      const prefs = STORAGE.getPrefs();
+      prefs.darkMode = enabled;
+      localStorage.setItem(STORAGE.PREFS_IDENT, JSON.stringify(prefs));
+   },
+
    /**
     * Get the class map for deserialization
     */

@@ -121,6 +121,8 @@ export const MENU = {
 
 export const COLORS = {
     GRID: "#ccc",
+    GRID_LIGHT: "#ccc",
+    GRID_DARK: "#555",
     SIGNAL_POSITION_LINE: "#e00",
     DRAWING_BLUEPRINT: "blue",
     DRAWING_ACTIVE: "#0000ff90",
@@ -130,7 +132,7 @@ export const COLORS = {
     
     // Train colors
     TRAIN_COLORS: ["#ff0000", "#ffff00", "#00ff00", "#0000ff"] as const,
-} as const;
+};
 
 // ============================================================================
 // File Paths and Resources

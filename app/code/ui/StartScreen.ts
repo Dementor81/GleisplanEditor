@@ -7,7 +7,7 @@ const START_SCREEN_MARKUP = `
 <div class="modal fade" id="loadModal" tabindex="-1" aria-labelledby="loadModalTitle">
    <div class="modal-dialog modal-dialog-scrollable modal-dialog-centered modal-lg modal-fullscreen-lg-down modal-renderer-choice">
       <div class="modal-content">
-         <div class="modal-header bg-light">
+         <div class="modal-header">
             <img src="logo.svg" alt="" width="70" height="70" />
             <div>
                <h5 class="modal-title" id="loadModalTitle">Willkommen beim Bahn Baukasten</h5>
