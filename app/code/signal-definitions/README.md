@@ -66,6 +66,14 @@ Render scale for placed signals. Defaults to `0.5` in `SignalTemplate`.
 
 Optional size hint for palette previews.
 
+### `padding`
+
+Optional extra distance in pixels between the outer edge of the track and the signal. Omit (or `0`) for no extra gap.
+
+```json
+"padding": 8
+```
+
 ### `initial`
 
 Aspect command or list of commands applied when a signal is created and when the Grundstellung button resets it.

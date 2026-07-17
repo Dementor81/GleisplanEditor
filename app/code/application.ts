@@ -166,8 +166,11 @@ export class Application {
       const point = pos.track.getPointFromKm(pos.km);
       const perp = geometry.perpendicular(pos.track.unit);
       const sign = pos.above ? -1 : 1;
+      const signal = this.#renderingManager!.getGameObjFromDisplayObj(container) as Signal | undefined;
+      const padding = signal?._template?.padding ?? 0;
       const dist =
          this.#renderingManager!.renderer.SIGNAL_DISTANCE_FROM_TRACK +
+         padding +
          (pos.flipped ? container.width : 0);
 
       container.angle =

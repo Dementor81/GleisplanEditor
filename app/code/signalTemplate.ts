@@ -28,7 +28,7 @@ export class SignalTemplate {
    #_json_file: any = null;
    #_scale: number = 0.5;
    #_signalMenu: SignalMenuRuntime | null = null;
-   #_distance_from_track: number = 0;
+   #_padding: number = 0;
 
    elements: any[] = [];
    rules: any[] = [];
@@ -55,11 +55,11 @@ export class SignalTemplate {
    set scale(v: number) {
       this.#_scale = v;
    }
-   get distance_from_track() {
-      return this.#_distance_from_track;
+   get padding() {
+      return this.#_padding;
    }
-   set distance_from_track(v: number) {
-      this.#_distance_from_track = v;
+   set padding(v: number) {
+      this.#_padding = v;
    }
 
    get signalMenu() {

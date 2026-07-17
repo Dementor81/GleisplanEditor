@@ -29,6 +29,7 @@ export class SignalDefinitionBuilder {
 
       if (definition.scale !== undefined) template.scale = definition.scale;
       if (definition.previewsize !== undefined) template.previewsize = definition.previewsize;
+      if (definition.padding !== undefined) template.padding = definition.padding;
       definition.rules?.forEach(([trigger, setting]) => template.addRule(trigger, setting));
       if (definition.menu) template.setSignalMenu(SignalDefinitionBuilder.buildMenu(definition.menu, template));
       if (definition.config_options?.length) template.configOptions = [...definition.config_options];

@@ -178,6 +178,8 @@ export interface SignalTemplateDefinition {
    initial?: SignalInitialAspects;
    scale?: number;
    previewsize?: number;
+   /** Extra pixels between track outer edge and signal. Omit for no extra gap. */
+   padding?: number;
    menu?: SignalMenuDefinition;
    rules?: Array<[string, string]>;
    config_options?: SignalConfigOptionDefinition[];

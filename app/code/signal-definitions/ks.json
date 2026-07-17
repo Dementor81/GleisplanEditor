@@ -2,6 +2,7 @@
    "id": "ks",
    "title": "Ks Hauptsignal",
    "atlas": "ks",
+   "padding":-2,
    "scale": 0.12,
    "previewsize": 20,
    "initial": ["HPsig", "verw='asig'", "hp=0", "mast"],
