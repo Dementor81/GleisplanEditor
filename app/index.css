@@ -306,6 +306,10 @@ html, body {
     color: var(--ink);
 }
 
+.content h5 {
+    color: #7e7e7e;
+}
+
 /* Muted list colours — add to .roadmap-list, e.g. class="roadmap-list list-blue" */
 .list-blue   { background: #d6e4f0; }
 .list-green  { background: #d8e8d8; }
