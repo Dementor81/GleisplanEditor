@@ -20,6 +20,14 @@ export abstract class TrackRenderingBase {
    }
 
    abstract reDrawEverything(force?: boolean, render_outside_viewport?: boolean): void;
+
+   /**
+    * React to a pan/zoom change without rebuilding unchanged content.
+    * The scene is retained-mode and lives in world space under the viewport container,
+    * so moving the camera only requires a re-render (plus incremental culling in advanced mode).
+    */
+   abstract onViewportChanged(): void;
+
    abstract renderAllGenericObjects(): void;
    abstract renderAllSignals(): void;
    abstract renderSwitchUI(sw: Switch): void;

@@ -325,6 +325,11 @@ html.dark-mode #CanvasContainer {
 
 .newSignalItem {
     font-size: smaller;
+    touch-action: none;
+}
+
+#newTrain {
+    touch-action: none;
 }
 
 .newItem_image {

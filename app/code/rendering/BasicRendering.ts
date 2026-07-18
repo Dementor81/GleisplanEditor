@@ -49,6 +49,12 @@ export class BasicRendering extends TrackRenderingBase {
       this.app.renderingManager!.update();
    }
 
+   /**
+    * Basic mode keeps every object in the scene regardless of viewport, so a pan/zoom
+    * needs no content rebuild; the caller re-renders the moved viewport.
+    */
+   onViewportChanged(): void {}
+
    renderAllSignals() {
       const rm = this.app.renderingManager!;
       rm.containers.signals.removeChildren();

@@ -74,6 +74,14 @@ export class AdvancedRendering extends TrackRenderingBase {
       return this.core.reDrawEverything(force, render_outside_viewport);
    }
 
+   /**
+    * Advanced mode culls sleepers/tracks per viewport and applies LOD on zoom, so a
+    * pan/zoom runs the incremental (non-forced) redraw rather than a full rebuild.
+    */
+   onViewportChanged(): void {
+      this.core.reDrawEverything(false);
+   }
+
    renderAllGenericObjects() {
       return this.genericElements.renderAllGenericObjects();
    }

@@ -228,7 +228,7 @@ export class RenderingManager {
          viewport.x -= globalPoint.x - point.x;
          viewport.y -= globalPoint.y - point.y;
          this.drawGrid();
-         this.reDrawEverything();
+         this.#renderer?.onViewportChanged();
          this.update();
          this.notifyViewportChanged();
          return true;
@@ -267,8 +267,9 @@ export class RenderingManager {
       const vp = this.#viewport!;
       vp.x += deltaX;
       vp.y += deltaY;
-      this.drawGrid();
-      this.reDrawEverything();
+      this.drawGrid(false);
+      this.#renderer?.onViewportChanged();
+      this.update();
       this.notifyViewportChanged();
    }
 
@@ -345,7 +346,8 @@ export class RenderingManager {
    #commitViewportChange(): void {
       STORAGE.save();
       this.drawGrid();
-      this.reDrawEverything();
+      this.#renderer?.onViewportChanged();
+      this.update();
       this.notifyViewportChanged();
    }
 

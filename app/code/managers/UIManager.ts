@@ -284,8 +284,11 @@ export class UIManager {
                      .css("background-size", template.previewsize ?? 45),
                   ui.div("flex-grow-5 ms-2", template.title),
                ])
-               .on("mousedown", (_e: JQuery.MouseDownEvent) => {
-                  this.#app.eventManager!.startSignalDragFromTemplate(template);
+               .on("pointerdown", (e: JQuery.TriggeredEvent) => {
+                  this.#app.eventManager!.startSignalDragFromTemplate(
+                     template,
+                     e.originalEvent as PointerEvent
+                  );
                });
          })
          .filter((item): item is JQuery => item !== null);
@@ -379,8 +382,8 @@ export class UIManager {
     * @private
     */
    #initializeNewTrainMenu(): void {
-      $("#newTrain").off("mousedown").on("mousedown", (_e: JQuery.MouseDownEvent) => {
-         this.#app.eventManager!.startTrainPlacementDrag();
+      $("#newTrain").off("pointerdown").on("pointerdown", (e: JQuery.TriggeredEvent) => {
+         this.#app.eventManager!.startTrainPlacementDrag(e.originalEvent as PointerEvent);
       });
    }
 

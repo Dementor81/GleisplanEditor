@@ -44,6 +44,7 @@ export class EventManager {
    #mainCanvas: HTMLCanvasElement = (window as any).myCanvas as HTMLCanvasElement;
 
    #activeInteraction: PointerInteraction | null = null;
+   #paletteDragActive = false;
    #twoFingerGestureActive = false;
    #lastPinchDistance: number | null = null;
    #lastCentroid: { x: number; y: number } | null = null;
@@ -70,34 +71,62 @@ export class EventManager {
     * Start a new signal drag operation from a signal template.
     * Moved from UI layer to centralize mouseAction handling.
     */
-   startSignalDragFromTemplate(template: any): void {
+   startSignalDragFromTemplate(template: any, event?: PointerEvent): void {
       if (this.#app.planLocked) return;
       const rm = this.#app.renderingManager;
       if (!rm) return;
 
+      if (event) rm.recordCanvasPointer(event);
       const start = Point.fromPoint(rm.viewportPointerLocal());
       this.startInteraction(new SignalTemplateInteraction(template, start));
-
-      document.addEventListener(
-         "mouseup",
-         (e: MouseEvent) => this.handleStageMouseUp({ nativeEvent: e }),
-         { once: true }
-      );
+      this.#beginPaletteDrag(event);
    }
 
    /**
     * Start a new train placement drag operation.
     * Moved from UI layer to centralize mouseAction handling.
     */
-   startTrainPlacementDrag(): void {
-      const start = Point.fromPoint(this.#app.renderingManager!.viewportPointerLocal());
+   startTrainPlacementDrag(event?: PointerEvent): void {
+      const rm = this.#app.renderingManager!;
+      if (event) rm.recordCanvasPointer(event);
+      const start = Point.fromPoint(rm.viewportPointerLocal());
       this.startInteraction(new TrainPlaceInteraction(start));
+      this.#beginPaletteDrag(event);
+   }
 
-      document.addEventListener(
-         "mouseup",
-         (e: MouseEvent) => this.handleStageMouseUp({ nativeEvent: e }),
-         { once: true }
-      );
+   /**
+    * Drive a palette drag (signal/train) with document-level pointer events.
+    * Touch events are captured by the sidebar element the drag started on, so the
+    * Pixi stage never receives them — listening on `document` works for mouse and touch alike.
+    */
+   #beginPaletteDrag(event?: PointerEvent): void {
+      const rm = this.#app.renderingManager!;
+      const pointerId = event?.pointerId;
+      this.#paletteDragActive = true;
+
+      const move = (e: PointerEvent) => {
+         if (pointerId !== undefined && e.pointerId !== pointerId) return;
+         rm.recordCanvasPointer(e);
+         if (this.#activeInteraction) {
+            this.#activeInteraction.onMove(
+               Point.fromPoint(rm.viewportPointerLocal()),
+               e as unknown as FederatedPointerEvent
+            );
+            rm.update();
+         }
+      };
+      const end = (e: PointerEvent) => {
+         if (pointerId !== undefined && e.pointerId !== pointerId) return;
+         document.removeEventListener("pointermove", move);
+         document.removeEventListener("pointerup", end);
+         document.removeEventListener("pointercancel", end);
+         this.#paletteDragActive = false;
+         this.handleStageMouseUp({ nativeEvent: e });
+      };
+
+      document.addEventListener("pointermove", move);
+      document.addEventListener("pointerup", end);
+      document.addEventListener("pointercancel", end);
    }
 
    /**
@@ -346,7 +375,7 @@ export class EventManager {
     * @param {Event} event - The mouse move event
     */
    handleMouseMove(event: FederatedPointerEvent): void {
-      if (this.#twoFingerGestureActive) return;
+      if (this.#twoFingerGestureActive || this.#paletteDragActive) return;
       if (!event.isPrimary || !this.#activeInteraction) return;
 
       if (event.buttons === 0) return this.handleStageMouseUp(event);
