@@ -19,6 +19,7 @@ export class TextPlaceInteraction implements PointerInteraction {
       const o = new GenericObject(GenericObject.OBJECT_TYPE.text);
       o.pos(local);
       o.content("Text");
+      o.size(40, 20);
       GenericObject.all_objects.push(o);
       app.selectObject(o);
       app.renderingManager!.renderer.renderAllGenericObjects();

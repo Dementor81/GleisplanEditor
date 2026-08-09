@@ -13,16 +13,19 @@ export class GenericObject {
       plattform: 2,
    };
 
-   static MIN_PLATFORM_SIZE = 50;
+   static MIN_PLATFORM_SIZE = 20;
+   static MIN_TEXT_SIZE = 10;
+   static DEFAULT_TEXT_COLOR = "#000000";
 
    static all_objects: any[] = [];
 
    static FromObject(o: any): GenericObject {
       return new GenericObject()
          .pos(o.pos)
-         .size(o.size.width, o.size.height)
+         .size(o.size?.width ?? 0, o.size?.height ?? 0)
          .type(o.type)
-         .content(o.content);
+         .content(o.content)
+         .color(o.color ?? GenericObject.DEFAULT_TEXT_COLOR);
    }
 
    static removeObject(o: any): void {
@@ -35,6 +38,7 @@ export class GenericObject {
 
    static initEditMenu(o: any): void {
       let header_text: string | undefined;
+      const isText = o.type() === GenericObject.OBJECT_TYPE.text;
       switch (o.type()) {
          case GenericObject.OBJECT_TYPE.text:
             header_text = "Text";
@@ -47,7 +51,6 @@ export class GenericObject {
       }
       $("#editObjectMenu h5").text(header_text ?? "");
 
-      
       $("#inputContent")
          .off()
          .val(o.content())
@@ -58,6 +61,24 @@ export class GenericObject {
             Application.getInstance().renderingManager!.update();
             STORAGE.save();
          });
+
+      const $color = $("#colorInputObject");
+      if (isText) {
+         $color.parent().show();
+         $color
+            .off()
+            .val(o.color())
+            .on("change", function () {
+               o.color($(this).val() as string);
+               Application.getInstance().renderingManager!.renderer.renderAllGenericObjects();
+               Application.getInstance().renderingManager!.renderer.updateSelection();
+               Application.getInstance().renderingManager!.update();
+               STORAGE.save();
+            });
+      } else {
+         $color.off();
+         $color.parent().hide();
+      }
 
       $("#btnRemoveObject")
          .off()
@@ -75,6 +96,7 @@ export class GenericObject {
    #_size: { width: number; height: number } = { width: 0, height: 0 };
    #_type: number = GenericObject.OBJECT_TYPE.none;
    #_content: string = "";
+   #_color: string = GenericObject.DEFAULT_TEXT_COLOR;
 
    constructor(t: number = GenericObject.OBJECT_TYPE.none) {
       this.#_type = t;
@@ -105,11 +127,20 @@ export class GenericObject {
       return this;
    }
 
+   color(c?: any): any {
+      if (c === undefined) return this.#_color;
+      this.#_color = c;
+      return this;
+   }
+
    stringify(): any {
-      return { _class: "GenericObject", pos: this.#_pos, size: this.#_size, type: this.#_type, content: this.#_content };
+      return {
+         _class: "GenericObject",
+         pos: this.#_pos,
+         size: this.#_size,
+         type: this.#_type,
+         content: this.#_content,
+         color: this.#_color,
+      };
    }
 }
-
-
-
-

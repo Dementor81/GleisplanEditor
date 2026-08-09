@@ -81,7 +81,8 @@ export abstract class TrackRenderingBase {
                if (
                   !this.app.planLocked &&
                   d instanceof GenericObject &&
-                  d.type() === GenericObject.OBJECT_TYPE.plattform
+                  (d.type() === GenericObject.OBJECT_TYPE.plattform ||
+                     d.type() === GenericObject.OBJECT_TYPE.text)
                ) {
                   this.drawPlatformResizeHandle(c, d);
                }

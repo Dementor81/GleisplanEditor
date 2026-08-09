@@ -24,7 +24,10 @@ export class PlatformResizeInteraction implements PointerInteraction {
 
       let w = local.x - tl.x;
       let h = local.y - tl.y;
-      const min = GenericObject.MIN_PLATFORM_SIZE;
+      const min =
+         this.obj.type() === GenericObject.OBJECT_TYPE.text
+            ? GenericObject.MIN_TEXT_SIZE
+            : GenericObject.MIN_PLATFORM_SIZE;
       if (Math.abs(w) < min) w = w < 0 ? -min : min;
       if (Math.abs(h) < min) h = h < 0 ? -min : min;
 

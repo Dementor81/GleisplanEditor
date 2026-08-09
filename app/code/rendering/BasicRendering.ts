@@ -29,7 +29,7 @@ export class BasicRendering extends TrackRenderingBase {
 
    constructor() {
       super();
-      this.SIGNAL_DISTANCE_FROM_TRACK = 18;
+      this.SIGNAL_DISTANCE_FROM_TRACK = 8;
    }
 
    protected trainCarHeight(): number {
@@ -96,12 +96,22 @@ export class BasicRendering extends TrackRenderingBase {
    }
 
    renderTextObject(text_object: any, container: any) {
+      const size = text_object.size();
+      const hasSize = size.width !== 0 || size.height !== 0;
+      const fontSize = hasSize ? Math.abs(size.height) : 20;
       var text = new Text({
          text: text_object.content(),
-         style: { fill: "#000000", fontFamily: "Arial", fontSize: 20 },
+         style: { fill: text_object.color(), fontFamily: "Arial", fontSize },
       });
       text.eventMode = "static";
-      text.hitArea = rectHitArea(0, 0, text.width, text.height);
+      const hitW = hasSize ? Math.abs(size.width) : text.width;
+      const hitH = hasSize ? Math.abs(size.height) : text.height;
+      text.hitArea = rectHitArea(0, 0, hitW, hitH);
+      if (hasSize) {
+         const bounds = gleisGraphics();
+         bounds.rect(0, 0, hitW, hitH).fill({ color: 0, alpha: 0 });
+         container.addChild(bounds);
+      }
 
       container.addChild(text);
    }
