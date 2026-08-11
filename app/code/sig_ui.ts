@@ -381,7 +381,9 @@ export class Sig_UI {
       const selection = app.selection;
       if (selection.type == "Signal") {
          [].concat(selection.object).forEach((s: any) => {
+            const bez = s.get("bez");
             s._signalStellung = {};
+            if (bez != null) s._signalStellung.bez = bez;
             s._changed = true;
             s._aspectAnimations.clear();
             app.eventManager?.emit("signalAspectChanged", { signal: s });

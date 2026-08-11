@@ -625,8 +625,15 @@
       "atlas": "basis",
       "scale": 0.15,
       "padding":6,
+      "config_options": [
+         {
+            "name": "gedreht=1",
+            "title": "Gedreht"
+         }
+      ],
       "elements": [
-         "ne14",
+         "ne14_mast",
+         "ne14_arrow",
          {
             "image": "ne14_schild",
             "on": "bez",
@@ -636,6 +643,28 @@
                   "color": "#333",
                   "format": [40, "Arial", 1],
                   "pos": [52, 115]
+               }
+            ]
+         },
+         {
+            "off": "gedreht=1",
+            "rotation": [
+               {
+                  "element": "ne14_arrow",
+                  "angle": 0,
+                  "pivot": [54.5, 55],
+                  "duration": 0
+               }
+            ]
+         },
+         {
+            "on": "gedreht=1",
+            "rotation": [
+               {
+                  "element": "ne14_arrow",
+                  "angle": 180,
+                  "pivot": [54.5, 55],
+                  "duration": 0
                }
             ]
          }
