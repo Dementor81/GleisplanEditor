@@ -264,12 +264,10 @@ export class RailwayCrossing {
          });
    }
 
-   static refreshAfterTrackGeometryChange(track: Track, oldStart?: Point): void {
-      const addedLength = oldStart ? geometry.distance(oldStart, track.start) : 0;
-
+   static refreshAfterTrackGeometryChange(track: Track, startShift: number = 0): void {
       RailwayCrossing.allCrossings.forEach((crossing) => {
          crossing.entries.forEach((entry) => {
-            if (entry.track === track && oldStart) entry.km += addedLength;
+            if (entry.track === track) entry.km = Math.min(Math.max(entry.km + startShift, 0), track.length);
          });
          if (crossing.entries.some((entry) => entry.track === track)) {
             crossing.refreshFromAnchor();

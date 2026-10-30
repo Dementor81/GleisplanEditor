@@ -177,25 +177,16 @@ export class Switch {
       } else if (NumberUtils.between(tracksAtPoint.length, 3, 4)) {
          // Potential switch.
          if (Switch.isValidSwitch(point, tracksAtPoint)) {
-            if (existingSwitch) {
-               const existingTracks = [
-                  existingSwitch.track1,
-                  existingSwitch.track2,
-                  existingSwitch.track3,
-                  existingSwitch.track4,
-               ].filter((t) => t);
-               const tracksMatch =
-                  existingTracks.length === tracksAtPoint.length &&
-                  existingTracks.every((existingTrack) => tracksAtPoint.some((currentTrack) => currentTrack === existingTrack));
-
-               if (!tracksMatch) {
-                  Switch.removeSwitch(existingSwitch);
-                  const sw = Switch.createSwitch(point, tracksAtPoint);
-                  [sw.track1, sw.track2, sw.track3, sw.track4].forEach((track) => track && track.addSwitch(sw));
-                  Switch.allSwitches.push(sw);
-               }
+            const sw = Switch.createSwitch(point, tracksAtPoint);
+            const sameTracks = (a: Switch, b: Switch) => {
+               const tracksA = a.tracks.filter((t) => t);
+               return tracksA.length === b.tracks.filter((t) => t).length && tracksA.every((t) => b.tracks.includes(t));
+            };
+            if (existingSwitch && sameTracks(sw, existingSwitch)) {
+               // Same switch, but the geometry of its tracks might have changed.
+               existingSwitch.calculateParameters();
             } else {
-               const sw = Switch.createSwitch(point, tracksAtPoint);
+               if (existingSwitch) Switch.removeSwitch(existingSwitch);
                [sw.track1, sw.track2, sw.track3, sw.track4].forEach((track) => track && track.addSwitch(sw));
                Switch.allSwitches.push(sw);
             }

@@ -23,13 +23,16 @@ export class TrackEndpointInteraction implements PointerInteraction {
       const rm = Application.getInstance().renderingManager!;
       const gridSnap = Track.snapToGrid(local);
 
-      if (geometry.distance(local, gridSnap) <= CONFIG.SNAP_TO_GRID) {
-         if (Track.isValidTrackNodePoint(gridSnap, null)) {
-            const oldStart = this.endpoint === "start" ? this.track.start : undefined;
-            if (this.endpoint === "start") this.track.setNewStart(gridSnap);
+      const moved = this.endpoint === "start" ? this.track.start : this.track.end;
+      if (geometry.distance(local, gridSnap) <= CONFIG.SNAP_TO_GRID && !gridSnap.equals(moved)) {
+         const [start, end] = this.endpoint === "start" ? [gridSnap, this.track.end] : [this.track.start, gridSnap];
+         // Tracks always run from left to right (bottom to top if vertical) and must keep a length.
+         if (start.x < end.x || (start.x === end.x && start.y < end.y)) {
+            let startShift = 0;
+            if (this.endpoint === "start") startShift = this.track.setNewStart(gridSnap);
             else this.track.setNewEnd(gridSnap);
-            Track.createRailNetwork();
-            RailwayCrossing.refreshAfterTrackGeometryChange(this.track, oldStart);
+            Track.refreshConnections();
+            RailwayCrossing.refreshAfterTrackGeometryChange(this.track, startShift);
             rm.renderer.reDrawEverything(true);
          }
       }
@@ -37,7 +40,12 @@ export class TrackEndpointInteraction implements PointerInteraction {
       rm.update();
    }
 
+   /** Tracks are only split or joined once the endpoint is released, so the dragged track stays valid while moving. */
    onUp(_local: Point, _e: FederatedPointerEvent): void {
+      const rm = Application.getInstance().renderingManager!;
+      Track.createRailNetwork();
+      rm.renderer.reDrawEverything(true);
+      rm.update();
       EditorCommitter.commit();
    }
 

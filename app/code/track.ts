@@ -153,20 +153,16 @@ export class Track {
       let cut_km = track1.length;
       track1.setNewEnd(track2.end);
 
-      track1.switchAtTheEnd = null;
-
-      // Remove any existing switch between the two tracks
-      if (track2.switchAtTheEnd) {
-         if (track2.switchAtTheEnd instanceof Switch) {
-            track2.switchAtTheEnd.replaceTrackReference(track2, track1);
-         }
-         track1.switchAtTheEnd = track2.switchAtTheEnd;
-      }
+      const next = track2.switchAtTheEnd;
+      if (next instanceof Switch) next.replaceTrackReference(track2, track1);
+      else if (next instanceof Track) next.switches = next.switches.map((s) => (s === track2 ? track1 : s));
+      track1.switchAtTheEnd = next;
 
       track2.signals.forEach((s) => {
          s._positioning.track = track1;
          s._positioning.km += cut_km;
       });
+      ArrayUtils.remove(Track.allTracks, track2);
    }
 
    static #findTrackContainingPoint(point: Point, tracks: Track[]): Track | undefined {
@@ -516,7 +512,6 @@ export class Track {
 
          if (connected_tracks.length == 1 && connected_tracks[0].rad == track.rad) {
             Track.joinTrack(track, connected_tracks[0]);
-            ArrayUtils.remove(Track.allTracks, connected_tracks[0]);
          } else i++;
       }
    }
@@ -560,7 +555,35 @@ export class Track {
       });
    }
 
+   /**
+    * Drops switches and track-to-track links that no longer match the current track geometry,
+    * and refreshes the cached parameters of the switches that are still valid.
+    */
+   static #pruneStaleConnections(): void {
+      [...Switch.allSwitches].forEach((sw) => Switch.updateSwitchAtPoint(sw.location, sw));
+
+      Track.allTracks.forEach((track) => {
+         track.switches = track.switches.map((link, i) => {
+            const point = i === 0 ? track.start : track.end;
+            if (link instanceof Switch) return Switch.allSwitches.includes(link) && link.location.equals(point) ? link : null;
+            const connected =
+               link &&
+               Track.allTracks.includes(link) &&
+               (link.start.equals(point) || link.end.equals(point)) &&
+               (Switch.getAngleBetweenTracks(track, link) ?? 0) > 90;
+            return connected ? link : null;
+         });
+      });
+   }
+
+   /** Brings switches and connections in line with the current geometry without changing the set of tracks. */
+   static refreshConnections(): void {
+      Track.#pruneStaleConnections();
+      Track.createSwitches();
+   }
+
    static createRailNetwork(): void {
+      Track.#pruneStaleConnections();
       Track.splitTracksAtIntersections();
       Track.cleanUpTracks();
       Track.createSwitches();
@@ -798,20 +821,29 @@ export class Track {
       return t;
    }
 
+   /** Keeps the signals within the track after its length has changed. */
+   #clampSignals(): void {
+      this.signals.forEach((s) => {
+         s._positioning.km = Math.min(Math.max(s._positioning.km, 0), this.length);
+      });
+   }
+
    /**
     * Changes the start point of the track to the new point
     * @param {Point} newStart - The new start point
+    * @returns the change of the track length (positive if the track got longer); signals keep their distance to the end
     */
-   setNewStart(newStart: Point): void {
-      if (!newStart) return;
-      const old_start = this.start;
+   setNewStart(newStart: Point): number {
+      if (!newStart) return 0;
+      const added_length = geometry.distance(newStart, this.end) - geometry.distance(this.start, this.end);
       this.#_start = newStart;
-      const added_length = geometry.distance(old_start, newStart);
       this.#resetCache();
 
       this.signals.forEach((s) => {
          s._positioning.km += added_length;
       });
+      this.#clampSignals();
+      return added_length;
    }
 
    /**
@@ -822,6 +854,7 @@ export class Track {
       if (!newEnd) return;
       this.#_end = newEnd;
       this.#resetCache();
+      this.#clampSignals();
    }
 }
 
