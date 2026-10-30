@@ -44,13 +44,6 @@ export class AdvancedRendererCore {
 
             const rm = r.app.renderingManager!;
             toBeRemoved.forEach((track) => {
-               const signalsToBeRemoved = rm.containers.signals.children.filter((cs: any) => {
-                  const sig = rm.getGameObjFromDisplayObj(cs) as any;
-                  return sig?._positioning?.track === track;
-               });
-               signalsToBeRemoved.forEach((cs: any) => {
-                  rm.containers.signals.removeChild(cs);
-               });
                rm.containers.tracks.renderedTracks.delete(track);
 
                const sleepersToRemove = rm.containers.tracks.children[0].children.filter((c: any) => rm.getGameObjFromDisplayObj(c) === track);
@@ -103,10 +96,12 @@ export class AdvancedRendererCore {
 
                try {
                   this.renderAllTracks(force);
-                  this.renderAllCrossings();
-                  this.renderAllSignals();
-                  r.renderAllTrains();
-                  r.genericElements.renderAllGenericObjects();
+                  if (force) {
+                     this.renderAllCrossings();
+                     this.renderAllSignals();
+                     r.renderAllTrains();
+                     r.genericElements.renderAllGenericObjects();
+                  }
                   r._lastRenderScale = r.app.renderingManager!.viewport.scale.x;
                   if (!render_outside_viewport) this.cleanUp();
                } catch (error) {

@@ -189,6 +189,8 @@ export async function createPixiApplicationWithViewport(
       preference: "webgl", // extract.base64 / canvas previews need 2D toDataURL (WebGPU path does not)
    });
    const viewport = createLayerContainer("viewport");
+   // Render group: pan/zoom only changes one group transform instead of re-transforming every descendant.
+   viewport.enableRenderGroup();
    app.stage.addChild(viewport);
    return { app, viewport };
 }

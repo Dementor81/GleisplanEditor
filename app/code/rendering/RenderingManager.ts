@@ -14,7 +14,7 @@ import { AdvancedRendering } from './advanced/AdvancedRendering.ts';
 import type { TrackRenderingBase } from './TrackRenderingBase.ts';
 import type { Application as GleisApplication } from '../application.ts';
 import type { Application as PixiApplication } from 'pixi.js';
-import { Container } from 'pixi.js';
+import { Container, UPDATE_PRIORITY } from 'pixi.js';
 import { createPixiApplicationWithViewport, hitTestFromViewportLocal, TrackGraphics } from '../pixiPrimitives.ts';
 import { createLayerContainer } from '../pixiUtils.ts';
 import { SignalRenderer } from './signalRenderer.ts';
@@ -47,6 +47,7 @@ export class RenderingManager {
    #pixiApp: PixiApplication | null = null;
    #viewport: Container | null = null;
    #canvas: HTMLCanvasElement | null = null;
+   #dirty = true;
    #pointerX = 0;
    #pointerY = 0;
    #containers: ContainersType | Record<string, any> = {};
@@ -86,6 +87,30 @@ export class RenderingManager {
       const { app, viewport } = await createPixiApplicationWithViewport(myCanvas);
       this.#pixiApp = app;
       this.#viewport = viewport;
+      this.#enableOnDemandRendering();
+   }
+
+   /**
+    * Replaces Pixi's render-every-frame ticker listener: a frame is drawn only after `update()`, user input,
+    * or while ticker animations (anything besides this listener) are running, plus one trailing frame.
+    */
+   #enableOnDemandRendering(): void {
+      const app = this.#pixiApp!;
+      let wasAnimating = false;
+      app.ticker.remove(app.render, app);
+      app.ticker.add(() => {
+         const animating = app.ticker.count > 1;
+         if (this.#dirty || animating || wasAnimating) {
+            this.#dirty = false;
+            app.render();
+         }
+         wasAnimating = animating;
+      }, undefined, UPDATE_PRIORITY.LOW);
+
+      const invalidate = () => { this.#dirty = true; };
+      for (const type of ["pointerdown", "pointermove", "pointerup", "wheel", "keydown", "keyup", "click"]) {
+         document.addEventListener(type, invalidate, { capture: true, passive: true });
+      }
    }
 
    /**
@@ -172,7 +197,7 @@ export class RenderingManager {
     * Update the stage
     */
    update(): void {
-      if (this.#pixiApp) this.#pixiApp.renderer.render(this.#pixiApp.stage);
+      this.#dirty = true;
    }
 
    redrawSignal(signal: Signal): void {
