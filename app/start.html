@@ -90,6 +90,12 @@
                      <i class="bi bi-trash"></i><span>Alles entfernen</span>
                   </button>
                </li>
+               <li><hr class="dropdown-divider" /></li>
+               <li>
+                  <button type="button" class="dropdown-item" id="menuAbout">
+                     <i class="bi bi-info-circle"></i><span>Über</span>
+                  </button>
+               </li>
             </ul>
          </div>
          <a id="navbarBrand" class="navbar-brand" href="start.html">Bahn Baukasten</a>
@@ -157,6 +163,40 @@
                <div class="modal-footer">
                   <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Abbrechen</button>
                   <button type="button" class="btn btn-primary" id="btnRendererChoiceOk">OK</button>
+               </div>
+            </div>
+         </div>
+      </div>
+
+      <div
+         class="modal fade"
+         id="aboutModal"
+         tabindex="-1"
+         aria-labelledby="aboutModalTitle"
+         aria-hidden="true">
+         <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content">
+               <div class="modal-header">
+                  <h5 class="modal-title" id="aboutModalTitle">Über Bahn Baukasten</h5>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Schließen"></button>
+               </div>
+               <div class="modal-body">
+                  <p class="mb-1">Version <span id="aboutVersion"></span></p>
+                  <p class="text-secondary">Letzte Aktualisierung: <span id="aboutUpdated"></span></p>
+                  <h6>Autor</h6>
+                  <p>Marcus Metzdorf</p>
+                  <h6>Lizenz</h6>
+                  <p>
+                     Du darfst diese Anwendung und ihre Inhalte kostenlos nutzen, auch für kommerzielle Zwecke. Eine Weitergabe ist ebenfalls erlaubt. Änderungen oder Bearbeitungen sind jedoch nicht gestattet. Bitte nenne bei jeder Nutzung oder Weitergabe die ursprüngliche Quelle.
+                  </p>
+                  <p class="mb-0">
+                     Diese Anwendung steht unter der Creative Commons Lizenz
+                     <a href="https://creativecommons.org/licenses/by-nd/4.0/deed.de" target="_blank" rel="noopener">CC BY-ND 4.0 International</a>
+                     (Namensnennung – Keine Bearbeitungen). Die Lizenzbedingungen gelten ergänzend zu den oben genannten Hinweisen.
+                  </p>
+               </div>
+               <div class="modal-footer">
+                  <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Schließen</button>
                </div>
             </div>
          </div>

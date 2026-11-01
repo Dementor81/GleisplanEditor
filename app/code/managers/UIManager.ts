@@ -2,7 +2,7 @@
 
 // ES6 Module imports
 import { Collapse, Modal, Offcanvas } from "bootstrap";
-import { CUSTOM_MOUSE_ACTION, MENU, Menu, COLORS } from "../config.ts";
+import { CUSTOM_MOUSE_ACTION, MENU, Menu, COLORS, CONFIG } from "../config.ts";
 import { STORAGE } from "../storage.ts";
 import { ui } from "../ui.ts";
 import { Sig_UI } from "../sig_ui.ts";
@@ -91,6 +91,15 @@ export class UIManager {
       this.#newObjectMenu.mount();
    }
 
+   #formatUpdated(isoDate: string): string {
+      const [year, month, day] = isoDate.split("-").map(Number);
+      return new Date(year, month - 1, day).toLocaleDateString("de-DE", {
+         day: "numeric",
+         month: "long",
+         year: "numeric",
+      });
+   }
+
    #applyDarkMode(enabled: boolean): void {
       document.documentElement.setAttribute("data-bs-theme", enabled ? "dark" : "light");
       document.documentElement.classList.toggle("dark-mode", enabled);
@@ -153,6 +162,16 @@ export class UIManager {
       });
 
       $("#menuRenderStats").onclick(() => this.#renderStatsPanel.toggle());
+
+      $("#menuAbout").onclick(() => {
+         Modal.getOrCreateInstance(document.getElementById("aboutModal")!).show();
+      });
+      document.getElementById("aboutModal")?.addEventListener("show.bs.modal", () => {
+         const versionEl = document.getElementById("aboutVersion");
+         const updatedEl = document.getElementById("aboutUpdated");
+         if (versionEl) versionEl.textContent = CONFIG.VERSION;
+         if (updatedEl) updatedEl.textContent = this.#formatUpdated(CONFIG.UPDATED);
+      });
 
       $("#menuLoadFromFile").onclick(() => {
          STORAGE.restoreFromFile().then(() => {
