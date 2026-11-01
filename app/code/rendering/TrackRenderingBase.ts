@@ -19,7 +19,17 @@ export abstract class TrackRenderingBase {
       this.app = Application.getInstance();
    }
 
-   abstract reDrawEverything(force?: boolean, render_outside_viewport?: boolean): void;
+   reDrawEverything(force = false, render_outside_viewport = false): void {
+      const stats = this.app.renderingManager!.stats;
+      stats.beginRedraw(force);
+      try {
+         this.redraw(force, render_outside_viewport);
+      } finally {
+         stats.endRedraw();
+      }
+   }
+
+   protected abstract redraw(force: boolean, render_outside_viewport: boolean): void;
 
    /**
     * React to a pan/zoom change without rebuilding unchanged content.

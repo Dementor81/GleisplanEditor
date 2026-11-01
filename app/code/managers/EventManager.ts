@@ -228,7 +228,7 @@ export class EventManager {
       this.#twoFingerGestureActive = false;
       this.#lastPinchDistance = null;
       this.#lastCentroid = null;
-      STORAGE.save();
+      STORAGE.scheduleSave();
    }
 
    /**

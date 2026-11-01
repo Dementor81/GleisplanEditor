@@ -1,14 +1,16 @@
 "use strict";
 
 import { geometry, Point } from "../../tools.ts";
-import { Rectangle, Sprite } from "pixi.js";
-import { gleisGraphics, imageSize, textureRegion } from "../../pixiPrimitives.ts";
+import { Graphics, GraphicsContext, Rectangle, Sprite } from "pixi.js";
+import { imageSize, textureRegion } from "../../pixiPrimitives.ts";
 import { createLayerContainer } from "../../pixiUtils.ts";
 import { RailwayCrossing } from "../../railway_crossing.ts";
 import { SCHWELLEN_VARIANTEN, TRACK_SCALE } from "./constants.ts";
 import type { AdvancedRendering } from "./AdvancedRendering.ts";
 
 export class AdvancedSleeperRendering {
+   #simplifiedSleeperShapes = new Map<number, GraphicsContext>();
+
    constructor(readonly renderer: AdvancedRendering) {}
 
    drawTrackSleepers(centerLine: any, container: any) {
@@ -75,22 +77,27 @@ export class AdvancedSleeperRendering {
       }
    }
 
+   /** One geometry per sleeper length, shared by every simplified sleeper Graphics of that length. */
+   #simplifiedSleeperShape(length: number): GraphicsContext {
+      let shape = this.#simplifiedSleeperShapes.get(length);
+      if (!shape) {
+         shape = new GraphicsContext()
+            .rect(0, Math.min(0, length), this.renderer.schwellenBreite, Math.abs(length))
+            .fill("#99735b")
+            .stroke({ width: 0.2, color: "black", cap: "round", join: "round" });
+         this.#simplifiedSleeperShapes.set(length, shape);
+      }
+      return shape;
+   }
+
    drawSleeper(i: number, x: number, y: number, angle: number, container: any, length = this.renderer.schwellenHöhe) {
       const r = this.renderer;
       if (r.app.renderingManager!.viewport.scale.x < r.LOD) {
-         const yStart = Math.min(0, length);
-         const drawLength = Math.abs(length);
-         const ry = length / 2;
-
-         let sleeper = gleisGraphics();
-         sleeper
-            .rect(0, yStart, r.schwellenBreite, drawLength)
-            .fill("#99735b")
-            .stroke({ width: 0.2, color: "black", cap: "round", join: "round" });
+         const sleeper = new Graphics(this.#simplifiedSleeperShape(length));
          sleeper.x = x;
          sleeper.y = y;
          sleeper.angle = angle;
-         sleeper.pivot.set(r.schwellenBreite / 2, ry);
+         sleeper.pivot.set(r.schwellenBreite / 2, length / 2);
 
          container.addChild(sleeper);
       } else {
@@ -112,7 +119,6 @@ export class AdvancedSleeperRendering {
          }
 
          const sleeperBitmap = new Sprite(r._bitmapCache[i].texture);
-         sleeperBitmap.eventMode = "static";
 
          sleeperBitmap.x = x;
          sleeperBitmap.y = y;

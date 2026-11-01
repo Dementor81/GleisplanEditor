@@ -17,6 +17,7 @@ import { mountRendererChoiceCards, type RendererChoiceCardsHandle } from "../ui/
 import { DrawingPanel } from "../ui/DrawingPanel.ts";
 import { StartScreen } from "../ui/StartScreen.ts";
 import { ViewportHud } from "../ui/ViewportHud.ts";
+import { RenderStatsPanel } from "../ui/RenderStatsPanel.ts";
 import { NewObjectMenu } from "../ui/NewObjectMenu.ts";
 
 // ============================================================================
@@ -46,6 +47,7 @@ export class UIManager {
    #drawingPanel = new DrawingPanel();
    #startScreen = new StartScreen();
    #viewportHud = new ViewportHud();
+   #renderStatsPanel = new RenderStatsPanel();
    #newObjectMenu = new NewObjectMenu();
 
    constructor(application: Application) {
@@ -85,6 +87,7 @@ export class UIManager {
       this.#initializeInterManagerCommunication();
       this.#initializeButtonEvents();
       this.#viewportHud.mount();
+      this.#renderStatsPanel.mount();
       this.#newObjectMenu.mount();
    }
 
@@ -148,6 +151,8 @@ export class UIManager {
          STORAGE.setDarkMode(enabled);
          this.#applyDarkMode(enabled);
       });
+
+      $("#menuRenderStats").onclick(() => this.#renderStatsPanel.toggle());
 
       $("#menuLoadFromFile").onclick(() => {
          STORAGE.restoreFromFile().then(() => {

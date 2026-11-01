@@ -36,7 +36,7 @@ export class BasicRendering extends TrackRenderingBase {
       return CONFIG.GRID_SIZE * 0.65;
    }
 
-   reDrawEverything(_force?: boolean, _render_outside_viewport?: boolean) {
+   protected redraw(_force: boolean, _render_outside_viewport: boolean) {
 
       this.app.renderingManager!.containers.removeAllChildren();
 
@@ -68,6 +68,7 @@ export class BasicRendering extends TrackRenderingBase {
    renderAllTracks() {
       Track.allTracks.forEach((t) => {
          this.renderTrack(this.app.renderingManager!.containers.tracks, t);
+         this.app.renderingManager!.stats.itemsDrawn++;
       });
    }
 
@@ -231,6 +232,7 @@ export class BasicRendering extends TrackRenderingBase {
          }
 
          this.renderSwitchUI(sw);
+         this.app.renderingManager!.stats.itemsDrawn++;
       });
    }
 

@@ -32,31 +32,33 @@ export class AdvancedRendererCore {
 
       r._idleCallback = myIdleCallback(
          () => {
-            if (r.app.renderingManager!.containers.tracks.renderedTracks.size == 0 || r._rendering != null) return;
+            const rm = r.app.renderingManager!;
+            const tracks = rm.containers.tracks;
+            const renderedTracks: Set<any> | undefined = tracks.renderedTracks;
+            const renderedSwitches: Set<any> | undefined = tracks.renderedSwitches;
+            if ((!renderedTracks?.size && !renderedSwitches?.size) || r._rendering != null) return;
             const bounds = this.calcCanvasSize();
 
-            const toBeRemoved: any[] = [];
-            r.app.renderingManager!.containers.tracks.renderedTracks.forEach((track: any) => {
-               if (!this.TrackVisible(track, bounds)) {
-                  toBeRemoved.push(track);
+            const removeBoundChildren = (parent: any, domain: unknown) => {
+               for (const child of parent.children.filter((c: any) => rm.getGameObjFromDisplayObj(c) === domain)) {
+                  parent.removeChild(child);
                }
-            });
+            };
 
-            const rm = r.app.renderingManager!;
-            toBeRemoved.forEach((track) => {
-               rm.containers.tracks.renderedTracks.delete(track);
+            for (const track of renderedTracks ?? []) {
+               if (this.TrackVisible(track, bounds)) continue;
+               renderedTracks!.delete(track);
+               removeBoundChildren(tracks.children[0], track);
+               removeBoundChildren(tracks.children[2], track);
+            }
 
-               const sleepersToRemove = rm.containers.tracks.children[0].children.filter((c: any) => rm.getGameObjFromDisplayObj(c) === track);
-               const railsToRemove = rm.containers.tracks.children[2].children.filter((c: any) => rm.getGameObjFromDisplayObj(c) === track);
-
-               sleepersToRemove.forEach((c: any) => {
-                  rm.containers.tracks.children[0].removeChild(c);
-               });
-
-               railsToRemove.forEach((c: any) => {
-                  rm.containers.tracks.children[2].removeChild(c);
-               });
-            });
+            for (const sw of renderedSwitches ?? []) {
+               if (this.SwitchVisible(sw, bounds)) continue;
+               renderedSwitches!.delete(sw);
+               removeBoundChildren(tracks.children[0], sw);
+               removeBoundChildren(tracks.children[2], sw);
+               removeBoundChildren(rm.containers.ui, sw);
+            }
 
             r._idleCallback = null;
          }
@@ -73,11 +75,13 @@ export class AdvancedRendererCore {
       return { left: x, top: y, right: x + width, bottom: y + height };
    }
 
-   reDrawEverything(force = false, render_outside_viewport = false) {
+   redraw(force: boolean, render_outside_viewport: boolean) {
       const r = this.renderer;
+      // Wait for the preloader to load before rendering
+      // mostly the case on slow internet connections
       if (!Application.getInstance().preLoader!.loaded)
          setTimeout(() => {
-            this.reDrawEverything(force, render_outside_viewport);
+            r.reDrawEverything(force, render_outside_viewport);
          }, 500);
       else {
          if (r._rendering == undefined) {
@@ -131,6 +135,10 @@ export class AdvancedRendererCore {
       railwayCrossingRenderer.renderStreetSigns(rm);
    }
 
+   /**
+    * Render all tracks
+    * @param force - Force redraw, ignores cached items, used when when user changes something, should only be false on pan/zoom
+    */
    renderAllTracks(force?: boolean) {
       const r = this.renderer;
       const containers = r.app.renderingManager!.containers;
@@ -152,6 +160,7 @@ export class AdvancedRendererCore {
             if (force || !containers.tracks.renderedSwitches.has(sw)) {
                r.switchRendering.renderSwitch(sw);
                containers.tracks.renderedSwitches.add(sw);
+               r.app.renderingManager!.stats.itemsDrawn++;
             } else if (r._rendering.lodChanged) {
                r.switchRendering.updateSwitch(sw);
             }
@@ -163,6 +172,7 @@ export class AdvancedRendererCore {
             if (force || !containers.tracks.renderedTracks.has(t)) {
                r.trackRendering.renderTrack(t);
                containers.tracks.renderedTracks.add(t);
+               r.app.renderingManager!.stats.itemsDrawn++;
             } else if (r._rendering.lodChanged) {
                r.trackRendering.updateTrack(t);
             }
@@ -180,8 +190,8 @@ export class AdvancedRendererCore {
       });
    }
 
-   PointVisible(p1: any) {
-      const screen_rectangle = this.renderer._rendering.screen_rectangle;
+   PointVisible(p1: any, screen_rectangle = this.renderer._rendering?.screen_rectangle) {
+      if (!screen_rectangle) return false;
 
       return (
          NumberUtils.between(p1.x, screen_rectangle.left, screen_rectangle.right) &&
@@ -211,12 +221,11 @@ export class AdvancedRendererCore {
       return false;
    }
 
-   SwitchVisible(sw: any) {
+   SwitchVisible(sw: any, screen_rectangle = this.renderer._rendering.screen_rectangle) {
       const r = this.renderer;
       if (r._rendering?.render_outside_viewport) return true;
-      const screen_rectangle = r._rendering.screen_rectangle;
 
-      if (this.PointVisible(sw.location)) return true;
+      if (this.PointVisible(sw.location, screen_rectangle)) return true;
 
       const tracks = [sw.track1, sw.track2, sw.track3, sw.track4].filter((t: any) => t);
       return tracks.some((track: any) => this.TrackVisible(track, screen_rectangle));

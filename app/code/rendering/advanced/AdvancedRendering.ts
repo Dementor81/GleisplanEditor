@@ -70,8 +70,8 @@ export class AdvancedRendering extends TrackRenderingBase {
       this.SIGNAL_DISTANCE_FROM_TRACK = this.schwellenHöhe / 2;
    }
 
-   reDrawEverything(force = false, render_outside_viewport = false) {
-      return this.core.reDrawEverything(force, render_outside_viewport);
+   protected redraw(force: boolean, render_outside_viewport: boolean) {
+      this.core.redraw(force, render_outside_viewport);
    }
 
    /**
@@ -79,7 +79,7 @@ export class AdvancedRendering extends TrackRenderingBase {
     * pan/zoom runs the incremental (non-forced) redraw rather than a full rebuild.
     */
    onViewportChanged(): void {
-      this.core.reDrawEverything(false);
+      this.reDrawEverything(false);
    }
 
    renderAllGenericObjects() {

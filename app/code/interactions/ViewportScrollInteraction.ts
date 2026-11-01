@@ -15,6 +15,6 @@ export class ViewportScrollInteraction implements PointerInteraction {
    }
 
    onUp(_local: Point, _e: FederatedPointerEvent): void {
-      STORAGE.save();
+      STORAGE.scheduleSave();
    }
 }

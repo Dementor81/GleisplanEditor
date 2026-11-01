@@ -18,6 +18,7 @@ import { Container, UPDATE_PRIORITY } from 'pixi.js';
 import { createPixiApplicationWithViewport, hitTestFromViewportLocal, TrackGraphics } from '../pixiPrimitives.ts';
 import { createLayerContainer } from '../pixiUtils.ts';
 import { SignalRenderer } from './signalRenderer.ts';
+import { RenderStats } from './RenderStats.ts';
 
 type PointXY = { x: number; y: number };
 
@@ -43,11 +44,16 @@ interface ContainersType {
  * This class manages grid drawing, clearing, centering, and other rendering operations
  */
 export class RenderingManager {
+   static readonly #SETTLE_MS = 150;
+
    #application: GleisApplication;
    #pixiApp: PixiApplication | null = null;
    #viewport: Container | null = null;
    #canvas: HTMLCanvasElement | null = null;
    #dirty = true;
+   readonly stats = new RenderStats();
+   #viewportChangePending = false;
+   #viewportSettleTimer: ReturnType<typeof setTimeout> | undefined;
    #pointerX = 0;
    #pointerY = 0;
    #containers: ContainersType | Record<string, any> = {};
@@ -99,10 +105,14 @@ export class RenderingManager {
       let wasAnimating = false;
       app.ticker.remove(app.render, app);
       app.ticker.add(() => {
+         if (this.#viewportChangePending) {
+            this.#viewportChangePending = false;
+            this.#renderer?.onViewportChanged();
+         }
          const animating = app.ticker.count > 1;
          if (this.#dirty || animating || wasAnimating) {
             this.#dirty = false;
-            app.render();
+            this.stats.timeFrame(() => app.render());
          }
          wasAnimating = animating;
       }, undefined, UPDATE_PRIORITY.LOW);
@@ -194,7 +204,7 @@ export class RenderingManager {
    }
 
    /**
-    * Update the stage
+    * Update the stage, sets the dirty flag to true, so the next frame will be rendered automatically by the ticker
     */
    update(): void {
       this.#dirty = true;
@@ -252,10 +262,7 @@ export class RenderingManager {
          const globalPoint = viewport.toGlobal(localPoint);
          viewport.x -= globalPoint.x - point.x;
          viewport.y -= globalPoint.y - point.y;
-         this.drawGrid();
-         this.#renderer?.onViewportChanged();
-         this.update();
-         this.notifyViewportChanged();
+         this.scheduleViewportChange(false);
          return true;
       }
       return false;
@@ -271,16 +278,8 @@ export class RenderingManager {
     * @param deltaY - The zoom delta
     */
    zoom(deltaY: number): void {
-      const myCanvas = (window as any).myCanvas as any;
-
-      if (!myCanvas.prevent_input) {
-         myCanvas.prevent_input = true;
-         const step = deltaY / (INPUT.ZOOM_STEP_DIVISOR / this.viewport.scale.x);
-         if (this.zoomAtPoint(this.#pointerX, this.#pointerY, this.viewport.scale.x - step)) {
-            STORAGE.save();
-         }
-         myCanvas.prevent_input = false;
-      }
+      const step = deltaY / (INPUT.ZOOM_STEP_DIVISOR / this.viewport.scale.x);
+      this.zoomAtPoint(this.#pointerX, this.#pointerY, this.viewport.scale.x - step);
    }
 
    /**
@@ -292,10 +291,31 @@ export class RenderingManager {
       const vp = this.#viewport!;
       vp.x += deltaX;
       vp.y += deltaY;
+      this.scheduleViewportChange(false);
+   }
+
+   /**
+    * Per-frame part of a pan/zoom: reposition the grid without repainting it, mark the renderer
+    * viewport pass and the frame dirty, and notify listeners. Bursts of wheel/pinch/drag events
+    * collapse into one renderer pass per ticker frame.
+    * The settled part (grid repaint, deferred renderer pass, save) runs once the viewport has
+    * been quiet for `#SETTLE_MS`; see `#settleViewport`.
+    */
+   scheduleViewportChange(persist: boolean): void {
       this.drawGrid(false);
-      this.#renderer?.onViewportChanged();
+      this.#viewportChangePending = true;
       this.update();
       this.notifyViewportChanged();
+
+      clearTimeout(this.#viewportSettleTimer);
+      this.#viewportSettleTimer = setTimeout(() => this.#settleViewport(persist), RenderingManager.#SETTLE_MS);
+   }
+
+   #settleViewport(persist: boolean): void {
+      this.drawGrid();
+      this.#renderer?.onViewportChanged();
+      this.update();
+      if (persist) STORAGE.save();
    }
 
    /**
@@ -369,11 +389,7 @@ export class RenderingManager {
    }
 
    #commitViewportChange(): void {
-      STORAGE.save();
-      this.drawGrid();
-      this.#renderer?.onViewportChanged();
-      this.update();
-      this.notifyViewportChanged();
+      this.scheduleViewportChange(true);
    }
 
    /** Notify listeners (e.g. viewport HUD) after pan/zoom changed. */
@@ -386,6 +402,11 @@ export class RenderingManager {
     * @param repaint - Whether to repaint the grid
     */
    drawGrid(repaint: boolean = true): void {
+      if (repaint) this.stats.timeGrid(() => this.#drawGrid(true));
+      else this.#drawGrid(false);
+   }
+
+   #drawGrid(repaint: boolean): void {
       if (!this.#grid) {
          this.#grid = new TrackGraphics("grid");
          this.#viewport!.addChildAt(this.#grid, 0);

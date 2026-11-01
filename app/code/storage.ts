@@ -56,6 +56,8 @@ interface SwitchData {
 // STORAGE Object
 // ============================================================================
 
+let scheduledSaveTimer: ReturnType<typeof setTimeout> | undefined;
+
 export const STORAGE = {
    MIN_STORAGE_VERSION: 0.5 as const,
    STORAGE_IDENT: "bahnhof_last1" as const,
@@ -277,7 +279,18 @@ export const STORAGE = {
     * Save current state to localStorage
     */
    save(): void {
+      clearTimeout(scheduledSaveTimer);
+      scheduledSaveTimer = undefined;
+      const start = performance.now();
       localStorage.setItem(STORAGE.STORAGE_IDENT, STORAGE.getSaveString());
+      const rm = Application.getInstance().renderingManager;
+      if (rm) rm.stats.saveMs = performance.now() - start;
+   },
+
+   /** Trailing save 400 ms after the last call, for high-frequency changes such as zoom/pan. */
+   scheduleSave(): void {
+      clearTimeout(scheduledSaveTimer);
+      scheduledSaveTimer = setTimeout(() => STORAGE.save(), 400);
    },
 
    /**
