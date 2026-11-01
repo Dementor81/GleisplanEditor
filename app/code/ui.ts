@@ -29,7 +29,18 @@ export const ui = {
       }
     },
  
-    showModalDialog: function (content: JQuery, ok_function: () => void): bootstrap.Modal {
+    showModalDialog: function (content: JQuery, ok_function: () => void, footerStart?: JQuery): bootstrap.Modal {
+       const footer = ui.div("modal-footer").append(
+          $("<button/>", {
+             type: "button",
+             class: "btn btn-default",
+             "data-dismiss": "modal",
+             text: "Herunterladen",
+             click: ok_function,
+          })
+       );
+       if (footerStart) footer.prepend(footerStart.addClass("me-auto"));
+
        // Create modal div
        let modal_div = $("<div/>", {
           id: "myModal",
@@ -50,15 +61,7 @@ export const ui = {
                    }),
                 ]),
                 ui.div("modal-body").append(content),
-                ui.div("modal-footer").append(
-                   $("<button/>", {
-                      type: "button",
-                      class: "btn btn-default",
-                      "data-dismiss": "modal",
-                      text: "Herunterladen",
-                      click: ok_function,
-                   })
-                ),
+                footer,
              ])
           )
        );

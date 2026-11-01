@@ -11,7 +11,7 @@
 
 export const CONFIG = {
     // Application metadata
-    VERSION: "0.5",
+    VERSION: "0.6",
     UPDATED: "2026-11-01",
     
     // Default settings

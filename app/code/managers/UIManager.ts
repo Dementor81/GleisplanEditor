@@ -412,56 +412,127 @@ export class UIManager {
    }
 
    async #handleImageExport(): Promise<void> {
-      const viewport = this.#app.renderingManager!.viewport;
-      const backup = { x: viewport.x, y: viewport.y, scale: viewport.scale.x };
+      const rm = this.#app.renderingManager!;
+      const renderer = rm.pixiApp.renderer;
 
-      try {
-         const rm = this.#app.renderingManager!;
-         const renderer = rm.pixiApp.renderer;
+      rm.reDrawEverything(true, true);
 
-         rm.reDrawEverything(true, true);
+      const bounds = rm.viewport.getLocalBounds();
+      if (!(bounds.width > 0 && bounds.height > 0 && Number.isFinite(bounds.width + bounds.height))) {
+         ui.showInfoToast("Nix zu sehen");
+         return;
+      }
 
-         const bounds = rm.viewport.getLocalBounds();
-         if (!(bounds.width > 0 && bounds.height > 0 && Number.isFinite(bounds.width + bounds.height))) {
-            ui.showInfoToast("Nix zu sehen");
-            return;
+      const width = Math.max(1, Math.ceil(bounds.width));
+      const height = Math.max(1, Math.ceil(bounds.height));
+      const gl = (renderer as { gl?: WebGLRenderingContext }).gl;
+      const maxDim = gl ? gl.getParameter(gl.MAX_TEXTURE_SIZE) : 8192;
+      const gpuMax = maxDim / Math.max(width, height);
+      const defaultResolution = Math.min(2, gpuMax);
+      const sliderMax = Math.min(8, gpuMax);
+      const canIncrease = sliderMax > defaultResolution;
+
+      const outputPixels = (resolution: number): { width: number; height: number } => {
+         const frameW = Math.max(bounds.width, 1 / resolution) | 0;
+         const frameH = Math.max(bounds.height, 1 / resolution) | 0;
+         return {
+            width: Math.round(frameW * resolution),
+            height: Math.round(frameH * resolution),
+         };
+      };
+
+      const qualityLabel = (resolution: number): string => {
+         const pixels = outputPixels(resolution);
+         const factor = String(Math.round(resolution * 10) / 10);
+         return `${factor}× · ${pixels.width} × ${pixels.height}`;
+      };
+
+      const capture = async (resolution: number): Promise<string> => {
+         const viewport = rm.viewport;
+         const backup = { x: viewport.x, y: viewport.y, scale: viewport.scale.x };
+         try {
+            rm.reDrawEverything(true, true);
+            rm.setGridVisible(false);
+            rm.containers.drawing.visible = false;
+            rm.containers.ui.visible = false;
+            rm.update();
+            return await renderer.extract.base64({
+               target: viewport,
+               resolution,
+               clearColor: "#00000000",
+               antialias: false,
+            });
+         } finally {
+            viewport.x = backup.x;
+            viewport.y = backup.y;
+            viewport.scale.set(backup.scale);
+            rm.setGridVisible(true);
+            rm.containers.drawing.visible = true;
+            rm.containers.ui.visible = true;
+            rm.reDrawEverything(true);
+            rm.update();
+            rm.notifyViewportChanged();
          }
+      };
 
-         const width = Math.max(1, Math.ceil(bounds.width));
-         const height = Math.max(1, Math.ceil(bounds.height));
-         const gl = (renderer as { gl?: WebGLRenderingContext }).gl;
-         const maxDim = gl ? gl.getParameter(gl.MAX_TEXTURE_SIZE) : 8192;
-         const exportResolution = Math.min(2, maxDim / Math.max(width, height));
-
-         rm.setGridVisible(false);
-         rm.containers.drawing.visible = false;
-         rm.containers.ui.visible = false;
-         rm.update();
-
-         const imgData = await renderer.extract.base64({
-            target: rm.viewport,
-            resolution: exportResolution,
-            clearColor: "#00000000",
-            antialias: false,
-         });
-         const img = $("<img>", { src: imgData, width: "100%" }).css("object-fit", "scale-down").css("max-height", "50vh");
-         ui.showModalDialog(img, () => {
-            const link = $("<a>", { download: "gleisplan.png", href: imgData });
-            link[0].click();
-         });
+      let imgData: string;
+      try {
+         imgData = await capture(defaultResolution);
       } catch (error) {
          ui.showErrorToast(error as Error);
-      } finally {
-         viewport.x = backup.x;
-         viewport.y = backup.y;
-         viewport.scale.set(backup.scale);
-         this.#app.renderingManager!.setGridVisible(true);
-         this.#app.renderingManager!.containers.drawing.visible = true;
-         this.#app.renderingManager!.containers.ui.visible = true;
-         this.#app.renderingManager?.reDrawEverything(true);
-         this.#app.renderingManager!.update();
-         this.#app.renderingManager?.notifyViewportChanged();
+         return;
       }
+
+      let lastGood = defaultResolution;
+      let generation = 0;
+      const slider = $("<input>", {
+         type: "range",
+         class: "form-range flex-shrink-0",
+         min: defaultResolution,
+         max: canIncrease ? sliderMax : defaultResolution,
+         step: 0.5,
+         value: defaultResolution,
+         title: qualityLabel(defaultResolution),
+         "aria-label": "Qualität",
+      }).css({ width: "150px", maxWidth: "150px", flex: "0 0 150px" }).prop("disabled", !canIncrease);
+
+      const img = $("<img>", { src: imgData, width: "100%" }).css("object-fit", "scale-down").css("max-height", "50vh");
+
+      slider.on("input", () => {
+         slider.attr("title", qualityLabel(Number(slider.val())));
+      });
+
+      slider.on("change", () => {
+         const resolution = Number(slider.val());
+         if (resolution === lastGood) return;
+         const request = ++generation;
+         capture(resolution).then(
+            (data) => {
+               if (request !== generation) return;
+               imgData = data;
+               lastGood = resolution;
+               img.attr("src", data);
+            },
+            (error: unknown) => {
+               if (request !== generation) return;
+               ui.showErrorToast(error instanceof Error ? error : new Error(String(error)));
+               slider.val(lastGood);
+               slider.attr("title", qualityLabel(lastGood));
+            }
+         );
+      });
+
+      ui.showModalDialog(
+         img,
+         () => {
+            const link = $("<a>", { download: "gleisplan.png", href: imgData });
+            link[0].click();
+         },
+         ui.div("d-flex align-items-center gap-3", [
+            $("<span>", { class: "text-nowrap", text: "Qualität" }),
+            slider,
+         ])
+      );
    }
 
    #handleDrawToggle(): void {

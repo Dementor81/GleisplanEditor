@@ -1,10 +1,21 @@
+const fs = require('fs');
 const path = require('path');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const CopyWebpackPlugin = require('copy-webpack-plugin');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 
+function readAppVersion() {
+  const source = fs.readFileSync(path.resolve(__dirname, 'app/code/config.ts'), 'utf8');
+  const match = source.match(/^\s*VERSION:\s*"([^"]+)"/m);
+  if (!match) {
+    throw new Error('CONFIG.VERSION not found in app/code/config.ts');
+  }
+  return match[1];
+}
+
 module.exports = (env, argv) => {
   const isProduction = argv.mode === 'production';
+  const version = readAppVersion();
   
   return {
     entry: {
@@ -75,6 +86,14 @@ module.exports = (env, argv) => {
     mode: argv.mode || 'development',
     plugins: [
       new HtmlWebpackPlugin({
+        template: 'app/index.html',
+        filename: 'index.html',
+        chunks: [],
+        inject: false,
+        minify: false,
+        templateParameters: { version },
+      }),
+      new HtmlWebpackPlugin({
         template: 'app/start.html',
         filename: 'start.html',
         chunks: ['main'],
@@ -94,7 +113,7 @@ module.exports = (env, argv) => {
             from: 'app',
             to: '',
             globOptions: {
-              ignore: ['code/**', 'dist/**', '**/code/**', '**/dist/**', 'start.html', '**/start.html', 'signal-config.html', '**/signal-config.html'],
+              ignore: ['code/**', 'dist/**', '**/code/**', '**/dist/**', 'index.html', '**/index.html', 'start.html', '**/start.html', 'signal-config.html', '**/signal-config.html'],
             },
           },
         ],
