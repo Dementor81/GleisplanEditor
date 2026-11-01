@@ -36,24 +36,53 @@ export class BasicRendering extends TrackRenderingBase {
       return CONFIG.GRID_SIZE * 0.65;
    }
 
-   protected redraw(_force: boolean, _render_outside_viewport: boolean) {
+   protected redraw(force: boolean, render_outside_viewport: boolean) {
+      const containers = this.app.renderingManager!.containers;
+      if (force) {
+         containers.removeAllChildren();
+         containers.tracks.renderedTracks = new Set();
+         containers.tracks.renderedSwitches = new Set();
+         this.renderAllCrossings();
+      }
 
-      this.app.renderingManager!.containers.removeAllChildren();
+      this.renderAllTracks(force, render_outside_viewport);
+      this.renderAllSwitches(force, render_outside_viewport);
+      if (!render_outside_viewport) this.#cullOffScreenTracksAndSwitches();
 
-      this.renderAllCrossings();
-      this.renderAllTracks();
-      this.renderAllSwitches();
-      this.renderAllGenericObjects();
-      this.renderAllSignals();
-      this.renderAllTrains();
+      if (force) {
+         this.renderAllGenericObjects();
+         this.renderAllSignals();
+         this.renderAllTrains();
+      }
       this.app.renderingManager!.update();
    }
 
    /**
-    * Basic mode keeps every object in the scene regardless of viewport, so a pan/zoom
-    * needs no content rebuild; the caller re-renders the moved viewport.
+    * Like advanced mode, a pan/zoom only adds newly visible tracks/switches and culls
+    * off-screen ones; signals, trains and objects are rebuilt on forced redraws only.
     */
-   onViewportChanged(): void {}
+   onViewportChanged(): void {
+      this.reDrawEverything(false);
+   }
+
+   #cullOffScreenTracksAndSwitches(): void {
+      const rm = this.app.renderingManager!;
+      const tracks = rm.containers.tracks;
+      if (!(tracks.renderedTracks instanceof Set)) return;
+      const rect = this.viewportRenderRect();
+
+      for (const track of tracks.renderedTracks) {
+         if (this.trackInRect(track, rect)) continue;
+         tracks.renderedTracks.delete(track);
+         this.removeBoundDisplayObjects(tracks, track);
+      }
+      for (const sw of tracks.renderedSwitches) {
+         if (this.switchInRect(sw, rect)) continue;
+         tracks.renderedSwitches.delete(sw);
+         this.removeBoundDisplayObjects(tracks, sw);
+         this.removeBoundDisplayObjects(rm.containers.ui, sw);
+      }
+   }
 
    renderAllSignals() {
       const rm = this.app.renderingManager!;
@@ -65,9 +94,15 @@ export class BasicRendering extends TrackRenderingBase {
       railwayCrossingRenderer.renderStreetSigns(rm);
    }
 
-   renderAllTracks() {
+   renderAllTracks(force = false, render_outside_viewport = false) {
+      const tracks = this.app.renderingManager!.containers.tracks;
+      const rendered: Set<any> = (tracks.renderedTracks ??= new Set());
+      const rect = render_outside_viewport ? null : this.viewportRenderRect();
       Track.allTracks.forEach((t) => {
-         this.renderTrack(this.app.renderingManager!.containers.tracks, t);
+         if (rect && !this.trackInRect(t, rect)) return;
+         if (!force && rendered.has(t)) return;
+         this.renderTrack(tracks, t);
+         rendered.add(t);
          this.app.renderingManager!.stats.itemsDrawn++;
       });
    }
@@ -204,12 +239,17 @@ export class BasicRendering extends TrackRenderingBase {
       g.fillPoly([p1, p2, p3], color);
    }
 
-   renderAllSwitches() {
+   renderAllSwitches(force = false, render_outside_viewport = false) {
+      const tracks = this.app.renderingManager!.containers.tracks;
+      const rendered: Set<any> = (tracks.renderedSwitches ??= new Set());
+      const rect = render_outside_viewport ? null : this.viewportRenderRect();
       Switch.allSwitches.forEach((sw) => {
          if (!Switch.isCompleteForRendering(sw)) {
             console.warn(`Skipping faulty switch ${sw.id}`);
             return;
          }
+         if (rect && !this.switchInRect(sw, rect)) return;
+         if (!force && rendered.has(sw)) return;
          let switch_shape = new TrackGraphics("switch");
          switch_shape.eventMode = "none";
          this.app.renderingManager!.bindGameObjToDisplayObj(switch_shape, sw);
@@ -232,6 +272,7 @@ export class BasicRendering extends TrackRenderingBase {
          }
 
          this.renderSwitchUI(sw);
+         rendered.add(sw);
          this.app.renderingManager!.stats.itemsDrawn++;
       });
    }

@@ -4,10 +4,8 @@ import { Track } from "../../track.ts";
 import { Switch } from "../../switch.ts";
 import { Signal } from "../../signal.ts";
 import { SignalRenderer } from "../signalRenderer.ts";
-import { geometry } from "../../tools.ts";
 import { NumberUtils } from "../../utils.ts";
 import { ui } from "../../ui.ts";
-import { CONFIG } from "../../config.ts";
 import { Application } from "../../application.ts";
 import { createLayerContainer } from "../../pixiUtils.ts";
 import { RailwayCrossing } from "../../railway_crossing.ts";
@@ -66,13 +64,7 @@ export class AdvancedRendererCore {
    }
 
    calcCanvasSize() {
-      const vp = this.renderer.app.renderingManager!.viewport;
-      const canvas = this.renderer.app.renderingManager!.canvas;
-      const width = (canvas.width + CONFIG.GRID_SIZE * 2) / vp.scale.x,
-         height = (canvas.height + CONFIG.GRID_SIZE * 2) / vp.scale.y,
-         x = (-vp.x - CONFIG.GRID_SIZE) / vp.scale.x,
-         y = (-vp.y - CONFIG.GRID_SIZE) / vp.scale.y;
-      return { left: x, top: y, right: x + width, bottom: y + height };
+      return this.renderer.viewportRenderRect();
    }
 
    redraw(force: boolean, render_outside_viewport: boolean) {
@@ -191,43 +183,16 @@ export class AdvancedRendererCore {
    }
 
    PointVisible(p1: any, screen_rectangle = this.renderer._rendering?.screen_rectangle) {
-      if (!screen_rectangle) return false;
-
-      return (
-         NumberUtils.between(p1.x, screen_rectangle.left, screen_rectangle.right) &&
-         NumberUtils.between(p1.y, screen_rectangle.top, screen_rectangle.bottom)
-      );
+      return screen_rectangle ? this.renderer.pointInRect(p1, screen_rectangle) : false;
    }
 
    TrackVisible(track: any, screen_rectangle = this.renderer._rendering.screen_rectangle) {
-      const r = this.renderer;
-      if (r._rendering?.render_outside_viewport) return true;
-
-      const isInside = (point: any, rect: any) =>
-         point.x > rect.left && point.x < rect.right && point.y > rect.top && point.y < rect.bottom;
-
-      if (isInside(track.start, screen_rectangle) || isInside(track.end, screen_rectangle)) return true;
-
-      let p1 = { x: screen_rectangle.left, y: screen_rectangle.top },
-         p2 = { x: screen_rectangle.left, y: screen_rectangle.bottom };
-      if (geometry.doLineSegmentsIntersect(p1, p2, track.start, track.end)) return true;
-      p1 = p2;
-      p2 = { x: screen_rectangle.right, y: screen_rectangle.bottom };
-      if (geometry.doLineSegmentsIntersect(p1, p2, track.start, track.end)) return true;
-      p1 = p2;
-      p2 = { x: screen_rectangle.right, y: screen_rectangle.top };
-      if (geometry.doLineSegmentsIntersect(p1, p2, track.start, track.end)) return true;
-
-      return false;
+      if (this.renderer._rendering?.render_outside_viewport) return true;
+      return this.renderer.trackInRect(track, screen_rectangle);
    }
 
    SwitchVisible(sw: any, screen_rectangle = this.renderer._rendering.screen_rectangle) {
-      const r = this.renderer;
-      if (r._rendering?.render_outside_viewport) return true;
-
-      if (this.PointVisible(sw.location, screen_rectangle)) return true;
-
-      const tracks = [sw.track1, sw.track2, sw.track3, sw.track4].filter((t: any) => t);
-      return tracks.some((track: any) => this.TrackVisible(track, screen_rectangle));
+      if (this.renderer._rendering?.render_outside_viewport) return true;
+      return this.renderer.switchInRect(sw, screen_rectangle);
    }
 }

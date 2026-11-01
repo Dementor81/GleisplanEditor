@@ -1,6 +1,8 @@
 "use strict";
 
 import { Application } from "../application.ts";
+import { CONFIG } from "../config.ts";
+import { geometry } from "../tools.ts";
 import { GenericObject } from "../generic_object.ts";
 import { PlatformResizeInteraction } from "../interactions/PlatformResizeInteraction.ts";
 import { RailwayCrossing } from "../railway_crossing.ts";
@@ -45,6 +47,50 @@ export abstract class TrackRenderingBase {
    /** Car body height in layout units (basic vs advanced scale). */
    protected abstract trainCarHeight(): number;
 
+   /** Visible world rect plus one grid cell of padding, used for viewport culling in both renderers. */
+   viewportRenderRect(): { left: number; top: number; right: number; bottom: number } {
+      const rm = this.app.renderingManager!;
+      const vp = rm.viewport;
+      const canvas = rm.canvas;
+      const width = (canvas.width + CONFIG.GRID_SIZE * 2) / vp.scale.x;
+      const height = (canvas.height + CONFIG.GRID_SIZE * 2) / vp.scale.y;
+      const x = (-vp.x - CONFIG.GRID_SIZE) / vp.scale.x;
+      const y = (-vp.y - CONFIG.GRID_SIZE) / vp.scale.y;
+      return { left: x, top: y, right: x + width, bottom: y + height };
+   }
+
+   pointInRect(p: { x: number; y: number }, rect: { left: number; top: number; right: number; bottom: number }): boolean {
+      return p.x > rect.left && p.x < rect.right && p.y > rect.top && p.y < rect.bottom;
+   }
+
+   trackInRect(track: any, rect: { left: number; top: number; right: number; bottom: number }): boolean {
+      if (this.pointInRect(track.start, rect) || this.pointInRect(track.end, rect)) return true;
+
+      let p1 = { x: rect.left, y: rect.top };
+      let p2 = { x: rect.left, y: rect.bottom };
+      if (geometry.doLineSegmentsIntersect(p1, p2, track.start, track.end)) return true;
+      p1 = p2;
+      p2 = { x: rect.right, y: rect.bottom };
+      if (geometry.doLineSegmentsIntersect(p1, p2, track.start, track.end)) return true;
+      p1 = p2;
+      p2 = { x: rect.right, y: rect.top };
+      return geometry.doLineSegmentsIntersect(p1, p2, track.start, track.end);
+   }
+
+   switchInRect(sw: any, rect: { left: number; top: number; right: number; bottom: number }): boolean {
+      if (this.pointInRect(sw.location, rect)) return true;
+      const tracks = [sw.track1, sw.track2, sw.track3, sw.track4].filter((t: any) => t);
+      return tracks.some((track: any) => this.trackInRect(track, rect));
+   }
+
+   /** Remove every direct child of `parent` bound to `domain` (one rendered track/switch). */
+   protected removeBoundDisplayObjects(parent: any, domain: unknown): void {
+      const rm = this.app.renderingManager!;
+      for (const child of parent.children.filter((c: any) => rm.getGameObjFromDisplayObj(c) === domain)) {
+         parent.removeChild(child);
+      }
+   }
+
    renderAllTrains(): void {
       this.#trainRenderer.renderAllTrains(this.app.renderingManager!, this.trainCarHeight());
    }
@@ -52,7 +98,7 @@ export abstract class TrackRenderingBase {
    /** Advanced layout uses sleepers under `tracks.children[0]`; basic attaches graphics directly to `tracks`. */
    protected trackDisplayObjectsForSelection(): any[] {
       const tracks = this.app.renderingManager!.containers.tracks as any;
-      if (tracks.renderedTracks instanceof Set && tracks.children[0]) {
+      if (tracks.children[0]?.label === "global_sleepers") {
          return tracks.children[0].children as any[];
       }
       return tracks.children as any[];
